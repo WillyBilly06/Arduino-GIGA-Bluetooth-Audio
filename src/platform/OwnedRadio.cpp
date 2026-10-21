@@ -3,6 +3,7 @@
 #include "GigaRadio.h"
 #include "GigaAvrcp.h"
 #include "RadioProtocol.h"
+#include "TxMailbox.h"
 #include "../owned/OwnedHost.h"
 #include "../detail/Memory.h"
 #include <Arduino.h>
@@ -33,10 +34,12 @@ struct Context {
     alignas(mbed::UnbufferedSerial) uint8_t uart_storage[sizeof(mbed::UnbufferedSerial)];
     mbed::UnbufferedSerial* uart=nullptr;
     gpio_t power,device_wake,host_wake;
-    uint8_t rx[RxSize]={},tx[1030]={};
+    uint8_t rx[RxSize]={};
+    TxMailbox tx;
     volatile unsigned rx_write=0,rx_read=0;
     volatile bool rx_paused=false;
     unsigned tx_size=0,tx_pos=0;
+    uint32_t tx_failed=0;
     uint32_t started=0,last_byte=0,tx_started=0;
     uint32_t hnc_submitted=0,hnc_submitted_credits=0,hnc_uart=0,hnc_uart_credits=0;
     uint32_t hnc_tc=0,hnc_tc_credits=0,hnc_pending_tc=0,hnc_pending_tc_credits=0;
@@ -48,6 +51,10 @@ struct Context {
 Context* context=nullptr;
 RadioStats stopped_stats;
 BleStats stopped_ble;
+struct Critical {
+    Critical() { core_util_critical_section_enter(); }
+    ~Critical() { core_util_critical_section_exit(); }
+};
 void diagnostic(const char* text) {
     if(context && context->callbacks.diagnostic)
         context->callbacks.diagnostic(text,context->callbacks.user);
@@ -70,25 +77,63 @@ void uartIrq() {
         c->rx[c->rx_write]=byte; __DMB(); c->rx_write=next;
     }
 }
+// Sole UART TX writer. TXE wakes this callback as each byte becomes writable;
+// the host's1ms poll cadence never limits byte or credit-return throughput.
+void txIrq() {
+    Context* c=context;
+    if(!c || !c->uart) return;
+    unsigned budget=64;
+    while(budget-- && c->uart->writeable()) {
+        uint8_t byte;
+        if(!c->tx.peek(byte)) {
+            c->uart->attach(mbed::Callback<void()>(),mbed::SerialBase::TxIrq);
+            return;
+        }
+        if(c->uart->write(&byte,1)!=1 || !c->tx.advance()) {
+            __atomic_store_n(&c->tx_failed,1u,__ATOMIC_RELEASE);
+            c->uart->attach(mbed::Callback<void()>(),mbed::SerialBase::TxIrq);
+            return;
+        }
+        ++c->tx_pos;
+        if(c->tx.drained()) {
+            // Disable the level-triggered TXE source before publishing empty.
+            // TC is sampled later by foreground diagnostics; never spin here.
+            c->uart->attach(mbed::Callback<void()>(),mbed::SerialBase::TxIrq);
+            if(c->tx_hnc_credits) {
+                ++c->hnc_uart;c->hnc_uart_credits+=c->tx_hnc_credits;
+                ++c->hnc_pending_tc;c->hnc_pending_tc_credits+=c->tx_hnc_credits;c->tx_hnc_credits=0;
+            }
+            c->tx_size=c->tx_pos=0;
+            c->tx.finish();
+            return;
+        }
+    }
+}
 bool txReady(void* user) {
     const auto& c=*static_cast<Context*>(user);
-    return c.uart && c.tx_size==0;
+    return c.uart && c.tx.empty() && !__atomic_load_n(&c.tx_failed,__ATOMIC_ACQUIRE);
 }
 bool sendH4(const uint8_t* packet,size_t length,void* user) {
     auto& c=*static_cast<Context*>(user);
-    if(!packet || !length || length>sizeof c.tx || !txReady(user)) return false;
-    memcpy(c.tx,packet,length);c.tx_pos=0;c.tx_size=unsigned(length);c.tx_started=millis();
+    Critical guard;
+    if(!txReady(user) || !c.tx.submit(packet,length)) return false;
+    c.tx_pos=0;c.tx_size=unsigned(length);c.tx_started=millis();
     c.tx_hnc_credits=0;
     if(length>=9 && packet[0]==1 && packet[1]==0x35 && packet[2]==0x0c &&
        length==size_t(5+4*packet[4]) && packet[3]==length-4) {
         for(unsigned i=0;i<packet[4];++i) c.tx_hnc_credits+=uint32_t(packet[7+4*i])|(uint32_t(packet[8+4*i])<<8);
         ++c.hnc_submitted;c.hnc_submitted_credits+=c.tx_hnc_credits;
     }
+    c.uart->attach(mbed::callback(txIrq),mbed::SerialBase::TxIrq);
     return true;
 }
 bool setBaud(uint32_t baud,void* user) {
     auto& c=*static_cast<Context*>(user);
-    if(!txReady(user)) return false;
+    { Critical guard;
+      if(!txReady(user) || !(UART7->ISR&USART_ISR_TC)) return false;
+    }
+    // Empty is published only after TX IRQ detachment. The serialized actor is
+    // the sole producer, so HAL register/ack waits need no global IRQ mask.
     c.uart->baud(int(baud));return true;
 }
 void closeHardware(Context& c) {
@@ -96,7 +141,9 @@ void closeHardware(Context& c) {
         // Detach under the core lock before freeing its ring or SerialBase
         // owner; no interrupt can retain a pointer to the released context.
         core_util_critical_section_enter();
+        c.uart->attach(mbed::Callback<void()>(),mbed::SerialBase::TxIrq);
         c.uart->attach(mbed::Callback<void()>(),mbed::SerialBase::RxIrq);
+        c.tx.resetStopped();
         core_util_critical_section_exit();
         c.uart->~UnbufferedSerial();c.uart=nullptr;
     }
@@ -104,19 +151,24 @@ void closeHardware(Context& c) {
     c.tx_size=c.tx_pos=0;
 }
 void updateTransmitComplete(Context& c) {
+    Critical guard;
     if(c.hnc_pending_tc && (UART7->ISR&USART_ISR_TC)) {
         c.hnc_tc+=c.hnc_pending_tc;c.hnc_tc_credits+=c.hnc_pending_tc_credits;
         c.hnc_pending_tc=c.hnc_pending_tc_credits=0;
     }
 }
 void transportReceipt(Context& c) {
-    updateTransmitComplete(c);char line[128];
+    uint32_t v[10];
+    { Critical guard;
+      updateTransmitComplete(c);
+      v[0]=c.hnc_submitted;v[1]=c.hnc_submitted_credits;v[2]=c.hnc_uart;v[3]=c.hnc_uart_credits;
+      v[4]=c.hnc_tc;v[5]=c.hnc_tc_credits;v[6]=(c.rx_write-c.rx_read)&(RxSize-1);
+      v[7]=c.tx_pos;v[8]=c.tx_size;v[9]=(UART7->ISR&USART_ISR_TC)!=0;
+    }
+    char line[128];
     snprintf(line,sizeof line,"Owned UART HNC c=%lu/%lu u=%lu/%lu t=%lu/%lu rx=%u tx=%u/%u TC=%u",
-        (unsigned long)c.hnc_submitted,(unsigned long)c.hnc_submitted_credits,
-        (unsigned long)c.hnc_uart,(unsigned long)c.hnc_uart_credits,
-        (unsigned long)c.hnc_tc,(unsigned long)c.hnc_tc_credits,
-        unsigned((c.rx_write-c.rx_read)&(RxSize-1)),c.tx_pos,c.tx_size,
-        unsigned((UART7->ISR&USART_ISR_TC)!=0));
+        (unsigned long)v[0],(unsigned long)v[1],(unsigned long)v[2],(unsigned long)v[3],
+        (unsigned long)v[4],(unsigned long)v[5],unsigned(v[6]),unsigned(v[7]),unsigned(v[8]),unsigned(v[9]));
     diagnostic(line);
 }
 void stopWithError(const char* message) {
@@ -164,19 +216,8 @@ void radioPoll() {
     if(!context) return;
     Context& c=*context;
     updateTransmitComplete(c);
-    unsigned tx_budget=128;
-    while(c.tx_size && tx_budget-- && c.uart->writeable()) {
-        uint8_t byte=c.tx[c.tx_pos];
-        if(c.uart->write(&byte,1)!=1) { stopWithError("Owned UART write failed");return; }
-        if(++c.tx_pos==c.tx_size) {
-            if(c.tx_hnc_credits) {
-                ++c.hnc_uart;c.hnc_uart_credits+=c.tx_hnc_credits;
-                ++c.hnc_pending_tc;c.hnc_pending_tc_credits+=c.tx_hnc_credits;c.tx_hnc_credits=0;
-            }
-            c.tx_size=c.tx_pos=0;
-        }
-    }
-    if(c.tx_size && uint32_t(millis()-c.tx_started)>3000) { stopWithError("Owned UART TX/CTS timeout");return; }
+    if(__atomic_load_n(&c.tx_failed,__ATOMIC_ACQUIRE)) { stopWithError("Owned UART write failed");return; }
+    if(!c.tx.empty() && uint32_t(millis()-c.tx_started)>3000) { stopWithError("Owned UART TX/CTS timeout");return; }
     unsigned rx_budget=2048;
     while(rx_budget-- && c.rx_read!=c.rx_write) {
         __DMB();uint8_t byte=c.rx[c.rx_read];c.rx_read=(c.rx_read+1)&(RxSize-1);c.last_byte=millis();

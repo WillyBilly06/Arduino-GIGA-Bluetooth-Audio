@@ -32,7 +32,7 @@ def main():
     adapters = ['src/owned/OwnedHost.cpp', 'src/owned/ClassicProfiles.cpp',
                 'src/owned/LeProfiles.cpp', 'src/platform/RadioProtocol.cpp']
     for name in ('test_owned_classic', 'test_owned_ble', 'test_owned_host',
-                 'test_owned_host_review', 'test_owned_host_bootstrap'):
+                 'test_owned_host_review', 'test_owned_host_bootstrap', 'test_uart_tx_mailbox'):
         exe = output / (name + ('.exe' if os.name == 'nt' else ''))
         run([cxx, '-std=c++17', *flags, 'tests/' + name + '.cpp', *adapters,
              *objects, '-o', exe])
