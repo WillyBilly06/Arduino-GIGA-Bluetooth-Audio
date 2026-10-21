@@ -1,0 +1,1126 @@
+{
+  "schema": 1,
+  "date": "2026-10-21",
+  "qualification": "developmental source snapshot; hardware qualification pending",
+  "profile": "SBC and Opus; project-owned host only",
+  "arduino_core": "arduino:mbed_giga 4.6.0",
+  "fqbn": "arduino:mbed_giga:giga",
+  "jobs": 4,
+  "abi": [
+    "cortex-m7",
+    "thumb",
+    "softfp",
+    "fpv5-d16"
+  ],
+  "example": "examples/Receiver/Receiver.ino",
+  "isolated_receiver_link": "PASS",
+  "exported_library_translation_units": 129,
+  "held_codec_or_historical_host_translation_units": 0,
+  "compiler_input_set_sha256": "a9f4072f4990561432233e35a50364e168c4f8b3f55a3da6defcd4f437230fd8",
+  "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
+  "private_application_sha256": "af7e8a3b8f37aac5421e8462a21662e0d0897c6d114b104b3e7acdcf0e81e54f",
+  "private_application_bytes": 309996,
+  "elf_sections": {
+    "text": 305268,
+    "data": 4728,
+    "bss": 326656
+  },
+  "private_binary_not_distributed": true,
+  "vendor_original_input_hashes_checked": 174,
+  "vendor_original_input_hashes_match": true,
+  "export_safety_tests": {
+    "passed": 12
+  },
+  "exported_synthetic_host_tests": {
+    "undefined_behavior_trap": true,
+    "classic": "PASS",
+    "ble_checks": 237,
+    "actor_checks": 1032,
+    "actor_pressure_regression_checks": 932,
+    "reset_bootstrap": "PASS"
+  },
+  "target_execution_of_this_public_profile": "NOT RUN; local full-feature image evidence is described separately in STATUS.md",
+  "source_files": [
+    {
+      "path": "src/AudioDiagnostics.h",
+      "sha256": "0bb18c9d8f34d185d7289661b160e451a1ba266e4485460f6c2eb7252dd29b35"
+    },
+    {
+      "path": "src/CodecBuildConfig.h",
+      "sha256": "53bd03fdcb18ee393ae91a92adee00780ca2e6f5d3051e4f4a6a3984c49b164b"
+    },
+    {
+      "path": "src/GigaBle.h",
+      "sha256": "bebdd581de7fed00ba1d17477a41f50cae0692d9a83e77679caf3e888a23c969"
+    },
+    {
+      "path": "src/GigaBredr.cpp",
+      "sha256": "495b2a359d7fa6463ff31324d8234e66fb5c8f8be7c6da6672bb3cc60d7f0411"
+    },
+    {
+      "path": "src/GigaBredr.h",
+      "sha256": "92837e130cb6f658c16e1ce75dfe01b2b69e58b4003f0f64b460747e2e00b0b7"
+    },
+    {
+      "path": "src/GigaI2sOutput.h",
+      "sha256": "200f111a890e420c1e54a13adbe2bd6a09efbdfbef3faab1a5899469430b4c53"
+    },
+    {
+      "path": "src/RadioBuildConfig.h",
+      "sha256": "b2956e6563a7eee468056b836db95852176642d317e2f05cc7267a3375d2e1fd"
+    },
+    {
+      "path": "src/Types.cpp",
+      "sha256": "fc4265ae4a0bd6dfaf271ee74980fd2ccbc4059f84f72e5783d43e2ab6769ee2"
+    },
+    {
+      "path": "src/Types.h",
+      "sha256": "e429c71e5a5cac65e5828386a508fad3160feef6266b9d75cb742d15f50945dc"
+    },
+    {
+      "path": "src/detail/AudioTiming.cpp",
+      "sha256": "f3514594ba7afcf2cc3bb346f9a6519c25e538c8860686af825bda57d5f2a8d5"
+    },
+    {
+      "path": "src/detail/AudioTiming.h",
+      "sha256": "e4e5b507ff71fe37946b377e92ee0aa25d0b5f1c8b082f48515359ee7ce97432"
+    },
+    {
+      "path": "src/detail/Decoder.cpp",
+      "sha256": "2589b8b01118c6da74161f22240fc5cea28da4245c00c57f715c58a2a60aa99b"
+    },
+    {
+      "path": "src/detail/Decoder.h",
+      "sha256": "ae428c1a4cc804eaaeda981f5ca41939eded8f895c9c8cff34079081af3cafc6"
+    },
+    {
+      "path": "src/detail/Media.cpp",
+      "sha256": "966b324f10c1fe62f348865ac7269f931b08300a40f1b57233790e5e7585ab57"
+    },
+    {
+      "path": "src/detail/Media.h",
+      "sha256": "fec4e8d30e47848b21e93064c1f5acfdc6e5147b51d5e7eb6a9cfb0479a6e298"
+    },
+    {
+      "path": "src/detail/Memory.cpp",
+      "sha256": "5ee02bb36e3059b2c8a7e143db88e83fb56dc75f45e3c3997391752f676a2c88"
+    },
+    {
+      "path": "src/detail/Memory.h",
+      "sha256": "95bd30a8317c5b029ccd189b53e4bf268e3411e2b1417a51facbe92147cd318d"
+    },
+    {
+      "path": "src/detail/PacketQueue.cpp",
+      "sha256": "6bfa6fe26f7ba20162c8fe20326265808e5ab64f35d025ca7aa8fc5bdfd3e9eb"
+    },
+    {
+      "path": "src/detail/PacketQueue.h",
+      "sha256": "34cd2439b945162bdb12a474975751454fd985acf5b24cb2ec7be588807b2f15"
+    },
+    {
+      "path": "src/detail/Volume.h",
+      "sha256": "51848dfd5502dde898392a2854663403b8b33332127de9a59721a8a06655f728"
+    },
+    {
+      "path": "src/codecs/Codecs.cpp",
+      "sha256": "96e65479c1e8992813157b8d306b19bff980797c6c814a6bbd8729607c93fcec"
+    },
+    {
+      "path": "src/codecs/Codecs.h",
+      "sha256": "5c443a516f8c441177cb0a089d7665cbf0c71877c21d6faf5074c81fd62cc715"
+    },
+    {
+      "path": "src/owned/BleTypes.h",
+      "sha256": "db2c56c41786e04c9198811f3aa2fa07bfb1ef3b7354e217978f0e3c1ed750b1"
+    },
+    {
+      "path": "src/owned/ClassicProfiles.cpp",
+      "sha256": "29080ef4559a3be0ae1a4717da898078ced903a281467b7fed9225fd10236e77"
+    },
+    {
+      "path": "src/owned/ClassicProfiles.h",
+      "sha256": "97b405eb37f311422f801393fd751ac827e7e5ee04e9c439e80b15f528cbf546"
+    },
+    {
+      "path": "src/owned/core/bth_acl_tx.c",
+      "sha256": "81d560205e167414d7c541fbbf7988163b33f8a19760598e8a62b12d9fa9f72c"
+    },
+    {
+      "path": "src/owned/core/bth_acl_tx.h",
+      "sha256": "b89f41b9ee9fc7ee8daee4a249744b9e4893bc80f71faddba63ea35a3df74f65"
+    },
+    {
+      "path": "src/owned/core/bth_att.c",
+      "sha256": "13c7f8fd7a496a2b54a637a8baaef9c80268277c0e72b8aa8052e6d8b78cfc2d"
+    },
+    {
+      "path": "src/owned/core/bth_att.h",
+      "sha256": "ce10b9866cab1e367d167ebd944adc0485a63b6efdb370bf4c1a6af76a130432"
+    },
+    {
+      "path": "src/owned/core/bth_avdtp.c",
+      "sha256": "0d459257ffbd592aae4ec2c01206483d03dada75dc8591e43c2ffcd7e24b2f19"
+    },
+    {
+      "path": "src/owned/core/bth_avdtp.h",
+      "sha256": "3712f7975be46347a3b77e1686489eb2353ffbf6120f4a1f9bd007a2b7938a97"
+    },
+    {
+      "path": "src/owned/core/bth_avrcp.c",
+      "sha256": "09f325c73147c1984c8d67fbbdeb257859b0a9fc81c62e7e8ed98d03804dafe3"
+    },
+    {
+      "path": "src/owned/core/bth_avrcp.h",
+      "sha256": "e6d0518ce3903e38942dc5dbfbf95c4504d4b27105f7e40edd4398a743ca0ce7"
+    },
+    {
+      "path": "src/owned/core/bth_avrcp_ct.c",
+      "sha256": "ebd0a57aed80e864ee656c3c1f3fb0e9c51ae7f3a6a5f709b85371eee1593ed7"
+    },
+    {
+      "path": "src/owned/core/bth_avrcp_ct.h",
+      "sha256": "55e8afe7a928fca7ae89bc3209a4e74012c4a5eda4132db1f171440950ac845d"
+    },
+    {
+      "path": "src/owned/core/bth_avrcp_link.c",
+      "sha256": "094c955f5eaee2a7959e19eac718428a6d40d73333d191e93904e23944298c45"
+    },
+    {
+      "path": "src/owned/core/bth_avrcp_link.h",
+      "sha256": "67a4c986cf44f94efb96958e6730349534f443f2ee551b4111f0dd98b9ce49b5"
+    },
+    {
+      "path": "src/owned/core/bth_capabilities.c",
+      "sha256": "7b5d241bc67083dbd0ed03330c138a9f100d961185d6fba03400178568df0dba"
+    },
+    {
+      "path": "src/owned/core/bth_capabilities.h",
+      "sha256": "8d7c149ac1055f1890b08480a3f48705e257b6c22544b1d3947a7099426f7fae"
+    },
+    {
+      "path": "src/owned/core/bth_cmdq.c",
+      "sha256": "d1d73eed1584cfc9a9d58fbdc2b30fd911b8874861029eb6ed9f10428215f260"
+    },
+    {
+      "path": "src/owned/core/bth_cmdq.h",
+      "sha256": "1fece2e3969ee0a64ccffa7fe91b418403d0466f2f5e23137395bccb2a28212d"
+    },
+    {
+      "path": "src/owned/core/bth_control_tx.c",
+      "sha256": "4589d51c04871c660446ff84377a2799df9bea63996b795ab851257f0aebc72b"
+    },
+    {
+      "path": "src/owned/core/bth_control_tx.h",
+      "sha256": "f19db356492cbfcd46aac294ea428a347188258c01eb6c94ea2cca9f8a59e76c"
+    },
+    {
+      "path": "src/owned/core/bth_gap.c",
+      "sha256": "2de4ae53c09cc4893cdea543fb19a71d5e4de8b61ce9445b8cae4e70377d8560"
+    },
+    {
+      "path": "src/owned/core/bth_gap.h",
+      "sha256": "66691e5cd4a7d08e957ab6627a0165c20b2894db97c92894a835fb27f5c8432c"
+    },
+    {
+      "path": "src/owned/core/bth_hci_flow.c",
+      "sha256": "6a966739a569cbf1e19bd13454ef00a844c0ef5e73f2644346dfacd2d3b6b6da"
+    },
+    {
+      "path": "src/owned/core/bth_hci_flow.h",
+      "sha256": "64f331e2bd3a6eeb15af4e716b92f16c9c00067c2d6b0a5324dc4aec316628c2"
+    },
+    {
+      "path": "src/owned/core/bth_init.c",
+      "sha256": "543cafbbb3ede5ed41490f095fb932df8294f6e3de5aa521c4e64b64352fcc13"
+    },
+    {
+      "path": "src/owned/core/bth_init.h",
+      "sha256": "6c26f593a7283333d338134535a235c668d870a0a6ccb1a85d4065e83e822921"
+    },
+    {
+      "path": "src/owned/core/bth_l2cap_rx.c",
+      "sha256": "be0ad028e3cfff3250d64a3c77e84e1c36a4e0930b7dc9ce9ea729c822c72eb1"
+    },
+    {
+      "path": "src/owned/core/bth_l2cap_rx.h",
+      "sha256": "fb39deedcab912480c7ee33a74a62b996007b554c0a0d89a9828ce282c0ad7b2"
+    },
+    {
+      "path": "src/owned/core/bth_l2cap_sig.c",
+      "sha256": "07a220853d9f68e132c9a7888fdb1ee0af7075006a08b15b13acf6fd100e43b1"
+    },
+    {
+      "path": "src/owned/core/bth_l2cap_sig.h",
+      "sha256": "ea593a37b949ff34f6e5de57cc3e14116b432dc4e29d77c3f1ac8e1dfbd45d19"
+    },
+    {
+      "path": "src/owned/core/bth_le_gap.c",
+      "sha256": "213d6a55e63ff4e7f494651cc7ba7d16b5b07f549d0f90838ee6ec87c5b48f8d"
+    },
+    {
+      "path": "src/owned/core/bth_le_gap.h",
+      "sha256": "8c7ad91f46e7bab2376bf5e9c7cfe71a21a86f927c97f2a01a6898f7de2dfe29"
+    },
+    {
+      "path": "src/owned/core/bth_le_transport.c",
+      "sha256": "e3c8b02cab8d1bdd372a3c13f1ebb761c63579cec632f2f4ab7c4a1447c838e1"
+    },
+    {
+      "path": "src/owned/core/bth_le_transport.h",
+      "sha256": "f5d4fc078eab3001dcc619ebf37cb58051502fe43f4d9163ce258421690edb82"
+    },
+    {
+      "path": "src/owned/core/bth_links.c",
+      "sha256": "1cd7cad4eb85bd9231bad7920b4df4cb78f7f639c59a276778db5707b1873f87"
+    },
+    {
+      "path": "src/owned/core/bth_links.h",
+      "sha256": "c82e173dfa29b7a6fe70aa75c8431c605b8dd4a650450dfadad68ccaf9adbaad"
+    },
+    {
+      "path": "src/owned/core/bth_media.c",
+      "sha256": "9131d21a2a1e99c4b1dedd5ed000aad7d9768293b5dc52067819bd3f98833ed8"
+    },
+    {
+      "path": "src/owned/core/bth_media.h",
+      "sha256": "fe550f6dd37d80027688ec61b45912941dba588ee20e29a27d95f8517051911b"
+    },
+    {
+      "path": "src/owned/core/bth_packet.c",
+      "sha256": "0e06c9780550b9da1a5da45f66f6c2b9fcbca017e4a8d076d641b2b11cae0822"
+    },
+    {
+      "path": "src/owned/core/bth_packet.h",
+      "sha256": "83fd29c76fa26c61dd610b3e15cfe7b7ad5a398d6828978d96a75d6671da0ee1"
+    },
+    {
+      "path": "src/owned/core/bth_rx_flow.c",
+      "sha256": "854dda6bba5be6a1f6c29d54d1afbcac7776b2dfa0c6f87b10d5a6f19dcd72ac"
+    },
+    {
+      "path": "src/owned/core/bth_rx_flow.h",
+      "sha256": "b8f023bea6196f4ab03f0c4715727b9a16a37238354ca83899febffba93100bc"
+    },
+    {
+      "path": "src/owned/core/bth_sdp.c",
+      "sha256": "345fbfe638601e5d05b463658f02e162399e4d0ff9bc4779d939c4d47ebb3777"
+    },
+    {
+      "path": "src/owned/core/bth_sdp.h",
+      "sha256": "a7f77ba5f99d2f81c2facec03c91fd47c816101147b80f4dde03890ede449d18"
+    },
+    {
+      "path": "src/owned/core/bth_sdp_records.c",
+      "sha256": "86f7c8037ce30bb0dfbb802fc499119d572bcf18ca726444de7ce263c949efa5"
+    },
+    {
+      "path": "src/owned/core/bth_smp.c",
+      "sha256": "9b40106340c7ab08ea6befa33b1ffc5f964a40add133ba467189078d59fa36e1"
+    },
+    {
+      "path": "src/owned/core/bth_smp.h",
+      "sha256": "8c2826cee0661446e00eca98bdbb95f1e06e487443681128d4bd4b971aacc663"
+    },
+    {
+      "path": "src/owned/core/bth_smp_crypto.c",
+      "sha256": "4491d6a3b465f3f3f2bcceeaae892a4b52388e61bb0398535c7c0523c7e3700d"
+    },
+    {
+      "path": "src/owned/core/bth_smp_crypto.h",
+      "sha256": "b211d22fb3261ca3866e5f2c62d04c92fea711ee9b600281176711d8ab703e9d"
+    },
+    {
+      "path": "src/owned/core/bth_smp_ecc.c",
+      "sha256": "01cf026b424719c89de987c7d08e7d680c346049a348d52bf29f7018bd130b42"
+    },
+    {
+      "path": "src/owned/core/bth_smp_ecc.h",
+      "sha256": "0b21c3da2f211be782a47ec866b1cb27bdead8222cdee6ab358cde2c2dd32611"
+    },
+    {
+      "path": "src/owned/core/bth_speaker_gatt.c",
+      "sha256": "d2072ef9166a05ef2632bcc365ee8ffd2c36a9bd707dcc106f9785929047a262"
+    },
+    {
+      "path": "src/owned/core/bth_speaker_gatt.h",
+      "sha256": "2b7bf203858032e532fb6241978a5d18ad72db42c5599019337b732e9877a12f"
+    },
+    {
+      "path": "src/owned/core/bth_spsc.c",
+      "sha256": "b16721750fc5ba6227ab1f55ad744c1d761104e179d2770a206a4a09d8fd5a82"
+    },
+    {
+      "path": "src/owned/core/bth_spsc.h",
+      "sha256": "5e74aec1c4bfe483d37393e9b0c96e25879c89c384f99932b3814d4721ea357c"
+    },
+    {
+      "path": "src/owned/LeProfiles.cpp",
+      "sha256": "7fb7807fd8384ede178855bda92ebaa7298367b50bffea6cdeceee30fb0b22ed"
+    },
+    {
+      "path": "src/owned/LeProfiles.h",
+      "sha256": "3e7ae42b81480e162385c45722b83e0f96883692c92f71ab027e2933a70f3733"
+    },
+    {
+      "path": "src/owned/OwnedHost.cpp",
+      "sha256": "58723a83ca41bd158b8486a9d029ebab57fcf27b1504620a4943f8720d137d87"
+    },
+    {
+      "path": "src/owned/OwnedHost.h",
+      "sha256": "dc0ee24888bfee386ce55e991192a18dc159d6491b679d2b48354708443c29dc"
+    },
+    {
+      "path": "src/platform/OwnedRadio.cpp",
+      "sha256": "bcba43191a4943508e43856323e332fe0f115503fc42832de449ee3b2466a41a"
+    },
+    {
+      "path": "src/platform/GigaRadio.h",
+      "sha256": "211e3a01b27bd77c2f216768c8e7b8b19565f43a02fe47235de28d7f537fa6d4"
+    },
+    {
+      "path": "src/platform/GigaAvrcp.h",
+      "sha256": "5cc156fdb761120bc4f831c8e9adca4eeec330905cde07587d3654a05d04777a"
+    },
+    {
+      "path": "src/platform/GigaI2s.cpp",
+      "sha256": "3c9b2138f8ca076fd6a227b730bd52314f83473d64b23e53ebf2c51630b3afc6"
+    },
+    {
+      "path": "src/platform/GigaI2s.h",
+      "sha256": "2a777be674dc0603a6fdd09b591ff180b3d435c8d7ff4ce869e20634ff0ae245"
+    },
+    {
+      "path": "src/platform/I2sBuffer.h",
+      "sha256": "fa870a3896c6d1d5cff5562eae5516db97692c0213850ae9dd677ccd88d2828e"
+    },
+    {
+      "path": "src/platform/I2sPins.h",
+      "sha256": "d9adf456fbfc39549cbdc486ec8a0a4fe49f40edd305bb97ed46c13aad145b08"
+    },
+    {
+      "path": "src/platform/RadioProtocol.cpp",
+      "sha256": "999b87140d6344aa159af91ee3dd3235ed19beb1034f072e8c36cf2028d81811"
+    },
+    {
+      "path": "src/platform/RadioProtocol.h",
+      "sha256": "145a093016f7427b4e71d57dc02a0c1f40587d213d603f17ba09e502c6ebf6fd"
+    },
+    {
+      "path": "src/vendor/codecs/CodecPlatform.h",
+      "sha256": "dcbb2d7ec3936e9bf8ede07bc0a355a453b8a61fd196d99fde1cb5f39a2e5b46"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/Compat.h",
+      "sha256": "8ac3d5419e6967ce5a5d6380a53f7582d9adc54b44ffce3951e3832b8894c92c"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_assert.h",
+      "sha256": "bb57dc32674946765652a2f9c8c96ba43c2be05263c3a17c971c35d9fb61dddf"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_bitstream.h",
+      "sha256": "1fb69b6e3777a4e782a3186d140993985521e92a690603115c68feb842cc5929"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_bt_spec.h",
+      "sha256": "7ee77fdacda11cb0cd8d09d5a06dd9c25a1473ded62bac1f1f3b85441c276fff"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_codec_sbc.h",
+      "sha256": "ce7dc1330e1f3109f530f86a2606a1709b3ff790df3d2c2d747c01a353fea4a4"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_codec_sbc_private.h",
+      "sha256": "9a02e0e5f37f9ab7daed9c160e9314cd86483926003c764ff6739379ef14f746"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_common.h",
+      "sha256": "2418056716ff28a82a5bb35f5821f6f0ae84780db4717a12fbc322418749559e"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_cpu_dep.h",
+      "sha256": "18e1f78b3fb3289dccd18f8036d5ec29e241af297a553f2b641cd710bc1f3137"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_modules.h",
+      "sha256": "381ba68b7c341fab6c6f890c5203f2fb217e08d810e3b1f5518c08ee5f145bff"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_osinterface.h",
+      "sha256": "01bb6ff7ac7a055c4389e24822207fc297fac6e75a61bb9422c818bf86816739"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_status.h",
+      "sha256": "df364028e17d0cca2b90d84b8e997228a447fe025001805e5d7d831f3670e17a"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_stddefs.h",
+      "sha256": "9b99bb6249fc406dbf8282ef3ef08cd42f93c64a7fb8102edfd96ae516e640a6"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_string.h",
+      "sha256": "dcb6c8086dfbdc5875fac2c9646979391632f70a2cfde26f014f274b56c8469c"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_time.h",
+      "sha256": "2ba3b3108edf75338c8b189f167ebf55c6e5928170b9d6f7bc87a6c64062a1ce"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/include/oi_utils.h",
+      "sha256": "942f4471c90ff91a62c22ced9797a6d7b1b8443952e655fd256734050b0d2b7b"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/alloc.c",
+      "sha256": "a4df232184b4c47543a71f6d1ac214eb146559cd6be1a0b94c0016aa02cbba5f"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/bitalloc-sbc.c",
+      "sha256": "0fbccf660215bf287225070ae7e883fb815628da5e0f966f09f3cb1d48784af5"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/bitalloc.c",
+      "sha256": "ada74eae93b4334c545e38c83f6b4c5f09cc20e2c4325860b96c06472a23dda0"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/bitstream-decode.c",
+      "sha256": "2cbf2c7936e2f974d2c3f7b9739140f7a147d32f56efd37054fbfd9001363a14"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/decoder-oina.c",
+      "sha256": "95e127554b412a25e71db90e1424eb24ca194e7ad4b8686149cf7091a96bb228"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/decoder-private.c",
+      "sha256": "e320cb9361dcaaee6f4514d7f1d7d9c4e35131cd157796b82ccac2a0c10ac926"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/decoder-sbc.c",
+      "sha256": "349a892cb838ad2c8115879677ebed3c2187d4e1d56e5935a6223aca1d16070f"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/dequant.c",
+      "sha256": "f0d75a292313072830891b58aff3239bc2cb7f3025d078ca7072fb0a1eef53ea"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/framing-sbc.c",
+      "sha256": "3bb92a0b572f64c0eb992e46d689c2e36b3d6ca1fc1e4d4e313dae6f7fb651a4"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/framing.c",
+      "sha256": "15dce2ee655c7bf3c09673358f4b7fc65713174e19a665ba48fe476d0b7142a0"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/oi_codec_version.c",
+      "sha256": "75c3e922cd7064c447f8a57997b92af344089aeaa243bf0723419ef62a5e5a3a"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/readsamplesjoint.inc",
+      "sha256": "007653294b974a984102c4285aba5ea54d971d484db2daf9064ce3aaf8273317"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/synthesis-8-generated.c",
+      "sha256": "159d4b27875587520cc74ada5b070bdd96abf93ba51c047be2de213c2861da65"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/synthesis-dct8.c",
+      "sha256": "e3f1dc25418edfa9a5a2b2a47b1dd652cc7c97637558b0e1ab316e9349c42786"
+    },
+    {
+      "path": "src/vendor/codecs/sbc/srce/synthesis-sbc.c",
+      "sha256": "3af1936f341b9b7830fc87357c8795a02c183863decf9b20d310263aad697ecb"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/_kiss_fft_guts.h",
+      "sha256": "ac8c6e6584cc459ac23a785d328cef52d3e575421cb1db3fcd3fdea1280d92fe"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/arch.h",
+      "sha256": "b5fc3e600d2b9489bbc9b3c09f50ee2435a98f8d9408bad720c56498e027615f"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/bands.c",
+      "sha256": "11382fef5ba5d1542a0b7319ac4125ee434e869e85c12957a6a71ede865bc457"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/bands.h",
+      "sha256": "c0fa88fe0a8087e0eb4078ba4500cde62584df143928ba8035be0070bbe778c0"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/celt.c",
+      "sha256": "6633fac0528168f6a41412ae610ec09569695ec33cf06b3972bdb31248c1546c"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/celt.h",
+      "sha256": "795deaefc6276d09117217a6fbed13fcfca943009fdc2bb4d83bd897669f08b6"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/celt_decoder.c",
+      "sha256": "f0c63456b8636d2b016460b26f4039f20d1490bfc65724b7a6f5b1bdc47c73a3"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/celt_lpc.c",
+      "sha256": "cd1d230dad3278fadb956b75c3dcfbdf5d23813df5afda60b12326f211027f20"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/celt_lpc.h",
+      "sha256": "0faafb93241a362595620c8fe64f7e2755e99dd6ae6e539594e537dbf9a1cf58"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/cpu_support.h",
+      "sha256": "3f86f85a6c1a6beee704eaffec2dc84ec834a398e79652228153f12ad34ea2e8"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/cwrs.c",
+      "sha256": "8c62cf4c27d5ab3505e16aeef4cbd904faf1057313958b0d85732370bf3139d7"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/cwrs.h",
+      "sha256": "6eac7a2053d9b5080c7e7210b69b620a49b49612c75be486061a1e3aadd9b0c3"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/dump_modes/dump_modes_arch.h",
+      "sha256": "4ba014c969b6dc2cd48a97908806fcc1f803c0508c56e5150b779d84f53d7cb4"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/ecintrin.h",
+      "sha256": "ef2f8e5e99c0271c78d93e6b7e1905a84ea66aadeaac85b0fc49b94b36d3117f"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/entcode.c",
+      "sha256": "5dc41441df752469275e675e535a7b168594c04abc7cc3b1dab045c109d2813e"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/entcode.h",
+      "sha256": "63e0d78badcd2fbc4970913eb308744d6181560e939fba7fa6d1e8076aef9e83"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/entdec.c",
+      "sha256": "02099009c8d2752e9b67299c568bd21eb0cd668b96d24301bb59f9793750724c"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/entdec.h",
+      "sha256": "a7a70dcc1848c891aecf16fe499120a948559bb8c84eb263061ede26c84ee372"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/entenc.c",
+      "sha256": "baca1c0bab4f7c131240cbb3f2916ba41c69c898e08d6a8f509137d22ef96190"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/entenc.h",
+      "sha256": "90f1bcc7b41c733400639eff6e104fafa7833e8eac292cb359988720a505f870"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/fixed_c5x.h",
+      "sha256": "5a3ad6d7509e625f48ac36b17a8656986d529cf4efd98b50d9979183d429d964"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/fixed_c6x.h",
+      "sha256": "152f3d9af3056d226ef357bc43a4a7842e4bef1be26087f197438d7f1f76f97a"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/fixed_debug.h",
+      "sha256": "d2dd246faeeecd2f481d51b12aff16ecd05ff0e1f207ef4942d0a316019a5cfe"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/fixed_generic.h",
+      "sha256": "7869f7bb9599fcf181f55df3b557dbaeec0b21a1b7c4d7487829901a2de8b131"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/float_cast.h",
+      "sha256": "bd63015d91c3ccfc099fe636d075f6ad9300d8afba3970e27018c41daf44edfe"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/kiss_fft.c",
+      "sha256": "e47d1421a9604dce103cea3ed78784d042550ed6fbb3989df3abef7247302056"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/kiss_fft.h",
+      "sha256": "91a3ba74af774f6add455620467be9a94ae35f7ddc75da2081ece55ea37f6a0f"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/laplace.c",
+      "sha256": "05378e533d9132d36e5f34f8fff56ddd2817c9b55156dfd304740fda65d9cacd"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/laplace.h",
+      "sha256": "e22de4a8d7bc0df47c7bccae638954ea6e75edc56bd3f16ff083e1be1b85b27a"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/mathops.c",
+      "sha256": "e028f5338f1f1815ff140f0b0b8a3d185458bf47dbbe263e87455890fd48c0fa"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/mathops.h",
+      "sha256": "3a7edf015d6fa1a49351bcfa488d3de88118ccebc0c08bd16154d014638aa173"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/mdct.c",
+      "sha256": "abed266c692eb3926260bdbe4194ad00730ca62db5cfe00cc853cb10fa61d976"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/mdct.h",
+      "sha256": "1359ba70aa58aa8da46a72469d4b6044ddc352f9de54c224b0a092c997601ed2"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/mfrngcod.h",
+      "sha256": "006526bb7224bde4fb0c1d113c85af6750dff17446c96ca8ef756c09105f8b36"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/modes.c",
+      "sha256": "de961dfdc642fdf0419b2990d3ed0fb35db42e5df96b098c99a5c6a3a4e4590f"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/modes.h",
+      "sha256": "782a458c5b2590e48379b1a56ff808bd938bff2a89e003f4893c631b3c7ed8e4"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/os_support.h",
+      "sha256": "43c4c6d31fb30c30147ed1b00b4990eef632b89ba3aec1a175825405d45a6587"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/pitch.c",
+      "sha256": "c973bdf9d86ca6727a62e42a892af2b5457a27a576a0cb145cc87609677827ff"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/pitch.h",
+      "sha256": "167997dc38c5683e7bd29ec9c82cb35afbca1f943c81a374de0989af4b28e396"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/quant_bands.c",
+      "sha256": "c60504a23237de1334df38ba3e19b5aa137abb4f3f4c1567cc9217f94bea58e5"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/quant_bands.h",
+      "sha256": "4b96f2eaa428f2d40d459c847237db577209deadf6f6d357ccd2090292c3f279"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/rate.c",
+      "sha256": "4b94b6f58ebc1f46b2fc2272e5e6e632194d2ecc3a6751ba8d7f66e3451533ee"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/rate.h",
+      "sha256": "0070e9011f4162fa0dd35c71ffc8ff74da34ea5fa05c546e8529991ef223d530"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/stack_alloc.h",
+      "sha256": "36f4e2a6e425207528008a53adc8f13702d910f9cda2bc55d8cf96d57df0a119"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/static_modes_fixed.h",
+      "sha256": "daef6915f5a50a4641acdcd2615b8fb67ac78c4a321b4d0f1931e7341ccccac0"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/static_modes_fixed_arm_ne10.h",
+      "sha256": "c47c5de3b39b84a35cdbe488a0533a74aacffc320a448b6cc14c8dd1a0a9404b"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/static_modes_float.h",
+      "sha256": "c4e6fc09463ab99125e4cc815ef61ed20e8203d55bdcb10c32e5b8be06fbe09f"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/static_modes_float_arm_ne10.h",
+      "sha256": "4469c34ae1f02bd41f19af976978b5ae0399c6318ab340545c575a66afee2f16"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/vq.c",
+      "sha256": "666d58e1dbcd9847437ba95995040f24fe65ab74eb0070a773ad4d1487510b31"
+    },
+    {
+      "path": "src/vendor/codecs/opus/celt/vq.h",
+      "sha256": "ec6bb6ccbfc4b4f59537bb97d071557b058b6080bd789e3e719960a3aa01ced3"
+    },
+    {
+      "path": "src/vendor/codecs/opus/COPYING",
+      "sha256": "01e1167d54a096d123cf6dfbbeb19587278845c6481d2d66d545669846079551"
+    },
+    {
+      "path": "src/vendor/codecs/opus/include/opus.h",
+      "sha256": "7b73dd9da955cb583c6ecb2dd94194561cfa09cc254e5748a617e7a67b0d06b2"
+    },
+    {
+      "path": "src/vendor/codecs/opus/include/opus_custom.h",
+      "sha256": "e3ea89c87de6dd380bc2e1425d1c63622b20a0546a80aa38798a21f55089892a"
+    },
+    {
+      "path": "src/vendor/codecs/opus/include/opus_defines.h",
+      "sha256": "1d435580f45e07e2951d284cedd132cadc7e5615fd024a7406d82d73211c2cb9"
+    },
+    {
+      "path": "src/vendor/codecs/opus/include/opus_multistream.h",
+      "sha256": "81794b9425c669d2f7761057d6033d2ff41a3e1c5a5a7f35fef7f8e1d77949b4"
+    },
+    {
+      "path": "src/vendor/codecs/opus/include/opus_projection.h",
+      "sha256": "b7df8843500d04cab1170da7b17271770106afac4d9ec1b553719325a2a55e3e"
+    },
+    {
+      "path": "src/vendor/codecs/opus/include/opus_types.h",
+      "sha256": "d418fe31d26babdad9bfab2719730ab64787ecb2c1aaf105eb6c9d930f706214"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/ana_filt_bank_1.c",
+      "sha256": "8a1cff98fd86caf95d2fad973e8f57b3bd537bc4735e1e74816cf3a4fafa17d9"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/API.h",
+      "sha256": "d341670843ce04286c57eb58f426ed924c7cf6fdc85af89607a6d818e5ebfd6e"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/biquad_alt.c",
+      "sha256": "d89088ff3913eb524f32f8dbded41c769535b2816dfbef731d58add937e64122"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/bwexpander.c",
+      "sha256": "b94c6e213597d748e9ac55d0ce451d0be1e591a4ec7531bb7f180ebb53f0152a"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/bwexpander_32.c",
+      "sha256": "4282293bb67780327a4a48118a9204ca710d7425a73c719777a30eb8e30db492"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/CNG.c",
+      "sha256": "9a30bfd1f5d45bd1c67b41789d52daaf586ca2956819846acb93e20d5b81ca1a"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/code_signs.c",
+      "sha256": "a3f68a2772ff0cb20c35fd39423e36c7be70cd72e01fbda70bb0c3b48b4da363"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/control.h",
+      "sha256": "2cf1be9607d47d09e00102d51b58fd5f51eb1604efa304699d775be1f04681dd"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/debug.c",
+      "sha256": "584cdd5a7a76a811cf62752af8c0e8261a9f565e3ad766ed4f998ea79b5511fd"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/debug.h",
+      "sha256": "5c233de4f1446e34b6985a2a7f6f7b141fb4f9e041f1b34067c942b36db14de2"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/dec_API.c",
+      "sha256": "98c2531e019f280c16733416bf4dee18fa08a6031d3db3d7f4c8857d23e473ff"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/decode_core.c",
+      "sha256": "3283e1d3b588cdfc46bed8eb480c3646e8db0495d4e853713d384498b19ad8e7"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/decode_frame.c",
+      "sha256": "fe80f485a0ee4cbc674a9d2ec22dcec0287667be2424d80296ca76733987f918"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/decode_indices.c",
+      "sha256": "c01c16be1d65701a40d085008dba84a06918dcf097e0bdf596a8637ed4847a1f"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/decode_parameters.c",
+      "sha256": "365c0a6218032caa16438463b7b183570951892636b7bc5222d5f815d755b64e"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/decode_pitch.c",
+      "sha256": "0bc5ac2697f8651e825aefae075b47002d600522ad8b17c3e84d4642900080f6"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/decode_pulses.c",
+      "sha256": "8a5a66aff1e149e72cd6785ed1fe04d165bf6c4f6ab02f3e5b7f7fc4813d1191"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/decoder_set_fs.c",
+      "sha256": "3af90b3ce3fbf2fa691082788c3dc10cf2b5ffaaba4c6b26ee8b571d0b39354e"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/define.h",
+      "sha256": "7f8b3d9f80fbe69f789cc6f1cfeb9877d4989017d86346ed24ba81d0257ffd50"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/errors.h",
+      "sha256": "8649c44074820b134b407d5d242d047b2961e522ae55561b9b1f080ae1719e40"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/fixed/main_FIX.h",
+      "sha256": "90ba8a1d26e68ad4c6a1a56c200a10710b31186598d031f91545164c984418f6"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/fixed/structs_FIX.h",
+      "sha256": "566694fca201eed6bac21e59bc8fdb21f80ac0f066e0bb12c80f433d0af9803d"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/float/main_FLP.h",
+      "sha256": "06c3078e884ade26d8de7971b29e3404d0bef556d006660f48b66a29044df16e"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/float/SigProc_FLP.h",
+      "sha256": "d38002572c0f0f18cb8fd5ec9c023c3865db1a2379cd99fe152b8da3b5951f81"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/float/structs_FLP.h",
+      "sha256": "e5c741cfe16df8f37f0c290b4ab12c73c4d398b9e648e9e6abf19afb6d71980c"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/gain_quant.c",
+      "sha256": "857cc9683fa1d66242f036a353c404f4dc79d2bfea1cb5253342193df36ba527"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/init_decoder.c",
+      "sha256": "da2e0e4798487e87944859fd65e3874cc0ac5eeb167601171c8140cbfb247f44"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/Inlines.h",
+      "sha256": "11bcb366c4baa60c13993cddf5dae19a1a86f1da693bc064cdcaa66debad6fe5"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/inner_prod_aligned.c",
+      "sha256": "d641691fb4d02ca2ff6615e15d8834225a1b6ad563074d440034929a06984e6a"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/interpolate.c",
+      "sha256": "0b3d087811cf8d1565918aa367c96f08075fc91532bb5f3615e7fd36313b364f"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/lin2log.c",
+      "sha256": "e1ab93cd7c937a3b02faca7dff436ebe1fe3e5a5978e369c7657a212a7b94cb2"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/log2lin.c",
+      "sha256": "0e516a05f92f94fd741172a2e5dfbba7a495da299de64b9d095751e81817624f"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/LP_variable_cutoff.c",
+      "sha256": "fb0518fcdb6f04854e2d4e4ab44c5d3219aa8025feefe23a4ba9f18d4f1d3303"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/LPC_analysis_filter.c",
+      "sha256": "544652d13470a9e3c4b2294fb8367a8b6d036e92b36f96c0fc295e8264a29e46"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/LPC_fit.c",
+      "sha256": "ef97c2c84783cde85312cfca97401e0a836ae221b18984513af066f2acff6db5"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/LPC_inv_pred_gain.c",
+      "sha256": "12d6c24f33a1999abd5c300095c72636452c76672d06aee8a976ab674c75b850"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/MacroCount.h",
+      "sha256": "7015f7cdae746d81d39955a7a4f99004713bb1003a5817cc698ce74ef2eed9fa"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/MacroDebug.h",
+      "sha256": "1578db64bf61c709587551ef3ba2be95b98be696206c04374da557c82f5ff26e"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/macros.h",
+      "sha256": "f7796685605d2bbad7593f54aea4c4849718ea3c7db5686995f50a7a7aa62470"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/main.h",
+      "sha256": "ce728cb4966a020a64a7cb5923fbfb351ab4bf2e8cf3a48b6f222db99f6f5d49"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/NLSF2A.c",
+      "sha256": "4ba3f8d725d76cbe121fce9ea74030479510ff176b8efa077934597b7d42815d"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/NLSF_decode.c",
+      "sha256": "dc86b04e86bfbc1a3d5068436bb0900a56cee79835560c64fb8a9c4e984e9a9e"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/NLSF_stabilize.c",
+      "sha256": "94fa73207f11ef90a624a9f3005fad5a07b5326587948c2d5a2fa7ea8fb05872"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/NLSF_unpack.c",
+      "sha256": "80983978c93f12f026d6447941e1c7e6fd66f86e32ab1840d4f1b9842693c9ef"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/NLSF_VQ_weights_laroia.c",
+      "sha256": "eef44fe16976b6a4c15d997d62b9c41e9b4f76d1013accbf1035064b290f5cb6"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/NSQ.h",
+      "sha256": "350b3781a40a6de58ef882539ad785de71c0de3536c7aed4cc346b3d87355161"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/pitch_est_defines.h",
+      "sha256": "66060135dfb5ccf61f17be648b343fe231e265139d20c43344aa45bb28cb7ab7"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/pitch_est_tables.c",
+      "sha256": "9ebc11d9d16a13e4a537778bdf7de30c9272585fba7939316ad834051a34aef3"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/PLC.c",
+      "sha256": "4343eabf275c53c8ffd6e4296567004ece3174d350650092dd056084b45c4936"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/PLC.h",
+      "sha256": "6c77462386c3429f35029620b9d11ad0c32ce8b3829fe622eef20419082aca6e"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/resampler.c",
+      "sha256": "68b0028169922b897cebc15df78b3fa2ed87998c6b596aa81bc64c928f2c5235"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/resampler_down2.c",
+      "sha256": "a5c2ac96d6f9a8527a7c0c8556c2ea62ccff313dea22e60532026169328bba7c"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/resampler_down2_3.c",
+      "sha256": "47df1bc72d95e4de75b185ec243bd940a63d0637ca3870a63c5eaf9dac714412"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/resampler_private.h",
+      "sha256": "4da955a57729f789d43d53d25a038921bb3dc5b9559219e1bb751e01c920d4b6"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/resampler_private_AR2.c",
+      "sha256": "3f4ed5728bdfc4fb35d0122a79188186eaa0bb80f8431b55b8303eb0f89c0293"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/resampler_private_down_FIR.c",
+      "sha256": "e8a69ac268525613aaa926be0d6a52ffec7df219d1d371514e36f1b3e9c84e9c"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/resampler_private_IIR_FIR.c",
+      "sha256": "912b49095277ed6b9d41e586ad83fd07540843fb8752d1a7502d603bf969ea34"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/resampler_private_up2_HQ.c",
+      "sha256": "1ac4e57cb2bbdd86a147c2c79fca5849addeff0c36f0b3c32bc9c053fa1932ec"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/resampler_rom.c",
+      "sha256": "773f3086088f89651ac3103cf5491a937a201374fb838f1809b5c25ba99a7f6d"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/resampler_rom.h",
+      "sha256": "7f0535d72fe349770c306211c9452498cc08021e25633c2f80dde97216b2be20"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/resampler_structs.h",
+      "sha256": "748cfc96bf0cd3d042897a4f11ad22cd7eb13d90528e597d3c79f1b4535684d3"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/shell_coder.c",
+      "sha256": "1e499e748f3181e6ebddf4e78007fd61f6e6f7a25916c05152b2b2db1c49789c"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/sigm_Q15.c",
+      "sha256": "ddba94e9db3dc6819ab1a7061367f51be616d91df20cced8c431b3967fde5345"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/SigProc_FIX.h",
+      "sha256": "55b097a26fb49b8f5e779faeface7918b73d15c2ef74fd25afdfd57e34f9aee7"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/sort.c",
+      "sha256": "18ff53ed637bad875cf0e6b9e427c5759c57a90aaf588b0fdf94c1ef01f4f056"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/stereo_decode_pred.c",
+      "sha256": "a0d7d6bbef40186b2f290076a1a928d28815e1c822b9abc48c78c0288ff44a32"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/stereo_MS_to_LR.c",
+      "sha256": "1b53a5164fc957bc647e922fbca3cda7308b28f658dbb56e06aeb17b45212d6a"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/structs.h",
+      "sha256": "67467fbb36a4da0c581644b57035bb032e85b86d2ede19325f3c675b8967cfcf"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/sum_sqr_shift.c",
+      "sha256": "b9ab39df5c882d9e520d231fb6c0cbfee4bcd52500b0f84cce0532e8dc609b89"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/table_LSF_cos.c",
+      "sha256": "8f0d231ee33c9981b8f397f48f63132a9752a343de404c52b33105ecdf68b85d"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/tables.h",
+      "sha256": "b3a2838f07b692f88c928ddc4ffb8bdcf35f8335a8297e33955a124f3cc6daee"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/tables_gain.c",
+      "sha256": "6ca1af2a1d3a9fc422839e659a20a72a968aa041da1cec7b755774120e479a32"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/tables_LTP.c",
+      "sha256": "c502f95b2d013fe98a145a8ea115e36e6c85d691d062dfa2269a2478ff547c73"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/tables_NLSF_CB_NB_MB.c",
+      "sha256": "eb78352168a95b1405fd694fae395d964aed4232bc18da4c8b321476b803ff45"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/tables_NLSF_CB_WB.c",
+      "sha256": "4dd6859ff038640b7f442f1634f41562298bf0287f75d2e1ae0a28c40a7360de"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/tables_other.c",
+      "sha256": "1c4471a19787a753c17c376d0b8f5f29d59e9d2643ec42073ac8280d41035515"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/tables_pitch_lag.c",
+      "sha256": "d2d882814d8cd36291da1b3db9feefb79ffd2ad166a347cffe15691587c8665d"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/tables_pulses_per_block.c",
+      "sha256": "0b278efb2ca273de7f7b109c0eb6b85fb790f4945117555883a90c44a978de84"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/tuning_parameters.h",
+      "sha256": "a6c382abc974b391eb97d0c3cdf1007d5257de7294caec22ac7b848f8db8f9d4"
+    },
+    {
+      "path": "src/vendor/codecs/opus/silk/typedef.h",
+      "sha256": "4aa6dcd8699e98924dce9bce80f9c087bce490697e063f531a568a617f86513c"
+    },
+    {
+      "path": "src/vendor/codecs/opus/src/analysis.h",
+      "sha256": "1af270244820486c91b541ea0b1a87bb230ee83a9bcb5a8da80ccb81214f1d60"
+    },
+    {
+      "path": "src/vendor/codecs/opus/src/extensions.c",
+      "sha256": "7dbfdac19516a4a958b0e07655b50f8c6736bfdb737a42c156e71aa5340bc4e2"
+    },
+    {
+      "path": "src/vendor/codecs/opus/src/mapping_matrix.h",
+      "sha256": "9c72b6b791248a1ffc0235af84201f9f8e650c292cb2a8a06db4d27ae95f327a"
+    },
+    {
+      "path": "src/vendor/codecs/opus/src/mlp.h",
+      "sha256": "af72d4a845986c5c518fefc8cb3f629df4339c4cf0d4f9f8abfd97e679314293"
+    },
+    {
+      "path": "src/vendor/codecs/opus/src/opus.c",
+      "sha256": "378d60cc369eaea8310cd1dba52ef2e1c4a882de61ce85b97c9c065a6caf8522"
+    },
+    {
+      "path": "src/vendor/codecs/opus/src/opus_decoder.c",
+      "sha256": "7e7beef5a0f6ebdb6c444a5d6ff58a545aba80adc82ec72c8b76b332534e3d5d"
+    },
+    {
+      "path": "src/vendor/codecs/opus/src/opus_private.h",
+      "sha256": "63df2a7e3fc588b6efc3466ff6b1d1aebdae739f874411ee8c58fe323c0be2ec"
+    },
+    {
+      "path": "src/vendor/codecs/opus/src/tansig_table.h",
+      "sha256": "13908c5f4a4e504a895d973ad3a7b1cf97b7fda2d27701ef074e3925dfdcc84d"
+    },
+    {
+      "path": "examples/Receiver/Console.h",
+      "sha256": "c4e4c48d3ffaa046339eebbc99e84f710e02f83f9ac1ca81fae14507234e84af"
+    },
+    {
+      "path": "examples/Receiver/Receiver.ino",
+      "sha256": "203330cd2491f5d269a30769951df58fbba382dd704b82a1f4257274b0009755"
+    }
+  ],
+  "arduino_size_summary": {
+    "program_bytes": 306032,
+    "dynamic_bytes": 52848
+  },
+  "snapshot_scope": "Additional receive-window failure diagnostics and HNC counters; no receive-window policy fix"
+}

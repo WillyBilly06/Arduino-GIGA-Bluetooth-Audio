@@ -1,62 +1,58 @@
-# Arduino GIGA Bluetooth Audio
+# GigaBredr — development source snapshot
 
-An Arduino GIGA R1 project for Bluetooth Classic A2DP reception, codec decoding
-on the STM32H747 Cortex-M7, and PCM5102A I2S output. The development direction is
-a project-owned dual-mode host with BLE limited to the GATT-server role.
+Arduino GIGA R1 WiFi Cortex-M7 library under development: a project-owned
+Bluetooth Classic A2DP sink, AVRCP control, BLE GATT **server**, bounded decoder
+allocation and PCM5102A I2S output. Project-owned code uses Apache-2.0;
+third-party source retains its own licenses and notices.
 
-**This main branch starts as a documentation scaffold. It is not yet an
-Arduino-installable library or a qualified release.** Reviewed, buildable code
-will be promoted from develop when its ownership, licensing, tests and target
-checks are recorded. No release ZIP or binary is provided by this scaffold.
+This develop snapshot is experimental. It is not a qualified audio release.
+The owned host's initial startup failure was corrected by a controller-reset
+bootstrap change. A full local development image subsequently passed a real
+phone GATT probe (MTU 247, ten acknowledged writes and ten exact echoes).
+Continuous stable Classic audio with concurrent BLE has not passed validation.
+The earlier baseline host's audio captures and the separate decoder Cortex-M7
+benchmarks do not qualify this replacement host. See [status](docs/STATUS.md).
 
-## Branches and releases
+This audited source profile includes **SBC and Opus** decoders. AAC/HE-AAC,
+aptX/aptX HD, LDAC and LHDC implementation files are excluded; their build
+defaults are disabled in this snapshot. Public API codec enum values and
+project-owned adapters remain for compatibility, but omitted codecs return
+unsupported. Do not enable their build flags in this tree.
 
-- `main`: reviewed public snapshots. The initial snapshot contains documentation
-  and license/audit material only.
-- `develop`: ongoing development. Features and tests may be incomplete; an
-  unreviewed development branch is not a released firmware image.
-- Release tags and library ZIPs will be produced from a reviewed, buildable
-  main commit, with SHA-256 checksums and a support/evidence matrix.
+Install Arduino Mbed OS GIGA Boards **4.6.0**, copy this folder as the Arduino
+library `GigaBredr`, and select GIGA R1 WiFi with the M7 core. Compile
+`examples/Receiver/Receiver.ino` or use Arduino CLI:
 
-## Evidence already obtained in the private development baseline
+```sh
+arduino-cli compile --fqbn arduino:mbed_giga:giga --jobs 4 --library . examples/Receiver
+```
 
-These observations concern the earlier receiver and isolated diagnostics. That
-baseline used a third-party Classic host; they do not qualify the replacement
-project-owned host or simultaneous Classic/BLE operation.
+`Receiver` includes bounded nonblocking USB diagnostics and a small BLE echo
+diagnostic. `SbcReceiver` limits negotiation to SBC; `I2sTone` is an isolated
+output diagnostic. Compilation proves integration only. It does not prove RF
+delivery, GATT exchange, PCM pin output, acoustics, synchronization or latency.
+Controller firmware is supplied by the installed Arduino core, not included
+in this source snapshot. Its licensing remains the core distributor's concern.
 
-| Area | Bounded observations | Remaining limits |
-| --- | --- | --- |
-| Controller | Physical controller startup, identity and Classic capability diagnostics passed. | Controller readiness is not profile interoperability. |
-| Decoder correctness | Independent vectors and host ASAN checks; 12 physical M7 vector cases passed, including SBC/XQ, AAC-LC ADTS/LATM, aptX/HD, Opus, LDAC and experimental HEv1. | LHDC has no independent encoded reference in this collection. Codec-only tests are not phone negotiation. |
-| M7 timing | At 480 MHz, the finite HEv1 mono/stereo prefixes had observed maximum decode times of 1747/3383 microseconds, with zero measured deadline misses in that run. | Observed maxima for short fixtures are not bounds for every possible stream or playback soaks. |
-| Memory | 220 configuration lifecycle checks completed, including zero tracked residual allocations and immediate allocation-failure cleanup. | Tracked payload counts exclude allocator overhead/system allocations; stack and fragmentation are separate. |
-| Phone baseline | SBC 44.1 kHz and LDAC 96 kHz media reached receiver decoding and DMA in the historical host baseline. | Startup/jitter underruns and sustained playback remain separate work. Other sender profiles are unverified. |
-| DAC output | Standalone PCM5102A tones were reported audible in the historical output diagnostic. | This does not establish continuous Bluetooth audio, measured analog quality or every channel/rate combination. |
-| New owned host / BLE | Development and review are ongoing; native test results are tracked on develop. | Concurrent Classic audio plus BLE GATT-server behavior is not yet hardware-validated. No BLE central/client role is promised. |
+The BLE role is a GATT server with a control service, write RX characteristic
+and notify TX characteristic. This snapshot implements no BLE audio profile.
+Review the example and pin configuration before connecting a DAC. Decoder
+work and radio callbacks use bounded queues; allocation and timing diagnostics
+do not establish end-to-end playback quality.
 
-The intended I2S wiring is D70 BCLK, D74 WS/LRCK and D72 data, with a common
-ground and supply suitable for the actual PCM5102A breakout. Wiring and
-installation instructions will accompany a buildable public release; no
-firmware or controller patch is distributed in this scaffold.
+In the subsequent exact-route trial with a 90-second source, the full local
+image received, decoded and submitted LHDC PCM to DMA, with queue drops and
+underruns. The actor then stopped at 204972 ms on receive-window accounting.
+A second GATT probe attempted after that stop timed out; it does not establish
+Classic/BLE concurrency. LHDC is excluded from this public profile. These local
+results do not qualify SBC/Opus streaming or continuous stable audio here.
+The current source adds failure diagnostics and Host Number Of Completed
+Packets counters, not a receive-window policy fix.
 
-## Codec and licensing status
-
-The decoder work covers SBC/SBC-XQ, AAC-LC, aptX/HD, LDAC, LHDC V5, Opus and
-experimental HE-AAC v1. This list describes development scope, not a promise
-that all implementations or media can be redistributed under one license.
-HEv2/parametric stereo and xHE-AAC are not implemented or claimed.
-
-Project-owned contributions are under [Apache-2.0](LICENSE). Third-party code
-retains its original terms. In particular, LGPL, Helix, Sony/LHDC provenance
-questions and the historical host license are not converted to Apache or MIT.
-The initial export contains no vendor code or reference media. See
-[third-party status](THIRD_PARTY.md), the [public license audit](docs/validation/public-license-audit.md)
-and [development notes](docs/DEVELOPMENT.md).
-
-## Contributing
-
-Use develop for proposed changes. A contribution should identify its ownership
-and dependencies, preserve third-party notices, include relevant tests, and keep
-build, decoder, negotiated-stream, electrical and listening evidence distinct.
-Do not add controller firmware, private captures, pairing material, local HE
-reference media or workstation-specific paths to public history.
+See [third-party notices](THIRD_PARTY.md), [export policy](docs/EXPORT.md), and
+the per-file [source provenance](docs/source-provenance.json). The isolated
+Receiver build and synthetic test results are recorded in [build evidence](docs/BUILD.json).
+With clang and clang++ on PATH, run `python tools/run_owned_tests.py --sanitize`
+to exercise the included synthetic owned-host tests. The exporter
+emits an external SHA-256 receipt for the exact snapshot. No local history,
+firmware images, private captures, codec media or phone packages are included.
