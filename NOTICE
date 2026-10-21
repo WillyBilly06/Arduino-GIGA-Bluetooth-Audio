@@ -1,0 +1,7 @@
+Arduino GIGA Bluetooth Audio
+Copyright 2026 William Ho and contributors.
+
+This project's original code and contributed project-owned protocol kernels
+are licensed under Apache License 2.0. Third-party codec and reference assets
+retain their original terms. See THIRD_PARTY.md and the source provenance
+manifests. This notice does not grant rights in third-party codec patents.
