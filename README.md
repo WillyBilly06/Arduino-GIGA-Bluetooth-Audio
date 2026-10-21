@@ -4,10 +4,12 @@ An Arduino GIGA R1 project for Bluetooth Classic A2DP reception, codec decoding
 on the STM32H747 Cortex-M7, and PCM5102A I2S output. The development direction is
 a project-owned dual-mode host with BLE limited to the GATT-server role.
 
-**This main branch starts as a documentation scaffold. It is not yet an
-Arduino-installable library or a qualified release.** Reviewed, buildable code
-will be promoted from develop when its ownership, licensing, tests and target
-checks are recorded. No release ZIP or binary is provided by this scaffold.
+**Main remains a clean documentation scaffold while audio qualification is in
+progress.** The full library source is available on [develop](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/tree/develop).
+The [0.1.0-dev.1 prerelease](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/releases/tag/v0.1.0-dev.1) includes an
+Arduino-installable ZIP, source manifest and SHA-256 checksum. It includes the
+complete selected supplied decoder source set and the project-owned host, with
+known audio interruptions. It is an experimental development snapshot.
 
 ## Branches and releases
 
@@ -15,8 +17,20 @@ checks are recorded. No release ZIP or binary is provided by this scaffold.
   and license/audit material only.
 - `develop`: ongoing development. Features and tests may be incomplete; an
   unreviewed development branch is not a released firmware image.
-- Release tags and library ZIPs will be produced from a reviewed, buildable
-  main commit, with SHA-256 checksums and a support/evidence matrix.
+- Stable release tags and library ZIPs will come from reviewed, buildable main
+  commits. Explicit development prereleases may come from develop; each records
+  its source commit, SHA-256 checksum and validation scope.
+
+## Current development evidence
+
+The project-owned host has received and decoded real LHDC V5 audio through DMA
+and completed a finite BLE GATT exchange during playback. Continuous stable
+audio has not passed; queue drops and output starvation remain under investigation.
+See the [current status](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/blob/develop/docs/STATUS.md) and
+[source layout](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/blob/develop/src/codecs/README.md) on develop. Component
+notices and conditions remain with the decoder sources; the project license
+does not replace them. No controller firmware, device captures or media fixtures
+are included in the installation ZIP.
 
 ## Evidence already obtained in the private development baseline
 
@@ -47,7 +61,7 @@ that all implementations or media can be redistributed under one license.
 HEv2/parametric stereo and xHE-AAC are not implemented or claimed.
 
 Project-owned contributions are under [Apache-2.0](LICENSE). Third-party code
-retains its original terms. In particular, LGPL, Helix, Sony/LHDC provenance
+retains its original terms. In particular, LGPL, Helix and Sony provenance
 questions and the historical host license are not converted to Apache or MIT.
 The initial export contains no vendor code or reference media. See
 [third-party status](THIRD_PARTY.md), the [public license audit](docs/validation/public-license-audit.md)
