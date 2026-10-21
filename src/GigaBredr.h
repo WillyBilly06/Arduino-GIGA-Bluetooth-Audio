@@ -4,6 +4,16 @@
 #include "AudioDiagnostics.h"
 
 namespace giga_bredr {
+// Zero fields inherit ReceiverConfig's global settings. Stats report the
+// nonzero resolved profile while configured, and all zeros after release.
+struct AudioBufferConfig {
+    size_t maximum_packet_bytes = 0; // Nonzero: 64..65535.
+    size_t maximum_access_unit_bytes = 0; // Nonzero: 64..65535.
+    uint8_t queue_packets = 0; // Nonzero: 1..64.
+    uint8_t startup_packets = 0; // Nonzero: 1..64, then clamped to selected queue.
+    uint16_t pcm_buffer_ms = 0; // Nonzero: 2..100; DMA ring uses the selected sample rate.
+};
+using CodecBufferConfig = AudioBufferConfig;
 struct ReceiverConfig {
     const char* name = "GIGA Audio";
     uint32_t codecs = 0; // zero selects the compiled codec set
@@ -11,6 +21,12 @@ struct ReceiverConfig {
     size_t maximum_access_unit_bytes = 8192;
     uint8_t queue_packets = 8;
     uint8_t startup_packets = 2; // compressed startup reserve, clamped to queue capacity
+#if defined(GIGA_BREDR_I2S_BUFFER_MS)
+    uint16_t pcm_buffer_ms = GIGA_BREDR_I2S_BUFFER_MS;
+#else
+    uint16_t pcm_buffer_ms = 20;
+#endif
+    CodecBufferConfig codec_buffers[static_cast<size_t>(Codec::Count)] = {}; // Index by Codec; data only until configured.
     bool external_buffers = false; // caller supplies/initializes external memory
     bool enable_i2s = true;
     bool apply_remote_volume = true;
@@ -28,6 +44,7 @@ struct ReceiverStats {
     OutputStats output;
     MemoryStats memory;
     CodecConfig configuration;
+    AudioBufferConfig buffers; // Selected profile only; no allocation for inactive overrides.
     Status last_error = Status::Ok;
     uint64_t decoded_frames = 0;
     uint32_t decoded_packets = 0, dropped_packets = 0, decode_errors = 0;

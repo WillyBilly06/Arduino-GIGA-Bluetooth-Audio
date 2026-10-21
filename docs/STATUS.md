@@ -1,66 +1,105 @@
 # Development evidence and outstanding validation
 
-Snapshot status as of 2026-10-21: owned dual-mode host integration is work in
-progress. The initial LE command `0x200a`, status `0x0c` (Command Disallowed)
-failure was corrected by using the verified reset state to omit a redundant
-initial advertising-disable command. The
-OwnedReceiverV3 local development image was flashed and readback-verified;
-its application SHA-256 is
-`85e79cd22ac8f0e79c111d5258235f2205b297e22d7ead7202703befb65ed4dd`.
-The finite `20261021-131509` target capture showed controller ready, all BLE
-setup/enable completions successful, and zero transport errors. A real phone
-GATT probe then passed negotiated MTU 247, ten successful write callbacks,
-ten exact notification echoes and client close. Client close records the
-Android API call, not independent verification of every disconnect layer.
+Status as of 2026-10-21: the project-owned Classic/BLE host is implemented and
+has passed finite phone A2DP and GATT exchanges. Stable continuous audio remains
+unqualified. No BTstack, Bluedroid or Cordio protocol runtime is selected in the
+owned image. The installed Arduino core retains two inert BLE SDK globals;
+linked-symbol checks distinguish those from a second host implementation.
 
-The phone bonded and connected A2DP. The full local image's codec readback
-was LHDC 192 kHz/24-bit with quality 0x8007, nominal 900 kbps. Earlier descriptions
-incorrectly called this 1000 kbps. The subsequent exact-route trial used a
-90-second source and showed receive/decode/DMA progress with queue drops and
-underruns. The actor stopped at 204972 ms since boot on receive-window
-accounting. A second GATT probe was attempted after the actor had stopped and
-timed out. Thus the initial standalone GATT pass does not establish concurrent
-operation, and the attempted second probe did not test a healthy streaming
-actor. Continuous stable audio and Classic/BLE concurrency remain unqualified.
+## Current target experiment
 
-The current candidate replaces polled UART transmission with a bounded
-interrupt-driven mailbox and retains failure diagnostics and Host Number Of
-Completed Packets (HNC) counters. Local image V5 SHA-256
-`b800c8237f7f21459cbfd54412b8c49749f204e5804346e90e71c7f76f4bb76a`
-was flashed/readback-verified. Controller startup took 5.080s versus 19.965s in
-the earlier polling candidate. A 25-second exact-route source trial completed
-BLE MTU 247, 10 successful writes and 10 exact echoes while LHDC audio was active,
-with zero transport/decode/DMA errors and graceful stop. It still had 217 local
-queue drops and 1.993s of prepared zero frames. This finite result does not
-establish stable playback or the absence of future credit-window failures.
+A readback-verified development probe used the same owned source with an LHDC
+profile of 32 compressed packets, a 26-packet startup reserve, 2048-byte maximum
+packet size and a 20 ms PCM ring. These experimental settings are not the
+library's global defaults. It used LHDC V5 at 192 kHz/24-bit and phone quality
+0x8008/32776, the actual nominal 1000 kbps selection.
 
-The codec quality mapping was independently corrected against Savitech's
+A 35-second exact-route phone source completed with zero AudioTrack underruns.
+During playback, BLE negotiated ATT MTU 517 and completed ten acknowledged
+512-byte writes and ten exact notification echoes. The receiver recorded zero
+local queue-full drops, decode errors, DMA errors and transport errors, then a
+graceful audio stop. This establishes a finite concurrent exchange, not stable
+acoustics, RF conformance or every connection/disconnection case.
+
+Audio still failed the continuity target: 362304 prepared silent frames at
+192 kHz (1.887 seconds) and fourteen verified discontinuities. Every retained
+record had RTP sequence +1, timestamp +27840 rather than +960, and LHDC inner
+sequence +29 with exactly one validated encoded frame. The timestamp excess was
+392 frame periods, or 1.960 seconds. This locates missing inner packet numbers
+before RTP numbering and is consistent with the public sender's 28-buffer queue
+flush. It does not prove why this phone discarded them; controller/link/host
+backpressure and source scheduling still need separation. A larger buffer cannot
+reconstruct discarded encoded content. No listening or physical wire capture
+was performed for this probe.
+
+## Corrections and scheduling evidence
+
+An earlier UART adapter drained up to 2048 raw bytes before servicing its owned
+actor. A 244-byte BLE transfer, fragmented into 27-byte HCI payloads, stopped the
+physical host after five successful echoes. The failure receipt showed four
+unprocessed LE slots and no retired fragments. A native actor reproduction
+matched that condition. The adapter now services each complete HCI frame before
+parsing the next, preserving the byte budget and four-packet receive-window
+safety check. The subsequent MTU-517/512-byte phone exchange passed. Native
+negative tests still show that blocked TX can exhaust the window; broader stress
+and scheduling/credit measurements remain required.
+
+Earlier interrupt-driven TX replaced byte polling. Controller startup improved
+from 19.965 seconds to 5.080 seconds in those finite captures. That TX change
+alone did not fix audio: its nominal-900-kbps run had 217 local drops and 1.993
+seconds of prepared zeros. Separate true-1000-kbps tests found:
+
+| Compressed profile | Local full drops | Prepared silence | RTP timestamp excess |
+| --- | ---: | ---: | ---: |
+| 8 packets, startup 2 | 87 | 2.017 s | 1.540 s |
+| 32 packets, startup 2 | 0 | 1.608 s | 1.540 s |
+| 32 packets, startup 26, audio only | 0 | 1.311 s | 1.400 s |
+
+These short runs differ in delivery/teardown and BLE traffic; they do not
+establish an optimal startup reserve or a latency guarantee. The queue increase
+removed measured local overflow while pre-RTP timestamp omissions persisted.
+
+The codec quality mapping was corrected against Savitech's
 [pinned sender constants](https://gitlab.com/savitech-lhdc/savitech-lhdc-codec-aosp-13.0.0_r2/-/raw/3ac44e21e92983bb800eee8cb9d938522e3852d2/src/packages/modules/Bluetooth/system/stack/include/a2dp_vendor_lhdc_constants.h):
-0x8007/32775 selects nominal 900 kbps, and0x8008/32776 selects 1000 kbps. The V3/V4/V5
-trials described above used900 kbps. Testing at the requested 1000 kbps setting is
-separate work; none of those earlier runs is labeled a 1000 kbps validation.
+0x8007/32775 selects nominal 900 kbps; 0x8008/32776 selects 1000 kbps. Historical
+V3/V4/V5 runs using 32775 are not 1000-kbps validations. Original receipts were
+preserved and their descriptive labels corrected.
 
-The full supplied decoder source set is included, with original
-notices and explicit licensing uncertainties. Source inclusion and the earlier
-local image's finite progress do not qualify continuous streaming for this
-candidate. Raw captures, device identities and application binaries are excluded.
+## Source, native and decoder checks
 
-Portable owned protocol/profile tests exercise packet bounds, fragmentation,
-output backpressure, actor scheduling, connection cleanup and BLE GATT state.
-ASAN and trapping UBSan runs passed for reviewed snapshots. These tests use
-synthetic protocol events and do not establish controller behavior or security
-interoperability. The owned BLE role is GATT server only.
+The full selected supplied decoder source set is included, with original
+component notices and explicitly recorded licensing uncertainties. Original
+project contributions use Apache-2.0; source inclusion is not blanket clearance
+of another author's conditions or codec patents.
 
-Separate Arduino GIGA Cortex-M7 decoder benchmarks passed SBC/Opus and other
-supplied codecs against complete frame sequences, with allocation cleanup
-and frame canaries checked. The finite memory probe passed 220 configuration
-open/close cases with zero residual tracked bytes. These are decoder/memory
-results, not owned-host audio results or redistribution-license clearance.
+Portable protocol/profile tests cover bounds, retained input, fragmentation,
+output pressure, command/ACL ownership, lifecycle, HCI service order and BLE
+MTU/value separation. ASAN and trapping UBSan checks passed on reviewed source.
+New maximum-value tests exercise 512-byte writes/notifications across multiple
+ACL fragments, exact copies/retries, 513-byte rejection and 247-MTU fallback.
+The RTP ledger preserves the first sixteen anomalies, validates bounded framing,
+and suppresses expected timestamp arithmetic for unknown/malformed packets.
 
-Earlier Classic SBC and LDAC receive/decode/I2S progress was captured using the
-historical third-party host. That host and its local history are excluded.
-Those captures cannot qualify this replacement host. Concurrent Classic audio
-and BLE, continuous streaming in this candidate, real PCM output, pause/resume behavior, synchronization,
-and end-to-end latency still require broader target validation for the owned runtime.
-Versioned development ZIPs are explicitly marked prereleases; stable release
-qualification remains separate.
+Per-codec buffer tests exercise actual queue admission, independent packet/access
+unit limits, selected-only allocation, startup clamping, runtime PCM geometry,
+codec switches, allocation-failure cleanup and concurrent receive/reconfigure.
+M7 object checks preserve softfp/fpv5-d16 and internal DMA address restrictions.
+Native and compilation checks do not establish controller behavior or audio.
+
+Separate physical Cortex-M7 decoder benchmarks passed independent SBC/SBC-XQ,
+AAC-LC, aptX/HD, Opus, LDAC and experimental HE-AAC v1 references. A finite memory
+probe passed 220 codec configuration lifecycle checks with zero tracked residual
+bytes. LHDC still has no independent encoded-to-PCM reference in this collection.
+Earlier SBC/LDAC phone progress used the historical host and cannot qualify
+those codecs on the replacement host. RedMagic supplies no Opus sender; Apple
+AAC interoperability remains untested.
+
+Raw captures, device identities, firmware/readbacks, media fixtures and phone
+packages are excluded from public source. Controller firmware is provided by the
+installed Arduino core. The BLE role is a public, unencrypted GATT server for
+control/data, with no BLE audio profile or central/client role implemented.
+
+Stable playback, pop suppression, long-duration coexistence, source loss/burst
+recovery, pause/resume, clock drift, latency and cross-codec phone interoperability
+remain open. Versioned development ZIPs are explicitly marked prereleases;
+clean main and stable-release qualification remain separate.

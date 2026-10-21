@@ -105,8 +105,13 @@ Status clockBegin(uint32_t rate) {
 }
 }
 Status i2sBegin(uint32_t sampleRate) {
+  return i2sBegin(sampleRate, GIGA_BREDR_I2S_BUFFER_MS);
+}
+Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs) {
   if(owned) return Status::Busy;
+  if(bufferMs<2 || bufferMs>100) return Status::InvalidArgument;
   I2sClock clock; if(!i2sClock(sampleRate,clock)) return Status::Unsupported;
+  I2sBufferGeometry geometry; if(!i2sBufferGeometry(sampleRate,bufferMs,geometry)) return Status::InvalidArgument;
   // SPI123 shares its kernel mux. Reject even clock-enabled idle SPI users.
   if(RCC->APB1LENR&(RCC_APB1LENR_SPI2EN|RCC_APB1LENR_SPI3EN)) return Status::Busy;
   if(RCC->APB2ENR&RCC_APB2ENR_SPI1EN) return Status::Busy;
@@ -115,12 +120,9 @@ Status i2sBegin(uint32_t sampleRate) {
   if(DMA1_Stream7->CR || DMAMUX1_Channel7->CCR || NVIC_GetEnableIRQ(DMA1_Stream7_IRQn) || NVIC_GetPendingIRQ(DMA1_Stream7_IRQn)) return Status::Busy;
   if(i2sPinsBusy(gpioRegisters(GPIOI),pinPlan.portI) ||
      i2sPinsBusy(gpioRegisters(GPIOB),pinPlan.portB)) return Status::Busy;
-  halfFrames=((sampleRate+999)/1000+3)&~3u; // ~1 ms, each DMA half is cache-line isolated.
-  uint32_t ringFrames=((sampleRate*GIGA_BREDR_I2S_BUFFER_MS+999)/1000+3)&~3u; // Selected rate/latency only.
-  if(ringFrames<halfFrames*2) ringFrames=halfFrames*2;
-  const size_t dmaBytes=size_t(halfFrames)*16;
-  const size_t ringOffset=(dmaBytes+sizeof(I2sRing)+31)&~size_t(31);
-  const size_t bytes=ringOffset+size_t(ringFrames)*8;
+  halfFrames=geometry.half_frames; // ~1 ms, each DMA half is cache-line isolated.
+  const uint32_t ringFrames=geometry.ring_frames;
+  const size_t dmaBytes=geometry.dma_bytes, ringOffset=geometry.ring_offset, bytes=geometry.total_bytes;
   arena=allocate(bytes,MemoryKind::Dma,32);
   if(!arena) return Status::OutOfMemory;
   if(!i2sDmaAddress(reinterpret_cast<uintptr_t>(arena),bytes)) { release(arena); arena=nullptr; return Status::HardwareError; }
@@ -210,6 +212,7 @@ OutputTimingSnapshot i2sTiming() { Critical guard; return timing.snapshot(); }
 #else
 namespace giga_bredr { namespace detail {
 Status i2sBegin(uint32_t) { return Status::Unsupported; }
+Status i2sBegin(uint32_t, uint16_t bufferMs) { return bufferMs<2 || bufferMs>100 ? Status::InvalidArgument : Status::Unsupported; }
 size_t i2sWrite(const int32_t*,size_t) { return 0; }
 void i2sEnd() {}
 OutputStats i2sStats() { return OutputStats(); }

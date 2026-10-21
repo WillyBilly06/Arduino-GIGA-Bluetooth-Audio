@@ -41,6 +41,24 @@ bool sameConfiguration(const CodecConfig& a, const CodecConfig& b) {
         a.codec_info_size == b.codec_info_size && a.codec_info_size <= sizeof(a.codec_info) &&
         memcmp(a.codec_info, b.codec_info, a.codec_info_size) == 0;
 }
+bool validBufferOverride(const AudioBufferConfig& b) {
+    return (!b.maximum_packet_bytes || (b.maximum_packet_bytes >= 64 && b.maximum_packet_bytes <= 65535)) &&
+        (!b.maximum_access_unit_bytes || (b.maximum_access_unit_bytes >= 64 && b.maximum_access_unit_bytes <= 65535)) &&
+        b.queue_packets <= 64 && b.startup_packets <= 64 &&
+        (!b.pcm_buffer_ms || (b.pcm_buffer_ms >= 2 && b.pcm_buffer_ms <= 100));
+}
+AudioBufferConfig resolveBuffers(const ReceiverConfig& options, Codec codec) {
+    const auto& override = options.codec_buffers[static_cast<size_t>(codec)];
+    AudioBufferConfig out;
+    out.maximum_packet_bytes = override.maximum_packet_bytes ? override.maximum_packet_bytes : options.maximum_packet_bytes;
+    out.maximum_access_unit_bytes = override.maximum_access_unit_bytes ? override.maximum_access_unit_bytes : options.maximum_access_unit_bytes;
+    out.queue_packets = override.queue_packets ? override.queue_packets : options.queue_packets;
+    out.startup_packets = override.startup_packets ? override.startup_packets : options.startup_packets;
+    if (out.startup_packets > out.queue_packets) out.startup_packets = out.queue_packets;
+    if (!options.enable_i2s) out.startup_packets = 1;
+    out.pcm_buffer_ms = override.pcm_buffer_ms ? override.pcm_buffer_ms : options.pcm_buffer_ms;
+    return out;
+}
 size_t frameCapacity(const CodecConfig& c) {
     switch (c.codec) {
         case Codec::Sbc: return 128;
@@ -73,6 +91,8 @@ struct GigaBredr::Impl {
     uint32_t stream_epoch = 0;
     size_t token_read = 0, token_write = 0;
     bool uses_rtp = false;
+    uint32_t rtp_lhdc_hop = 0;
+    AudioBufferConfig active_buffers; // Queue-owned; publish/clear with its storage under queue_mutex.
     CodecConfig format;
     ReceiverStats counters;
     std::atomic<bool> running{false}, playing{false};
@@ -122,6 +142,7 @@ struct GigaBredr::Impl {
         { Lock lock(queue_mutex);
           rtp_timing.endEpoch(stream_epoch); queue_timing.endEpoch(stream_epoch);
           queue.close(); token_read = token_write = 0;
+          active_buffers = {}; uses_rtp = false; rtp_lhdc_hop = 0;
         }
         work_timing.endEpoch(stream_epoch);
         if (output_owned) { detail::i2sEnd(); output_owned = false; }
@@ -129,6 +150,7 @@ struct GigaBredr::Impl {
         detail::release(packet); detail::release(pcm);
         packet = nullptr; pcm = nullptr; pcm_frames = 0;
         counters.decoder_memory_bytes = 0; configured = false;
+        counters.buffers = {};
         startup_buffered = false;
     }
     Status configure(const CodecConfig& c) {
@@ -136,6 +158,7 @@ struct GigaBredr::Impl {
         if (configured && decoder.active() && sameConfiguration(format, c)) return Status::Ok;
         releaseCodec();
         if (!(options.codecs & codecBit(c.codec))) return counters.last_error = Status::Unsupported;
+        const AudioBufferConfig selected_buffers = resolveBuffers(options, c.codec);
         size_t capacity = frameCapacity(c);
         if (!capacity || capacity > 23040 || !c.sample_rate || (c.channels != 1 && c.channels != 2))
             return counters.last_error = Status::Unsupported;
@@ -143,27 +166,30 @@ struct GigaBredr::Impl {
         size_t before = detail::memoryStats().current_bytes;
         Status status = decoder.open(c);
         counters.decoder_memory_bytes = detail::memoryStats().current_bytes - before;
-        if (status == Status::Ok) status = media.configure(c, options.maximum_access_unit_bytes, kind);
+        if (status == Status::Ok) status = media.configure(c, selected_buffers.maximum_access_unit_bytes, kind);
         if (status == Status::Ok) {
             Lock queue_lock(queue_mutex);
-            status = queue.configure(options.queue_packets, options.maximum_packet_bytes, kind);
+            status = queue.configure(selected_buffers.queue_packets, selected_buffers.maximum_packet_bytes, kind);
         }
         if (status == Status::Ok) {
-            packet = static_cast<uint8_t*>(detail::allocate(options.maximum_packet_bytes, kind));
+            packet = static_cast<uint8_t*>(detail::allocate(selected_buffers.maximum_packet_bytes, kind));
             pcm = static_cast<int32_t*>(detail::allocate(capacity * 2 * sizeof(int32_t), MemoryKind::Fast));
             if (!packet || !pcm) status = Status::OutOfMemory;
         }
         if (status == Status::Ok && options.enable_i2s) {
-            status = detail::i2sBegin(c.sample_rate); output_owned = status == Status::Ok;
+            status = detail::i2sBegin(c.sample_rate, selected_buffers.pcm_buffer_ms); output_owned = status == Status::Ok;
         }
         if (status != Status::Ok) { releaseCodec(); counters.last_error = status; return status; }
         format = c; pcm_frames = capacity; configured = true; counters.last_error = Status::Ok;
         if (!++stream_epoch) ++stream_epoch;
         { Lock queue_lock(queue_mutex);
-          rtp_timing.beginEpoch(stream_epoch); queue_timing.beginEpoch(stream_epoch, options.queue_packets);
+          active_buffers = selected_buffers;
+          rtp_timing.beginEpoch(stream_epoch); queue_timing.beginEpoch(stream_epoch, active_buffers.queue_packets);
           uses_rtp = c.codec != Codec::Aptx; token_read = token_write = 0;
+          rtp_lhdc_hop = c.codec == Codec::LhdcV5 ? (c.sample_rate > 48000 ? c.sample_rate / 200 : 240) : 0;
         }
         work_timing.beginEpoch(stream_epoch);
+        counters.buffers = selected_buffers;
         configuration_event = true;
         return Status::Ok;
     }
@@ -182,18 +208,21 @@ struct GigaBredr::Impl {
     void receive(const uint8_t* bytes, size_t n) {
         if (!playing.load() || !bytes || !n) { ++dropped; return; }
         { Lock lock(queue_mutex);
+          if (!playing.load()) { ++dropped; return; }
           const uint32_t arrival = clockUs();
           detail::RtpView rtp;
           if (uses_rtp && detail::parseRtp(bytes, n, rtp) == Status::Ok) {
               uint32_t ssrc = (uint32_t(bytes[8]) << 24) | (uint32_t(bytes[9]) << 16) | (uint32_t(bytes[10]) << 8) | bytes[11];
-              rtp_timing.observe(stream_epoch, ssrc, rtp.sequence, rtp.timestamp, arrival);
+              detail::RtpPacketDetail payload_detail;
+              if (rtp_lhdc_hop) payload_detail=detail::lhdcRtpDetail(rtp.payload,rtp.bytes,rtp_lhdc_hop);
+              rtp_timing.observe(stream_epoch, ssrc, rtp.sequence, rtp.timestamp, arrival, payload_detail);
           }
           if (!queue.push(bytes, n)) {
-              if (n <= options.maximum_packet_bytes && queue.count() == options.queue_packets) { detail::QueueToken ignored; queue_timing.enqueued(stream_epoch, arrival, ignored); }
+              if (n <= active_buffers.maximum_packet_bytes && queue.count() == active_buffers.queue_packets) { detail::QueueToken ignored; queue_timing.enqueued(stream_epoch, arrival, ignored); }
               ++dropped; return;
           }
           queue_timing.enqueued(stream_epoch, arrival, queue_tokens[token_write]);
-          token_write = (token_write + 1) % options.queue_packets;
+          token_write = (token_write + 1) % active_buffers.queue_packets;
         }
 #if defined(ARDUINO)
         wake.release();
@@ -205,15 +234,14 @@ struct GigaBredr::Impl {
         size_t n;
         { Lock queue_lock(queue_mutex);
           if (!startup_buffered) {
-              size_t reserve = options.enable_i2s ? options.startup_packets : 1;
-              if (reserve > options.queue_packets) reserve = options.queue_packets;
+              size_t reserve = active_buffers.startup_packets;
               if (queue.count() < reserve) return;
               startup_buffered = true;
           }
-          n = queue.take(packet, options.maximum_packet_bytes);
+          n = queue.take(packet, active_buffers.maximum_packet_bytes);
           if (n) {
               queue_timing.dequeued(queue_tokens[token_read], clockUs());
-              token_read = (token_read + 1) % options.queue_packets;
+              token_read = (token_read + 1) % active_buffers.queue_packets;
           }
         }
         if (!n) return;
@@ -273,7 +301,7 @@ struct GigaBredr::Impl {
     void decoderMain() {
         while (running.load()) {
             wake.try_acquire_for(10);
-            for (unsigned i = 0; i < options.queue_packets && running.load(); ++i) processOne();
+            for (unsigned i = 0; i < 64 && running.load(); ++i) processOne();
         }
     }
 #endif
@@ -290,8 +318,10 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     if (impl_) return Status::Busy;
     if (!input.name || !*input.name || input.maximum_packet_bytes < 64 || input.maximum_packet_bytes > 65535 ||
         input.maximum_access_unit_bytes < 64 || input.maximum_access_unit_bytes > 65535 ||
-        !input.queue_packets || input.queue_packets > 64 || !input.startup_packets || input.startup_packets > 64 || input.host_stack_bytes < 4096 || input.decoder_stack_bytes < 8192)
+        !input.queue_packets || input.queue_packets > 64 || !input.startup_packets || input.startup_packets > 64 ||
+        input.pcm_buffer_ms < 2 || input.pcm_buffer_ms > 100 || input.host_stack_bytes < 4096 || input.decoder_stack_bytes < 8192)
         return Status::InvalidArgument;
+    for (const auto& profile : input.codec_buffers) if (!validBufferOverride(profile)) return Status::InvalidArgument;
     ReceiverConfig config = input;
     if (!config.codecs) config.codecs = availableCodecs();
     if (!config.codecs || (config.codecs & ~availableCodecs())) return Status::Unsupported;

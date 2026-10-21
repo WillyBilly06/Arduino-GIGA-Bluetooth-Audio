@@ -4,7 +4,8 @@
 #include "../Types.h"
 
 namespace giga_bredr {
-constexpr size_t BleValueCapacity = 244;
+// Attribute values are capped independently of the negotiated ATT PDU size.
+constexpr size_t BleValueCapacity = 512;
 // The initial service is public. Pairing/encryption needs a qualified backend.
 enum class BleSecurityPolicy : uint8_t {
     PublicUnencrypted,
@@ -13,7 +14,7 @@ enum class BleSecurityPolicy : uint8_t {
 };
 struct BleConfig {
     bool enabled = true;
-    uint16_t maximum_mtu = 247;
+    uint16_t maximum_mtu = 517;
     // HCI legacy advertising units: 0.625ms (80..160ms by default).
     uint16_t advertising_interval_min = 128;
     uint16_t advertising_interval_max = 256;

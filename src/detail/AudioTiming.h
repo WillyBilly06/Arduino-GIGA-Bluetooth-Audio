@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 
 namespace giga_bredr { namespace detail {
 // Pure bounded telemetry. Each object has one externally serialized owner.
@@ -15,6 +16,33 @@ struct DurationHistogram {
 };
 
 enum class RtpObservation : uint8_t { Rejected, First, Forward, Duplicate, Backward, SourceChange };
+enum RtpPayloadFlag : uint8_t {
+    RtpLhdcPayload=1, RtpInnerSequenceValid=2, RtpDeclaredFramesValid=4,
+    RtpScannedFramesValid=8, RtpSamplesValid=16, RtpPayloadFragmented=32,
+    RtpPayloadMalformed=64
+};
+struct RtpPacketDetail {
+    uint32_t sample_frames=0;
+    uint16_t sample_hop=0, payload_bytes=0;
+    uint8_t header=0, inner_sequence=0, declared_frames=0, scanned_frames=0, flags=0;
+};
+// Bounded framing inspection only: no entropy decode, allocation or retained
+// payload pointer. Unknown/fragmented/malformed packets have no sample span.
+RtpPacketDetail lhdcRtpDetail(const uint8_t* payload, size_t bytes, uint32_t sample_hop);
+enum RtpDiscontinuityReason : uint16_t {
+    RtpSequenceGap=1, RtpDuplicatePacket=2, RtpBackwardPacket=4,
+    RtpSourceChanged=8, RtpArrivalClock=16, RtpTimestampStep=32,
+    RtpInnerSequenceStep=64, RtpPayloadUnknown=128
+};
+struct RtpDiscontinuityRecord {
+    uint64_t packet_number=0;
+    uint32_t previous_ssrc=0, ssrc=0, previous_timestamp=0, timestamp=0;
+    uint32_t previous_arrival_us=0, arrival_us=0, arrival_delta_us=0;
+    uint32_t timestamp_delta=0, expected_timestamp_delta=0;
+    uint16_t previous_sequence=0, sequence=0, reasons=0;
+    bool arrival_delta_valid=false, timestamp_delta_valid=false, expected_delta_valid=false;
+    RtpPacketDetail previous_packet, packet;
+};
 struct RtpTimingSnapshot {
     uint32_t epoch = 0;
     bool active = false;
@@ -27,18 +55,26 @@ struct RtpTimingSnapshot {
     uint64_t source_packets = 0;
     uint32_t source_first_timestamp = 0, source_last_timestamp = 0;
     uint32_t source_first_arrival_us = 0, source_last_arrival_us = 0;
+    uint64_t discontinuities=0, timestamp_discontinuities=0, inner_sequence_discontinuities=0;
+    uint64_t unknown_payloads=0, malformed_payloads=0, records_not_retained=0;
+    uint32_t record_count=0;
+    RtpDiscontinuityRecord records[16]; // First16 frozen; counters keep growing.
 };
 class RtpTiming {
 public:
     void beginEpoch(uint32_t epoch);
     void endEpoch(uint32_t epoch);
     RtpObservation observe(uint32_t epoch, uint32_t ssrc, uint16_t sequence,
-                           uint32_t timestamp, uint32_t arrival_us);
+                           uint32_t timestamp, uint32_t arrival_us,
+                           RtpPacketDetail packet=RtpPacketDetail{});
     RtpTimingSnapshot snapshot() const { return stats_; }
 private:
     RtpTimingSnapshot stats_;
     uint32_t previous_arrival_ = 0;
     bool have_arrival_ = false, have_source_ = false;
+    RtpPacketDetail previous_packet_;
+    void record(uint32_t ssrc, uint16_t sequence, uint32_t timestamp, uint32_t arrival,
+                RtpPacketDetail packet, RtpObservation observation, bool clock_bad);
 };
 
 struct QueueToken { uint32_t epoch = 0; uint64_t serial = 0; };

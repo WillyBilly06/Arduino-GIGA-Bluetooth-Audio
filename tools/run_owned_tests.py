@@ -32,11 +32,34 @@ def main():
     adapters = ['src/owned/OwnedHost.cpp', 'src/owned/ClassicProfiles.cpp',
                 'src/owned/LeProfiles.cpp', 'src/platform/RadioProtocol.cpp']
     for name in ('test_owned_classic', 'test_owned_ble', 'test_owned_host',
-                 'test_owned_host_review', 'test_owned_host_bootstrap', 'test_uart_tx_mailbox'):
+                 'test_owned_host_review', 'test_owned_host_bootstrap',
+                 'test_owned_host_ble_large', 'test_owned_host_service', 'test_uart_tx_mailbox'):
         exe = output / (name + ('.exe' if os.name == 'nt' else ''))
         run([cxx, '-std=c++17', *flags, 'tests/' + name + '.cpp', *adapters,
              *objects, '-o', exe])
         run([exe])
+    # Separate link sets keep the receiver's fake codec/radio/output backend
+    # independent from the actual owned protocol adapters and vendor decoders.
+    portable = {
+        'test_audio_timing': ['src/detail/AudioTiming.cpp'],
+        'test_rtp_discontinuity': ['src/detail/AudioTiming.cpp'],
+        'test_receiver': ['tests/empty_registry.cpp', 'src/GigaBredr.cpp',
+                          'src/detail/Memory.cpp', 'src/detail/Decoder.cpp',
+                          'src/detail/Media.cpp', 'src/detail/PacketQueue.cpp',
+                          'src/detail/AudioTiming.cpp'],
+        'test_i2s': [], 'test_i2s_thread': [], 'test_i2s_priming': [],
+        'test_i2s_pins': [], 'test_i2s_runtime': ['src/platform/GigaI2s.cpp'],
+    }
+    for name, sources in portable.items():
+        exe = output / (name + ('.exe' if os.name == 'nt' else ''))
+        thread_flags = ['-pthread'] if os.name != 'nt' else []
+        run([cxx, '-std=c++17', *flags, *thread_flags, 'tests/' + name + '.cpp',
+             *sources, '-o', exe])
+        run([exe])
+    legacy = output / ('test_i2s_pins_legacy' + ('.exe' if os.name == 'nt' else ''))
+    run([cxx, '-std=c++17', *flags, '-DGIGA_BREDR_I2S_WS_PIN=69',
+         'tests/test_i2s_pins.cpp', '-o', legacy])
+    run([legacy])
 
 
 if __name__ == '__main__':

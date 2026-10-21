@@ -15,35 +15,38 @@
   "example": "examples/Receiver/Receiver.ino",
   "isolated_receiver_link": "PASS",
   "exported_library_translation_units": 168,
-  "compiler_input_set_sha256": "9547a39c63d201c5c6285fa9e3d420b928fc875de2ffbcb3820f4efe3d1619aa",
+  "compiler_input_set_sha256": "ba968c805f3119eb7e93ca53936c48c09d83625a214e626d39e2edc25362a03d",
   "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
-  "private_application_sha256": "6ffd963236ba0568cf4f05a1ad48d3804dde2827a410e20726e5b14b7fb42a95",
-  "private_application_bytes": 456476,
+  "private_application_sha256": "b650140878531afb79e75e94cc500eac75b6baa94b881c24dce85db22d6b1637",
+  "private_application_bytes": 458984,
   "elf_sections": {
-    "text": 451748,
+    "text": 454256,
     "data": 4728,
-    "bss": 326912
+    "bss": 327192
   },
   "private_binary_not_distributed": true,
   "vendor_original_input_hashes_checked": 257,
   "vendor_original_input_hashes_match": true,
   "export_safety_tests": {
-    "passed": 14
+    "passed": 15
   },
   "exported_synthetic_host_tests": {
     "undefined_behavior_trap": true,
+    "suite_count": 17,
     "classic": "PASS",
     "ble_checks": 237,
     "actor_checks": 1032,
     "actor_pressure_regression_checks": 932,
     "reset_bootstrap": "PASS",
-    "uart_tx_mailbox": {
-      "status": "PASS",
-      "threaded_packets": 4096,
-      "exact_bytes": 2119478
-    }
+    "ble517_512_checks": 188,
+    "service_fragmentation": "PASS,244/512-byte values at27-byte HCI fragments; no-service and stalled-TX guard cases remain fatal as expected",
+    "uart_tx_mailbox": "PASS4096packets2119478exactbytes",
+    "rtp_ledger_cases": 5,
+    "audio_timing_cases": 7,
+    "receiver_buffer_profiles": "PASS3/6/64capacity,zero-inherit,noinactivealloc,5failurepositions,50kreceive/200reconfigure,callbackreentry",
+    "i2s_geometry_runtime_legacy": "PASS"
   },
-  "target_execution_of_this_public_profile": "NOT RUN; older V3 trial and standalone GATT evidence are separated in STATUS.md",
+  "target_execution_of_this_public_profile": "Source profile not flashed by exporter; finite readback-verified root experiment and limitations are described in STATUS.md",
   "source_files": [
     {
       "path": "src/AudioDiagnostics.h",
@@ -59,11 +62,11 @@
     },
     {
       "path": "src/GigaBredr.cpp",
-      "sha256": "495b2a359d7fa6463ff31324d8234e66fb5c8f8be7c6da6672bb3cc60d7f0411"
+      "sha256": "634a752516ba55daa24589eedf7c954937bd2ae0cee4380c271d7c915416007f"
     },
     {
       "path": "src/GigaBredr.h",
-      "sha256": "92837e130cb6f658c16e1ce75dfe01b2b69e58b4003f0f64b460747e2e00b0b7"
+      "sha256": "0554cd8d453359a160960770d94c85240cc4a150a0b9757ced3ea7705150a023"
     },
     {
       "path": "src/GigaI2sOutput.h",
@@ -83,11 +86,11 @@
     },
     {
       "path": "src/detail/AudioTiming.cpp",
-      "sha256": "f3514594ba7afcf2cc3bb346f9a6519c25e538c8860686af825bda57d5f2a8d5"
+      "sha256": "8afb2091fca957172275b8227cd6a7a1d925361364e494c65f8d61481b816858"
     },
     {
       "path": "src/detail/AudioTiming.h",
-      "sha256": "e4e5b507ff71fe37946b377e92ee0aa25d0b5f1c8b082f48515359ee7ce97432"
+      "sha256": "8b0dc1121cc0b22af50e4b85be63d597f6a21b5c9abd46c8f3c5f7f8ff5292ce"
     },
     {
       "path": "src/detail/Decoder.cpp",
@@ -135,7 +138,7 @@
     },
     {
       "path": "src/owned/BleTypes.h",
-      "sha256": "db2c56c41786e04c9198811f3aa2fa07bfb1ef3b7354e217978f0e3c1ed750b1"
+      "sha256": "89741137f0575d9db41c19ecfb8462f9d3f1624fd0c1e99a1ff3c1d75bccf532"
     },
     {
       "path": "src/owned/ClassicProfiles.cpp",
@@ -375,7 +378,7 @@
     },
     {
       "path": "src/platform/OwnedRadio.cpp",
-      "sha256": "7a5b5aa24da29d9548a620f66259c3a972f98cc1674adb321fb2a4557a2cbb1b"
+      "sha256": "b489b6a7f6e170fe63e8f9c1ac1f46a4bb7a12576bf38c211ab86118bd8755c5"
     },
     {
       "path": "src/platform/GigaRadio.h",
@@ -387,15 +390,15 @@
     },
     {
       "path": "src/platform/GigaI2s.cpp",
-      "sha256": "3c9b2138f8ca076fd6a227b730bd52314f83473d64b23e53ebf2c51630b3afc6"
+      "sha256": "ae788f731a32d659518e20fbc2e1541e955bcec39a1fd15f4faab927ae8f94c7"
     },
     {
       "path": "src/platform/GigaI2s.h",
-      "sha256": "2a777be674dc0603a6fdd09b591ff180b3d435c8d7ff4ce869e20634ff0ae245"
+      "sha256": "6ac6ac69408ef0832edd66338e64f9ddbf908dd40809c9b4e9fc6a31e7206477"
     },
     {
       "path": "src/platform/I2sBuffer.h",
-      "sha256": "fa870a3896c6d1d5cff5562eae5516db97692c0213850ae9dd677ccd88d2828e"
+      "sha256": "0b7b8e3c02e3b225ccc5397fa2087941d6d26205f189da8c8247e4199af0b941"
     },
     {
       "path": "src/platform/I2sPins.h",
@@ -415,7 +418,7 @@
     },
     {
       "path": "examples/Receiver/Receiver.ino",
-      "sha256": "203330cd2491f5d269a30769951df58fbba382dd704b82a1f4257274b0009755"
+      "sha256": "9d92528d2895433113392dbd1a0d905bc6b6ce983d6fd4075132fd5de9357647"
     },
     {
       "path": "src/vendor/codecs/sbc/include/oi_assert.h",
@@ -1466,15 +1469,11 @@
       "sha256": "b73877e5d1aa7192acaaddb33952582026774335243375d96a544bdd1c7ec738"
     }
   ],
-  "snapshot_scope": "Frozen UART TX-IRQ mailbox candidate with complete selected supplied decoders; hardware outcome pending",
+  "snapshot_scope": "Stable four-packet receive-window per-H4-frame service with MTU517/512-byte GATT and optional per-codec buffers; defaults8/2/20 unchanged",
   "historical_host_translation_units": 0,
   "decoder_source_files": 257,
   "decoder_build_defaults": "Unchanged from local CodecBuildConfig.h",
   "license_clearance": "Not asserted; original terms and unresolved grants are listed in THIRD_PARTY.md",
-  "arduino_size_summary": {
-    "program_bytes": 452264,
-    "dynamic_bytes": 53104
-  },
   "codec_translation_units": {
     "sbc": 14,
     "aac": 29,
@@ -1495,7 +1494,8 @@
       "local-only HE-AACv1 mono/stereo/LATM reference sequences"
     ],
     "lhdc_independent_decode_reference": "Not available in this native suite; allocation/bounds checks do not establish LHDC bit accuracy",
-    "media_distributed": false
+    "media_distributed": false,
+    "implementation_hashes_reverified_unchanged": 128
   },
   "selected_codec_flags": [
     "SBC",
@@ -1506,5 +1506,17 @@
     "LDAC",
     "LHDC V5",
     "Opus"
-  ]
+  ],
+  "version": "0.1.0-dev.2",
+  "arduino_size_summary": {
+    "program_bytes": 454760,
+    "dynamic_bytes": 53384
+  },
+  "receiver_defaults": {
+    "queue_packets": 8,
+    "startup_packets": 2,
+    "pcm_buffer_ms": 20,
+    "per_codec_overrides": "all zero inherit"
+  },
+  "receive_window": 4
 }

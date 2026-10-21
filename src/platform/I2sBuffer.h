@@ -62,6 +62,22 @@ inline bool i2sClock(uint32_t rate, I2sClock& c) {
   const uint64_t ratio=(uint64_t(c.kernel_hz)*8*8192+2000000u)/4000000u;
   c.pll_n=ratio/8192; c.pll_frac=ratio%8192; return true;
 }
+struct I2sBufferGeometry {
+  uint32_t half_frames = 0, ring_frames = 0;
+  size_t dma_bytes = 0, ring_offset = 0, total_bytes = 0;
+};
+inline bool i2sBufferGeometry(uint32_t rate, uint16_t buffer_ms, I2sBufferGeometry& out) {
+  out = {};
+  I2sClock clock;
+  if (buffer_ms < 2 || buffer_ms > 100 || !i2sClock(rate, clock)) return false;
+  out.half_frames = ((rate + 999) / 1000 + 3) & ~3u;
+  out.ring_frames = ((rate * buffer_ms + 999) / 1000 + 3) & ~3u;
+  if (out.ring_frames < out.half_frames * 2) out.ring_frames = out.half_frames * 2;
+  out.dma_bytes = size_t(out.half_frames) * 16;
+  out.ring_offset = (out.dma_bytes + sizeof(I2sRing) + 31) & ~size_t(31);
+  out.total_bytes = out.ring_offset + size_t(out.ring_frames) * 8;
+  return true;
+}
 }}
 
 

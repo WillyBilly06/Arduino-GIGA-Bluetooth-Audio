@@ -60,13 +60,29 @@ void loop() {
       (unsigned long)t.output.epoch,(unsigned long long)t.output.refills,(unsigned long long)t.output.real_frames,
       (unsigned long long)t.output.silent_frames,(unsigned long)t.output.minimum_queued,(unsigned long)t.output.record_count,
       b.advertising,b.connected,b.att_mtu,(unsigned long)b.writes,(unsigned long)b.notifications_queued);
-    console.print("GBR_RTP epoch=%lu source_packets=%llu first_ts=%lu last_ts=%lu first_us=%lu last_us=%lu clock_disc=%llu source_changes=%llu queue_residence_total_us=%llu work_total_us=%llu decode_total_us=%llu wait_total_us=%llu\n",
+    console.print("GBR_RTP epoch=%lu source_packets=%llu first_ts=%lu last_ts=%lu first_us=%lu last_us=%lu clock_disc=%llu source_changes=%llu queue_residence_total_us=%llu work_total_us=%llu decode_total_us=%llu wait_total_us=%llu discontinuities=%llu timestamp_steps=%llu inner_steps=%llu payload_unknown=%llu payload_malformed=%llu disc_records=%lu disc_not_retained=%llu\n",
       (unsigned long)t.rtp.epoch,(unsigned long long)t.rtp.source_packets,
       (unsigned long)t.rtp.source_first_timestamp,(unsigned long)t.rtp.source_last_timestamp,
       (unsigned long)t.rtp.source_first_arrival_us,(unsigned long)t.rtp.source_last_arrival_us,
       (unsigned long long)t.rtp.clock_discontinuities,(unsigned long long)t.rtp.source_changes,
       (unsigned long long)t.queue.residence.total_us,(unsigned long long)t.work.elapsed.total_us,
-      (unsigned long long)t.work.decode_work.total_us,(unsigned long long)t.work.write_wait.total_us);
+      (unsigned long long)t.work.decode_work.total_us,(unsigned long long)t.work.write_wait.total_us,
+      (unsigned long long)t.rtp.discontinuities,(unsigned long long)t.rtp.timestamp_discontinuities,
+      (unsigned long long)t.rtp.inner_sequence_discontinuities,(unsigned long long)t.rtp.unknown_payloads,
+      (unsigned long long)t.rtp.malformed_payloads,(unsigned long)t.rtp.record_count,(unsigned long long)t.rtp.records_not_retained);
+    static uint32_t rtpEpoch=0,rtpRecordIndex=0;
+    if(rtpEpoch!=t.rtp.epoch) { rtpEpoch=t.rtp.epoch;rtpRecordIndex=0; }
+    if(rtpRecordIndex<t.rtp.record_count) {
+      const auto& r=t.rtp.records[rtpRecordIndex++];
+      console.print("GBR_RTP_DISC epoch=%lu index=%lu packet=%llu reasons=%u prev_ssrc=%lu ssrc=%lu prev_seq=%u seq=%u prev_ts=%lu ts=%lu prev_us=%lu at_us=%lu expected_valid=%u expected_delta=%lu delta_valid=%u delta=%lu arrival_valid=%u arrival_delta_us=%lu prev_header=%u header=%u prev_inner=%u inner=%u prev_declared=%u declared=%u prev_scanned=%u scanned=%u prev_flags=%u flags=%u\n",
+        (unsigned long)rtpEpoch,(unsigned long)(rtpRecordIndex-1),(unsigned long long)r.packet_number,unsigned(r.reasons),
+        (unsigned long)r.previous_ssrc,(unsigned long)r.ssrc,unsigned(r.previous_sequence),unsigned(r.sequence),
+        (unsigned long)r.previous_timestamp,(unsigned long)r.timestamp,(unsigned long)r.previous_arrival_us,(unsigned long)r.arrival_us,
+        unsigned(r.expected_delta_valid),(unsigned long)r.expected_timestamp_delta,unsigned(r.timestamp_delta_valid),(unsigned long)r.timestamp_delta,
+        unsigned(r.arrival_delta_valid),(unsigned long)r.arrival_delta_us,unsigned(r.previous_packet.header),unsigned(r.packet.header),
+        unsigned(r.previous_packet.inner_sequence),unsigned(r.packet.inner_sequence),unsigned(r.previous_packet.declared_frames),unsigned(r.packet.declared_frames),
+        unsigned(r.previous_packet.scanned_frames),unsigned(r.packet.scanned_frames),unsigned(r.previous_packet.flags),unsigned(r.packet.flags));
+    }
     static uint32_t outputEpoch=0,recordIndex=0;
     if(outputEpoch!=t.output.epoch) { outputEpoch=t.output.epoch;recordIndex=0; }
     if(recordIndex<t.output.record_count) {

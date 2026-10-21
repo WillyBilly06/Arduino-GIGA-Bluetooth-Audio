@@ -6,9 +6,9 @@ allocation and PCM5102A I2S output. Project-owned code uses Apache-2.0;
 third-party source retains its own licenses and notices.
 
 This develop snapshot is experimental. It is not a qualified audio release.
-The owned host's initial startup failure was corrected by a controller-reset
-bootstrap change. A full local development image subsequently passed a real
-phone GATT probe (MTU 247, ten acknowledged writes and ten exact echoes).
+The owned host's startup and burst-service failures were corrected. A local
+development image passed real phone GATT negotiation at MTU 517 and ten exact
+512-byte write/notification echoes while LHDC audio was active.
 Continuous stable Classic audio with concurrent BLE has not passed validation.
 The earlier baseline host's audio captures and the separate decoder Cortex-M7
 benchmarks do not qualify this replacement host. See [status](docs/STATUS.md).
@@ -29,7 +29,7 @@ original notices and conditions, listed in [THIRD_PARTY.md](THIRD_PARTY.md).
 | HE-AAC v1 | Experimental mono/stereo reference cases on M7 | No compatible sender established |
 | aptX / aptX HD | Independent references, ASAN and M7 | Pending |
 | LDAC | Independent mono/stereo references, ASAN and M7 | Pending |
-| LHDC V5 | ARM port, allocation checks and real received media; no independent PCM reference | 192 kHz/24-bit at nominal 900 kbps; drops/underruns remain |
+| LHDC V5 | ARM port, allocation checks and real received media; no independent PCM reference | 192 kHz/24-bit at true 1000 kbps; output starvation and pre-RTP discontinuities remain |
 | Opus | Independent references, ASAN and M7 | RedMagic has no Opus sender |
 
 The library receives one negotiated A2DP codec at a time. HE-AAC v2 and xHE-AAC
@@ -83,6 +83,29 @@ allocated for the current configuration and released on stop/reconfiguration;
 immutable tables remain in flash. External queue/assembly allocation can use a
 caller-initialized SDRAM provider through `setExternalAllocator()`.
 
+Each codec can override the compressed queue, startup reserve, assembly limit
+and PCM ring duration. Zero override fields inherit the global settings; only
+the selected profile allocates storage. For example, the capacity-only LHDC test
+used these settings (this is not a stable-playback recommendation):
+
+```cpp
+auto& lhdc = config.codec_buffers[static_cast<size_t>(giga_bredr::Codec::LhdcV5)];
+lhdc.maximum_packet_bytes = 2048;
+lhdc.queue_packets = 32;
+lhdc.startup_packets = 2;
+lhdc.pcm_buffer_ms = 20;
+```
+
+`stats().buffers` reports the active resolved profile. PCM storage scales with
+the negotiated sample rate, with internal DMA-compatible memory retained for
+the output ring. Stop, reconfiguration and allocation failure release the active
+storage. Inactive codec settings do not allocate their queues or PCM rings.
+
+BLE defaults to a maximum ATT MTU of 517. The negotiated value is bounded by the
+peer; characteristic values are independently limited to 512 bytes. Ordinary
+writes and notifications are limited to `min(512, negotiated_mtu - 3)` bytes.
+The service is a public, unencrypted GATT server for data/control.
+
 `Receiver` includes bounded nonblocking USB diagnostics and a small BLE echo
 diagnostic. `SbcReceiver` limits negotiation to SBC; `I2sTone` is an isolated
 output diagnostic. Compilation proves integration only. It does not prove RF
@@ -96,16 +119,16 @@ Review the example and pin configuration before connecting a DAC. Decoder
 work and radio callbacks use bounded queues; allocation and timing diagnostics
 do not establish end-to-end playback quality.
 
-In the subsequent exact-route trial with a 90-second source, the full local
-image received, decoded and submitted LHDC PCM to DMA, with queue drops and
-underruns. The actor then stopped at 204972 ms on receive-window accounting.
-A second GATT probe attempted after that stop timed out; it does not establish
-Classic/BLE concurrency. The current candidate replaces polled UART transmission
-with a bounded interrupt-driven mailbox. A later 25-second LHDC 192 kHz/24-bit trial
-completed BLE MTU 247 plus 10 acknowledged writes and 10 exact echoes during audio,
-with zero transport/decode/DMA errors and graceful stream stop. Queue drops and
-underruns remain. That run used quality 0x8007, nominal 900 kbps; 0x8008 selects the
-requested 1000 kbps mode. See the exact settings and limits in [status](docs/STATUS.md).
+The current candidate uses interrupt-driven UART transmission and processes each
+complete HCI frame before admitting the next frame from a received burst. This
+matches a service-order difference found against the preserved BTstack baseline.
+The four-packet receive-window guard remains intact. A finite true-1000-kbps
+trial with a 32-packet queue had no local queue drops or transport/decode/DMA
+errors and passed concurrent MTU-517/512-byte BLE echoes. Output starvation
+remained: the received stream contained fourteen 28-packet inner-sequence and
+timestamp discontinuities despite continuous RTP sequence numbers. The source
+of those pre-RTP omissions remains under investigation. Earlier quality 0x8007
+trials were nominal 900 kbps; 0x8008 selects 1000 kbps. See [status](docs/STATUS.md).
 
 See [third-party notices](THIRD_PARTY.md), [export policy](docs/EXPORT.md), and
 the per-file [source provenance](docs/source-provenance.json). The isolated

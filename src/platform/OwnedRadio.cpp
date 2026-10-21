@@ -221,7 +221,14 @@ void radioPoll() {
     unsigned rx_budget=2048;
     while(rx_budget-- && c.rx_read!=c.rx_write) {
         __DMB();uint8_t byte=c.rx[c.rx_read];c.rx_read=(c.rx_read+1)&(RxSize-1);c.last_byte=millis();
-        if(c.parser.feed(byte)) c.host.receive(c.parser.type(),c.parser.data(),c.parser.size(),c.last_byte);
+        if(c.parser.feed(byte)) {
+            c.host.receive(c.parser.type(),c.parser.data(),c.parser.size(),c.last_byte);
+            // Reassemble/retire each copied fragment and service its credit
+            // return before admitting the next complete H4 frame in this burst.
+            // The byte budget and receive-window guard remain unchanged.
+            c.host.poll(millis());
+            if(c.host.radioStats().transport_errors) break;
+        }
     }
     if(c.rx_paused && ((c.rx_write-c.rx_read)&(RxSize-1))<RxSize/2) {
         core_util_critical_section_enter();

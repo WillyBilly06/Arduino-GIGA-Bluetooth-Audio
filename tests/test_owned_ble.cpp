@@ -16,7 +16,7 @@ struct Fixture {
         bth_cmdq_init(&commands);
         bth_control_tx_init(&replies);
     }
-    void begin() { CHECK(ble.begin(BleConfig{},"GIGA owned BLE",commands,replies)==Status::Ok); }
+    void begin(uint16_t mtu=517) { BleConfig c;c.maximum_mtu=mtu;CHECK(ble.begin(c,"GIGA owned BLE",commands,replies)==Status::Ok); }
     void connect(uint32_t generation=7,uint16_t handle=0x42) {
         CHECK(bth_control_tx_attach(&replies,1,handle,generation));
         CHECK(ble.attach(generation,handle));
@@ -78,7 +78,7 @@ static void copied_write_and_capacity_retry() {
 }
 
 static void notification_read_subscription_and_mtu() {
-    Fixture f; f.begin(); f.connect();
+    Fixture f; f.begin(247); f.connect();
     uint8_t value[]={1,2,3};
     CHECK(f.ble.notify(value,sizeof value)==Status::Ok);
     value[0]=99; f.ble.poll(0,false); CHECK(f.replies.used==0);
