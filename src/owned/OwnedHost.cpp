@@ -177,7 +177,7 @@ bool OwnedHost::attach(unsigned i,const bth_peer_link_t& link){
  if(peers_[i].attached)return peers_[i].owner==link.owner;
  if(!reserved_[i]||!bth_rx_flow_attach_reserved(&rx_,admissions_[i],link.handle,link.owner))return false;reserved_[i]=false;
  if(!bth_control_tx_attach(&control_,uint8_t(i),link.handle,link.owner))return false;
- Peer& peer=peers_[i];peer.owner=link.owner;peer.handle=link.handle;peer.attached=true;peer.has_pending=false;peer.borrowed_slot=-1;
+ Peer& peer=peers_[i];peer.owner=link.owner;peer.handle=link.handle;peer.attached=true;peer.has_pending=false;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
  peer.security_deadline=now_+35000;peer.disconnect_deadline=peer.assembly_deadline=peer.pending_deadline=0;memset(peer.opened,0,sizeof peer.opened);memset(peer.channel_deadlines,0,sizeof peer.channel_deadlines);
  if(!bth_l2cap_rx_init(&peer.assembly,link.handle,peer.bytes,i==0?ClassicAssemblyBytes:sizeof peer.bytes))return false;
  if(i==0){clearClassicControls();const bth_l2cap_service_t services[]={{1,672,false},{0x19,ClassicMtu,true},{0x17,672,true}};
@@ -191,7 +191,7 @@ void OwnedHost::detach(unsigned i){
  for(auto& packet:packets_)if(packet.used&&packet.charged&&rx_.slots[packet.lease.slot].owner==peer.owner){bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}
  bth_control_tx_detach(&control_,uint8_t(i),peer.owner);
  if(i==0){clearClassicControls();classic_.reset(0);memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
- peer.attached=peer.has_pending=false;peer.owner=0;peer.borrowed_slot=-1;
+ peer.attached=peer.has_pending=false;peer.owner=0;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
 }
 void OwnedHost::closePeer(unsigned i,uint8_t reason){if(!peers_[i].attached)return;if(bth_links_disconnect(&links_,peers_[i].handle,reason)==BTH_ERR_CAPACITY)return;
  if(!peers_[i].disconnect_deadline)peers_[i].disconnect_deadline=now_+5000;if(i==0){clearClassicControls();classic_.reset(0);}
@@ -274,11 +274,29 @@ void OwnedHost::receive(uint8_t type,const uint8_t* packet,size_t n,uint32_t now
   memcpy(owned.bytes,packet,n);owned.length=uint16_t(n);owned.order=++packet_order_;owned.used=true;
  }
 }
-bool OwnedHost::deliver(unsigned i,const bth_l2cap_pdu_t& pdu){
+bool OwnedHost::deliver(unsigned i,const bth_l2cap_pdu_t& pdu,uint16_t* signal_cursor){
  if(i==1)return le_.receive(peers_[i].owner,pdu.cid,pdu.payload.data,pdu.payload.len,now_);
  const bool secure=bth_links_secure(&links_,peers_[0].handle);
  if(pdu.cid!=1){const auto* channel=bth_l2cap_sig_find(&signaling_,pdu.cid);if(!channel||channel->state!=BTH_CHANNEL_OPEN)return true;
   if(pdu.payload.len>channel->local_mtu){closePeer(0,0x13);return true;}return classic_.receive(pdu.cid,pdu.payload.data,pdu.payload.len,secure,now_);
+ }
+ // Only a wholly validated, stateless bundle can commit a response prefix.
+ // The high bit records validation even when no first response could queue.
+ // Mutable/mixed bundles retain the original all-or-nothing parser below.
+ constexpr uint16_t Split=0x8000;
+ if(signal_cursor&&((*signal_cursor&Split)||expandedClassicControl(pdu))){
+  *signal_cursor|=Split;size_t at=*signal_cursor&~Split;
+  if(at>pdu.payload.len){fail("Owned expanded signaling cursor invariant");return true;}
+  while(at<pdu.payload.len&&expanded_control_budget_){
+   bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)!=BTH_OK)return false;
+   const size_t bytes=4u+bth_read_le16(pdu.payload.data+at+2);size_t n=0;bool collision=false;
+   const auto result=bth_avrcp_link_receive(&signaling_,pdu.payload.data+at,bytes,secure,avrcp_recovering_,slot.data,slot.capacity,&n,&collision);
+   if(result!=BTH_OK||!n||collision||bth_control_tx_commit(&control_,slot.token,1,n,BTH_SIGNAL_MTU)!=BTH_OK){
+    bth_control_tx_cancel(&control_,slot.token);fail("Owned expanded stateless signaling invariant");return true;
+   }
+   at+=bytes;*signal_cursor=uint16_t(Split|at);--expanded_control_budget_;
+  }
+  if(at<pdu.payload.len)return false;*signal_cursor=0;return true;
  }
  bth_control_reservation_t reservation;if(bth_control_tx_reserve(&control_,0,&reservation)!=BTH_OK)return false;
  size_t n=0;bool collision=false;bth_status_t result=bth_avrcp_link_receive(&signaling_,pdu.payload.data,pdu.payload.len,secure,avrcp_recovering_,reservation.data,reservation.capacity,&n,&collision);
@@ -295,21 +313,27 @@ bool OwnedHost::safeClassicControl(const bth_l2cap_pdu_t& pdu) const{
  }
  // A whole bundle is independent only if every command is stateless. A later
  // disconnect/configuration command must not hide behind an initial Echo.
- size_t response_bytes=0;
  for(size_t at=0;at<pdu.payload.len;){const auto* p=pdu.payload.data+at;const size_t remaining=pdu.payload.len-at;
   if(remaining<4||!p[1])return false;const size_t n=bth_read_le16(p+2);
   if(n>remaining-4||(p[0]!=8&&(p[0]!=10||n!=2)))return false;
-  const uint16_t info=p[0]==10?bth_read_le16(p+4):0;
-  response_bytes+=p[0]==8?n+4:(info==2?12u:(info==3?16u:8u));
-  if(response_bytes>BTH_CONTROL_BYTES)return false;at+=n+4;
+  at+=n+4;
  }
  return true;
+}
+bool OwnedHost::expandedClassicControl(const bth_l2cap_pdu_t& pdu) const{
+ if(pdu.cid!=1||!safeClassicControl(pdu))return false;
+ size_t response_bytes=0;
+ for(size_t at=0;at<pdu.payload.len;){const auto* p=pdu.payload.data+at;const size_t n=bth_read_le16(p+2);
+  const uint16_t info=p[0]==10?bth_read_le16(p+4):0;
+  response_bytes+=p[0]==8?n+4:(info==2?12u:(info==3?16u:8u));at+=n+4;
+ }
+ return response_bytes>BTH_CONTROL_BYTES;
 }
 void OwnedHost::clearClassicControls(uint16_t cid){
  if(!cid){for(auto& p:classic_deferred_)p={};classic_deferred_read_=classic_deferred_count_=0;classic_deferred_owner_=0;return;}
  auto& peer=peers_[0];if(peer.has_pending&&peer.pending.cid==cid){
   if(peer.borrowed_slot>=0){auto& p=packets_[peer.borrowed_slot];bth_rx_flow_release(&rx_,p.lease);p.used=false;}
-  peer.has_pending=false;peer.borrowed_slot=-1;peer.pending={};peer.pending_deadline=0;
+  peer.has_pending=false;peer.borrowed_slot=-1;peer.pending={};peer.pending_deadline=0;peer.pending_signal_cursor=0;
  }
  unsigned kept=0;const unsigned count=classic_deferred_count_;
  for(unsigned k=0;k<count;++k){const unsigned from=(classic_deferred_read_+k)%ClassicDeferredSlots;
@@ -318,12 +342,12 @@ void OwnedHost::clearClassicControls(uint16_t cid){
  }
  classic_deferred_count_=uint8_t(kept);if(!kept)clearClassicControls();
 }
-bool OwnedHost::deferClassicControl(const bth_l2cap_pdu_t& pdu,uint32_t deadline){
+bool OwnedHost::deferClassicControl(const bth_l2cap_pdu_t& pdu,uint32_t deadline,uint16_t signal_cursor){
  if(classic_deferred_count_==ClassicDeferredSlots||!safeClassicControl(pdu))return false;
  auto& peer=peers_[0];if(!peer.attached||(classic_deferred_count_&&classic_deferred_owner_!=peer.owner))return false;
  const unsigned slot=(classic_deferred_read_+classic_deferred_count_)%ClassicDeferredSlots;
  memcpy(peer.bytes+ClassicAssemblyBytes+slot*BTH_CONTROL_BYTES,pdu.payload.data,pdu.payload.len);
- classic_deferred_[slot]={pdu.cid,uint16_t(pdu.payload.len),deadline};classic_deferred_owner_=peer.owner;++classic_deferred_count_;return true;
+ classic_deferred_[slot]={pdu.cid,uint16_t(pdu.payload.len),deadline,signal_cursor};classic_deferred_owner_=peer.owner;++classic_deferred_count_;return true;
 }
 bool OwnedHost::retryClassicControls(){
  auto& peer=peers_[0];if(!classic_deferred_count_)return true;
@@ -333,7 +357,7 @@ bool OwnedHost::retryClassicControls(){
   // Occupancy, not a nonzero timestamp, makes this deadline valid at wrap.
   if(int32_t(now_-p.deadline)>=0){closePeer(0,0x13);return false;}
   const bth_l2cap_pdu_t pdu={peer.handle,p.cid,{peer.bytes+ClassicAssemblyBytes+slot*BTH_CONTROL_BYTES,p.length},false};
-  if(!deliver(0,pdu))break;if(!active_||!peer.attached||link->disconnecting)return false;
+  if(!deliver(0,pdu,&classic_deferred_[slot].signal_cursor))break;if(!active_||!peer.attached||link->disconnecting)return false;
   classic_deferred_[slot]={};classic_deferred_read_=uint8_t((slot+1)%ClassicDeferredSlots);--classic_deferred_count_;
  }
  if(!classic_deferred_count_)clearClassicControls();return true;
@@ -348,23 +372,23 @@ void OwnedHost::processRx(unsigned i){
  if(peer.has_pending){
   if(i==0&&int32_t(now_-peer.pending_deadline)>=0){closePeer(i,0x13);return;}
   bool consumed=false;
-  if(i==0&&classic_deferred_count_)consumed=deferClassicControl(peer.pending,peer.pending_deadline);
-  else {consumed=deliver(i,peer.pending);if(!consumed&&i==0)consumed=deferClassicControl(peer.pending,peer.pending_deadline);}
+  if(i==0&&classic_deferred_count_)consumed=deferClassicControl(peer.pending,peer.pending_deadline,peer.pending_signal_cursor);
+  else {consumed=deliver(i,peer.pending,&peer.pending_signal_cursor);if(!consumed&&i==0)consumed=deferClassicControl(peer.pending,peer.pending_deadline,peer.pending_signal_cursor);}
   if(!consumed){if(due(now_,peer.pending_deadline))closePeer(i,0x13);return;}
   if(peer.borrowed_slot>=0){auto& packet=packets_[peer.borrowed_slot];bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}
-  peer.has_pending=false;peer.borrowed_slot=-1;
+  peer.has_pending=false;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
  }
  for(unsigned limit=0;limit<RxWindow&&active_&&peer.attached;++limit){
   int index=-1;for(unsigned k=0;k<RxSlots;++k)if(packets_[k].used&&packets_[k].charged&&rx_.slots[k].owner==peer.owner&&(index<0||int32_t(packets_[k].order-packets_[index].order)<0))index=int(k);
   if(index<0)break;auto& packet=packets_[index];bth_acl_view_t acl={};acl.handle=bth_read_le16(packet.bytes)&0x0fff;acl.pb=uint8_t((packet.bytes[1]>>4)&3);acl.bc=uint8_t(packet.bytes[1]>>6);acl.payload={packet.bytes+4,size_t(packet.length)-4};
   bth_l2cap_pdu_t pdu={};bth_status_t result=bth_l2cap_rx_feed(&peer.assembly,&acl,&pdu);
   if(result==BTH_MORE)peer.assembly_deadline=now_+2000;else peer.assembly_deadline=0;
-  const uint32_t deadline=now_+5000;bool consumed=true;
+  const uint32_t deadline=now_+5000;bool consumed=true;uint16_t signal_cursor=0;
   if(result==BTH_OK){
-   if(i==0&&classic_deferred_count_&&pdu.cid!=classic_.mediaCid())consumed=deferClassicControl(pdu,deadline);
-   else {consumed=deliver(i,pdu);if(!consumed&&i==0)consumed=deferClassicControl(pdu,deadline);}
+   if(i==0&&classic_deferred_count_&&pdu.cid!=classic_.mediaCid())consumed=deferClassicControl(pdu,deadline,signal_cursor);
+   else {consumed=deliver(i,pdu,&signal_cursor);if(!consumed&&i==0)consumed=deferClassicControl(pdu,deadline,signal_cursor);}
   }
-  if(result==BTH_OK&&!consumed){peer.pending=pdu;peer.has_pending=true;peer.pending_deadline=deadline;peer.borrowed_slot=pdu.reassembled?-1:index;
+  if(result==BTH_OK&&!consumed){peer.pending=pdu;peer.pending_signal_cursor=signal_cursor;peer.has_pending=true;peer.pending_deadline=deadline;peer.borrowed_slot=pdu.reassembled?-1:index;
    if(pdu.reassembled){bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}break;
   }
   bth_rx_flow_release(&rx_,packet.lease);packet.used=false;if(result<0){++stats_.dropped_packets;closePeer(i,0x13);break;}
@@ -381,6 +405,10 @@ void OwnedHost::synchronizeChannels(){
  }
  for(unsigned k=0;k<BTH_CHANNEL_LIMIT;++k){auto& c=signaling_.channels[k];
   if(peer.opened[k]&&c.state!=BTH_CHANNEL_OPEN){clearClassicControls(uint16_t(0x40+k));classic_.channelClosed(uint16_t(0x40+k));peer.opened[k]=false;}
+  if(c.state==BTH_CHANNEL_OPEN&&peer.opened[k]&&(c.psm==1||bth_links_secure(&links_,peer.handle))&&
+     !classic_.channelMtuUpdated(peer.owner,c.psm,c.local_cid,c.remote_cid,c.remote_mtu)){
+   closePeer(0,0x13);return;
+  }
   if(c.state==BTH_CHANNEL_OPEN&&!peer.opened[k]&&(c.psm==1||bth_links_secure(&links_,peer.handle))){
    if(classic_.channelOpened(c.psm,c.local_cid,c.remote_cid,c.remote_mtu)){peer.opened[k]=true;peer.channel_deadlines[k]=0;}
    else disconnectChannel(c.local_cid);
@@ -425,6 +453,7 @@ bool OwnedHost::updateAudioPriority(){
  qos_audio_active_=enabled;qos_classic_owner_=peers_[0].owner;qos_le_owner_=peers_[1].owner;return enabled;
 }
 void OwnedHost::runtimePoll(){
+ expanded_control_budget_=BTH_CONTROL_PEER_LIMIT; // At most three split replies per owner pass.
  while(deferred_count_&&active_){auto& d=deferred_[deferred_read_];bth_h4_frame_t event={};uint8_t wire[258];wire[0]=4;memcpy(wire+1,d.bytes,d.length);
   if(bth_h4_decode(wire,d.length+1,&event)!=BTH_OK){fail("Owned retained event corrupt");return;}if(!dispatch(event))break;if(!active_)return;retired_event_=d.serial;chargeWaiting(retired_event_);if(!active_)return;deferred_read_=(deferred_read_+1)%8;--deferred_count_;
  }

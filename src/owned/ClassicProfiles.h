@@ -15,6 +15,9 @@ public:
  Status begin(uint32_t codec_mask,const RadioCallbacks& callbacks,bth_control_tx_t& replies,uint8_t peer_index=0);
  void reset(uint32_t generation);
  bool channelOpened(uint16_t psm,uint16_t local_cid,uint16_t remote_cid,uint16_t remote_mtu);
+ // Refresh from the actor's canonical accepted OPEN channel, without reopening
+ // a profile or changing its generation, role, security, or protocol state.
+ bool channelMtuUpdated(uint32_t generation,uint16_t psm,uint16_t local_cid,uint16_t remote_cid,uint16_t remote_mtu);
  void channelClosed(uint16_t local_cid);
  // FALSE only when reply capacity is exhausted: retain and retry this exact SDU.
  // Application callbacks run synchronously and must not reenter the host actor.

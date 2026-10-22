@@ -187,8 +187,11 @@ Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs,const I2sPins& pins) {
 size_t i2sWrite(const int32_t* pcm,size_t frames) {
   const uint32_t phase=__atomic_load_n(&outputPhase,__ATOMIC_ACQUIRE);
   if((phase!=Priming && phase!=Running) || !ring) return 0;
-  const size_t accepted=ring->push(pcm,frames);
+  size_t accepted=ring->push(pcm,frames);
   if(phase==Priming && ring->prime(dmaWords,halfFrames)) {
+    // Priming freed both DMA halves before any IRQ consumer can run. Refill
+    // that room from this caller before starting a deliberately small ring.
+    if(pcm && accepted<frames) accepted+=ring->push(pcm+accepted*2,frames-accepted);
     recovery.seedPrimed(dmaWords,halfFrames*2);
     clean(dmaWords,halfFrames*2);
     // H747 HAL passes Size unchanged to HAL_DMA_Start_IT, in transfer elements.

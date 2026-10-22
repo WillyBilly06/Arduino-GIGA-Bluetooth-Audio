@@ -275,7 +275,7 @@ typedef struct {
 
 /* Struct for CNG */
 typedef struct {
-    opus_int32                  CNG_exc_buf_Q14[ MAX_FRAME_LENGTH ];
+    opus_int32                  CNG_exc_buf_Q14[ CNG_BUF_MASK_MAX + 1 ];
     opus_int16                  CNG_smth_NLSF_Q15[ MAX_LPC_ORDER ];
     opus_int32                  CNG_synth_state[ MAX_LPC_ORDER ];
     opus_int32                  CNG_smth_Gain_Q16;

@@ -1,3 +1,7 @@
+/* GigaBredr modification notice, 2026-10-21: portable decoder port;
+ * build guards, relative includes, tracked allocation and bounds/ARM fixes.
+ * Original copyright and license notices remain below unchanged.
+ * Per-file original/port SHA-256: docs/source-provenance.json. */
 /******************************************************************************
  *
  *  Copyright (C) 2014 The Android Open Source Project
@@ -172,7 +176,9 @@ OI_STATUS internal_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
                                        OI_BYTE maxChannels,
                                        OI_BYTE pcmStride,
                                        OI_BOOL enhanced,
-                                       OI_BOOL msbc_enable);
+                                       OI_BOOL msbc_enable,
+                                       OI_UINT8 maxSubbands,
+                                       OI_UINT8 maxBlocks);
 
 OI_UINT16 OI_SBC_CalculateFrameAndHeaderlen(OI_CODEC_SBC_FRAME_INFO *frame, OI_UINT *headerLen_);
 
@@ -222,7 +228,9 @@ PRIVATE OI_STATUS OI_CODEC_SBC_Alloc(OI_CODEC_SBC_COMMON_CONTEXT *common,
                                      OI_UINT32 *codecDataAligned,
                                      OI_UINT32 codecDataBytes,
                                      OI_UINT8 maxChannels,
-                                     OI_UINT8 pcmStride);
+                                     OI_UINT8 pcmStride,
+                                     OI_UINT8 maxSubbands,
+                                     OI_UINT8 maxBlocks);
 /**
 @}
 */

@@ -24,7 +24,22 @@ void setup() {
   ldac.queue_packets=40; ldac.startup_packets=16;
   auto& sbc=config.codec_buffers[static_cast<size_t>(Codec::Sbc)];
   sbc.queue_packets=12; sbc.startup_packets=4;
+  // About 100..130ms compressed startup reserve for the tested phone modes.
+  // Only the selected codec profile allocates storage. The board advertises
+  // a 2048-byte A2DP receive MTU; access-unit assembly remains independent.
+  auto& aac=config.codec_buffers[static_cast<size_t>(Codec::Aac)];
+  aac.queue_packets=16; aac.startup_packets=6; aac.maximum_packet_bytes=2048;
+  auto& he=config.codec_buffers[static_cast<size_t>(Codec::AacHe)];
+  he.queue_packets=16; he.startup_packets=6; he.maximum_packet_bytes=2048;
+  auto& aptx=config.codec_buffers[static_cast<size_t>(Codec::Aptx)];
+  aptx.queue_packets=24; aptx.startup_packets=10; aptx.maximum_packet_bytes=2048;
+  auto& aptxHd=config.codec_buffers[static_cast<size_t>(Codec::AptxHd)];
+  aptxHd.queue_packets=32; aptxHd.startup_packets=15; aptxHd.maximum_packet_bytes=2048;
+  auto& opus=config.codec_buffers[static_cast<size_t>(Codec::Opus)];
+  opus.queue_packets=16; opus.startup_packets=7; opus.maximum_packet_bytes=2048;
   config.ble.enabled=true; config.ble.maximum_mtu=517;
+  config.ble.audio_connection_preference.interval_min=96;
+  config.ble.audio_connection_preference.interval_max=96; // 120ms; peer acceptance is reported.
   config.diagnostic=diagnostic; config.configuration_changed=configured;
   config.volume_changed=volume; config.metadata_changed=metadata;
   // Hardware-compatible pins are selected before begin(); -1 disables MCLK.

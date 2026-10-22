@@ -304,7 +304,7 @@ PRIVATE void OI_SBC_SynthFrame_4SB(OI_CODEC_SBC_DECODER_CONTEXT *context, OI_INT
     OI_UINT nrof_channels = context->common.frameInfo.nrof_channels;
     OI_UINT pcmStrideShift = context->common.pcmStride == 1 ? 0 : 1;
     OI_UINT offset = context->common.filterBufferOffset;
-    OI_INT32 *s = context->common.subdata + 8 * nrof_channels * blkstart;
+    OI_INT32 *s = context->common.subdata + 4 * nrof_channels * blkstart;
     OI_UINT blkstop = blkstart + blkcount;
 
     for (blk = blkstart; blk < blkstop; blk++) {

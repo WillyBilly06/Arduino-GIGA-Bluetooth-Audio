@@ -38,7 +38,9 @@ PRIVATE OI_STATUS OI_CODEC_SBC_Alloc(OI_CODEC_SBC_COMMON_CONTEXT *common,
                                      OI_UINT32 *codecDataAligned,
                                      OI_UINT32 codecDataBytes,
                                      OI_UINT8 maxChannels,
-                                     OI_UINT8 pcmStride)
+                                     OI_UINT8 pcmStride,
+                                     OI_UINT8 maxSubbands,
+                                     OI_UINT8 maxBlocks)
 {
     int i;
     size_t filterBufferCount;
@@ -58,7 +60,7 @@ PRIVATE OI_STATUS OI_CODEC_SBC_Alloc(OI_CODEC_SBC_COMMON_CONTEXT *common,
 
     /* Compute sizes needed for the memory regions, and bail if we don't have
      * enough memory for them. */
-    subdataSize = maxChannels * sizeof(common->subdata[0]) * SBC_MAX_BANDS * SBC_MAX_BLOCKS;
+    subdataSize = maxChannels * sizeof(common->subdata[0]) * maxSubbands * maxBlocks;
     if (subdataSize > codecDataBytes) {
         return OI_STATUS_OUT_OF_MEMORY;
     }

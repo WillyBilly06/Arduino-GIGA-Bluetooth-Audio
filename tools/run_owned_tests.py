@@ -38,5 +38,8 @@ def main():
  exe=out/'test_i2s_pins_legacy.exe';run([cxx,'-std=c++17',*flags,'-DGIGA_BREDR_I2S_WS_PIN=69','tests/test_i2s_pins.cpp','-o',exe]);run([exe])
  exe=out/'test_i2s_routes_legacy.exe';run([cxx,'-std=c++17',*flags,'-DGIGA_BREDR_I2S_WS_PIN=69','tests/test_i2s_routes.cpp','-o',exe]);run([exe])
  run([sys.executable,'tests/test_owned_wake.py','--cc',cc,'--cxx',cxx,*(['--sanitize']if a.sanitize else[]),*(['--asan']if a.asan else[])])
+ run([sys.executable,'tools/test_codec_memory.py',*(['--sanitize']if a.sanitize else[]),*(['--asan']if a.asan else[])])
+ # This child always enables ASan/UBSan and keeps its receipt under this run.
+ run([sys.executable,'tools/test_audio_scheduling.py','--compiler',cxx,'--cc',cc,'--output',out/'audio-scheduling'])
  print('PASS public synthetic receiver, owned host, HCI/ATT lifecycle, PCM recovery and wake checks; no physical qualification')
 if __name__=='__main__':main()

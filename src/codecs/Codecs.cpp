@@ -1,6 +1,7 @@
 #include "Codecs.h"
 #include "../CodecBuildConfig.h"
 #include "../detail/Memory.h"
+#include "../detail/SbcConfig.h"
 #include <string.h>
 #include <limits.h>
 extern "C" {
@@ -51,14 +52,14 @@ static void expand16(int32_t* out,const int16_t* in,size_t n) {
 struct SbcState { OI_CODEC_SBC_DECODER_CONTEXT decoder; CodecConfig config; int16_t* pcm; OI_UINT32* work; };
 static void sbcClose(void* p) { auto s=(SbcState*)p;if(!s)return;gbr_free(s->pcm);gbr_free(s->work);gbr_free(s); }
 static Status sbcOpen(void** p,const CodecConfig& c) {
-    *p=nullptr;if(!common(c) || !(rate(c.sample_rate)||c.sample_rate==16000||c.sample_rate==32000))return Status::Unsupported;
+    *p=nullptr;SbcGeometry geometry;if(!sbcGeometry(c,geometry))return Status::Unsupported;
     auto s=(SbcState*)gbr_calloc(1,sizeof(SbcState));if(!s)return Status::OutOfMemory;s->config=c;
-    // Actual channel count controls synthesis and PCM allocations. The source macro
-    // incorrectly reserves two filter channels even for mono, so use its formula directly.
-    size_t workBytes=sizeof(int32_t)*16*c.channels*8+sizeof(SBC_BUFFER_T)*c.channels*8*SBC_CODEC_FAST_FILTER_BUFFERS;
-    s->work=(OI_UINT32*)gbr_calloc(1,workBytes);s->pcm=(int16_t*)gbr_malloc(128*c.channels*sizeof(int16_t));
+    // Four-band OI synthesis also uses an 80-halfword filter window; retain
+    // the fast eight-wide ring while sizing subband samples to this stream.
+    size_t workBytes=sizeof(int32_t)*geometry.frames()*c.channels+sizeof(SBC_BUFFER_T)*c.channels*8*SBC_CODEC_FAST_FILTER_BUFFERS;
+    s->work=(OI_UINT32*)gbr_calloc(1,workBytes);s->pcm=(int16_t*)gbr_malloc(geometry.frames()*c.channels*sizeof(int16_t));
     if(!s->work || !s->pcm) { sbcClose(s);return Status::OutOfMemory; }
-    if(OI_CODEC_SBC_DecoderReset(&s->decoder,s->work,workBytes,c.channels,c.channels,0,0)!=OI_OK) { sbcClose(s);return Status::Unsupported; }
+    if(OI_CODEC_SBC_DecoderResetGeometry(&s->decoder,s->work,workBytes,c.channels,c.channels,0,0,geometry.subbands,geometry.blocks)!=OI_OK) { sbcClose(s);return Status::Unsupported; }
     *p=s;return Status::Ok;
 }
 static DecodeResult sbcDecode(void* p,const uint8_t* in,size_t n,int32_t* pcm,size_t cap) {
@@ -68,6 +69,12 @@ static DecodeResult sbcDecode(void* p,const uint8_t* in,size_t n,int32_t* pcm,si
     unsigned bands=(in[1]&1)?8:4,blocks=4+4*((in[1]>>4)&3),mode=(in[1]>>2)&3,channels=mode?2:1;
     static const uint32_t rates[]={16000,32000,44100,48000};
     if(channels!=s->config.channels || rates[in[1]>>6]!=s->config.sample_rate)return result(Status::Unsupported);
+    if(s->config.codec_info_size) {
+        const uint8_t* selected=s->config.codec_info;
+        if(!(selected[0]&(8>>mode)) || !(selected[1]&(0x80>>((blocks/4)-1))) ||
+           !(selected[1]&(bands==8?4:8)) || !(selected[1]&((in[1]&2)?2:1)) ||
+           in[2]<selected[2] || in[2]>selected[3])return result(Status::Unsupported);
+    }
     size_t frames=bands*blocks;if(cap<frames)return result(Status::OutputFull);
     size_t audioBits=blocks*in[2]*((mode<2)?channels:1)+(mode==3?bands:0);
     size_t length=4+(4*bands*channels)/8+(audioBits+7)/8;
@@ -223,23 +230,23 @@ static DecodeResult lhdcDecode(void* p,const uint8_t* in,size_t n,int32_t* pcm,s
 static const DecoderOps lhdcOps={lhdcOpen,lhdcDecode,lhdcClose};
 #endif
 #if GBR_ENABLE_OPUS
-struct OpusState { OpusDecoder* decoder;int16_t* pcm;CodecConfig config;size_t maxFrames; };
+struct OpusState { OpusDecoder* decoder;int16_t* pcm;uint32_t sampleRate;uint8_t channels;size_t maxFrames; };
 static void opusClose(void* p) {auto s=(OpusState*)p;if(!s)return;opus_decoder_destroy(s->decoder);gbr_free(s->pcm);gbr_free(s);}
 static Status opusOpen(void** p,const CodecConfig& c) {
     *p=nullptr;if(!common(c)||!(c.sample_rate==8000||c.sample_rate==12000||c.sample_rate==16000||c.sample_rate==24000||c.sample_rate==48000))return Status::Unsupported;
     uint32_t duration=c.frame_duration_us?c.frame_duration_us:20000;
     if(!(duration==2500||duration==5000||duration==10000||duration==20000||duration==40000||duration==60000))return Status::Unsupported;
-    auto s=(OpusState*)gbr_calloc(1,sizeof(OpusState));if(!s)return Status::OutOfMemory;s->config=c;s->maxFrames=(uint64_t)c.sample_rate*duration/1000000;
+    auto s=(OpusState*)gbr_calloc(1,sizeof(OpusState));if(!s)return Status::OutOfMemory;s->sampleRate=c.sample_rate;s->channels=c.channels;s->maxFrames=(uint64_t)c.sample_rate*duration/1000000;
     int error=0;s->decoder=opus_decoder_create(c.sample_rate,c.channels,&error);s->pcm=(int16_t*)gbr_malloc(s->maxFrames*c.channels*2);
     if(!s->decoder||!s->pcm){opusClose(s);return Status::OutOfMemory;}*p=s;return Status::Ok;
 }
 static DecodeResult opusDecode(void* p,const uint8_t* in,size_t n,int32_t* pcm,size_t cap) {
     if(!io(in,n,pcm,cap))return result(cap?Status::InvalidArgument:Status::OutputFull);
     auto s=(OpusState*)p;if(n>1275*48)return result(Status::CorruptFrame);
-    int frames=opus_packet_get_nb_samples(in,n,s->config.sample_rate);if(frames<0)return result(Status::CorruptFrame);
+    int frames=opus_packet_get_nb_samples(in,n,s->sampleRate);if(frames<0)return result(Status::CorruptFrame);
     if(size_t(frames)>s->maxFrames)return result(Status::Unsupported);if(size_t(frames)>cap)return result(Status::OutputFull);
     int got=opus_decode(s->decoder,in,n,s->pcm,s->maxFrames,0);if(got<0)return result(Status::CorruptFrame);
-    expand16(pcm,s->pcm,got*s->config.channels);return result(Status::Ok,n,got);
+    expand16(pcm,s->pcm,got*s->channels);return result(Status::Ok,n,got);
 }
 static const DecoderOps opusOps={opusOpen,opusDecode,opusClose};
 #endif

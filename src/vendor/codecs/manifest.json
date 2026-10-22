@@ -30,18 +30,20 @@
     "source": "decoders/SBC/decoder/include/oi_codec_sbc.h",
     "destination": "src/vendor/codecs/sbc/include/oi_codec_sbc.h",
     "source_sha256": "ce7dc1330e1f3109f530f86a2606a1709b3ff790df3d2c2d747c01a353fea4a4",
-    "patched_sha256": "ce7dc1330e1f3109f530f86a2606a1709b3ff790df3d2c2d747c01a353fea4a4",
+    "patched_sha256": "61ee265f1c54378d84161de3528fb96ce5e11acfb04fd3f58adf643617ddb304",
     "patches": [
-      "giga-portable-reviewed-patch-v1"
+      "giga-portable-reviewed-patch-v1",
+      "bounded-sbc-reset-api"
     ]
   },
   {
     "source": "decoders/SBC/decoder/include/oi_codec_sbc_private.h",
     "destination": "src/vendor/codecs/sbc/include/oi_codec_sbc_private.h",
     "source_sha256": "9a02e0e5f37f9ab7daed9c160e9314cd86483926003c764ff6739379ef14f746",
-    "patched_sha256": "9a02e0e5f37f9ab7daed9c160e9314cd86483926003c764ff6739379ef14f746",
+    "patched_sha256": "279c9c4ac170ed12dad2425ec116a83ac10d8775a44fd5d1ca6d064c4aa63e0e",
     "patches": [
-      "giga-portable-reviewed-patch-v1"
+      "giga-portable-reviewed-patch-v1",
+      "bounded-sbc-context-geometry"
     ]
   },
   {
@@ -130,11 +132,12 @@
     "source": "decoders/SBC/decoder/srce/alloc.c",
     "destination": "src/vendor/codecs/sbc/srce/alloc.c",
     "source_sha256": "ecd547035eb0fba050c6d13bf9e718a790721d2d6b06ab633935b14bbc70c811",
-    "patched_sha256": "4d41deda5e937c347024f4ac7d5ce4f59548689cc27dbf854c03dd6c86548da0",
+    "patched_sha256": "35a50468b5484364c152cbc67976c12058a1a4a6a33ea4c9539a5c6fd147bbef",
     "patches": [
       "relative-includes",
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "selected-sbc-subdata-storage"
     ]
   },
   {
@@ -185,22 +188,24 @@
     "source": "decoders/SBC/decoder/srce/decoder-private.c",
     "destination": "src/vendor/codecs/sbc/srce/decoder-private.c",
     "source_sha256": "4b35095621c3420a35b3c3d74d9002733f3224847c0240a8c131844029b8a348",
-    "patched_sha256": "dc686731f2150c0dd620a907ec0e1c453f7068abc54b0809d5b08b6455322d99",
+    "patched_sha256": "e73fec6c7e5e663a1dd92b699e18b75f71c0a03cf166a33e70ef8ed042aa8199",
     "patches": [
       "relative-includes",
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "bounded-sbc-reset-geometry"
     ]
   },
   {
     "source": "decoders/SBC/decoder/srce/decoder-sbc.c",
     "destination": "src/vendor/codecs/sbc/srce/decoder-sbc.c",
     "source_sha256": "6fd76e013bea1e772be1d15a987ed704fcdedf454f2128eb6b735a729c4502cd",
-    "patched_sha256": "ef4c1f4aac9a4e832c517c1119acbcf655bd18f6c42f2d4553004ffb8444b97c",
+    "patched_sha256": "4efd06a382612ac2e5434c378785dbff6540496455d34569f21c57180d2a5861",
     "patches": [
       "relative-includes",
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "bounded-sbc-frame-geometry"
     ]
   },
   {
@@ -282,11 +287,12 @@
     "source": "decoders/SBC/decoder/srce/synthesis-sbc.c",
     "destination": "src/vendor/codecs/sbc/srce/synthesis-sbc.c",
     "source_sha256": "05cf5d8720bd4ebdb5659d760fbf9be618971dc968eb18e54ff4a1aadfaadc81",
-    "patched_sha256": "f5c36615e844153fb67f7cb45a05d6c294b47875d8628f2721615ac2f232779b",
+    "patched_sha256": "ced9ce86daaa653731bd335d1821141a62b369a2df8ca192a3165b88af10e6b0",
     "patches": [
       "relative-includes",
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "four-subband-partial-raw-stride"
     ]
   },
   {
@@ -1649,11 +1655,12 @@
     "source": "decoders/Opus/silk/CNG.c",
     "destination": "src/vendor/codecs/opus/silk/CNG.c",
     "source_sha256": "a3938ba0cab4214fb6070f523fef048834ef77d87ca249af9b505178bef01793",
-    "patched_sha256": "42f58846c181b56b870f3638d37df6f42cdc848af4c4f3cbd3d2165243178f37",
+    "patched_sha256": "faf4b8c76eb417b90108526d8c64c7112782434aef02a46fb170b3a0f3f8e6ba",
     "patches": [
       "relative-includes",
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "bounded-silk-cng-excitation-history"
     ]
   },
   {
@@ -2215,10 +2222,11 @@
     "source": "decoders/Opus/silk/structs.h",
     "destination": "src/vendor/codecs/opus/silk/structs.h",
     "source_sha256": "7e8dec7b534f3c964bec957693e38d56331524960831ea266a7b7a47ca6c7bba",
-    "patched_sha256": "2bf39b18c95c7c9af03a41b409e06061862b720a765f69d9e80c3c05f594974f",
+    "patched_sha256": "03ef03a90ff75daf380f5bd495f9c3440c4362ef6b659758b1110a141534303a",
     "patches": [
       "relative-includes",
-      "giga-portable-reviewed-patch-v1"
+      "giga-portable-reviewed-patch-v1",
+      "bounded-silk-cng-excitation-history"
     ]
   },
   {

@@ -1,11 +1,55 @@
 # Develop evidence and remaining limitations
 
-Updated2026-10-22. Full supplied257-file decoder set and all eight codec build
+Version 0.1.0-dev.3; updated 2026-10-22. Full supplied257-file decoder set and all eight codec build
 defaults remain enabled. The selected runtime is the project-owned Classic/BLE
 host; no historical reference-host source is distributed. This is developmental
 source, not a stable audio release. Main/release qualification is separate.
 
-## Current correctness changes
+## Current maintained-source phone and BLE evidence
+
+The readback-verified maintained receiver image
+`e69d84fc7bb4edcc91502834ceb89bfeea6a12b003c13f7064e0353f728184ea`
+completed six 30-second phone sources: SBC 44.1 kHz, AAC-LC 44.1 kHz,
+aptX/aptX HD 48 kHz, LDAC 96 kHz and LHDC V5 192 kHz/24-bit. Each case
+completed ten exact 512-byte GATT echoes at ATT MTU 517, with zero recorded
+missing-input PCM, local queue-full or decoder-error increments. Actual BLE
+96/2/500 (120 ms interval, latency 2, 5-second timeout) was observed during
+active audio/GATT; the initial SBC link used a shorter interval before audio.
+
+A separate 110-second LHDC source with three ten-echo jobs recorded zero
+missing-input PCM, recovery entries, local full/errors and timestamp/inner
+jumps. Its 22602 received versus 22592 worked packets retain a ten-packet
+lifecycle-tail distinction. LHDC selector 32776 requests nominal 1000 kbps;
+LDAC quality selector 1000 is not a measured encoded bitrate. Applicable outer
+RTP counters were zero; aptX has no RTP here and detailed timestamp/inner
+inspection is LHDC-specific. These finite sequential results do not invalidate
+earlier failed captures or prove permanent continuity or a unique cause.
+
+Fresh maintained-source GIGA M7 diagnostics passed 12 vector cases, 20 passes
+per case and 3440 timed decode calls at 480 MHz, with zero observed deadline
+misses, failures or residual allocations. They cover SBC/SBC-XQ, AAC ADTS/LATM,
+aptX/HD, encoded Opus, LDAC known-source tones and HE-AAC v1 SBR. LHDC has no
+independent encoded PCM fixture. A separate allocation probe passed 220 exact
+configuration lifecycles; Opus tracked payload ranged from 17348 to 37548 bytes.
+Observed finite maxima were 1410 us for the tested Opus 48 kHz/20 ms stereo
+packets and 1753/3395 us for HE mono/stereo prefixes. These decoder/allocation
+diagnostics ran without radio/I2S; their maxima are not universal time bounds.
+See [M7 measurements and proof hashes](validation/codec-target-2026-10-22.md).
+
+Opus, HE-AAC and separate SBC-XQ phone selection remain unqualified on the
+available phone. Fresh physical BLE reconnect during already-active A2DP,
+electrical/analog output, acoustics, sustained drift/continuity and matched
+performance remain separate work. After the diagnostics, E69 was fully
+readback-restored; a short eight-second LHDC/actual-120-ms BLE capture was a
+playback restoration check, with no new GATT echo workload.
+
+The public-profile binary recorded in `BUILD.json` is
+`d088c35d287483db5acb761af2f0cfaf4e3297be06c0360d103f5cf94e009ed3`.
+It has fresh native/M7 compilation and source-export checks, but has **not
+been flashed or executed**. The physical results above belong to separate
+maintained-source diagnostics and E69, not this public binary.
+
+## Earlier correctness changes (historical)
 
 The snapshot includes reviewed Classic rejected-configuration transactionality,
 Abort/channel retirement and copied-control FIFO ownership; one-command L2CAP
@@ -37,9 +81,9 @@ unqualified, and the ramp cannot reconstruct omitted encoded content.
 LHDC per-call flags and cumulative counters expose right-channel concealment and
 full-frame mute while preserving existing PCM/status behavior.
 
-## Measured continuity remains a failure
+## Historical continuity failures retained
 
-The current priority policy services Classic RX first, paces ordinary ATT data,
+The retained earlier priority policy services Classic RX first, paces ordinary ATT data,
 and makes foreground BLE data admission use try-locks. Security, required
 control and real HCI credits are outside data pacing. One asynchronous preference
 requests80..120ms intervals/latency2/5s; it never equates command admission or ACK
@@ -48,7 +92,7 @@ Classic event queue, and optional CID5 work cannot unpace older ATT replies.
 
 The private473560-byte image
 `cbbf53035dfccf2381ff109256b9b5f75b86e91610f37a28dd33dc0c5042cdb8`
-was flashed and fully readback-verified. Both current95s LHDC192kHz/24-bit/
+was flashed and fully readback-verified. Both historical95s LHDC192kHz/24-bit/
 1000kbps captures completed30 exact512-byte GATT exchanges and observed120ms /
 latency2 /5s in all45 retained parameter snapshots:
 
@@ -113,7 +157,7 @@ These periodic snapshots do not establish a closed packet ledger, acoustics,
 an encoded-omission cure or a controlled quality ranking. The independently
 built public profile has not been flashed. See [details](pcm-transition-ramp.md).
 
-## Validation scope
+## Earlier validation scope (historical)
 
 `BUILD.json` records this isolated export's actual GIGA4.6.0/M7 link, exact
 compiler input hashes and public synthetic checks. Public tests cover real owned

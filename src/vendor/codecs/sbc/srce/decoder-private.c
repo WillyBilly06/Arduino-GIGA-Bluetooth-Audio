@@ -57,9 +57,16 @@ INLINE OI_STATUS internal_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
                                        OI_BYTE maxChannels,
                                        OI_BYTE pcmStride,
                                        OI_BOOL enhanced,
-                                       OI_BOOL msbc_enable)
+                                       OI_BOOL msbc_enable,
+                                       OI_UINT8 maxSubbands,
+                                       OI_UINT8 maxBlocks)
 {
     OI_STATUS status;
+
+    if ((maxSubbands != 4 && maxSubbands != 8) ||
+        (maxBlocks != 4 && maxBlocks != 8 && maxBlocks != 12 && maxBlocks != 16)) {
+        return OI_STATUS_INVALID_PARAMETERS;
+    }
 
     memset(context, 0, sizeof(*context));
 
@@ -78,13 +85,15 @@ INLINE OI_STATUS internal_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
         context->sbc_mode = OI_SBC_MODE_STD;
     }
 
-    status = OI_CODEC_SBC_Alloc(&context->common, decoderData, decoderDataBytes, maxChannels, pcmStride);
+    status = OI_CODEC_SBC_Alloc(&context->common, decoderData, decoderDataBytes, maxChannels, pcmStride, maxSubbands, maxBlocks);
 
     if (!OI_SUCCESS(status)) {
         return status;
     }
 
     context->common.codecInfo = OI_Codec_Copyright;
+    context->maxSubbands = maxSubbands;
+    context->maxBlocks = maxBlocks;
     context->common.maxBitneed = 0;
     context->limitFrameFormat = FALSE;
     OI_SBC_ExpandFrameFields(&context->common.frameInfo);

@@ -1,3 +1,7 @@
+/* GigaBredr modification notice, 2026-10-21: portable decoder port;
+ * build guards, relative includes, tracked allocation and bounds/ARM fixes.
+ * Original copyright and license notices remain below unchanged.
+ * Per-file original/port SHA-256: docs/source-provenance.json. */
 /******************************************************************************
  *
  *  Copyright (C) 2014 The Android Open Source Project
@@ -204,6 +208,8 @@ typedef struct {
     OI_UINT8 enhancedEnabled;
     OI_UINT8 bufferedBlocks;
     OI_UINT8 sbc_mode;                      /* OI_SBC_MODE_STD or OI_SBC_MODE_MSBC */
+    OI_UINT8 maxSubbands;                   /* Allocated subdata geometry, 4 or 8. */
+    OI_UINT8 maxBlocks;                     /* Allocated subdata geometry, 4/8/12/16. */
 } OI_CODEC_SBC_DECODER_CONTEXT;
 
 typedef struct {
@@ -242,6 +248,20 @@ OI_STATUS OI_CODEC_SBC_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
                                     OI_UINT8 pcmStride,
                                     OI_BOOL enhanced,
                                     OI_BOOL msbc_enable);
+
+/** Reset using bounded subband/block storage. Filter history remains eight-wide.
+ * Frames exceeding either bound are rejected before subband/sample writes.
+ * Existing DecoderReset retains its 8-subband/16-block allocation contract.
+ */
+OI_STATUS OI_CODEC_SBC_DecoderResetGeometry(OI_CODEC_SBC_DECODER_CONTEXT *context,
+                                    OI_UINT32 *decoderData,
+                                    OI_UINT32 decoderDataBytes,
+                                    OI_UINT8 maxChannels,
+                                    OI_UINT8 pcmStride,
+                                    OI_BOOL enhanced,
+                                    OI_BOOL msbc_enable,
+                                    OI_UINT8 maxSubbands,
+                                    OI_UINT8 maxBlocks);
 
 /**
  * This function restricts the kind of SBC frames that the Decoder will

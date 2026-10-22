@@ -90,6 +90,11 @@ bool ClassicProfiles::channelOpened(uint16_t psm,uint16_t local,uint16_t remote,
  }
  return true;
 }
+bool ClassicProfiles::channelMtuUpdated(uint32_t generation,uint16_t psm,uint16_t local,uint16_t remote,uint16_t mtu){
+ if(!validOwner()||generation!=generation_||mtu<48)return false;
+ auto* c=channel(local);if(!c||c->psm!=psm||c->remote!=remote)return false;
+ c->mtu=mtu;return true;
+}
 void ClassicProfiles::channelClosed(uint16_t cid){
  auto* c=channel(cid);if(!c)return;
  if(cid==signal_){signal_=0;stop(true);if(avdtp_.state!=BTH_AVDTP_ABORTING)bth_avdtp_transport_closed(&avdtp_);if(media_)close_media_=true;}

@@ -121,8 +121,14 @@ void silk_CNG(
             }
         }
         /* Update CNG excitation buffer with excitation from this subframe */
-        silk_memmove( &psCNG->CNG_exc_buf_Q14[ psDec->subfr_length ], psCNG->CNG_exc_buf_Q14, ( psDec->nb_subfr - 1 ) * psDec->subfr_length * sizeof( opus_int32 ) );
-        silk_memcpy(   psCNG->CNG_exc_buf_Q14, &psDec->exc_Q14[ subfr * psDec->subfr_length ], psDec->subfr_length * sizeof( opus_int32 ) );
+        /* CNG samples only indices 0..CNG_BUF_MASK_MAX. Preserve that prefix
+           while bounding both history movement and insertion to its storage. */
+        const opus_int excitation_capacity = sizeof( psCNG->CNG_exc_buf_Q14 ) / sizeof( psCNG->CNG_exc_buf_Q14[ 0 ] );
+        const opus_int excitation_copy = silk_min_int( psDec->subfr_length, excitation_capacity );
+        const opus_int excitation_move = silk_min_int( ( psDec->nb_subfr - 1 ) * psDec->subfr_length,
+                                                       excitation_capacity - excitation_copy );
+        silk_memmove( &psCNG->CNG_exc_buf_Q14[ excitation_copy ], psCNG->CNG_exc_buf_Q14, excitation_move * sizeof( opus_int32 ) );
+        silk_memcpy( psCNG->CNG_exc_buf_Q14, &psDec->exc_Q14[ subfr * psDec->subfr_length ], excitation_copy * sizeof( opus_int32 ) );
 
         /* Smooth gains */
         for( i = 0; i < psDec->nb_subfr; i++ ) {

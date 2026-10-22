@@ -1,8 +1,31 @@
 {
   "schema": 1,
-  "date": "2026-10-22",
   "qualification": "developmental source snapshot; hardware qualification pending",
-  "profile": "Full selected user-supplied decoder set; project-owned host with BLE audio priority and optional standard connection preference",
+  "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
+  "decoder_source_files": 257,
+  "decoder_build_defaults": "Unchanged from local CodecBuildConfig.h",
+  "license_clearance": "Not asserted; original terms and unresolved grants are listed in THIRD_PARTY.md",
+  "codec_translation_units": {
+    "sbc": 14,
+    "aac": 29,
+    "aptx": 1,
+    "ldac": 2,
+    "lhdc": 7,
+    "opus": 74
+  },
+  "selected_codec_flags": [
+    "SBC",
+    "AAC",
+    "HE-AACv1",
+    "aptX",
+    "aptX HD",
+    "LDAC",
+    "LHDC V5",
+    "Opus"
+  ],
+  "version": "0.1.0-dev.3",
+  "date": "2026-10-22",
+  "profile": "Full selected decoder set; current owned audio scheduling/control/MTU fixes, configuration-sized SBC and compact Opus storage, per-codec reserve profiles and portable audio regression coverage",
   "arduino_core": "arduino:mbed_giga 4.6.0",
   "fqbn": "arduino:mbed_giga:giga",
   "jobs": 4,
@@ -15,54 +38,7 @@
   "example": "examples/Receiver/Receiver.ino",
   "isolated_receiver_link": "PASS",
   "exported_library_translation_units": 168,
-  "compiler_input_set_sha256": "18150cf50f8bec44bed2e5672b9cf346cd0e57437a77f3e63ab47ccfa07cd1fd",
-  "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
-  "elf_sections": {
-    "text": 468464,
-    "data": 5088,
-    "bss": 327280
-  },
-  "private_binary_not_distributed": true,
-  "vendor_original_input_hashes_checked": 257,
-  "vendor_original_input_hashes_match": true,
-  "export_safety_tests": {
-    "status": "PASS",
-    "passed": 16,
-    "scope": "Full unchanged exporter safety suite against private candidate metadata and corrected exact selection"
-  },
-  "exported_synthetic_host_tests": {
-    "address_sanitizer": true,
-    "undefined_behavior_trap": true,
-    "vptr_sanitizer_excluded": true,
-    "portable_owned_runner": "PASS; complete exported runner including actor, HNC, LE lifecycle/control/preference, Classic config/Abort/scheduling, UART wake, mixed ATT ownership, paced QoS, nonblocking facade, PCM recovery/transition and wake/lifetime checks",
-    "runner_compile_and_execution_commands": 121,
-    "new_ble_tests": {
-      "qos_actor": 6069,
-      "qos_core": 697,
-      "preference_actor": 5175,
-      "preference_core": 543,
-      "nonblocking_facade": 34,
-      "legacy_le_transport": 76,
-      "legacy_le_control": 69
-    },
-    "mixed_delayed_att_checks": 18219,
-    "write_command_policy_checks": 6698,
-    "le_request_admission_checks": 5980,
-    "pcm_recovery_assertions": 4027850,
-    "pcm_transition_assertions": 21825,
-    "ble_origin_cases": 6,
-    "uart_wake_checks": 85,
-    "worker_lifetime_checks": 20,
-    "i2s_route_checks_per_WS_profile": 2983,
-    "i2s_WS_profiles": [
-      74,
-      69
-    ],
-    "qos_exact512_echoes": 30,
-    "qos_classic_media_callbacks": 820,
-    "lhdc_concealment": "PASS controlled three-channel-call seam in real frame branches, adapter and frontend; no independent PCM oracle or acoustic claim"
-  },
-  "target_execution_of_this_public_profile": "NOT FLASHED OR EXECUTED. This isolated public-profile binary differs from the separately deployed maintained runtime; compilation, synthetic tests and linked-symbol checks do not establish RF, electrical output, acoustic quality or continuous smooth audio.",
+  "compiler_input_set_sha256": "79f66b5dd5ac7347cba42a655f927ddc18a20cfed1f36a936a25f2e8b49133a0",
   "source_files": [
     {
       "path": "src/AudioDiagnostics.h",
@@ -78,7 +54,7 @@
     },
     {
       "path": "src/GigaBredr.cpp",
-      "sha256": "9943740c12b98415fccae1e73bc02a8cab878f60731a6cf4a50df637ba25c045"
+      "sha256": "fbfa109d03cee29e7ed5bf75ad7bb44463fc25c09372bd587bba55172f868bd7"
     },
     {
       "path": "src/GigaBredr.h",
@@ -146,7 +122,7 @@
     },
     {
       "path": "src/codecs/Codecs.cpp",
-      "sha256": "bcb054b45d9d7e30fc5077bafd20c47a290c80950d7f975df4c10f49f5d3aa07"
+      "sha256": "fe15c1763797400034505fe3cdd163d3da19fc0dc40804a5da1127308a0d1339"
     },
     {
       "path": "src/codecs/Codecs.h",
@@ -158,11 +134,11 @@
     },
     {
       "path": "src/owned/ClassicProfiles.cpp",
-      "sha256": "ac7cc1958e179fe367f53d3563908d0fce62058dfb9cd954dbfd1214ad748e2d"
+      "sha256": "5c08556652ca801f7109c3e03ec1cfb416b931872f00c3d6669425c2c6861504"
     },
     {
       "path": "src/owned/ClassicProfiles.h",
-      "sha256": "57ca27fd9a5bec190ddd814fc7147af4d44bb233c0721357039d14404e620c8b"
+      "sha256": "373f739098191a2c78c1c5545bafa2597723b223d36aa86ca775cb7095261d9f"
     },
     {
       "path": "src/owned/core/bth_acl_tx.c",
@@ -386,11 +362,11 @@
     },
     {
       "path": "src/owned/OwnedHost.cpp",
-      "sha256": "793dcfc5f164b52aac7031fe480654dd4522b6874b08ad919600b087e412641a"
+      "sha256": "7a8afdbc62615eede8bdba84a7618ba5f2b14f2b94b39614b046221cce928c0f"
     },
     {
       "path": "src/owned/OwnedHost.h",
-      "sha256": "55f26e2fcdcd163dee9d822c5421af7611996ce2b8be1fbdde3fd7eb82ee14e7"
+      "sha256": "22d0e9e26294b87e0f7ce7d7cf18c643a168921462d28e59976d195c610e2573"
     },
     {
       "path": "src/platform/OwnedRadio.cpp",
@@ -406,7 +382,7 @@
     },
     {
       "path": "src/platform/GigaI2s.cpp",
-      "sha256": "d340dfce0c817caad807e5b3695243ef51dda40ac38ccfc3690c53f5fa402578"
+      "sha256": "f76570909e299b0c447939dbf1d26cf94a99ebe71b6c9bd552a3d2e1d38918bc"
     },
     {
       "path": "src/platform/GigaI2s.h",
@@ -434,7 +410,7 @@
     },
     {
       "path": "examples/Receiver/Receiver.ino",
-      "sha256": "a3fc96c2a6860e3f21e89876369b8f434255d3bd033f4e1be5526b0e57432b83"
+      "sha256": "9c2e3aae54945ce0150097a9b778b6418b88092ff15aaa9bd370dff7ceeafd6e"
     },
     {
       "path": "src/vendor/codecs/sbc/include/oi_assert.h",
@@ -450,11 +426,11 @@
     },
     {
       "path": "src/vendor/codecs/sbc/include/oi_codec_sbc.h",
-      "sha256": "ce7dc1330e1f3109f530f86a2606a1709b3ff790df3d2c2d747c01a353fea4a4"
+      "sha256": "bde111db12562c1cd2a27fd3f0c22a9ffc38b66679935958ae7ae448687e5186"
     },
     {
       "path": "src/vendor/codecs/sbc/include/oi_codec_sbc_private.h",
-      "sha256": "9a02e0e5f37f9ab7daed9c160e9314cd86483926003c764ff6739379ef14f746"
+      "sha256": "09e2b5ecb1e76c5e90f031be7052b863fc31ecfc2e285ca5cd5983d5e1833db0"
     },
     {
       "path": "src/vendor/codecs/sbc/include/oi_common.h",
@@ -494,7 +470,7 @@
     },
     {
       "path": "src/vendor/codecs/sbc/srce/alloc.c",
-      "sha256": "a4df232184b4c47543a71f6d1ac214eb146559cd6be1a0b94c0016aa02cbba5f"
+      "sha256": "00f2aba07bcf941f27920e6954e0a98b5e1de05e6e1556ebe1b38193cf9d8d46"
     },
     {
       "path": "src/vendor/codecs/sbc/srce/bitalloc-sbc.c",
@@ -514,11 +490,11 @@
     },
     {
       "path": "src/vendor/codecs/sbc/srce/decoder-private.c",
-      "sha256": "e320cb9361dcaaee6f4514d7f1d7d9c4e35131cd157796b82ccac2a0c10ac926"
+      "sha256": "829ee354a9b0334a54a042b3eeca724d1f553b3992f5242ac06ca375dff310f3"
     },
     {
       "path": "src/vendor/codecs/sbc/srce/decoder-sbc.c",
-      "sha256": "349a892cb838ad2c8115879677ebed3c2187d4e1d56e5935a6223aca1d16070f"
+      "sha256": "d2b62cc163e3e7c657894a28e94b3ec5d1073423acce909523a8cfc6b54cace2"
     },
     {
       "path": "src/vendor/codecs/sbc/srce/dequant.c",
@@ -550,7 +526,7 @@
     },
     {
       "path": "src/vendor/codecs/sbc/srce/synthesis-sbc.c",
-      "sha256": "3af1936f341b9b7830fc87357c8795a02c183863decf9b20d310263aad697ecb"
+      "sha256": "7fc35d0e6c21445caf4afa4fa9b7794b2c70c7b8004e6637cf5203145ccdf5ef"
     },
     {
       "path": "src/vendor/codecs/aac/aaccommon.h",
@@ -1114,7 +1090,7 @@
     },
     {
       "path": "src/vendor/codecs/opus/silk/CNG.c",
-      "sha256": "9a30bfd1f5d45bd1c67b41789d52daaf586ca2956819846acb93e20d5b81ca1a"
+      "sha256": "b2c1cdad7119540fef10a4bbbf23442238f2f19e68ca459a3f57e977cdc7ea3c"
     },
     {
       "path": "src/vendor/codecs/opus/silk/code_signs.c",
@@ -1342,7 +1318,7 @@
     },
     {
       "path": "src/vendor/codecs/opus/silk/structs.h",
-      "sha256": "67467fbb36a4da0c581644b57035bb032e85b86d2ede19325f3c675b8967cfcf"
+      "sha256": "9289d705825788f98b6e73e73d1d3bff2351f7b000c3e0e9cd00066097fc389f"
     },
     {
       "path": "src/vendor/codecs/opus/silk/sum_sqr_shift.c",
@@ -1474,7 +1450,7 @@
     },
     {
       "path": "src/vendor/codecs/manifest.json",
-      "sha256": "96f662e61847536e9e0324b11093002acae41452e816c814f0fe8e2308c883ad"
+      "sha256": "e053b2a8e0eed2815c39afd71301e374e1f53c352761891c60871a0acf3e480b"
     },
     {
       "path": "src/platform/TxMailbox.h",
@@ -1491,82 +1467,111 @@
     {
       "path": "src/I2sConfig.h",
       "sha256": "d4469fe14255fc3af9fb5e178df308531b47a58c1ca926a56122a5013dbc881c"
+    },
+    {
+      "path": "src/detail/SbcConfig.h",
+      "sha256": "aca2bab3d8d92550fe07ff38afd067b18e332cbd265bcced7a2d15770cb2fd2f"
     }
   ],
-  "snapshot_scope": "Project-owned dual-mode host; four-packet receive window, ATT maximum517/512-byte attributes, Classic-first host service, paced BLE ATT submissions, nonblocking BLE data facade, and optional standard connection-parameter preference. Requested, submitted and actual parameters remain distinct.",
+  "elf_sections": {
+    "text": 469740,
+    "data": 5088,
+    "bss": 327280
+  },
+  "private_binary_not_distributed": true,
+  "vendor_original_input_hashes_checked": 257,
+  "vendor_original_input_hashes_match": true,
+  "selected_vendor_artifacts": 260,
+  "vendor_original_hash_check_scope": "All257 manifest original identities match the strict allowlist; all pinned imported files/260 vendor artifacts reverified. No importer rerun or blanket licensing clearance.",
   "historical_host_translation_units": 0,
-  "decoder_source_files": 257,
-  "decoder_build_defaults": "Unchanged from local CodecBuildConfig.h",
-  "license_clearance": "Not asserted; original terms and unresolved grants are listed in THIRD_PARTY.md",
-  "codec_translation_units": {
-    "sbc": 14,
-    "aac": 29,
-    "aptx": 1,
-    "ldac": 2,
-    "lhdc": 7,
-    "opus": 74
+  "export_safety_tests": {
+    "status": "PASS",
+    "passed": 17,
+    "scope": "Full real unchanged exporter safety suite after final dev.3 docs/version and reviewed startup/packet-label corrections; compiler inputs match fresh public M7/native proof"
   },
-  "exported_native_codec_tests": {
-    "address_sanitizer": true,
-    "compiled_exported_units": 128,
-    "status": "HISTORICAL PASS; not rerun in this refresh",
-    "checks": [
-      "configuration/capacity/allocation cleanup",
-      "complete independent SBC, SBC-XQ, AAC-LC, LATM, aptX, aptX HD, Opus and LDAC sequences",
-      "ADTS/SBR/all-codec bounds",
-      "LHDC allocation failure/cleanup across 44.1/48/96/192 kHz",
-      "local-only HE-AACv1 mono/stereo/LATM reference sequences"
-    ],
-    "lhdc_independent_decode_reference": "Not available in this native suite; allocation/bounds checks do not establish LHDC bit accuracy",
-    "media_distributed": false,
-    "implementation_hashes_reverified_unchanged": 128,
-    "scope": "Previously recorded codec/reference suite; all 128 selected compiled codec implementations reverified unchanged. No codec-vector rerun for this BLE priority public-profile refresh. Fresh owned-host/LHDC tests and full M7 link are recorded separately."
-  },
-  "selected_codec_flags": [
-    "SBC",
-    "AAC",
-    "HE-AACv1",
-    "aptX",
-    "aptX HD",
-    "LDAC",
-    "LHDC V5",
-    "Opus"
-  ],
-  "version": "0.1.0-dev.2",
+  "target_execution_of_this_public_profile": "NOT FLASHED OR EXECUTED. This independently built transformed public-profile binary is distinct from deployed maintained E69 despite equal byte counts. Native checks and M7 compilation/link do not establish RF, electrical/analog output, acoustic quality, all-codec interoperability or sustained continuity.",
+  "snapshot_scope": "Exact transformed current owned-host source plus reviewed publication test candidate. Current native actor/control/MTU/output-wait/priming regressions and all-codec M7 link are qualified separately from target reception. Root owns final version, documentation synchronization and target receipts.",
+  "public_profile_binary_sha256": "d088c35d287483db5acb761af2f0cfaf4e3297be06c0360d103f5cf94e009ed3",
+  "public_profile_binary_bytes": 474828,
+  "public_profile_elf_sha256": "3c60b7196d3d9889bee110f734caf1fc3f37bc1004c7435c757824ea8c4c1e36",
+  "arduino_program_bytes": 470432,
+  "arduino_global_bytes": 53840,
+  "arduino_program_storage_bytes": 470432,
+  "arduino_dynamic_globals_bytes": 53840,
   "arduino_size_summary": {
-    "program_bytes": 469184,
+    "program_bytes": 470432,
     "dynamic_bytes": 53840
   },
+  "main_thread_stack_bytes": 32768,
+  "public_build_source_revision": "42e2d39743ddb99b967a9a75bfdb4206580d8a56",
+  "public_build_source_state": "Dirty maintained memory/audio integration plus reviewed private five-file publication candidate; not a final release source commit",
+  "public_build_candidate_patch_sha256": "72f5a3d3b7b21780526d329f29b22fb292a075c2f9a36ee196b2605842dd13ab",
   "receiver_defaults": {
     "queue_packets": 8,
     "startup_packets": 2,
     "pcm_buffer_ms": 20,
     "per_codec_overrides": {
-      "SBC": {
-        "queue_packets": 12,
-        "startup_packets": 4
-      },
-      "LDAC": {
-        "queue_packets": 40,
-        "startup_packets": 16
-      },
-      "LHDC": {
+      "LhdcV5": {
         "queue_packets": 32,
         "startup_packets": 26,
         "maximum_packet_bytes": 2048,
         "pcm_buffer_ms": 20
+      },
+      "Ldac": {
+        "queue_packets": 40,
+        "startup_packets": 16
+      },
+      "Sbc": {
+        "queue_packets": 12,
+        "startup_packets": 4
+      },
+      "Aac": {
+        "queue_packets": 16,
+        "startup_packets": 6,
+        "maximum_packet_bytes": 2048
+      },
+      "AacHe": {
+        "queue_packets": 16,
+        "startup_packets": 6,
+        "maximum_packet_bytes": 2048
+      },
+      "Aptx": {
+        "queue_packets": 24,
+        "startup_packets": 10,
+        "maximum_packet_bytes": 2048
+      },
+      "AptxHd": {
+        "queue_packets": 32,
+        "startup_packets": 15,
+        "maximum_packet_bytes": 2048
+      },
+      "Opus": {
+        "queue_packets": 16,
+        "startup_packets": 7,
+        "maximum_packet_bytes": 2048
       }
+    },
+    "example_connection_preference": {
+      "interval_min": 96,
+      "interval_max": 96,
+      "latency": 2,
+      "timeout": 500,
+      "scope": "Requested values only; this public binary has not executed"
     }
   },
-  "receive_window": 4,
-  "arduino_program_storage_bytes": 469184,
-  "arduino_dynamic_globals_bytes": 53840,
-  "public_profile_binary_sha256": "b1bcc0d134aedba5ee6be26829db1e4889200376a40c486a765f12f92584977f",
-  "public_profile_binary_bytes": 473552,
-  "public_profile_elf_sha256": "17173d5719548fae96403a5109d9d565c6a6ffc42cb9f2b4d8422df8d2f0738a",
-  "arduino_program_bytes": 469184,
-  "arduino_global_bytes": 53840,
-  "main_thread_stack_bytes": 32768,
+  "ble_audio_defaults": {
+    "audio_priority": true,
+    "audio_data_interval_ms": 10,
+    "audio_acl_fragment_bytes": 27,
+    "optional_connection_preference": {
+      "enabled": true,
+      "interval_min": 64,
+      "interval_max": 96,
+      "latency": 2,
+      "timeout": 500
+    },
+    "scope": "Host scheduling and optional standard preference only; no hard RF airtime floor or smooth-audio cure claim"
+  },
   "linked_profile_checks": {
     "owned_backend": true,
     "owned_host_components": 4,
@@ -1587,14 +1592,106 @@
       "softfp",
       "fpv5-d16"
     ],
-    "m7_object_sizes": {
+    "m7_host_object_sizes": {
       "BleConfig": 24,
       "BleStats": 100,
       "command_queue": 2204,
       "command_sent": 8,
       "LeProfiles": 3080,
-      "OwnedHost": 34412
+      "OwnedHost": 34432
+    },
+    "all_codec_ops_linked": true,
+    "exact_selected_translation_units": true,
+    "maintained_source_leakage": false,
+    "historical_host_source_leakage": false,
+    "maintained_reference_translation_units": 199,
+    "historical_only_translation_units_excluded": 31
+  },
+  "exported_synthetic_host_tests": {
+    "status": "PASS",
+    "portable_owned_runner": "Fresh actual exported actor/HCI/LE/Classic/ATT/PCM/wake runner including codec-memory and audio-scheduling children",
+    "address_sanitizer": true,
+    "undefined_behavior_trap": true,
+    "vptr_sanitizer_excluded": true,
+    "runner_compile_and_execution_commands": 123,
+    "all_command_exits_zero": true,
+    "audio_scheduling_child_cases": 20,
+    "audio_scheduling_C_kernels": 27,
+    "audio_scheduling_inputs_rehashed_unchanged": 365,
+    "audio_scheduling_scope": "Actual source plus explicit native hardware/RTOS boundaries: expanded signaling/MTU, wait ownership/lifecycle, finite block-duration deadlines, priming and healthy/stopped output consumers; no M7 timing/RF/fidelity proof",
+    "LHDC_boundary_checks": {
+      "sanitizers": true,
+      "controlled_channel_call_replacements": 3,
+      "frame_adapter_frontend_results": {
+        "vendor": 0,
+        "adapter": 0,
+        "frontend": 0
+      },
+      "scope": "Controlled actual branches and lifecycle; not independent PCM correctness"
     }
+  },
+  "exported_codec_memory_tests": {
+    "status": "PASS",
+    "address_sanitizer": true,
+    "undefined_behavior_trap": true,
+    "legacy_UBSan_exclusions": [
+      "shift",
+      "signed-integer-overflow"
+    ],
+    "compile_and_execution_commands": 95,
+    "compiled_C_units": {
+      "sbc": 14,
+      "opus": 74
+    },
+    "source_files_rehashed_unchanged": 356,
+    "sbc": {
+      "configurations": 256,
+      "frames": 15360,
+      "malformed_before_allocation": 22,
+      "allocation_budget_attempts": 32,
+      "no_info_choices": 256,
+      "bounded_vendor_API_configurations": 16,
+      "partial_raw_configurations": 384,
+      "partial_pulls": 2080,
+      "actual_frontend_mono_stereo_stride": true
+    },
+    "opus": {
+      "CNG_capacity": 256,
+      "CNG_transitions": 12288,
+      "CNG_precompaction_state_output_digest": "987871150d65a70a",
+      "vendor_transition_calls": 10160,
+      "PLC_calls": 500,
+      "FEC_calls": 380,
+      "wrapper_configurations": 60,
+      "allocation_budget_attempts": 300,
+      "wrapper_packet_calls": 15240,
+      "mutations": 1440,
+      "alias_caller_geometry_error_state_guards": true,
+      "hot_decode_allocation_attempts": 0
+    },
+    "scope": "Fresh exported memory/state/bounds/equivalence checks; generated SBC and same-library comparisons do not establish independent four-band fidelity, target deadlines, CPU improvement, sender interoperability or acoustics."
+  },
+  "exported_native_codec_tests": {
+    "status": "HISTORICAL independent reference suite; not rerun for this public profile",
+    "historical_compiled_units": 128,
+    "historical_checks": [
+      "configuration/capacity/allocation cleanup",
+      "complete independent SBC, SBC-XQ, AAC-LC, LATM, aptX, aptX HD, Opus and LDAC sequences",
+      "ADTS/SBR/all-codec bounds",
+      "LHDC allocation failure/cleanup across 44.1/48/96/192 kHz",
+      "local-only HE-AACv1 mono/stereo/LATM reference sequences"
+    ],
+    "media_distributed": false,
+    "translation_unit_source_hashes_unchanged": 122,
+    "translation_unit_sources_changed": [
+      "src/codecs/Codecs.cpp",
+      "src/vendor/codecs/sbc/srce/alloc.c",
+      "src/vendor/codecs/sbc/srce/decoder-private.c",
+      "src/vendor/codecs/sbc/srce/decoder-sbc.c",
+      "src/vendor/codecs/sbc/srce/synthesis-sbc.c",
+      "src/vendor/codecs/opus/silk/CNG.c"
+    ],
+    "scope": "Changed shared headers also affect compiled implementations. Current exported memory/boundary tests and all-codec M7 link are fresh; independent full reference/HE vectors and actual target execution are separate maintained-source evidence."
   },
   "maintained_runtime_observation": {
     "scope": "Historical prior maintained-image observation, retained for provenance; not current phase2 field evidence and not execution of this public-profile binary. Current phase2 field evidence is documented separately in ble-audio-priority.md/json.",
@@ -1618,20 +1715,224 @@
     "limitations": "Periodic snapshots; no closed packet ledger, measured interrupt latency, encoded-omission cure, acoustic comparison or controlled quality ranking. Details: pcm-transition-ramp.md.",
     "historical": true
   },
-  "public_build_source_revision": "e51ba451b4b3074b46daf9887a17ff59ddc39104",
-  "vendor_original_hash_check_scope": "257 original SHA identities matched between the preserved import manifest and allowlist; all 257 pinned imported files and all 260 selected vendor artifacts verified. Logical original import paths are not independently reread in this refresh.",
-  "selected_vendor_artifacts": 260,
-  "ble_audio_defaults": {
-    "audio_priority": true,
-    "audio_data_interval_ms": 10,
-    "audio_acl_fragment_bytes": 27,
-    "optional_connection_preference": {
-      "enabled": true,
-      "interval_min": 64,
-      "interval_max": 96,
-      "latency": 2,
-      "timeout": 500
+  "library_metadata_version_at_M7_build": "0.1.0-dev.2",
+  "final_source_metadata_version": "0.1.0-dev.3",
+  "post_build_docs_version_sync": {
+    "compiler_input_rows": 358,
+    "compiler_input_set_sha256": "79f66b5dd5ac7347cba42a655f927ddc18a20cfed1f36a936a25f2e8b49133a0",
+    "compiler_inputs_byte_identical": true,
+    "library_properties_and_top_level_docs_outside_compiler_manifest": true,
+    "version_string_absent_from_compile_arguments": true,
+    "scope": "Metadata/docs changed after the fresh public build; no claim of a rebuilt or target-executed public binary."
+  },
+  "separate_current_maintained_source_M7_execution": {
+    "status": "PASS",
+    "scope": "Finite current M7 decoder vectors and allocation lifecycles; no radio/I2S/acoustic evidence",
+    "public_profile_binary_target_tested": false,
+    "device_receipt_sha256": "e585397f54eaf6ba011f2e91181869781c8d0c73ae116fb91af45d2378be0864",
+    "vector_image_sha256": "81ad5fe1a3b5c1f7f0743c7cbb6def1f28521f61b36a1cc6e21413c36b94a4b5",
+    "memory_image_sha256": "4773f6c48727bdd14e567ed83568c30ad919a4802f2716be6530db5e2a7f5783",
+    "diagnostic_readback_verified": true,
+    "vector_result_sha256": "d73c94017858e36b1edd7620a83f3e95edeb7cb4dfa452daae42123971b8f831",
+    "vector_raw_sha256": "fcb2ec55342d51cad3c9cbb4ffd1ad3feb4fb002fbca6f7e0183caa126cc6660",
+    "memory_result_sha256": "091687e1d417c84d72c250cc3e9d0849e02d54096a12aca2ea45753956588ac4",
+    "memory_raw_sha256": "9435035997d35f298c3eb79037ba262b48ca9f66be80cbde7c5a277eaddfb99d",
+    "public_raw_source_inputs_matching_target_snapshot": 356,
+    "vector_cases": 12,
+    "passes_per_case": 20,
+    "timed_decode_calls": 3440,
+    "CPU_hz": 480000000,
+    "observed_deadline_misses": 0,
+    "vector_failures": 0,
+    "vector_residual_bytes_blocks": 0,
+    "allocation_configuration_lifecycles": 220,
+    "allocation_errors": 0,
+    "allocation_residual_bytes_blocks": 0,
+    "Opus_tracked_payload_bytes": {
+      "minimum": 17348,
+      "maximum": 37548
     },
-    "scope": "Host scheduling and optional standard preference only; no hard RF airtime floor or smooth-audio cure claim"
+    "observed_vector_maximum_us": {
+      "sbc": 79,
+      "sbc-xq": 80,
+      "aac-adts": 676,
+      "aac-latm": 687,
+      "aptx": 420,
+      "aptx-hd": 421,
+      "opus": 1410,
+      "ldac-stereo-hq": 275,
+      "ldac-mono-hq": 144,
+      "ldac-mono-mq": 118,
+      "he-mono": 1753,
+      "he-stereo": 3395
+    },
+    "no_radio_no_I2S": true,
+    "LHDC_independent_encoded_PCM_fixture": false,
+    "measurement_report_json_sha256": "b1f447e142fba6d9ec90ab5d5d6ef6e372a9ad65383eeec1f1107b0445de7a03",
+    "measurement_report_markdown_sha256": "f7b75fc0b0c0eeb9aec46b4907f7cc418cf3d31fe192c8c5d57154b79368c7b6",
+    "scope_limits": "Finite isolated maintained-source diagnostics; no public binary execution, universal deadline bound, phone interoperability, electrical/analog or acoustic claim. Tracked payload excludes heap metadata, static storage and stacks."
+  },
+  "separate_current_maintained_receiver_field_evidence": {
+    "receiver_sha256": "e69d84fc7bb4edcc91502834ceb89bfeea6a12b003c13f7064e0353f728184ea",
+    "public_profile_binary_target_tested": false,
+    "six_mode_source_seconds_each": 30,
+    "six_modes": [
+      {
+        "codec": "SBC/SBC-XQ",
+        "sample_rate": 44100,
+        "phone_selector": [
+          0,
+          1,
+          1,
+          2,
+          0
+        ],
+        "exact_512_byte_GATT_echoes": 10,
+        "missing_input_PCM_frames": 0,
+        "recovery_entries": 0,
+        "queue_full": 0,
+        "decoder_errors_delta": 0,
+        "outer_RTP_gaps": 0
+      },
+      {
+        "codec": "AAC-LC",
+        "sample_rate": 44100,
+        "phone_selector": [
+          1,
+          1,
+          1,
+          2,
+          0
+        ],
+        "exact_512_byte_GATT_echoes": 10,
+        "missing_input_PCM_frames": 0,
+        "recovery_entries": 0,
+        "queue_full": 0,
+        "decoder_errors_delta": 0,
+        "outer_RTP_gaps": 0
+      },
+      {
+        "codec": "aptX",
+        "sample_rate": 48000,
+        "phone_selector": [
+          2,
+          2,
+          1,
+          2,
+          0
+        ],
+        "exact_512_byte_GATT_echoes": 10,
+        "missing_input_PCM_frames": 0,
+        "recovery_entries": 0,
+        "queue_full": 0,
+        "decoder_errors_delta": 0,
+        "outer_RTP_gaps": null
+      },
+      {
+        "codec": "aptX HD",
+        "sample_rate": 48000,
+        "phone_selector": [
+          3,
+          2,
+          2,
+          2,
+          0
+        ],
+        "exact_512_byte_GATT_echoes": 10,
+        "missing_input_PCM_frames": 0,
+        "recovery_entries": 0,
+        "queue_full": 0,
+        "decoder_errors_delta": 0,
+        "outer_RTP_gaps": 0
+      },
+      {
+        "codec": "LDAC",
+        "sample_rate": 96000,
+        "phone_selector": [
+          4,
+          8,
+          4,
+          2,
+          1000
+        ],
+        "exact_512_byte_GATT_echoes": 10,
+        "missing_input_PCM_frames": 0,
+        "recovery_entries": 0,
+        "queue_full": 0,
+        "decoder_errors_delta": 0,
+        "outer_RTP_gaps": 0
+      },
+      {
+        "codec": "LHDC V5",
+        "sample_rate": 192000,
+        "phone_selector": [
+          15,
+          32,
+          2,
+          2,
+          32776
+        ],
+        "exact_512_byte_GATT_echoes": 10,
+        "missing_input_PCM_frames": 0,
+        "recovery_entries": 0,
+        "queue_full": 0,
+        "decoder_errors_delta": 0,
+        "outer_RTP_gaps": 0
+      }
+    ],
+    "ATT_MTU": 517,
+    "actual_BLE_during_active_audio_GATT": "96/2/500",
+    "initial_SBC_pre_audio_actual_BLE": [
+      "6/0/500",
+      "24/0/500"
+    ],
+    "LHDC_long": {
+      "finite_source_seconds": 110,
+      "exact_512_byte_echoes": 30,
+      "received_packets": 22602,
+      "worked_packets": 22592,
+      "missing_input_PCM_frames": 0,
+      "recovery_entries": 0,
+      "timestamp_steps": 0,
+      "inner_steps": 0,
+      "scope": "Ten received/worked lifecycle-tail packets are retained separately from incoming loss."
+    },
+    "field_review_receipt_sha256": "69431f0a6d19eee9fa8ca1771cc179a09f175612c0172c558c98752e5cb7eeaa",
+    "prior_95_second_six_event_raw_sha256": "c0762387174febdfd95685eb634bcb96aeea7236d7a29eca0ba37ad4d8cc5f7b",
+    "prior_failed_evidence_retained": true,
+    "receiver_restored_and_readback_verified": true,
+    "post_restore_capture_seconds": 8,
+    "post_restore_capture_GATT_echoes": 0,
+    "post_restore_console_drop_counter": 33,
+    "fresh_physical_BLE_reconnect_during_active_A2DP_qualified": false,
+    "phone_unavailable_modes": [
+      "Opus",
+      "HE-AAC profile",
+      "separate SBC-XQ selection"
+    ],
+    "scope_limits": "Maintained E69 only, established-link finite traffic; no acoustic/electrical, all-phone/all-mode, permanent continuity or unique causal claim. LHDC/LDAC selector values are not measured encoded throughput.",
+    "initial_SBC_actual_BLE_observations": [
+      {
+        "ms": 10000,
+        "actual": "6/0/500",
+        "match": 0
+      },
+      {
+        "ms": 14000,
+        "actual": "24/0/500",
+        "match": 0
+      },
+      {
+        "ms": 16000,
+        "actual": "24/0/500",
+        "match": 0
+      },
+      {
+        "ms": 18000,
+        "actual": "96/2/500",
+        "match": 1
+      }
+    ],
+    "initial_SBC_connection_startup_scope": "Both observed pre-audio states are retained; actual96/2/500 is observed from the first active audio snapshot. These observations do not qualify connection-triggered stutter resolution or fresh physical BLE reconnect during active A2DP."
   }
 }

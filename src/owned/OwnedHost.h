@@ -43,7 +43,7 @@ private:
  struct Packet {uint8_t bytes[AclBytes+4];uint16_t length=0;uint32_t order=0,barrier=0;bool used=false,charged=false; bth_rx_lease_t lease={};};
  struct Deferred {uint8_t bytes[257];uint16_t length=0;uint32_t serial=0;};
  struct Peer {
-  bth_l2cap_rx_t assembly={};uint8_t bytes[SduBytes]={};bth_l2cap_pdu_t pending={};
+  bth_l2cap_rx_t assembly={};uint8_t bytes[SduBytes]={};bth_l2cap_pdu_t pending={};uint16_t pending_signal_cursor=0;
   uint32_t owner=0,security_deadline=0,disconnect_deadline=0,assembly_deadline=0,pending_deadline=0;
   uint32_t channel_deadlines[BTH_CHANNEL_LIMIT]={};bool opened[BTH_CHANNEL_LIMIT]={};
   uint16_t handle=0;bool attached=false,has_pending=false;int borrowed_slot=-1;
@@ -52,7 +52,7 @@ private:
  // Only Classic safe controls use the tail of Peer.bytes. BLE keeps all4096.
  static constexpr unsigned ClassicMtu=2048,ClassicAssemblyBytes=ClassicMtu+4,ClassicDeferredSlots=3;
  static_assert(ClassicAssemblyBytes+ClassicDeferredSlots*BTH_CONTROL_BYTES<=SduBytes,"Classic receive storage partition");
- struct DeferredControl {uint16_t cid=0,length=0;uint32_t deadline=0;};
+ struct DeferredControl {uint16_t cid=0,length=0;uint32_t deadline=0;uint16_t signal_cursor=0;};
  static bool loadBond(void*,const uint8_t*,bth_bond_t*);
  static bool saveBond(void*,const uint8_t*,const bth_bond_t*);
  static bool removeBond(void*,const uint8_t*);
@@ -61,9 +61,10 @@ private:
  bool submit(size_t);void bootPoll();void bootEvent(const bth_h4_frame_t&);bool bootCommand(uint16_t,const uint8_t*,size_t);
  bool dispatch(const bth_h4_frame_t&);bool defer(const uint8_t*,size_t);
  bool attach(unsigned,const bth_peer_link_t&);void detach(unsigned);
- bool deliver(unsigned,const bth_l2cap_pdu_t&);void processRx(unsigned);
+ bool deliver(unsigned,const bth_l2cap_pdu_t&,uint16_t* signal_cursor=nullptr);void processRx(unsigned);
+ bool expandedClassicControl(const bth_l2cap_pdu_t&) const;
  bool safeClassicControl(const bth_l2cap_pdu_t&) const;
- bool deferClassicControl(const bth_l2cap_pdu_t&,uint32_t);bool retryClassicControls();void clearClassicControls(uint16_t cid=0);
+ bool deferClassicControl(const bth_l2cap_pdu_t&,uint32_t,uint16_t signal_cursor=0);bool retryClassicControls();void clearClassicControls(uint16_t cid=0);
  void synchronizeChannels();bool disconnectChannel(uint16_t);void chargeWaiting(uint32_t);void closePeer(unsigned,uint8_t);
  void avrcpPoll(bool secure,bool allow_open=true);void runtimePoll();void refreshStats();bool admission(unsigned,uint32_t);void cancelAdmission(unsigned);
  bool updateAudioPriority();
@@ -71,6 +72,7 @@ private:
  ClassicProfiles classic_;LeProfiles le_;bth_hci_flow_t flow_={};bth_cmdq_t commands_={};bth_links_t links_={};
  bth_control_tx_t control_={};bth_rx_flow_t rx_={};bth_gap_t gap_={};bth_l2cap_sig_t signaling_={};
  Packet packets_[RxSlots];Peer peers_[2];Bond bonds_[4];bth_rx_admission_t admissions_[2]={};bool reserved_[2]={};
+ uint8_t expanded_control_budget_=0;
  DeferredControl classic_deferred_[ClassicDeferredSlots];uint32_t classic_deferred_owner_=0;uint8_t classic_deferred_read_=0,classic_deferred_count_=0;
  Deferred deferred_[8];unsigned deferred_read_=0,deferred_count_=0;
  uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[3]={0x110b,0x110c,0x110e};

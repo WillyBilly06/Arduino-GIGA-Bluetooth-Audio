@@ -4,7 +4,55 @@ Experimental Arduino GIGA R1 WiFi Cortex-M7 library: project-owned Bluetooth
 Classic A2DP sink, AVRCP control, concurrent BLE GATT server, bounded decoder
 allocation and PCM5102A I2S output. **Continuous audio is not qualified.**
 
-This refresh includes the current Classic lifecycle/configuration fixes,
+## Current maintained-source results
+
+The readback-verified maintained receiver image
+`e69d84fc7bb4edcc91502834ceb89bfeea6a12b003c13f7064e0353f728184ea`
+completed six 30-second phone sources: SBC 44.1 kHz, AAC-LC 44.1 kHz,
+aptX/aptX HD 48 kHz, LDAC 96 kHz and LHDC V5 192 kHz/24-bit. Each case
+completed ten exact 512-byte GATT echoes at ATT MTU 517, with zero recorded
+missing-input PCM, local queue-full or decoder-error increments. Actual BLE
+96/2/500 (120 ms interval, latency 2, 5-second timeout) was observed during
+active audio/GATT; the initial SBC link used a shorter interval before audio.
+
+A separate 110-second LHDC source with three ten-echo jobs recorded zero
+missing-input PCM, recovery entries, local full/errors and timestamp/inner
+jumps. Its 22602 received versus 22592 worked packets retain a ten-packet
+lifecycle-tail distinction. LHDC selector 32776 requests nominal 1000 kbps;
+LDAC quality selector 1000 is not a measured encoded bitrate. Applicable outer
+RTP counters were zero; aptX has no RTP here and detailed timestamp/inner
+inspection is LHDC-specific. These finite sequential results do not invalidate
+earlier failed captures or prove permanent continuity or a unique cause.
+
+Fresh maintained-source GIGA M7 diagnostics passed 12 vector cases, 20 passes
+per case and 3440 timed decode calls at 480 MHz, with zero observed deadline
+misses, failures or residual allocations. They cover SBC/SBC-XQ, AAC ADTS/LATM,
+aptX/HD, encoded Opus, LDAC known-source tones and HE-AAC v1 SBR. LHDC has no
+independent encoded PCM fixture. A separate allocation probe passed 220 exact
+configuration lifecycles; Opus tracked payload ranged from 17348 to 37548 bytes.
+Observed finite maxima were 1410 us for the tested Opus 48 kHz/20 ms stereo
+packets and 1753/3395 us for HE mono/stereo prefixes. These decoder/allocation
+diagnostics ran without radio/I2S; their maxima are not universal time bounds.
+See [M7 measurements and proof hashes](docs/validation/codec-target-2026-10-22.md).
+
+Opus, HE-AAC and separate SBC-XQ phone selection remain unqualified on the
+available phone. Fresh physical BLE reconnect during already-active A2DP,
+electrical/analog output, acoustics, sustained drift/continuity and matched
+performance remain separate work. After the diagnostics, E69 was fully
+readback-restored; a short eight-second LHDC/actual-120-ms BLE capture was a
+playback restoration check, with no new GATT echo workload.
+
+The public-profile binary recorded in `docs/BUILD.json` is
+`d088c35d287483db5acb761af2f0cfaf4e3297be06c0360d103f5cf94e009ed3`.
+It has fresh native/M7 compilation and source-export checks, but has **not
+been flashed or executed**. The physical results above belong to separate
+maintained-source diagnostics and E69, not this public binary.
+
+## Historical development context
+
+The following retained observations predate the current scheduling retest.
+
+An earlier refresh included the Classic lifecycle/configuration fixes,
 transactional HCI credits, one-command signaling SDUs, UART owner wake, PCM
 reserve recovery, copied pending ATT requests and LHDC concealment counters.
 The latest update also copies valid LE key/parameter requests under command
@@ -20,6 +68,10 @@ timestamp/inner steps and.794s prepared silence. These unmatched tests do not
 establish improvement. See [measured status and limits](docs/STATUS.md).
 
 ## Full supplied codec source
+
+SBC work/PCM storage follows selected geometry; Opus CNG history is compacted.
+[Memory measurements and limits](docs/validation/codec-memory-geometry.md)
+include paired on-board allocation checks and the remaining audio gaps.
 
 All **257 selected supplied decoder files** remain included, with build defaults
 enabled: SBC/SBC-XQ, AAC-LC, experimental HE-AAC v1, aptX, aptX HD, LDAC, LHDC V5
@@ -82,8 +134,10 @@ compiled decoders; `config.codecs` limits negotiation. `CodecBuildConfig.h`
 controls compilation. Codec workspaces are released on stop/reconfiguration.
 
 Per-codec queue/startup/access-unit/PCM overrides allocate only for the selected
-profile; zero fields inherit global settings. The included Receiver uses LHDC
-32/start26/max2048/PCM20ms, LDAC40/start16 and SBC12/start4. These measured profiles
+profile; zero fields inherit global settings. The Receiver uses LHDC
+32/start26/max2048/PCM20ms, LDAC40/start16, SBC12/start4, AAC/HE16/start6,
+aptX24/start10, aptX HD32/start15 and Opus16/start7. AAC/HE, aptX/HD and Opus
+also select a maximum packet size of 2048 bytes. These measured example profiles
 are not global defaults, a latency guarantee or a stable-playback recommendation.
 PCM recovery preserves queued sample order and rebuilds its existing reserve
 after starvation. A short integer ramp now softens the transition toward zero
@@ -97,7 +151,7 @@ by the resume envelope and overlaps real-input accounting. See
 remains unqualified; this cannot restore missing encoded periods or establish
 a physical clock mismatch.
 
-A 95 s test of the corresponding maintained runtime completed all 30 GATT echoes
+A historical 95 s test of an earlier maintained runtime completed all 30 GATT echoes
 with no local error/drop increases, but retained 27 timestamp/inner steps and
 702336 missing-input slots. The ramp is not a demonstrated cure or a quality
 ranking. This separately built public profile has not been flashed.
@@ -119,7 +173,8 @@ without changing the read output). Security, required control, real credits
 and protocol expiry remain prompt. Host limits do not reserve RF airtime.
 BLE transfers can take longer while audio is streaming.
 
-One bounded asynchronous connection preference requests80..120ms intervals,
+The library default preference requests 80..120 ms; the Receiver example
+requests a fixed 120 ms (96/96 in 1.25 ms units). One bounded asynchronous request uses
 latency2 and a5s supervision timeout after the connection is at least5s old.
 `bleStats().connection` and `GBR_BLE_CONN` distinguish requested/submitted
 settings from actual controller observations. The phone can choose other
@@ -130,14 +185,14 @@ config.ble.audio_priority = true;
 config.ble.audio_acl_fragment_bytes = 27;
 config.ble.audio_data_interval_ms = 10;
 auto& preference = config.ble.audio_connection_preference;
-preference.interval_min = 64; // 1.25ms units: 80ms
+preference.interval_min = 96; // 1.25ms units: 120ms
 preference.interval_max = 96; // 120ms
 preference.latency = 2;
 preference.timeout = 500;     // 10ms units: 5s
 // preference.enabled = false; // Host pacing without the optional request.
 ```
 
-The private readback-verified image observed120ms/latency2 in all45 retained
+A historical private readback-verified image observed120ms/latency2 in all45 retained
 parameter snapshots per95s capture, each with30 exact512-byte GATT echoes. The deterministic waveform
 case had0 timestamp/codec jumps and0 missing PCM; YouTube still had4 jumps and
 103680 missing PCM frames. No acoustic cure is claimed. This independently
@@ -153,6 +208,7 @@ python tools/run_owned_tests.py --sanitize --asan
 python tools/test_lhdc_concealment.py --sanitize
 ```
 
+The runner includes the codec-memory and 20-case audio scheduling children.
 The tests use synthetic protocol inputs and hardware boundaries; the LHDC test
 uses controlled channel outcomes, not an encoded PCM oracle. They cannot prove
 RF, DAC pins, acoustics, synchronization or stable coexistence.

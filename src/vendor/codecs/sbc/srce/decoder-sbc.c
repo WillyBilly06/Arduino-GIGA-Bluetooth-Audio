@@ -119,6 +119,11 @@ static OI_STATUS DecodeBody(OI_CODEC_SBC_DECODER_CONTEXT *context,
     OI_UINT frameSamples = context->common.frameInfo.nrof_blocks * context->common.frameInfo.nrof_subbands;
     OI_UINT decode_block_count;
 
+    if (context->common.frameInfo.nrof_subbands > context->maxSubbands ||
+        context->common.frameInfo.nrof_blocks > context->maxBlocks) {
+        return OI_STATUS_INVALID_PARAMETERS;
+    }
+
     /*
      * Based on the header data, make sure that there is enough room to write the output samples.
      */
@@ -242,7 +247,20 @@ OI_STATUS OI_CODEC_SBC_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
                                     OI_BOOL enhanced,
                                     OI_BOOL msbc_enable)
 {
-    return internal_DecoderReset(context, decoderData, decoderDataBytes, maxChannels, pcmStride, enhanced, msbc_enable);
+    return internal_DecoderReset(context, decoderData, decoderDataBytes, maxChannels, pcmStride, enhanced, msbc_enable, 8, 16);
+}
+
+OI_STATUS OI_CODEC_SBC_DecoderResetGeometry(OI_CODEC_SBC_DECODER_CONTEXT *context,
+                                    OI_UINT32 *decoderData,
+                                    OI_UINT32 decoderDataBytes,
+                                    OI_UINT8 maxChannels,
+                                    OI_UINT8 pcmStride,
+                                    OI_BOOL enhanced,
+                                    OI_BOOL msbc_enable,
+                                    OI_UINT8 maxSubbands,
+                                    OI_UINT8 maxBlocks)
+{
+    return internal_DecoderReset(context, decoderData, decoderDataBytes, maxChannels, pcmStride, enhanced, msbc_enable, maxSubbands, maxBlocks);
 }
 
 OI_STATUS OI_CODEC_SBC_DecodeFrame(OI_CODEC_SBC_DECODER_CONTEXT *context,

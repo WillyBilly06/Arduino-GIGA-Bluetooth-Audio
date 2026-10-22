@@ -1,5 +1,6 @@
 #include "GigaBredr.h"
 #include "detail/Memory.h"
+#include "detail/SbcConfig.h"
 #include "detail/Decoder.h"
 #include "detail/Media.h"
 #include "detail/PacketQueue.h"
@@ -51,6 +52,15 @@ struct TryLock {
     TryLock(const TryLock&)=delete;
     TryLock& operator=(const TryLock&)=delete;
 };
+// The outer Lock owns this mutex. Reacquire before that lock can leave scope.
+// Used only around the backpressure sleep, never decode or buffer access.
+struct UnlockDuringWait {
+    Mutex& mutex;
+    explicit UnlockDuringWait(Mutex& m):mutex(m) { mutex.unlock(); }
+    ~UnlockDuringWait() { mutex.lock(); }
+    UnlockDuringWait(const UnlockDuringWait&)=delete;
+    UnlockDuringWait& operator=(const UnlockDuringWait&)=delete;
+};
 bool sameConfiguration(const CodecConfig& a, const CodecConfig& b) {
     return a.codec == b.codec && a.sample_rate == b.sample_rate && a.bitrate == b.bitrate &&
         a.frame_duration_us == b.frame_duration_us && a.channels == b.channels &&
@@ -78,7 +88,10 @@ AudioBufferConfig resolveBuffers(const ReceiverConfig& options, Codec codec) {
 }
 size_t frameCapacity(const CodecConfig& c) {
     switch (c.codec) {
-        case Codec::Sbc: return 128;
+        case Codec::Sbc: {
+            detail::SbcGeometry geometry;
+            return detail::sbcGeometry(c,geometry)?geometry.frames():0;
+        }
         case Codec::Aac: return 1024;
         case Codec::AacHe: return 2048;
         case Codec::Aptx: case Codec::AptxHd: return 512;
@@ -263,9 +276,10 @@ struct GigaBredr::Impl {
           }
         }
         if (!n) return;
+        const uint32_t packet_epoch = stream_epoch;
         detail::PacketWorkSample work;
         const uint32_t packet_began = clockUs();
-        auto record_work = [&]() { work.elapsed_us = clockUs() - packet_began; work_timing.record(stream_epoch, work); };
+        auto record_work = [&]() { work.elapsed_us = clockUs() - packet_began; work_timing.record(packet_epoch, work); };
         detail::MediaView view;
         Status status = media.feed(packet, n, view);
         if (status == Status::NeedMoreData) { record_work(); return; }
@@ -303,6 +317,9 @@ struct GigaBredr::Impl {
             counters.decoded_frames += result.frames;
             if (options.apply_remote_volume) detail::scaleStereoVolume(pcm, result.frames, volume.load());
             if (options.enable_i2s) {
+                const uint64_t write_budget = 100000u +
+                    (uint64_t(result.frames) * 1000000u + format.sample_rate - 1u) / format.sample_rate;
+                const uint32_t write_limit_us = write_budget < 0x80000000u ? uint32_t(write_budget) : 0x7fffffffu;
                 size_t sent = 0; uint32_t began = clockUs();
                 while (sent < result.frames) {
                     sent += detail::i2sWrite(pcm + sent * 2, result.frames - sent);
@@ -314,8 +331,17 @@ struct GigaBredr::Impl {
                         record_work(); releaseCodec(); return;
                     }
                     if (sent == result.frames) break;
-                    if (!running.load() || clockUs() - began > 100000) { counters.output_dropped_frames += uint32_t(result.frames - sent); break; }
-                    uint32_t waiting = clockUs(); waitOne(); work.write_wait_us += clockUs() - waiting;
+                    if (!running.load() || clockUs() - began > write_limit_us) { counters.output_dropped_frames += uint32_t(result.frames - sent); break; }
+                    uint32_t waiting = clockUs();
+                    { UnlockDuringWait unlock(codec_mutex); waitOne(); }
+                    work.write_wait_us += clockUs() - waiting;
+                    // Stop/reconfigure can release every saved packet/PCM view
+                    // during the wait. Validate before any pointer is reused.
+                    if (packet_epoch != stream_epoch || !configured || !playing.load()) return;
+                    if (!running.load()) {
+                        counters.output_dropped_frames += uint32_t(result.frames - sent);
+                        record_work(); return;
+                    }
                 }
             }
             offset += result.consumed;

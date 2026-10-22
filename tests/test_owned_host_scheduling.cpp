@@ -122,8 +122,8 @@ static void zero_deadline_and_growth(){
   const auto slot=(f.host.classic_deferred_read_+2)%3;CHECK(f.host.classic_deferred_[slot].deadline==0);
  }
  {Playing p;auto& f=p.f;p.exhaust();p.threeReplies();Bytes growth;for(unsigned n=0;n<112;++n){const Bytes info={10,uint8_t(n+1),2,0,3,0};growth.insert(growth.end(),info.begin(),info.end());}
-  CHECK(growth.size()==672);f.acl(0x25,1,growth);drain(f);CHECK(!f.host.classic_deferred_count_&&f.host.peers_[0].has_pending);
-  f.acl(0x25,p.media,media_packet(1));drain(f);CHECK(!f.media); // Unservable aggregate reply remains a documented barrier.
+  CHECK(growth.size()==672);f.acl(0x25,1,growth);drain(f);CHECK(f.host.classic_deferred_count_==1&&!f.host.peers_[0].has_pending);
+  f.acl(0x25,p.media,media_packet(1));drain(f);CHECK(f.media==1); // Stateless expanded replies progress without blocking media.
  }
 }
 static void input_priority_and_recovery_cancel(){
