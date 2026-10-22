@@ -19,7 +19,8 @@ public:
  // FALSE only when reply capacity is exhausted: retain and retry this exact SDU.
  // Application callbacks run synchronously and must not reenter the host actor.
  bool receive(uint16_t local_cid,const uint8_t* bytes,size_t length,bool secure,uint32_t now_ms);
- void poll(bool secure,uint32_t now_ms);
+ // Expiration always runs; older retained input can suppress optional requests.
+ void poll(bool secure,uint32_t now_ms,bool allow_transmit=true);
  Status setVolume(uint8_t);
  bool wantsMediaChannel() const;
  bool takeCloseMedia();
@@ -29,6 +30,8 @@ public:
  uint16_t avrcpCid() const;
  bool configured() const;
  bool streaming() const;
+ bool abortTransportPending() const;
+ void abortTransportRetired(); // Actor confirms all non-signaling AVDTP channels retired.
  const CodecConfig& acceptedConfiguration() const;
  AvrcpStatus avrcpStatus() const;
  uint32_t receivedPackets() const;

@@ -7,12 +7,18 @@ namespace {
 bool due(uint32_t now,uint32_t deadline){return deadline&&int32_t(now-deadline)>=0;}
 void erase(void* data,size_t n){volatile uint8_t* p=static_cast<volatile uint8_t*>(data);while(n--)*p++=0;}
 unsigned completionSlots(const bth_h4_frame_t& e){
+ // These four passive link events cannot enqueue an HCI command.
+ if(e.event.code==0x1b||e.event.code==0x1d||e.event.code==0x14||e.event.code==0x12)return 0;
  const auto p=e.event.params;
+ // Connection Update Complete is ignored by both LE handlers; no command follows.
+ if(e.event.code==0x3e&&p.data&&p.len==10&&p.data[0]==3)return 0;
  if(e.event.code==0x0e&&p.len>=3){uint16_t op=bth_read_le16(p.data+1);return op==0x040b||op==0x040c||op==0x040d||op==0x040e||op==0x042b||op==0x0434||op==0x042c||op==0x042d||op==0x1408?1:0;}
  if(e.event.code==0x0f&&p.len==4){uint16_t op=bth_read_le16(p.data+2);return op==0x0411||op==0x0413?1:0;}
  return 2;
 }
 bool independentCompletion(const bth_h4_frame_t& e){
+ // Passive events still remain FIFO behind older lifecycle/security events.
+ if(e.event.code!=0x0e&&e.event.code!=0x0f)return false;
  if(completionSlots(e)!=0)return false;
  if(e.event.code==0x0f){uint16_t op=bth_read_le16(e.event.params.data+2);if(op==0x0409||op==0x0406)return false;}
  return true;
@@ -51,7 +57,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  const bth_gap_config_t gapConfig={{reinterpret_cast<const uint8_t*>(name_),name},uuids_,0x240414,AclBytes,RxWindow,uint8_t(config.callbacks.volume?3:1),false};
  if(!bth_gap_start(&gap_,&gapConfig))return Status::HardwareError;
  memset(&signaling_,0,sizeof signaling_);for(auto& p:packets_) {p.used=p.charged=false;p.length=0;p.order=p.barrier=0;p.lease={};}
- for(auto& p:peers_) {p.attached=p.has_pending=false;p.owner=0;p.borrowed_slot=-1;}
+ for(auto& p:peers_) {p.attached=p.has_pending=false;p.owner=0;p.borrowed_slot=-1;}clearClassicControls();
  for(unsigned i=0;i<2;++i){reserved_[i]=false;admissions_[i]={};}
  erase(bonds_,sizeof bonds_);bond_cursor_=0;patch_position_=patch_pending_bytes_=0;pending_opcode_=0;
  hnc_commands_=hnc_packets_=hnc_last_ms_=0;memset(hnc_handles_,0,sizeof hnc_handles_);memset(hnc_counts_,0,sizeof hnc_counts_);
@@ -154,8 +160,8 @@ bool OwnedHost::attach(unsigned i,const bth_peer_link_t& link){
  if(!bth_control_tx_attach(&control_,uint8_t(i),link.handle,link.owner))return false;
  Peer& peer=peers_[i];peer.owner=link.owner;peer.handle=link.handle;peer.attached=true;peer.has_pending=false;peer.borrowed_slot=-1;
  peer.security_deadline=now_+35000;peer.disconnect_deadline=peer.assembly_deadline=peer.pending_deadline=0;memset(peer.opened,0,sizeof peer.opened);memset(peer.channel_deadlines,0,sizeof peer.channel_deadlines);
- if(!bth_l2cap_rx_init(&peer.assembly,link.handle,peer.bytes,sizeof peer.bytes))return false;
- if(i==0){const bth_l2cap_service_t services[]={{1,672,false},{0x19,2048,true},{0x17,672,true}};
+ if(!bth_l2cap_rx_init(&peer.assembly,link.handle,peer.bytes,i==0?ClassicAssemblyBytes:sizeof peer.bytes))return false;
+ if(i==0){clearClassicControls();const bth_l2cap_service_t services[]={{1,672,false},{0x19,ClassicMtu,true},{0x17,672,true}};
   if(!bth_l2cap_sig_init(&signaling_,link.handle,services,3))return false;classic_.reset(link.owner);close_media_=close_avrcp_=0;was_secure_=false;avrcp_at_=0;avrcp_attempts_=0;avrcp_recovering_=false;
  }else if(!le_.attach(link.owner,link.handle,link.role))return false;
  return true;
@@ -165,11 +171,11 @@ void OwnedHost::detach(unsigned i){
  bth_rx_flow_detach(&rx_,peer.handle,peer.owner);
  for(auto& packet:packets_)if(packet.used&&packet.charged&&rx_.slots[packet.lease.slot].owner==peer.owner){bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}
  bth_control_tx_detach(&control_,uint8_t(i),peer.owner);
- if(i==0){classic_.reset(0);memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
+ if(i==0){clearClassicControls();classic_.reset(0);memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
  peer.attached=peer.has_pending=false;peer.owner=0;peer.borrowed_slot=-1;
 }
 void OwnedHost::closePeer(unsigned i,uint8_t reason){if(!peers_[i].attached)return;if(bth_links_disconnect(&links_,peers_[i].handle,reason)==BTH_ERR_CAPACITY)return;
- if(!peers_[i].disconnect_deadline)peers_[i].disconnect_deadline=now_+5000;if(i==0)classic_.reset(0);
+ if(!peers_[i].disconnect_deadline)peers_[i].disconnect_deadline=now_+5000;if(i==0){clearClassicControls();classic_.reset(0);}
 }
 bool OwnedHost::defer(const uint8_t* packet,size_t n){if(deferred_count_==8||n>sizeof deferred_[0].bytes){fail("Owned event backlog exhausted");return false;}
  auto& d=deferred_[(deferred_read_+deferred_count_)%8];memcpy(d.bytes,packet,n);d.length=uint16_t(n);d.serial=++event_serial_;if(!d.serial)d.serial=++event_serial_;++deferred_count_;return true;
@@ -215,6 +221,19 @@ void OwnedHost::receive(uint8_t type,const uint8_t* packet,size_t n,uint32_t now
  if(bth_h4_decode(wire,n+1,&event)!=BTH_OK){fail("Owned malformed HCI frame");return;}
  ++stats_.hci_packets;stats_.hci_bytes+=uint32_t(n);
  if(type==BTH_H4_EVENT){
+  // HNC is exempt from normal command flow control and has no queue owner.
+  // Its exceptional error completion must not overwrite ordinary command
+  // credits or pass silently through the unrelated-command completion path.
+  const auto p=event.event.params;
+  const bool hnc_cc=event.event.code==0x0e&&p.len>=3&&bth_read_le16(p.data+1)==0x0c35;
+  const bool hnc_cs=event.event.code==0x0f&&p.len>=4&&bth_read_le16(p.data+2)==0x0c35;
+  if(hnc_cc||hnc_cs){
+   const unsigned status=hnc_cc?(p.len>=4?p.data[3]:0xff):p.data[0];
+   if(p.len==4&&!status)return; // Tolerate a success report without granting credits.
+   char line[128];
+   snprintf(line,sizeof line,"Owned HNC completion ms=%lu event=%02x op=0c35 status=%02x n=%u malformed=%u grant_seen=%u credit_kept=%u",(unsigned long)now_,unsigned(event.event.code),status,unsigned(p.len),unsigned(p.len!=4),unsigned(p.data[hnc_cc?0:1]),unsigned(flow_.command_credits));
+   fail(line);return;
+  }
   if(bth_hci_flow_on_event(&flow_,&event)<0){fail("Owned HCI credit inconsistency");return;}
   if(event.event.code==0x10){fail("Owned controller hardware error");return;}
   if(boot_!=Boot::Ready){bootEvent(event);return;}
@@ -249,12 +268,69 @@ bool OwnedHost::deliver(unsigned i,const bth_l2cap_pdu_t& pdu){
  if(collision){avrcp_recovering_=true;avrcp_at_=now_+500;}
  synchronizeChannels();return true;
 }
+bool OwnedHost::safeClassicControl(const bth_l2cap_pdu_t& pdu) const{
+ if(!pdu.payload.data||!pdu.payload.len||pdu.payload.len>BTH_CONTROL_BYTES)return false;
+ if(pdu.cid!=1){const auto* c=bth_l2cap_sig_find(&signaling_,pdu.cid);
+  return c&&c->state==BTH_CHANNEL_OPEN&&pdu.payload.len<=c->local_mtu&&(c->psm==1||(c->psm==0x17&&pdu.cid==classic_.avrcpCid()));
+ }
+ // A whole bundle is independent only if every command is stateless. A later
+ // disconnect/configuration command must not hide behind an initial Echo.
+ size_t response_bytes=0;
+ for(size_t at=0;at<pdu.payload.len;){const auto* p=pdu.payload.data+at;const size_t remaining=pdu.payload.len-at;
+  if(remaining<4||!p[1])return false;const size_t n=bth_read_le16(p+2);
+  if(n>remaining-4||(p[0]!=8&&(p[0]!=10||n!=2)))return false;
+  const uint16_t info=p[0]==10?bth_read_le16(p+4):0;
+  response_bytes+=p[0]==8?n+4:(info==2?12u:(info==3?16u:8u));
+  if(response_bytes>BTH_CONTROL_BYTES)return false;at+=n+4;
+ }
+ return true;
+}
+void OwnedHost::clearClassicControls(uint16_t cid){
+ if(!cid){for(auto& p:classic_deferred_)p={};classic_deferred_read_=classic_deferred_count_=0;classic_deferred_owner_=0;return;}
+ auto& peer=peers_[0];if(peer.has_pending&&peer.pending.cid==cid){
+  if(peer.borrowed_slot>=0){auto& p=packets_[peer.borrowed_slot];bth_rx_flow_release(&rx_,p.lease);p.used=false;}
+  peer.has_pending=false;peer.borrowed_slot=-1;peer.pending={};peer.pending_deadline=0;
+ }
+ unsigned kept=0;const unsigned count=classic_deferred_count_;
+ for(unsigned k=0;k<count;++k){const unsigned from=(classic_deferred_read_+k)%ClassicDeferredSlots;
+  if(classic_deferred_[from].cid==cid)continue;const unsigned to=(classic_deferred_read_+kept++)%ClassicDeferredSlots;
+  if(to!=from){classic_deferred_[to]=classic_deferred_[from];memmove(peers_[0].bytes+ClassicAssemblyBytes+to*BTH_CONTROL_BYTES,peers_[0].bytes+ClassicAssemblyBytes+from*BTH_CONTROL_BYTES,classic_deferred_[to].length);}
+ }
+ classic_deferred_count_=uint8_t(kept);if(!kept)clearClassicControls();
+}
+bool OwnedHost::deferClassicControl(const bth_l2cap_pdu_t& pdu,uint32_t deadline){
+ if(classic_deferred_count_==ClassicDeferredSlots||!safeClassicControl(pdu))return false;
+ auto& peer=peers_[0];if(!peer.attached||(classic_deferred_count_&&classic_deferred_owner_!=peer.owner))return false;
+ const unsigned slot=(classic_deferred_read_+classic_deferred_count_)%ClassicDeferredSlots;
+ memcpy(peer.bytes+ClassicAssemblyBytes+slot*BTH_CONTROL_BYTES,pdu.payload.data,pdu.payload.len);
+ classic_deferred_[slot]={pdu.cid,uint16_t(pdu.payload.len),deadline};classic_deferred_owner_=peer.owner;++classic_deferred_count_;return true;
+}
+bool OwnedHost::retryClassicControls(){
+ auto& peer=peers_[0];if(!classic_deferred_count_)return true;
+ if(!peer.attached||classic_deferred_owner_!=peer.owner){clearClassicControls();return false;}
+ const auto* link=bth_links_find(&links_,peer.handle);if(!link||link->disconnecting){clearClassicControls();return false;}
+ for(unsigned k=0;k<ClassicDeferredSlots&&classic_deferred_count_;++k){const unsigned slot=classic_deferred_read_;const auto p=classic_deferred_[slot];
+  // Occupancy, not a nonzero timestamp, makes this deadline valid at wrap.
+  if(int32_t(now_-p.deadline)>=0){closePeer(0,0x13);return false;}
+  const bth_l2cap_pdu_t pdu={peer.handle,p.cid,{peer.bytes+ClassicAssemblyBytes+slot*BTH_CONTROL_BYTES,p.length},false};
+  if(!deliver(0,pdu))break;if(!active_||!peer.attached||link->disconnecting)return false;
+  classic_deferred_[slot]={};classic_deferred_read_=uint8_t((slot+1)%ClassicDeferredSlots);--classic_deferred_count_;
+ }
+ if(!classic_deferred_count_)clearClassicControls();return true;
+}
 void OwnedHost::processRx(unsigned i){
  auto& peer=peers_[i];if(!peer.attached)return;
+ if(i==1&&le_.pendingAttExpired(now_))return;
  // Verified link security alone cannot admit media before output preparation.
  // A full control queue can delay the securityReady/reopen transaction.
  if(i==0&&bth_links_secure(&links_,peer.handle)&&!was_secure_)return;
- if(peer.has_pending){if(!deliver(i,peer.pending)){if(due(now_,peer.pending_deadline))closePeer(i,0x13);return;}
+ if(i==0){const auto* link=bth_links_find(&links_,peer.handle);if(!link||link->disconnecting||!retryClassicControls())return;}
+ if(peer.has_pending){
+  if(i==0&&int32_t(now_-peer.pending_deadline)>=0){closePeer(i,0x13);return;}
+  bool consumed=false;
+  if(i==0&&classic_deferred_count_)consumed=deferClassicControl(peer.pending,peer.pending_deadline);
+  else {consumed=deliver(i,peer.pending);if(!consumed&&i==0)consumed=deferClassicControl(peer.pending,peer.pending_deadline);}
+  if(!consumed){if(due(now_,peer.pending_deadline))closePeer(i,0x13);return;}
   if(peer.borrowed_slot>=0){auto& packet=packets_[peer.borrowed_slot];bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}
   peer.has_pending=false;peer.borrowed_slot=-1;
  }
@@ -263,7 +339,12 @@ void OwnedHost::processRx(unsigned i){
   if(index<0)break;auto& packet=packets_[index];bth_acl_view_t acl={};acl.handle=bth_read_le16(packet.bytes)&0x0fff;acl.pb=uint8_t((packet.bytes[1]>>4)&3);acl.bc=uint8_t(packet.bytes[1]>>6);acl.payload={packet.bytes+4,size_t(packet.length)-4};
   bth_l2cap_pdu_t pdu={};bth_status_t result=bth_l2cap_rx_feed(&peer.assembly,&acl,&pdu);
   if(result==BTH_MORE)peer.assembly_deadline=now_+2000;else peer.assembly_deadline=0;
-  if(result==BTH_OK&&!deliver(i,pdu)){peer.pending=pdu;peer.has_pending=true;peer.pending_deadline=now_+5000;peer.borrowed_slot=pdu.reassembled?-1:index;
+  const uint32_t deadline=now_+5000;bool consumed=true;
+  if(result==BTH_OK){
+   if(i==0&&classic_deferred_count_&&pdu.cid!=classic_.mediaCid())consumed=deferClassicControl(pdu,deadline);
+   else {consumed=deliver(i,pdu);if(!consumed&&i==0)consumed=deferClassicControl(pdu,deadline);}
+  }
+  if(result==BTH_OK&&!consumed){peer.pending=pdu;peer.has_pending=true;peer.pending_deadline=deadline;peer.borrowed_slot=pdu.reassembled?-1:index;
    if(pdu.reassembled){bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}break;
   }
   bth_rx_flow_release(&rx_,packet.lease);packet.used=false;if(result<0){++stats_.dropped_packets;closePeer(i,0x13);break;}
@@ -272,8 +353,14 @@ void OwnedHost::processRx(unsigned i){
 }
 void OwnedHost::synchronizeChannels(){
  if(!peers_[0].attached)return;auto& peer=peers_[0];
+ if(classic_.abortTransportPending()){
+  if(deferred_count_)return; // Never retire owners or issue work ahead of a retained event.
+  bool pending=false;
+  for(const auto& c:signaling_.channels)if(c.psm==0x19&&c.local_cid!=classic_.signalCid()&&c.state!=BTH_CHANNEL_CLOSED){pending=true;disconnectChannel(c.local_cid);}
+  if(!pending)classic_.abortTransportRetired();
+ }
  for(unsigned k=0;k<BTH_CHANNEL_LIMIT;++k){auto& c=signaling_.channels[k];
-  if(peer.opened[k]&&c.state!=BTH_CHANNEL_OPEN){classic_.channelClosed(uint16_t(0x40+k));peer.opened[k]=false;}
+  if(peer.opened[k]&&c.state!=BTH_CHANNEL_OPEN){clearClassicControls(uint16_t(0x40+k));classic_.channelClosed(uint16_t(0x40+k));peer.opened[k]=false;}
   if(c.state==BTH_CHANNEL_OPEN&&!peer.opened[k]&&(c.psm==1||bth_links_secure(&links_,peer.handle))){
    if(classic_.channelOpened(c.psm,c.local_cid,c.remote_cid,c.remote_mtu)){peer.opened[k]=true;peer.channel_deadlines[k]=0;}
    else disconnectChannel(c.local_cid);
@@ -293,7 +380,7 @@ void OwnedHost::chargeWaiting(uint32_t barrier){
   if(bth_rx_flow_received(&rx_,uint8_t(k),handle,peers_[i].owner,&packet.lease)!=BTH_OK){fail("Owned retained ACL admission failed");return;}packet.charged=true;
  }
 }
-void OwnedHost::avrcpPoll(bool secure){
+void OwnedHost::avrcpPoll(bool secure,bool allow_open){
  if(!secure||!classic_.signalCid()||(!config_.callbacks.volume&&!config_.callbacks.metadata))return;
  if(avrcp_recovering_){
   if(bth_avrcp_link_count(&signaling_)){bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)!=BTH_OK)return;size_t n=0;
@@ -303,7 +390,7 @@ void OwnedHost::avrcpPoll(bool secure){
   }
   if(!due(now_,avrcp_at_))return;avrcp_recovering_=false;
  }
- if(bth_avrcp_link_count(&signaling_)||avrcp_attempts_>=3)return;
+ if(!allow_open||bth_avrcp_link_count(&signaling_)||avrcp_attempts_>=3)return;
  if(!avrcp_at_){avrcp_at_=now_+500;return;}if(!due(now_,avrcp_at_))return;
  bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)!=BTH_OK)return;size_t n=0;uint16_t cid=0;
  bth_status_t result=bth_l2cap_sig_connect(&signaling_,0x17,true,slot.data,slot.capacity,&n,&cid);
@@ -324,10 +411,13 @@ void OwnedHost::runtimePoll(){
      was_secure_=true;
     }}}
   if(!secure&&due(now_,peers_[0].security_deadline))closePeer(0,5);
-  if(secure)classic_.poll(true,now_);synchronizeChannels();avrcpPoll(secure);
+  const bool input_waiting=classic_deferred_count_||peers_[0].has_pending;
+  if(secure)classic_.poll(true,now_,!input_waiting);synchronizeChannels();avrcpPoll(secure,!classic_deferred_count_&&!peers_[0].has_pending);
   if(classic_.takeCloseMedia())close_media_=classic_.mediaCid();if(classic_.takeCloseAvrcp())close_avrcp_=classic_.avrcpCid();
   if(close_media_&&disconnectChannel(close_media_))close_media_=0;if(close_avrcp_&&disconnectChannel(close_avrcp_))close_avrcp_=0;
  }
+ if(!deferred_count_&&peers_[1].attached){const auto* link=bth_links_find(&links_,peers_[1].handle);
+  if(link&&!link->disconnecting){if(le_.pendingAttExpired(now_))closePeer(1,0x13);else le_.servicePendingAtt(peers_[1].owner,now_);}}
  if(!deferred_count_)for(unsigned k=0;k<2;++k){unsigned i=(next_peer_+k)%2;processRx(i);if(!active_)return;}
  next_peer_^=1;
  for(unsigned i=0;i<2;++i)if(peers_[i].attached){const auto* link=bth_links_find(&links_,peers_[i].handle);
@@ -339,7 +429,7 @@ void OwnedHost::runtimePoll(){
  if(le_.stats().status==Status::HardwareError){const auto state=le_.controlState();char line[128];snprintf(line,sizeof line,"Owned LE failure op=%04x stage=%u error=%02x pending=%u now=%lu deadline=%lu",state.opcode,state.stage,state.error,state.pending,(unsigned long)now_,(unsigned long)state.deadline);diagnose(line);fail("Owned LE profile control failure");return;}
  if(!hooks_.txReady(hooks_.user))return;
  size_t n=0;
- if(!last_ack_&&bth_rx_flow_next_completed(&rx_,output_,sizeof output_,&n)==BTH_OK){last_ack_=true;submit(n);return;}
+ if((!last_ack_||rx_.outstanding>=RxWindow-1)&&bth_rx_flow_next_completed(&rx_,output_,sizeof output_,&n)==BTH_OK){last_ack_=true;submit(n);return;}
  const uint32_t owners[]={peers_[0].owner,peers_[1].owner};
  for(unsigned k=0;k<2;++k){bool command=(k==0)?tx_turn_:!tx_turn_;unsigned old_sent=commands_.sent_count;bth_status_t result=command?bth_cmdq_next(&commands_,&flow_,output_,sizeof output_,&n):bth_control_tx_next(&control_,owners,&flow_,output_,sizeof output_,&n);
   if(result==BTH_OK){
@@ -354,6 +444,11 @@ void OwnedHost::runtimePoll(){
 }
 void OwnedHost::refreshStats(){stats_.connected=peers_[0].attached;stats_.streaming=!deferred_count_&&was_secure_&&peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle)&&classic_.streaming();stats_.received_packets=classic_.receivedPackets();stats_.received_bytes=classic_.receivedBytes();}
 RadioStats OwnedHost::radioStats()const {RadioStats s=stats_;s.connected=peers_[0].attached;s.streaming=!deferred_count_&&was_secure_&&peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle)&&classic_.streaming();s.received_packets=classic_.receivedPackets();s.received_bytes=classic_.receivedBytes();s.dropped_packets+=classic_.droppedPackets();return s;}
+void OwnedHost::serviceReceiveCredits(uint32_t now){
+ if(!active_||boot_!=Boot::Ready||deferred_count_||!hooks_.txReady(hooks_.user))return;
+ size_t n=0;if(bth_rx_flow_next_completed(&rx_,output_,sizeof output_,&n)!=BTH_OK)return;
+ now_=now;last_ack_=true;submit(n);
+}
 void OwnedHost::poll(uint32_t now){if(!active_)return;now_=now;if(!clock_started_){begin_ms_=now;clock_started_=true;}
  if(boot_!=Boot::Ready){if(uint32_t(now_-begin_ms_)>60000){fail("Owned controller startup timeout");return;}bootPoll();}else runtimePoll();refreshStats();}
 }}

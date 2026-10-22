@@ -52,6 +52,11 @@ struct ReceiverStats {
     size_t decoder_memory_bytes = 0;
     uint8_t absolute_volume = 127;
     bool configured = false, playing = false;
+    // Cumulative per begin(). A block is one successful encoded LHDC frame;
+    // frames are PCM sample frames (one sample per channel), not samples.
+    // Both categories can apply to one block and must not be added as a total.
+    uint64_t lhdc_right_concealed_blocks = 0, lhdc_right_concealed_frames = 0;
+    uint64_t lhdc_frame_muted_blocks = 0, lhdc_frame_muted_frames = 0;
 };
 class GigaBredr {
 public:
@@ -62,13 +67,19 @@ public:
     Status begin(const ReceiverConfig& config = ReceiverConfig());
     // Call from loop() to deliver bounded diagnostic/configuration callbacks.
     // Radio and decoder workers run independently on GIGA.
+    // A callback may end/restart this receiver; remaining old callbacks are
+    // discarded. Keep this object alive and serialize begin/end/poll calls.
     void poll();
     void end();
     ReceiverStats stats() const;
     AudioDiagnostics audioDiagnostics() const;
     BleStats bleStats() const;
-    // Copies one bounded notification; OutputFull asks the caller to retry.
+    // Copies the readable TX value; notifies only while connected/subscribed.
+    // Ok is admission, not remote delivery. Busy/OutputFull ask for a retry.
     Status bleNotify(const uint8_t* data, size_t length);
+    // Same-begin connection-bound reply: stale/disconnected origins return
+    // InvalidArgument without updating TX. Discard origins after end()/begin().
+    Status bleNotify(const BleWrite& origin);
     // Pops one copied write from the GATT RX characteristic, if available.
     bool bleReadWrite(BleWrite& value);
     static uint32_t availableCodecs();
@@ -78,5 +89,6 @@ public:
 private:
     struct Impl;
     Impl* impl_ = nullptr;
+    uint64_t lifetime_ = 0; // Survives Impl replacement, including address reuse.
 };
 }

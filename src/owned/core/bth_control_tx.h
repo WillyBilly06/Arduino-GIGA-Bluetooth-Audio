@@ -19,6 +19,7 @@ typedef struct {
     uint16_t handle;
     uint8_t order[BTH_CONTROL_SLOTS],read,count,owned;
     bool attached;
+    uint16_t cursor; // Current FIFO-head offset; uses existing tail padding.
 } bth_control_peer_t;
 typedef struct {
     bth_control_slot_t slots[BTH_CONTROL_SLOTS];
@@ -40,7 +41,9 @@ bth_status_t bth_control_tx_commit(bth_control_tx_t *q,bth_control_token_t token
 bth_status_t bth_control_tx_cancel(bth_control_tx_t *q,bth_control_token_t token);
 // Canonical current owners come from the live link table. Per-peer FIFO, round
 // robin fragments across peers; a peer without credits cannot block the other.
-// Call only when VHCI can send. Slot remains owned through the final fragment.
+// Call only when VHCI can send. CID1 commands use separate L2CAP SDUs,
+// retaining one queue slot through every command and its final ACL fragment.
+// Other CIDs retain their original SDU boundaries.
 bth_status_t bth_control_tx_next(bth_control_tx_t *q,const uint32_t owners[BTH_CONTROL_PEERS],bth_hci_flow_t *flow,
     uint8_t *out,size_t capacity,size_t *written);
 #ifdef __cplusplus

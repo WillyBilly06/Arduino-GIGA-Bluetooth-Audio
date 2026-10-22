@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-10-21",
+  "date": "2026-10-22",
   "qualification": "developmental source snapshot; hardware qualification pending",
   "profile": "Full selected user-supplied decoder set; project-owned host",
   "arduino_core": "arduino:mbed_giga 4.6.0",
@@ -15,38 +15,34 @@
   "example": "examples/Receiver/Receiver.ino",
   "isolated_receiver_link": "PASS",
   "exported_library_translation_units": 168,
-  "compiler_input_set_sha256": "ba968c805f3119eb7e93ca53936c48c09d83625a214e626d39e2edc25362a03d",
+  "compiler_input_set_sha256": "c5a543d84aa2ddda38b0f14c22d884568a21ed0606f2cbedaf7a54cd33b8e671",
   "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
-  "private_application_sha256": "b650140878531afb79e75e94cc500eac75b6baa94b881c24dce85db22d6b1637",
-  "private_application_bytes": 458984,
+  "private_application_sha256": "ecc564af1bc0f28e1b133bc34db0d9810aaed52e18cef2d8d5f948d33e8d1831",
+  "private_application_bytes": 463924,
   "elf_sections": {
-    "text": 454256,
-    "data": 4728,
-    "bss": 327192
+    "text": 459188,
+    "data": 4736,
+    "bss": 327448
   },
   "private_binary_not_distributed": true,
   "vendor_original_input_hashes_checked": 257,
   "vendor_original_input_hashes_match": true,
   "export_safety_tests": {
-    "passed": 15
+    "passed": 16
   },
   "exported_synthetic_host_tests": {
+    "address_sanitizer": true,
     "undefined_behavior_trap": true,
-    "suite_count": 17,
-    "classic": "PASS",
-    "ble_checks": 237,
-    "actor_checks": 1032,
-    "actor_pressure_regression_checks": 932,
-    "reset_bootstrap": "PASS",
-    "ble517_512_checks": 188,
-    "service_fragmentation": "PASS,244/512-byte values at27-byte HCI fragments; no-service and stalled-TX guard cases remain fatal as expected",
-    "uart_tx_mailbox": "PASS4096packets2119478exactbytes",
-    "rtp_ledger_cases": 5,
-    "audio_timing_cases": 7,
-    "receiver_buffer_profiles": "PASS3/6/64capacity,zero-inherit,noinactivealloc,5failurepositions,50kreceive/200reconfigure,callbackreentry",
-    "i2s_geometry_runtime_legacy": "PASS"
+    "portable_owned_runner": "PASS; current actor, HNC, LE lifecycle, Classic config/Abort/scheduling, UART wake, reliable mixed ATT ownership and scoped notifications",
+    "mixed_delayed_att_checks": 18179,
+    "write_command_policy_checks": 6137,
+    "pcm_recovery_assertions": 4027850,
+    "ble_origin_cases": 6,
+    "uart_wake_checks": 85,
+    "worker_lifetime_checks": 20,
+    "lhdc_concealment": "PASS controlled channel-flag propagation and frontend totals; no PCM oracle or acoustic claim"
   },
-  "target_execution_of_this_public_profile": "Source profile not flashed by exporter; finite readback-verified root experiment and limitations are described in STATUS.md",
+  "target_execution_of_this_public_profile": "Exporter does not flash hardware. Corresponding maintained runtime had measured ingress omissions with GATT and after BLE disconnect; see STATUS.md. This build is source/link evidence only.",
   "source_files": [
     {
       "path": "src/AudioDiagnostics.h",
@@ -62,11 +58,11 @@
     },
     {
       "path": "src/GigaBredr.cpp",
-      "sha256": "634a752516ba55daa24589eedf7c954937bd2ae0cee4380c271d7c915416007f"
+      "sha256": "87ddb9f414a9d4b8654e54af4a2f3700823598a3ae9b75aa7d40c4574e8cb420"
     },
     {
       "path": "src/GigaBredr.h",
-      "sha256": "0554cd8d453359a160960770d94c85240cc4a150a0b9757ced3ea7705150a023"
+      "sha256": "a2bb863e1f73052484caad4e5be1cbdcd7d5f0e6162cd7b608131a3d6323a77a"
     },
     {
       "path": "src/GigaI2sOutput.h",
@@ -82,7 +78,7 @@
     },
     {
       "path": "src/Types.h",
-      "sha256": "e429c71e5a5cac65e5828386a508fad3160feef6266b9d75cb742d15f50945dc"
+      "sha256": "d5bfa7f8440679dc1c0585c12e74d5101cab772632674b01e8955ff8bc213f68"
     },
     {
       "path": "src/detail/AudioTiming.cpp",
@@ -130,7 +126,7 @@
     },
     {
       "path": "src/codecs/Codecs.cpp",
-      "sha256": "96e65479c1e8992813157b8d306b19bff980797c6c814a6bbd8729607c93fcec"
+      "sha256": "bcb054b45d9d7e30fc5077bafd20c47a290c80950d7f975df4c10f49f5d3aa07"
     },
     {
       "path": "src/codecs/Codecs.h",
@@ -138,15 +134,15 @@
     },
     {
       "path": "src/owned/BleTypes.h",
-      "sha256": "89741137f0575d9db41c19ecfb8462f9d3f1624fd0c1e99a1ff3c1d75bccf532"
+      "sha256": "843f917db489c12bc5cd1569e893cfe3b334674d4eb7cf06c560e026b6d33658"
     },
     {
       "path": "src/owned/ClassicProfiles.cpp",
-      "sha256": "29080ef4559a3be0ae1a4717da898078ced903a281467b7fed9225fd10236e77"
+      "sha256": "ac7cc1958e179fe367f53d3563908d0fce62058dfb9cd954dbfd1214ad748e2d"
     },
     {
       "path": "src/owned/ClassicProfiles.h",
-      "sha256": "97b405eb37f311422f801393fd751ac827e7e5ee04e9c439e80b15f528cbf546"
+      "sha256": "57ca27fd9a5bec190ddd814fc7147af4d44bb233c0721357039d14404e620c8b"
     },
     {
       "path": "src/owned/core/bth_acl_tx.c",
@@ -214,11 +210,11 @@
     },
     {
       "path": "src/owned/core/bth_control_tx.c",
-      "sha256": "4589d51c04871c660446ff84377a2799df9bea63996b795ab851257f0aebc72b"
+      "sha256": "282405a8152d6132b564d8a71f69019fd8cf7e7c838831adea8262b0d32fba2e"
     },
     {
       "path": "src/owned/core/bth_control_tx.h",
-      "sha256": "f19db356492cbfcd46aac294ea428a347188258c01eb6c94ea2cca9f8a59e76c"
+      "sha256": "f57809fc5b9d3048eb8048d0c1b794b5c8af987361af7e900f11468a6d9fd8c9"
     },
     {
       "path": "src/owned/core/bth_gap.c",
@@ -254,7 +250,7 @@
     },
     {
       "path": "src/owned/core/bth_l2cap_sig.c",
-      "sha256": "07a220853d9f68e132c9a7888fdb1ee0af7075006a08b15b13acf6fd100e43b1"
+      "sha256": "ac1462f4434a6a3daf9d4cde32bfab41f9c4f5bc09235ff29d87d2502a5ddbfa"
     },
     {
       "path": "src/owned/core/bth_l2cap_sig.h",
@@ -302,11 +298,11 @@
     },
     {
       "path": "src/owned/core/bth_rx_flow.c",
-      "sha256": "854dda6bba5be6a1f6c29d54d1afbcac7776b2dfa0c6f87b10d5a6f19dcd72ac"
+      "sha256": "e058792c04d2de3cadb6f1a8a2e25cb75e064a275d2cd237f62696449a53b921"
     },
     {
       "path": "src/owned/core/bth_rx_flow.h",
-      "sha256": "b8f023bea6196f4ab03f0c4715727b9a16a37238354ca83899febffba93100bc"
+      "sha256": "97e2be82e3c4bc1b1edb2d21b84c3362af430a601bd19e6cdbe8305cb0c84f0c"
     },
     {
       "path": "src/owned/core/bth_sdp.c",
@@ -362,27 +358,27 @@
     },
     {
       "path": "src/owned/LeProfiles.cpp",
-      "sha256": "7fb7807fd8384ede178855bda92ebaa7298367b50bffea6cdeceee30fb0b22ed"
+      "sha256": "01fee9b07f43493612b03d2bb83e1e1d42dac319183b1f3531848301fd58b1b2"
     },
     {
       "path": "src/owned/LeProfiles.h",
-      "sha256": "3e7ae42b81480e162385c45722b83e0f96883692c92f71ab027e2933a70f3733"
+      "sha256": "48a0cde5a69f78eddb934a15210cfc55a4e4d44f3623f580f311b655857551fb"
     },
     {
       "path": "src/owned/OwnedHost.cpp",
-      "sha256": "58723a83ca41bd158b8486a9d029ebab57fcf27b1504620a4943f8720d137d87"
+      "sha256": "3af97d829570c3d9db49524f0b68edcbc2d300802c160844bedc62fc8b9628c0"
     },
     {
       "path": "src/owned/OwnedHost.h",
-      "sha256": "dc0ee24888bfee386ce55e991192a18dc159d6491b679d2b48354708443c29dc"
+      "sha256": "3a6dcc1c6adc9dcab480dced4b833aacae1ac2f630747bf206877f6582556d31"
     },
     {
       "path": "src/platform/OwnedRadio.cpp",
-      "sha256": "b489b6a7f6e170fe63e8f9c1ac1f46a4bb7a12576bf38c211ab86118bd8755c5"
+      "sha256": "114ae821b61e8886cdf67a816b6b4b55881f3f391a1f9db9963fad2b8836a33c"
     },
     {
       "path": "src/platform/GigaRadio.h",
-      "sha256": "211e3a01b27bd77c2f216768c8e7b8b19565f43a02fe47235de28d7f537fa6d4"
+      "sha256": "7ad3eb124101b6227c2ef821178cdae6056d013351ce863c7bf2df8e9f813ede"
     },
     {
       "path": "src/platform/GigaAvrcp.h",
@@ -390,11 +386,11 @@
     },
     {
       "path": "src/platform/GigaI2s.cpp",
-      "sha256": "ae788f731a32d659518e20fbc2e1541e955bcec39a1fd15f4faab927ae8f94c7"
+      "sha256": "25b8d5884b27adcf0bcd3803be3c155a44665e128858bbe83ab109746b923667"
     },
     {
       "path": "src/platform/GigaI2s.h",
-      "sha256": "6ac6ac69408ef0832edd66338e64f9ddbf908dd40809c9b4e9fc6a31e7206477"
+      "sha256": "7b9727dd4dc127f42550d9797559ff0697c08b9f2c3f6324821d8d54bd70beca"
     },
     {
       "path": "src/platform/I2sBuffer.h",
@@ -418,7 +414,7 @@
     },
     {
       "path": "examples/Receiver/Receiver.ino",
-      "sha256": "9d92528d2895433113392dbd1a0d905bc6b6ce983d6fd4075132fd5de9357647"
+      "sha256": "a76bfad32882828acce18a43ca6a41c90772a0b72b1d51b157e0665231087ded"
     },
     {
       "path": "src/vendor/codecs/sbc/include/oi_assert.h",
@@ -794,11 +790,11 @@
     },
     {
       "path": "src/vendor/codecs/lhdc/lhdc_dec.c",
-      "sha256": "b1706a2f9320a7b05a8b9e3b4d77d132b8f206dd9496dfeac3ef7e8602d6cef6"
+      "sha256": "66699122ee54820d594de1ddba4764ae9d6a43b555023175948d7c4b2d50c2c2"
     },
     {
       "path": "src/vendor/codecs/lhdc/lhdc_dec.h",
-      "sha256": "cd59bb9ba2a099a3d26cf526676b4513493fc68edd84609a3c4cd0d3128efaa6"
+      "sha256": "eb691d598e4ee87ef8b472c0501f678109d35b5dde625ae0fc38642c383f80a8"
     },
     {
       "path": "src/vendor/codecs/lhdc/lhdc_dec_internal.h",
@@ -1458,7 +1454,7 @@
     },
     {
       "path": "src/vendor/codecs/manifest.json",
-      "sha256": "c3bdc426dddd3532941401c206c29cff0ef206e8541a13fc8eb6a53da31953db"
+      "sha256": "96f662e61847536e9e0324b11093002acae41452e816c814f0fe8e2308c883ad"
     },
     {
       "path": "src/platform/TxMailbox.h",
@@ -1467,6 +1463,10 @@
     {
       "path": "src/codecs/README.md",
       "sha256": "b73877e5d1aa7192acaaddb33952582026774335243375d96a544bdd1c7ec738"
+    },
+    {
+      "path": "src/platform/PcmRecovery.h",
+      "sha256": "fe95a44ccedf846a4ad1512374958500a1f91b6da91ab2d1d08ee640c0f049e0"
     }
   ],
   "snapshot_scope": "Stable four-packet receive-window per-H4-frame service with MTU517/512-byte GATT and optional per-codec buffers; defaults8/2/20 unchanged",
@@ -1518,5 +1518,7 @@
     "pcm_buffer_ms": 20,
     "per_codec_overrides": "all zero inherit"
   },
-  "receive_window": 4
+  "receive_window": 4,
+  "arduino_program_storage_bytes": 459600,
+  "arduino_dynamic_globals_bytes": 53656
 }

@@ -33,5 +33,9 @@ struct BleStats {
     bool enabled = false, advertising = false, connected = false;
     bool notify_enabled = false, security_available = false, encrypted = false;
     Status status = Status::Ok;
+    // Valid RX Write Commands dropped for an unread app value or an older
+    // capacity-blocked ATT request (oldest request has bounded app priority).
+    // Cumulative for this host lifetime; acknowledged requests are never counted.
+    uint32_t write_command_drops = 0;
 };
 }

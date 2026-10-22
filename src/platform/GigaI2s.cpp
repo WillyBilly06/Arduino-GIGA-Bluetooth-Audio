@@ -18,6 +18,7 @@ I2S_HandleTypeDef i2s;
 DMA_HandleTypeDef dma;
 OutputStats stats;
 OutputTiming timing;
+PcmRecovery recovery;
 uint32_t timingEpoch=0;
 I2sRing* ring=nullptr;
 void* arena=nullptr;
@@ -40,9 +41,10 @@ void refill(unsigned half) {
   stats.frames_transmitted+=halfFrames; // DMA completion, not observed wire/acoustic output.
   int32_t* p=dmaWords+half*halfFrames*2;
   const uint32_t queued=uint32_t(ring->queued());
-  const uint32_t real=uint32_t(ring->fill(p,halfFrames));
+  const uint32_t at=micros();
+  const uint32_t real=uint32_t(recovery.refill(*ring,p,at));
   if(real!=halfFrames) ++stats.underruns;
-  timing.refill(timingEpoch,micros(),halfFrames,real,queued);
+  timing.refill(timingEpoch,at,halfFrames,real,queued);
   clean(p,halfFrames);
 }
 void halfDone(DMA_HandleTypeDef*) { refill(0); }
@@ -51,6 +53,7 @@ void dmaError(DMA_HandleTypeDef*) {
   NVIC_DisableIRQ(DMA1_Stream7_IRQn);
   DMA1_Stream7->CR &= ~DMA_SxCR_EN;
   DMA1->HIFCR=DMA_HIFCR_CHTIF7|DMA_HIFCR_CTCIF7|DMA_HIFCR_CTEIF7|DMA_HIFCR_CDMEIF7|DMA_HIFCR_CFEIF7;
+  recovery.end(micros(),ring?uint32_t(ring->queued()):0);
   ++stats.dma_errors; stats.running=false; stats.priming=false; __atomic_store_n(&outputPhase,uint32_t(Stopped),__ATOMIC_RELEASE);
   CLEAR_BIT(SPI2->CFG1,SPI_CFG1_TXDMAEN); CLEAR_BIT(SPI2->CR1,SPI_CR1_SPE);
 }
@@ -133,6 +136,7 @@ Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs) {
   owned=true; stats=OutputStats(); stats.sample_rate=sampleRate;
   if(!++timingEpoch) ++timingEpoch;
   timing.beginEpoch(timingEpoch);
+  recovery.begin(timingEpoch,ringFrames,halfFrames);
   oldPinsI=i2sCapturePins(gpioRegisters(GPIOI),pinPlan.portI);
   oldPinsB=i2sCapturePins(gpioRegisters(GPIOB),pinPlan.portB);
   GPIO_InitTypeDef gpio={}; gpio.Pin=pinPlan.portI.pins; gpio.Mode=GPIO_MODE_AF_PP;
@@ -187,6 +191,7 @@ size_t i2sWrite(const int32_t* pcm,size_t frames) {
 void i2sEnd() {
   if(!owned) return;
   NVIC_DisableIRQ(DMA1_Stream7_IRQn);
+  recovery.end(micros(),ring?uint32_t(ring->queued()):0);
   timing.endEpoch(timingEpoch);
   stats.running=false; stats.priming=false; stats.initialized=false; __atomic_store_n(&outputPhase,uint32_t(Stopped),__ATOMIC_RELEASE);
   CLEAR_BIT(SPI2->CFG1,SPI_CFG1_TXDMAEN); CLEAR_BIT(SPI2->CR1,SPI_CR1_SPE);
@@ -208,6 +213,7 @@ void i2sEnd() {
 }
 OutputStats i2sStats() { Critical guard; OutputStats copy=stats; copy.queued_frames=ring?ring->queued():0; return copy; }
 OutputTimingSnapshot i2sTiming() { Critical guard; return timing.snapshot(); }
+PcmRecoverySnapshot i2sRecovery() { Critical guard; return recovery.snapshot(); }
 }}
 #else
 namespace giga_bredr { namespace detail {
@@ -217,5 +223,6 @@ size_t i2sWrite(const int32_t*,size_t) { return 0; }
 void i2sEnd() {}
 OutputStats i2sStats() { return OutputStats(); }
 OutputTimingSnapshot i2sTiming() { return {}; }
+PcmRecoverySnapshot i2sRecovery() { return {}; }
 }}
 #endif

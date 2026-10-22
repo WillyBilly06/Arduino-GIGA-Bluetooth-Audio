@@ -10,11 +10,12 @@ using Bytes=std::vector<uint8_t>;
 static unsigned checks=0;
 #define CHECK(x) do{++checks;if(!(x)){fprintf(stderr,"CHECK line%d: %s\n",__LINE__,#x);abort();}}while(0)
 struct Fixture {
- OwnedHost host;OwnedHostConfig config;OwnedHostHooks hooks;uint32_t now=10;bool ready=true,fail_send=false,fail_baud=false,fail_decoder=false;
+ // Default tests own an actor; adapter tests bind to its actual Context.host.
+ OwnedHost owned_host;OwnedHost& host;OwnedHostConfig config;OwnedHostHooks hooks;uint32_t now=10;bool ready=true,fail_send=false,fail_baud=false,fail_decoder=false;
  struct Pdu{uint16_t handle,cid;Bytes bytes;};std::vector<Pdu> output;
  unsigned baud_changes=0,configured=0,media=0,stops=0;bool playing=false;Bytes last_media;std::vector<Bytes> tx;std::vector<std::string> messages;
  const uint8_t hcd[8]={0x4c,0xfc,1,0xaa,0x4e,0xfc,1,0xbb};
- Fixture(bool ble=true){config.name="Owned GIGA";config.codecMask=AllCodecs;config.ble.enabled=ble;config.firmware=hcd;config.firmwareSize=sizeof hcd;
+ Fixture(bool ble=true,OwnedHost* external=nullptr):host(external?*external:owned_host){config.name="Owned GIGA";config.codecMask=AllCodecs;config.ble.enabled=ble;config.firmware=hcd;config.firmwareSize=sizeof hcd;
   config.address[0]=0x42;config.address[1]=0x12;config.address[5]=1;config.callbacks.user=this;
   config.callbacks.configure=[](const CodecConfig&,void* p){auto& f=*static_cast<Fixture*>(p);++f.configured;return f.fail_decoder?Status::OutOfMemory:Status::Ok;};
   config.callbacks.media=[](const uint8_t* p,size_t n,void* u){auto& f=*static_cast<Fixture*>(u);++f.media;f.last_media.assign(p,p+n);};
@@ -94,11 +95,12 @@ static void classic_profiles(){Fixture f;f.boot();f.classicConnect();auto sdp=f.
 static void retained_fragment_and_generation(){Fixture f;f.boot();f.leConnect();
  f.acl(0x26,4,{0x12,9,0,0xa1});f.settle();CHECK(f.host.bleStats().writes==1);
  f.acl(0x26,4,{0x12,9,0,0xb2});f.settle();CHECK(f.host.bleStats().writes==1);
- // A complete unconsumed write must retain its borrowed physical packet while
- // a following fragmented SDU waits in other slots; never feed over it.
+ // B owns an independent ATT copy. An invalid pipelined request C cannot
+ // overwrite it, even when C arrives fragmented and its physical slots retire.
  f.rawAcl(0x26,2,{6,0,4,0,0x12});f.rawAcl(0x26,1,{9,0,0xc3,0xd4,0xe5});f.settle();CHECK(f.host.bleStats().writes==1);
  BleWrite w;CHECK(f.host.bleReadWrite(w)&&w.length==1&&w.data[0]==0xa1);f.settle();CHECK(f.host.bleReadWrite(w)&&w.length==1&&w.data[0]==0xb2);
- f.settle();CHECK(f.host.bleReadWrite(w)&&w.length==3&&w.data[0]==0xc3&&w.data[2]==0xe5);CHECK(f.host.radioStats().transport_errors==0);
+ f.settle();CHECK(!f.host.bleReadWrite(w));
+ f.rawAcl(0x26,2,{6,0,4,0,0x12});f.rawAcl(0x26,1,{9,0,0xc3,0xd4,0xe5});f.settle();CHECK(f.host.bleReadWrite(w)&&w.length==3&&w.data[0]==0xc3&&w.data[2]==0xe5);CHECK(f.host.radioStats().transport_errors==0);
  f.acl(0x26,4,{0x12,9,0,0xf6});f.settle();f.acl(0x26,4,{0x12,9,0,0x77});f.settle();uint32_t old=f.host.bleStats().generation;
  f.event(5,{0,0x26,0,0x13});f.settle();CHECK(!f.host.bleReadWrite(w));f.leConnect();CHECK(f.host.bleStats().generation!=old);
  f.settle();CHECK(!f.host.bleReadWrite(w));f.acl(0x26,4,{0x12,9,0,0x88});f.settle();CHECK(f.host.bleReadWrite(w)&&w.data[0]==0x88&&w.generation!=old);

@@ -1,105 +1,85 @@
-# Development evidence and outstanding validation
+# Develop evidence and remaining limitations
 
-Status as of 2026-10-21: the project-owned Classic/BLE host is implemented and
-has passed finite phone A2DP and GATT exchanges. Stable continuous audio remains
-unqualified. No BTstack, Bluedroid or Cordio protocol runtime is selected in the
-owned image. The installed Arduino core retains two inert BLE SDK globals;
-linked-symbol checks distinguish those from a second host implementation.
+Updated2026-10-22. Full supplied257-file decoder set and all eight codec build
+defaults remain enabled. The selected runtime is the project-owned Classic/BLE
+host; no historical reference-host source is distributed. This is developmental
+source, not a stable audio release. Main/release qualification is separate.
 
-## Current target experiment
+## Current correctness changes
 
-A readback-verified development probe used the same owned source with an LHDC
-profile of 32 compressed packets, a 26-packet startup reserve, 2048-byte maximum
-packet size and a 20 ms PCM ring. These experimental settings are not the
-library's global defaults. It used LHDC V5 at 192 kHz/24-bit and phone quality
-0x8008/32776, the actual nominal 1000 kbps selection.
+The snapshot includes reviewed Classic rejected-configuration transactionality,
+Abort/channel retirement and copied-control FIFO ownership; one-command L2CAP
+signaling SDUs; single-handle transactional HNC packets and fail-closed HNC error
+recognition; passive-event admission fixes; per-frame/pre-RX credit service and
+UART-TX-completion owner wake. Hardware/RTOS ownership stays serialized.
 
-A 35-second exact-route phone source completed with zero AudioTrack underruns.
-During playback, BLE negotiated ATT MTU 517 and completed ten acknowledged
-512-byte writes and ten exact notification echoes. The receiver recorded zero
-local queue-full drops, decode errors, DMA errors and transport errors, then a
-graceful audio stop. This establishes a finite concurrent exchange, not stable
-acoustics, RF conformance or every connection/disconnection case.
+A real native mixed workload exposed another conditional bug: while an ACKed
+write was unread, the next reliable request held input storage and legal later
+commands could occupy all four shared RX credits. The fix copies one pending
+ATT request into dedicated517-byte storage before real HCI retirement, retaining
+all4096 bytes of LE reassembly. It preserves reliable request/prepared bytes,
+CCCD transactions, lifecycle barriers and generations. Commands are validated
+without a reply slot; newer data commands drop explicitly while older work waits.
+Expiry requests LE disconnect through bounded admission; command capacity and
+the existing controller watchdog still limit physical disconnect guarantees.
+This is not a general all-CID flood or unlimited-delivery promise.
 
-Audio still failed the continuity target: 362304 prepared silent frames at
-192 kHz (1.887 seconds) and fourteen verified discontinuities. Every retained
-record had RTP sequence +1, timestamp +27840 rather than +960, and LHDC inner
-sequence +29 with exactly one validated encoded frame. The timestamp excess was
-392 frame periods, or 1.960 seconds. This locates missing inner packet numbers
-before RTP numbering and is consistent with the public sender's 28-buffer queue
-flush. It does not prove why this phone discarded them; controller/link/host
-backpressure and source scheduling still need separation. A larger buffer cannot
-reconstruct discarded encoded content. No listening or physical wire capture
-was performed for this probe.
+PCM starvation recovery restores the configured reserve without changing sample
+order or hiding zero fill. Starved and intentional-held frames remain separate.
+LHDC per-call flags and cumulative counters expose right-channel concealment and
+full-frame mute while preserving existing PCM/status behavior.
 
-## Corrections and scheduling evidence
+## Measured continuity remains a failure
 
-An earlier UART adapter drained up to 2048 raw bytes before servicing its owned
-actor. A 244-byte BLE transfer, fragmented into 27-byte HCI payloads, stopped the
-physical host after five successful echoes. The failure receipt showed four
-unprocessed LE slots and no retired fragments. A native actor reproduction
-matched that condition. The adapter now services each complete HCI frame before
-parsing the next, preserving the byte budget and four-packet receive-window
-safety check. The subsequent MTU-517/512-byte phone exchange passed. Native
-negative tests still show that blocked TX can exhaust the window; broader stress
-and scheduling/credit measurements remain required.
+A readback-verified image with the ATT fix and LHDC counters received live
+LHDC192kHz/24-bit/fixed1000kbps. One ordinary MTU517 GATT session completed ten
+512-byte acknowledged writes and ten exact echoes. Around that finite session:
 
-Earlier interrupt-driven TX replaced byte polling. Controller startup improved
-from 19.965 seconds to 5.080 seconds in those finite captures. That TX change
-alone did not fix audio: its nominal-900-kbps run had 217 local drops and 1.993
-seconds of prepared zeros. Separate true-1000-kbps tests found:
+| Counter addition | Result |
+|---|---:|
+| Timestamp/inner discontinuities |12|
+| Prepared-zero PCM frames |308160 (1.605s at192kHz)|
+| Outer RTP missing sequences |0|
+| Decoder/DMA/transport errors |0|
+| LHDC right-channel/full-frame concealment |0 /0|
 
-| Compressed profile | Local full drops | Prepared silence | RTP timestamp excess |
-| --- | ---: | ---: | ---: |
-| 8 packets, startup 2 | 87 | 2.017 s | 1.540 s |
-| 32 packets, startup 2 | 0 | 1.608 s | 1.540 s |
-| 32 packets, startup 26, audio only | 0 | 1.311 s | 1.400 s |
+A subsequent fresh45s playback epoch with BLE disconnection verified at both
+endpoints still added three timestamp/inner steps and67392 prepared-zero frames
+(.351s). All22 retained BLE snapshots were disconnected; advertising stayed on.
+Thus active GATT is not necessary for every remaining omission in that history.
+These finite console brackets are not a controlled before/after quality ranking.
+The first48kHz reconnection attempt was excluded from the192kHz comparison.
 
-These short runs differ in delivery/teardown and BLE traffic; they do not
-establish an optimal startup reserve or a latency guarantee. The queue increase
-removed measured local overflow while pre-RTP timestamp omissions persisted.
+Earlier complete-layer receiver traces retained jumped timestamp/inner headers
+already at H4 software completion. Encoded fingerprints matched through owned
+copy/L2CAP/callback/queue/decoder, with960 decoded/admitted frames and0 dropped
+for those packets. A qualified38.074s observation bounded completed owner work
+at1.269ms and outside intervals at1.153ms, with conserved phase/credit ledgers.
+This rules out a140ms owner stall in that measured epoch; it does not measure
+RF, exact ISR-to-H4 residence, physical clocks or a unique discard cause.
 
-The codec quality mapping was corrected against Savitech's
-[pinned sender constants](https://gitlab.com/savitech-lhdc/savitech-lhdc-codec-aosp-13.0.0_r2/-/raw/3ac44e21e92983bb800eee8cb9d938522e3852d2/src/packages/modules/Bluetooth/system/stack/include/a2dp_vendor_lhdc_constants.h):
-0x8007/32775 selects nominal 900 kbps; 0x8008/32776 selects 1000 kbps. Historical
-V3/V4/V5 runs using 32775 are not 1000-kbps validations. Original receipts were
-preserved and their descriptive labels corrected.
+The recurring shape is outer RTP+1 with inner+29 and timestamp+27840 instead of
++960 for one validated5ms LHDC frame. A larger reservoir cannot recreate those
+missing periods. Decoder concealment0 excludes only the two measured fallback
+branches, not every numerical/audio defect. Continuous stable playback,
+coexistence/history-dependent failures and acoustic output remain unresolved.
 
-## Source, native and decoder checks
+## Validation scope
 
-The full selected supplied decoder source set is included, with original
-component notices and explicitly recorded licensing uncertainties. Original
-project contributions use Apache-2.0; source inclusion is not blanket clearance
-of another author's conditions or codec patents.
+`BUILD.json` records this isolated export's actual GIGA4.6.0/M7 link, exact
+compiler input hashes and public synthetic checks. Public tests cover real owned
+HCI/ACL/L2CAP/profile paths, honest credit replenishment, whole/251/27-byte ATT
+fragmentation, app/TX pressure, Prepare/Execute, unsubscribe, callback lifetime,
+UART wake and PCM recovery. Controlled LHDC channel tests cover flags/adapter/
+frontend counters; independent LHDC PCM fidelity is not established.
 
-Portable protocol/profile tests cover bounds, retained input, fragmentation,
-output pressure, command/ACL ownership, lifecycle, HCI service order and BLE
-MTU/value separation. ASAN and trapping UBSan checks passed on reviewed source.
-New maximum-value tests exercise 512-byte writes/notifications across multiple
-ACL fragments, exact copies/retries, 513-byte rejection and 247-MTU fallback.
-The RTP ledger preserves the first sixteen anomalies, validates bounded framing,
-and suppresses expected timestamp arithmetic for unknown/malformed packets.
+SBC/SBC-XQ, AAC-LC, experimental HE-AAC v1, aptX/HD, LDAC and Opus retain earlier
+independent decoder/reference and M7 evidence. Those do not qualify every codec
+on this host or every sender. Source grants and unresolved third-party table/
+decoder conditions remain in THIRD_PARTY; source inclusion is not relicensing.
 
-Per-codec buffer tests exercise actual queue admission, independent packet/access
-unit limits, selected-only allocation, startup clamping, runtime PCM geometry,
-codec switches, allocation-failure cleanup and concurrent receive/reconfigure.
-M7 object checks preserve softfp/fpv5-d16 and internal DMA address restrictions.
-Native and compilation checks do not establish controller behavior or audio.
-
-Separate physical Cortex-M7 decoder benchmarks passed independent SBC/SBC-XQ,
-AAC-LC, aptX/HD, Opus, LDAC and experimental HE-AAC v1 references. A finite memory
-probe passed 220 codec configuration lifecycle checks with zero tracked residual
-bytes. LHDC still has no independent encoded-to-PCM reference in this collection.
-Earlier SBC/LDAC phone progress used the historical host and cannot qualify
-those codecs on the replacement host. RedMagic supplies no Opus sender; Apple
-AAC interoperability remains untested.
-
-Raw captures, device identities, firmware/readbacks, media fixtures and phone
-packages are excluded from public source. Controller firmware is provided by the
-installed Arduino core. The BLE role is a public, unencrypted GATT server for
-control/data, with no BLE audio profile or central/client role implemented.
-
-Stable playback, pop suppression, long-duration coexistence, source loss/burst
-recovery, pause/resume, clock drift, latency and cross-codec phone interoperability
-remain open. Versioned development ZIPs are explicitly marked prereleases;
-clean main and stable-release qualification remain separate.
+Fixed wiring is D70 BCLK, D74 WS and D72 data, with32-bit stereo slots.
+Runtime pin assignment and optional MCLK output are **not implemented** here.
+No source export/build action flashes hardware. Raw captures, addresses, user
+identities, phone packages, media fixtures, controller assets and binaries are
+excluded from this tree. No main-branch update or new release asset is implied.

@@ -173,6 +173,8 @@ static bth_status_t configuration_request(bth_l2cap_sig_t *s,uint8_t id,bth_span
     }
     put16(reply,c->remote_cid); put16(reply+2,flags); put16(reply+4,result);
     put16(reply-2,(uint16_t)(6+extra)); w->used+=extra;
+    // A rejected reconfiguration leaves the existing OPEN channel unchanged.
+    if (c->state==BTH_CHANNEL_OPEN && result) return BTH_OK;
     c->state=BTH_CHANNEL_CONFIGURING;
     if (!c->config_continuation) c->config_error=0;
     if (result) c->config_error=result;

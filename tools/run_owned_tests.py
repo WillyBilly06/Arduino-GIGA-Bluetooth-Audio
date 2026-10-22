@@ -1,66 +1,33 @@
-"""Portable synthetic owned-host checks; requires clang and clang++ on PATH."""
+"""Portable synthetic receiver/owned-host checks. No hardware or media fixtures."""
 from pathlib import Path
-import argparse
-import os
-import shutil
-import subprocess
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
+import argparse,os,shutil,subprocess,sys,json
+ROOT=Path(__file__).resolve().parents[1]
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--sanitize', action='store_true', help='trap undefined behavior')
-    args = parser.parse_args()
-    cc, cxx = shutil.which('clang'), shutil.which('clang++')
-    if not cc or not cxx:
-        parser.error('Install clang and clang++ and add them to PATH')
-    output = ROOT / 'build/owned-tests'
-    output.mkdir(parents=True, exist_ok=True)
-    flags = ['-Wall', '-Wextra', '-Werror', '-g', '-Isrc', '-Isrc/owned/core']
-    if args.sanitize:
-        flags += ['-fsanitize=undefined', '-fno-sanitize=vptr', '-fsanitize-trap=all']
-
-    def run(command):
-        subprocess.run([str(x) for x in command], cwd=ROOT, check=True)
-
-    objects = []
-    for source in sorted((ROOT / 'src/owned/core').glob('*.c')):
-        obj = output / (source.stem + '.o')
-        run([cc, '-std=c11', *flags, '-c', source, '-o', obj])
-        objects.append(obj)
-    adapters = ['src/owned/OwnedHost.cpp', 'src/owned/ClassicProfiles.cpp',
-                'src/owned/LeProfiles.cpp', 'src/platform/RadioProtocol.cpp']
-    for name in ('test_owned_classic', 'test_owned_ble', 'test_owned_host',
-                 'test_owned_host_review', 'test_owned_host_bootstrap',
-                 'test_owned_host_ble_large', 'test_owned_host_service', 'test_uart_tx_mailbox'):
-        exe = output / (name + ('.exe' if os.name == 'nt' else ''))
-        run([cxx, '-std=c++17', *flags, 'tests/' + name + '.cpp', *adapters,
-             *objects, '-o', exe])
-        run([exe])
-    # Separate link sets keep the receiver's fake codec/radio/output backend
-    # independent from the actual owned protocol adapters and vendor decoders.
-    portable = {
-        'test_audio_timing': ['src/detail/AudioTiming.cpp'],
-        'test_rtp_discontinuity': ['src/detail/AudioTiming.cpp'],
-        'test_receiver': ['tests/empty_registry.cpp', 'src/GigaBredr.cpp',
-                          'src/detail/Memory.cpp', 'src/detail/Decoder.cpp',
-                          'src/detail/Media.cpp', 'src/detail/PacketQueue.cpp',
-                          'src/detail/AudioTiming.cpp'],
-        'test_i2s': [], 'test_i2s_thread': [], 'test_i2s_priming': [],
-        'test_i2s_pins': [], 'test_i2s_runtime': ['src/platform/GigaI2s.cpp'],
-    }
-    for name, sources in portable.items():
-        exe = output / (name + ('.exe' if os.name == 'nt' else ''))
-        thread_flags = ['-pthread'] if os.name != 'nt' else []
-        run([cxx, '-std=c++17', *flags, *thread_flags, 'tests/' + name + '.cpp',
-             *sources, '-o', exe])
-        run([exe])
-    legacy = output / ('test_i2s_pins_legacy' + ('.exe' if os.name == 'nt' else ''))
-    run([cxx, '-std=c++17', *flags, '-DGIGA_BREDR_I2S_WS_PIN=69',
-         'tests/test_i2s_pins.cpp', '-o', legacy])
-    run([legacy])
-
-
-if __name__ == '__main__':
-    main()
+ p=argparse.ArgumentParser();p.add_argument('--sanitize',action='store_true');p.add_argument('--asan',action='store_true');a=p.parse_args();cc=shutil.which('clang');cxx=shutil.which('clang++')
+ if not cc or not cxx:p.error('clang and clang++ must be on PATH')
+ out=ROOT/'build/owned-tests';out.mkdir(parents=True,exist_ok=True);env=os.environ.copy();flags=['-Wall','-Wextra','-Werror','-g','-Isrc','-Isrc/owned/core']
+ if a.sanitize:flags+=['-fsanitize=undefined','-fno-sanitize=vptr','-fsanitize-trap=all']
+ if a.asan:
+  flags+=['-fsanitize=address','-fno-omit-frame-pointer'];rt=Path(subprocess.check_output([cc,'-print-runtime-dir'],text=True).strip());env['PATH']=str(rt)+os.pathsep+str(rt.parent/'windows')+os.pathsep+env.get('PATH','')
+ logs=[]
+ def run(cmd):
+  cmd=list(map(str,cmd));r=subprocess.run(cmd,cwd=ROOT,env=env,text=True,capture_output=True);print(r.stdout+r.stderr,end='',flush=True);logs.append(dict(command=cmd,exit=r.returncode,stdout=r.stdout,stderr=r.stderr));(out/'receipt.json').write_text(json.dumps({'synthetic_only':True,'logs':logs},indent=2)+'\n');r.check_returncode()
+ objects=[]
+ for s in sorted((ROOT/'src/owned/core').glob('*.c')):
+  obj=out/(s.stem+'.o');run([cc,'-std=c11',*flags,'-c',s,'-o',obj]);objects.append(obj)
+ actor=['src/owned/OwnedHost.cpp','src/owned/ClassicProfiles.cpp','src/owned/LeProfiles.cpp','src/platform/RadioProtocol.cpp']
+ for n in ['test_single_hnc','test_single_signal']:
+  exe=out/(n+'.exe');run([cc,'-std=c11',*flags,'tests/owned_core/'+n+'.c',*objects,'-o',exe]);run([exe])
+ units=['test_owned_classic','test_owned_ble','test_owned_host','test_owned_host_review','test_owned_host_bootstrap','test_owned_host_ble_large','test_owned_host_service','test_owned_host_single_hnc','test_owned_host_hnc','test_owned_host_benign','test_owned_host_signaling','test_owned_host_ble_commands','test_owned_host_ble_unsubscribe','test_owned_host_config_reject','test_owned_host_abort','test_owned_host_scheduling','test_owned_host_classic_combined','test_owned_host_mixed_att','test_uart_tx_mailbox']
+ for n in units:
+  sources=actor[1:] if n in ('test_owned_host_scheduling','test_owned_host_classic_combined') else actor;exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,'tests/'+n+'.cpp',*sources,*objects,'-o',exe]);run([exe])
+ frontend=['tests/empty_registry.cpp','src/GigaBredr.cpp','src/Types.cpp','src/detail/Memory.cpp','src/detail/Decoder.cpp','src/detail/Media.cpp','src/detail/PacketQueue.cpp','src/detail/AudioTiming.cpp']
+ portable={'test_audio_timing':['src/detail/AudioTiming.cpp'],'test_rtp_discontinuity':['src/detail/AudioTiming.cpp'],'test_receiver':frontend,'test_receiver_lifetime':frontend,'test_i2s':[],'test_i2s_thread':[],'test_i2s_priming':[],'test_i2s_pins':[],'test_i2s_recovery':[],'test_i2s_runtime':['src/platform/GigaI2s.cpp']}
+ for n,sources in portable.items():
+  exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,*(['-pthread']if os.name!='nt'else[]),'tests/'+n+'.cpp',*sources,'-o',exe]);run([exe])
+ exe=out/'test_ble_origin.exe';run([cxx,'-std=c++17',*flags,'-Itests/support/receiver_public','tests/test_ble_origin.cpp',*frontend,'src/owned/LeProfiles.cpp',*objects,'-o',exe])
+ for case in ['actual_loop_reconnect','copy_retry','stale_generation','byte_value_semantics','disconnect_after_admission','stopped']:run([exe,case])
+ exe=out/'test_i2s_pins_legacy.exe';run([cxx,'-std=c++17',*flags,'-DGIGA_BREDR_I2S_WS_PIN=69','tests/test_i2s_pins.cpp','-o',exe]);run([exe])
+ run([sys.executable,'tests/test_owned_wake.py','--cc',cc,'--cxx',cxx,*(['--sanitize']if a.sanitize else[]),*(['--asan']if a.asan else[])])
+ print('PASS public synthetic receiver, owned host, HCI/ATT lifecycle, PCM recovery and wake checks; no physical qualification')
+if __name__=='__main__':main()

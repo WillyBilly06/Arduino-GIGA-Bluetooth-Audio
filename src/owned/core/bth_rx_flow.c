@@ -97,23 +97,29 @@ bth_status_t bth_rx_flow_release(bth_rx_flow_t *rx,bth_rx_lease_t lease) {
 bth_status_t bth_rx_flow_next_completed(bth_rx_flow_t *rx,uint8_t *out,size_t cap,size_t *written) {
     if (written) *written=0;
     if (!rx || !rx->initialized || !out || !written) return BTH_ERR_PARAM;
-    uint8_t params[1+4*BTH_RX_LINK_LIMIT]={0}; size_t length=1;
     unsigned total=0;
     for (unsigned i=0;i<BTH_RX_LINK_LIMIT;++i) {
         const bth_rx_link_t *l=&rx->links[i];
         if (!l->active || !l->pending) continue;
         if (l->pending>l->outstanding) return BTH_ERR_STATE;
-        params[length++]=(uint8_t)l->handle; params[length++]=(uint8_t)(l->handle>>8);
-        params[length++]=(uint8_t)l->pending; params[length++]=(uint8_t)(l->pending>>8);
-        ++params[0]; total+=l->pending;
+        total+=l->pending;
     }
-    if (!params[0]) return BTH_MORE;
+    if (!total) return BTH_MORE;
     if (total>rx->outstanding) return BTH_ERR_STATE;
-    bth_status_t st=bth_hci_command_encode(out,cap,0x0c35,params,length,written);
-    if (st!=BTH_OK) return st;
-    for (unsigned i=0;i<BTH_RX_LINK_LIMIT;++i) {
-        rx->links[i].outstanding-=rx->links[i].pending; rx->links[i].pending=0;
+    unsigned selected=BTH_RX_LINK_LIMIT;
+    for (unsigned k=0;k<BTH_RX_LINK_LIMIT;++k) {
+        const unsigned i=(rx->next_link+k)%BTH_RX_LINK_LIMIT;
+        if (rx->links[i].active && rx->links[i].pending) { selected=i; break; }
     }
-    rx->outstanding-=(uint16_t)total;
+    if (selected==BTH_RX_LINK_LIMIT) return BTH_ERR_STATE;
+    bth_rx_link_t *link=&rx->links[selected];
+    const uint16_t completed=link->pending;
+    const uint8_t params[]={1,(uint8_t)link->handle,(uint8_t)(link->handle>>8),
+        (uint8_t)completed,(uint8_t)(completed>>8)};
+    bth_status_t st=bth_hci_command_encode(out,cap,0x0c35,params,sizeof params,written);
+    if (st!=BTH_OK) return st;
+    link->outstanding-=completed; link->pending=0;
+    rx->outstanding-=completed;
+    rx->next_link=(uint8_t)((selected+1)%BTH_RX_LINK_LIMIT);
     return BTH_OK;
 }

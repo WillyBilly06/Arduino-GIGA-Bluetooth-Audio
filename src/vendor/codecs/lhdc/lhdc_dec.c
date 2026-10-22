@@ -1655,6 +1655,8 @@ lhdc_dec_ret_t lhdc_dec_decode_frame(
     uint32_t       *generated,
     lhdc_dec_frame_info_t *info)
 {
+    if (info) memset(info, 0, sizeof(*info));
+    uint8_t concealment_flags = 0;
     if (!dec || !dec->initialized) {
         return LHDC_DEC_NOT_INITIALIZED;
     }
@@ -1750,6 +1752,7 @@ lhdc_dec_ret_t lhdc_dec_decode_frame(
         lhdc_dec_ret_t ret1 = lhdc_dec_ch1_join();      /* barrier */
         if (ret != LHDC_DEC_OK) return ret;
         if (ret1 != LHDC_DEC_OK) {
+            concealment_flags |= LHDC_CONCEAL_RIGHT_CHANNEL;
             for (int n = 0; n < samples_per_ch; n++) out_r[n] = 0.0f;
         }
     } else
@@ -1763,6 +1766,7 @@ lhdc_dec_ret_t lhdc_dec_decode_frame(
             ret = lhdc_dec_decode_channel_autosel(dec, 1, out_r);
             if (ret != LHDC_DEC_OK) {
                 /* Fall back to silence on this channel if ch1 fails. */
+                concealment_flags |= LHDC_CONCEAL_RIGHT_CHANNEL;
                 for (int n = 0; n < samples_per_ch; n++) out_r[n] = 0.0f;
             }
         }
@@ -1812,6 +1816,7 @@ lhdc_dec_ret_t lhdc_dec_decode_frame(
     }
 #endif
     if (conceal) {
+        concealment_flags |= LHDC_CONCEAL_FULL_FRAME;
         /* Zero the FULL overlap buffers (H = alloc_mdct_size/2 floats each), not
          * sizeof(float*) — the latter only cleared 8 bytes, leaving stale overlap
          * to leak into the next frame on a concealed error. */
@@ -1915,6 +1920,7 @@ lhdc_dec_ret_t lhdc_dec_decode_frame(
         info->version            = dec->header.version;
         info->ext_func_flags     = dec->header.ext_func_flags;
         info->target_bitrate     = dec->header.target_bitrate;
+        info->concealment_flags  = concealment_flags;
     }
 
     /* Frame decode latency vs the frame's own real-time budget (5 ms normally,

@@ -67,13 +67,13 @@ static void copied_write_and_capacity_retry() {
     CHECK(f.nextReply().length==1 && f.nextReply().data[0]==0x13);
     write[3]=99;
     const uint8_t second[]={0x12,9,0,4};
-    CHECK(!f.ble.receive(7,4,second,sizeof second,11));
+    CHECK(f.ble.receive(7,4,second,sizeof second,11) && f.ble.pendingAtt());
     CHECK(f.replies.used==1); // Retry has no second response or write effect.
     BleWrite value;
     CHECK(f.ble.readWrite(value));
     CHECK(value.generation==7 && value.length==3 && value.data[0]==1 && value.data[2]==3);
     CHECK(!f.ble.readWrite(value));
-    CHECK(f.ble.receive(7,4,second,sizeof second,12));
+    f.ble.servicePendingAtt(7,12); CHECK(!f.ble.pendingAtt());
     CHECK(f.ble.readWrite(value) && value.length==1 && value.data[0]==4);
 }
 
@@ -111,10 +111,20 @@ static void notification_read_subscription_and_mtu() {
 
 static void tx_capacity_and_reconnect_reset() {
     Fixture f; f.begin(); f.connect(); f.fillReplies();
-    const uint8_t write[]={0x52,9,0,7};
-    CHECK(!f.ble.receive(7,4,write,sizeof write,0));
+    const uint8_t request[]={0x12,9,0,9};
+    CHECK(f.ble.receive(7,4,request,sizeof request,0) && f.ble.pendingAtt());
     BleWrite value; CHECK(!f.ble.readWrite(value));
-    f.clearReplies(); CHECK(f.ble.receive(7,4,write,sizeof write,0));
+    CHECK(f.ble.stats().write_command_drops==0); // Requests still wait for a reply slot.
+    const uint8_t write[]={0x52,9,0,7},newer[]={0x52,9,0,8};
+    CHECK(f.ble.receive(7,4,write,sizeof write,0));
+    CHECK(f.replies.used==3); // No-response commands require no TX reservation.
+    CHECK(f.ble.receive(7,4,request,sizeof request,0)); // Pipelined request cannot replace the older copy.
+    CHECK(f.ble.receive(7,4,newer,sizeof newer,0));
+    CHECK(f.ble.stats().writes==0 && f.ble.stats().write_command_drops==2);
+    CHECK(!f.ble.readWrite(value)); // Older TX-blocked request wins even with empty app slot.
+    f.clearReplies(); f.ble.servicePendingAtt(7,1);
+    CHECK(!f.ble.pendingAtt() && f.ble.readWrite(value) && value.length==1 && value.data[0]==9);
+    f.clearReplies(); CHECK(f.ble.receive(7,4,write,sizeof write,1));
     CHECK(f.replies.used==0); // Write commands have no ATT response.
     const uint8_t subscribe[]={0x12,12,0,1,0};
     CHECK(f.ble.receive(7,4,subscribe,sizeof subscribe,0));
@@ -123,6 +133,7 @@ static void tx_capacity_and_reconnect_reset() {
     f.connect(8,0x42);
     CHECK(!f.ble.stats().notify_enabled && f.ble.stats().att_mtu==23);
     CHECK(f.ble.receive(7,4,write,sizeof write,0)); CHECK(!f.ble.readWrite(value));
+    CHECK(f.ble.stats().write_command_drops==2); // Cumulative host-lifetime counter.
 }
 
 static void explicit_pairing_rejection_and_signaling() {

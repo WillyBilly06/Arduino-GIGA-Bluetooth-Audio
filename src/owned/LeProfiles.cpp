@@ -84,6 +84,7 @@ bool LeProfiles::attach(uint32_t generation,uint16_t handle,uint8_t role) {
     if (!initDatabase()) return false;
     stats_.generation=generation; stats_.connection_handle=handle; stats_.att_mtu=23;
     stats_.connected=true; stats_.advertising=false; stats_.notify_enabled=false;
+    pending_request_length_=0; pending_response_=false;
     bth_le_gap_connection(&gap_,true); return true;
 }
 void LeProfiles::detach(uint32_t generation) {
@@ -91,6 +92,7 @@ void LeProfiles::detach(uint32_t generation) {
     stats_.connected=false; stats_.generation=0; stats_.connection_handle=0;
     stats_.att_mtu=23; stats_.notify_enabled=false; write_pending_=notify_pending_=false;
     ltk_pending_=parameters_pending_=false;
+    pending_request_length_=0; pending_response_=false;
     write_=BleWrite{}; bth_le_gap_connection(&gap_,false);
 }
 void LeProfiles::event(const bth_h4_frame_t& event) {
@@ -107,7 +109,7 @@ void LeProfiles::event(const bth_h4_frame_t& event) {
     if (p.data[0]==5) { memcpy(pending_ltk_,p.data,p.len); ltk_pending_=true; }
     else { memcpy(pending_parameters_,p.data,p.len); parameters_pending_=true; }
 }
-bool LeProfiles::receive(uint32_t generation,uint16_t cid,const uint8_t* data,size_t length,uint32_t) {
+bool LeProfiles::receive(uint32_t generation,uint16_t cid,const uint8_t* data,size_t length,uint32_t now) {
     if (!initialized_ || !stats_.connected || generation!=stats_.generation) return true;
     if (!data || !length) { ++stats_.malformed_pdus; return true; }
     if (cid!=4) {
@@ -132,28 +134,74 @@ bool LeProfiles::receive(uint32_t generation,uint16_t cid,const uint8_t* data,si
         }
         ++stats_.received_pdus; return true;
     }
+    const bool request=!(data[0]&0x41) && data[0]!=0x1e;
+    // Commands and confirmations remain independent of an older request.
+    // A second request cannot overwrite it or mutate prepared-write state.
+    if (request && pendingAtt()) return true;
+    if (processAtt(generation,data,length)) return true;
+    if (!request) return false;
+    if (length<=att_.mtu && length<=sizeof pending_request_) {
+        memcpy(pending_request_,data,length); pending_response_=false;
+        pending_request_length_=static_cast<uint16_t>(length);
+    } else {
+        // Validate the oversize PDU through the real parser, retaining only its
+        // Error Response, never a truncated request that could later execute.
+        size_t bytes=0; bth_att_action_t action={};
+        const auto status=bth_att_process(&att_,data,length,bth_att_security_t{},pending_request_,5,&bytes,&action);
+        if (status!=BTH_OK || bytes!=5 || pending_request_[0]!=1 || action.kind!=BTH_ATT_ACTION_NONE) return false;
+        pending_request_length_=5; pending_response_=true;
+    }
+    pending_request_started_=now;
+    return true; // Immutable ATT ownership exists before physical RX retirement.
+}
+void LeProfiles::servicePendingAtt(uint32_t generation,uint32_t now) {
+    if (!initialized_ || !stats_.connected || generation!=stats_.generation ||
+        !pendingAtt() || pendingAttExpired(now)) return;
+    if (pending_response_) {
+        bth_control_reservation_t slot;
+        if (bth_control_tx_reserve(replies_,1,&slot)!=BTH_OK) { ++stats_.capacity_retries; return; }
+        memcpy(slot.data,pending_request_,pending_request_length_);
+        if (bth_control_tx_commit(replies_,slot.token,4,pending_request_length_,att_.mtu)!=BTH_OK) stats_.status=Status::HardwareError;
+        ++stats_.received_pdus;
+    } else if (!processAtt(generation,pending_request_,pending_request_length_)) return;
+    pending_request_length_=0; pending_response_=false;
+}
+bool LeProfiles::processAtt(uint32_t generation,const uint8_t* data,size_t length) {
+    const bool request=!(data[0]&0x41) && data[0]!=0x1e;
+    const bool command=data[0]==0x52;
     const bool possibleWrite=((data[0]==0x12 || data[0]==0x52) && length>=3 && bth_read_le16(data+1)==RxHandle) ||
         (data[0]==0x18 && length==2 && data[1]==1 && att_.prepared_handle==RxHandle);
-    if (possibleWrite && write_pending_) { ++stats_.capacity_retries; return false; }
-    bth_control_reservation_t reservation;
-    if (bth_control_tx_reserve(replies_,1,&reservation)!=BTH_OK) { ++stats_.capacity_retries; return false; }
+    if (possibleWrite && write_pending_ && !command) { ++stats_.capacity_retries; return false; }
+    bth_control_reservation_t reservation={};
+    if (request && bth_control_tx_reserve(replies_,1,&reservation)!=BTH_OK) { ++stats_.capacity_retries; return false; }
     size_t written=0; bth_att_action_t action={};
-    const bth_status_t status=bth_att_process(&att_,data,length,bth_att_security_t{},reservation.data,reservation.capacity,&written,&action);
+    // Commands are validated by the same ATT processor but never need a reply slot.
+    uint8_t command_scratch=0;
+    const bth_status_t status=bth_att_process(&att_,data,length,bth_att_security_t{},
+        request?reservation.data:&command_scratch,request?reservation.capacity:0,&written,&action);
     if (status==BTH_MORE || status==BTH_ERR_CAPACITY) {
-        bth_control_tx_cancel(replies_,reservation.token); ++stats_.capacity_retries; return false;
+        if (request) bth_control_tx_cancel(replies_,reservation.token);
+        ++stats_.capacity_retries; return false;
     }
     ++stats_.received_pdus;
     if (status<0) ++stats_.malformed_pdus;
     if (action.kind==BTH_ATT_ACTION_WRITE) {
-        write_.generation=generation; write_.length=static_cast<uint16_t>(action.value.len);
-        if (action.value.len) memcpy(write_.data,action.value.data,action.value.len);
-        write_pending_=true; ++stats_.writes;
-        if (action.prepared) bth_att_execute_release(&att_);
+        if (command && (write_pending_ || pendingAtt())) ++stats_.write_command_drops;
+        else {
+            write_.generation=generation; write_.length=static_cast<uint16_t>(action.value.len);
+            if (action.value.len) memcpy(write_.data,action.value.data,action.value.len);
+            write_pending_=true; ++stats_.writes;
+            if (action.prepared) bth_att_execute_release(&att_);
+        }
     }
     stats_.att_mtu=att_.mtu; stats_.notify_enabled=(att_.cccd[0]&1)!=0;
-    if (status==BTH_OK && written) {
-        if (bth_control_tx_commit(replies_,reservation.token,cid,written,att_.mtu)!=BTH_OK) stats_.status=Status::HardwareError;
-    } else bth_control_tx_cancel(replies_,reservation.token);
+    // Unsubscribe cancels only the pending application update, preserving TX reads.
+    if (status==BTH_OK && action.kind==BTH_ATT_ACTION_CCCD && action.handle==TxCccdHandle && !stats_.notify_enabled) notify_pending_=false;
+    if (request) {
+        if (status==BTH_OK && written) {
+            if (bth_control_tx_commit(replies_,reservation.token,4,written,att_.mtu)!=BTH_OK) stats_.status=Status::HardwareError;
+        } else bth_control_tx_cancel(replies_,reservation.token);
+    }
     return true;
 }
 void LeProfiles::poll(uint32_t now,bool mayAdvertise) {

@@ -77,6 +77,7 @@ ClassicProfiles::Channel* ClassicProfiles::channel(uint16_t cid){for(auto& c:cha
 bool ClassicProfiles::channelOpened(uint16_t psm,uint16_t local,uint16_t remote,uint16_t mtu){
  if(!validOwner()||local<0x40||remote<0x40||mtu<48||channel(local))return false;
  if(psm!=1&&psm!=0x19&&psm!=0x17)return false;
+ if(psm==0x19&&!signal_&&abortTransportPending())return false;
  if(psm==0x17&&avrcp_)return false;
  if(psm==0x19&&signal_&&!wantsMediaChannel())return false;
  Channel* empty=nullptr;for(auto& c:channels_)if(!c.local){empty=&c;break;}if(!empty)return false;
@@ -91,8 +92,8 @@ bool ClassicProfiles::channelOpened(uint16_t psm,uint16_t local,uint16_t remote,
 }
 void ClassicProfiles::channelClosed(uint16_t cid){
  auto* c=channel(cid);if(!c)return;
- if(cid==signal_){signal_=0;stop(true);bth_avdtp_transport_closed(&avdtp_);if(media_)close_media_=true;}
- if(cid==media_){media_=0;stop(true);bth_avdtp_transport_closed(&avdtp_);close_media_=false;}
+ if(cid==signal_){signal_=0;stop(true);if(avdtp_.state!=BTH_AVDTP_ABORTING)bth_avdtp_transport_closed(&avdtp_);if(media_)close_media_=true;}
+ if(cid==media_){media_=0;stop(true);if(avdtp_.state!=BTH_AVDTP_ABORTING)bth_avdtp_transport_closed(&avdtp_);close_media_=false;}
  if(cid==avrcp_){avrcp_=0;control_status_.connected=false;work_=0;bth_avrcp_ct_init(&controller_);bth_avrcp_init(&target_,control_status_.volume);metadata_active_=metadata_continue_=metadata_abort_=custom_active_=false;close_avrcp_=false;}
  *c=Channel();
 }
@@ -190,6 +191,8 @@ uint16_t ClassicProfiles::mediaCid()const{return media_;}
 uint16_t ClassicProfiles::avrcpCid()const{return avrcp_;}
 bool ClassicProfiles::configured()const{return valid_;}
 bool ClassicProfiles::streaming()const{return playing_;}
+bool ClassicProfiles::abortTransportPending()const{return validOwner()&&avdtp_.state==BTH_AVDTP_ABORTING;}
+void ClassicProfiles::abortTransportRetired(){if(abortTransportPending()&&!media_)bth_avdtp_transport_closed(&avdtp_);}
 const CodecConfig& ClassicProfiles::acceptedConfiguration()const{return accepted_;}
 AvrcpStatus ClassicProfiles::avrcpStatus()const{return control_status_;}
 uint32_t ClassicProfiles::receivedPackets()const{return received_;}
@@ -211,7 +214,7 @@ bool ClassicProfiles::customRequest(uint8_t kind,uint8_t pdu,uint32_t now,bth_co
  else if(params)r.data[13]=0x20;
  auto& pending=controller_.pending[label];pending={};pending.kind=kind;pending.deadline=now+3000;controller_.next_label=uint8_t((label+1)&15);n=13+params;return true;
 }
-void ClassicProfiles::poll(bool secure,uint32_t now){
+void ClassicProfiles::poll(bool secure,uint32_t now,bool allow_transmit){
  if(!validOwner())return;
  if(!secure&&playing_)stop(false);
  if(avdtp_.rx_active&&due(now,avdtp_deadline_)){uint32_t actions;bth_avdtp_expire(&avdtp_,BTH_AVDTP_EXPIRE_ASSEMBLY,&actions);}
@@ -227,7 +230,7 @@ void ClassicProfiles::poll(bool secure,uint32_t now){
   metadata_abort_=true;metadata_active_=metadata_continue_=custom_active_=false;metadata_used_=custom_used_=0;
  }
  if(controller_.protocol_rejected||controller_.retired_labels==0xffff){close_avrcp_=true;return;}
- auto* c=channel(avrcp_);if(!secure||!c||close_avrcp_)return;
+ auto* c=channel(avrcp_);if(!allow_transmit||!secure||!c||close_avrcp_)return;
  bth_control_reservation_t r;if(bth_control_tx_reserve(replies_,peer_,&r)!=BTH_OK)return;
  size_t n=0;const size_t cap=minimum(r.capacity,c->mtu);bth_status_t status=BTH_MORE;
  if(callbacks_.volume&&target_.notification_due)status=bth_avrcp_notification(&target_,r.data,cap,&n);

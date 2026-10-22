@@ -59,6 +59,11 @@ void diagnostic(const char* text) {
     if(context && context->callbacks.diagnostic)
         context->callbacks.diagnostic(text,context->callbacks.user);
 }
+// The callback only sets an Impl-owned event bit. Context can be destroyed by
+// radioPoll; the owner's wait state therefore never lives in this allocation.
+void notifyOwner(Context& c) {
+    if(c.callbacks.owner_wake) c.callbacks.owner_wake(c.callbacks.user);
+}
 // Mbed SerialBase owns the nonzero IRQ dispatcher context. IRQ work is bounded
 // byte movement, with one hardware reader and one ring producer only.
 void uartIrq() {
@@ -92,6 +97,7 @@ void txIrq() {
         if(c->uart->write(&byte,1)!=1 || !c->tx.advance()) {
             __atomic_store_n(&c->tx_failed,1u,__ATOMIC_RELEASE);
             c->uart->attach(mbed::Callback<void()>(),mbed::SerialBase::TxIrq);
+            notifyOwner(*c);
             return;
         }
         ++c->tx_pos;
@@ -104,7 +110,7 @@ void txIrq() {
                 ++c->hnc_pending_tc;c->hnc_pending_tc_credits+=c->tx_hnc_credits;c->tx_hnc_credits=0;
             }
             c->tx_size=c->tx_pos=0;
-            c->tx.finish();
+            if(c->tx.finish()) notifyOwner(*c);
             return;
         }
     }
@@ -218,6 +224,10 @@ void radioPoll() {
     updateTransmitComplete(c);
     if(__atomic_load_n(&c.tx_failed,__ATOMIC_ACQUIRE)) { stopWithError("Owned UART write failed");return; }
     if(!c.tx.empty() && uint32_t(millis()-c.tx_started)>3000) { stopWithError("Owned UART TX/CTS timeout");return; }
+    // Return retired receive credits before admitting another buffered H4 frame.
+    // This service performs no deadlines, security, profiles or deferred events.
+    c.host.serviceReceiveCredits(millis());
+    if(c.host.radioStats().transport_errors) { transportReceipt(c);radioEnd();return; }
     unsigned rx_budget=2048;
     while(rx_budget-- && c.rx_read!=c.rx_write) {
         __DMB();uint8_t byte=c.rx[c.rx_read];c.rx_read=(c.rx_read+1)&(RxSize-1);c.last_byte=millis();

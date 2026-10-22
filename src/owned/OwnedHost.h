@@ -27,6 +27,8 @@ class OwnedHost {
 public:
  Status begin(const OwnedHostConfig&,const OwnedHostHooks&);
  void poll(uint32_t nowMs);
+ // Serialized foreground only: return real RX credits without advancing actor work.
+ void serviceReceiveCredits(uint32_t nowMs);
  void receive(uint8_t type,const uint8_t* packetWithoutType,size_t length,uint32_t nowMs);
  void end();
  RadioStats radioStats() const;
@@ -47,6 +49,10 @@ private:
   uint16_t handle=0;bool attached=false,has_pending=false;int borrowed_slot=-1;
  };
  struct Bond {uint8_t address[6]={};bth_bond_t value={};bool used=false;};
+ // Only Classic safe controls use the tail of Peer.bytes. BLE keeps all4096.
+ static constexpr unsigned ClassicMtu=2048,ClassicAssemblyBytes=ClassicMtu+4,ClassicDeferredSlots=3;
+ static_assert(ClassicAssemblyBytes+ClassicDeferredSlots*BTH_CONTROL_BYTES<=SduBytes,"Classic receive storage partition");
+ struct DeferredControl {uint16_t cid=0,length=0;uint32_t deadline=0;};
  static bool loadBond(void*,const uint8_t*,bth_bond_t*);
  static bool saveBond(void*,const uint8_t*,const bth_bond_t*);
  static bool removeBond(void*,const uint8_t*);
@@ -56,12 +62,15 @@ private:
  bool dispatch(const bth_h4_frame_t&);bool defer(const uint8_t*,size_t);
  bool attach(unsigned,const bth_peer_link_t&);void detach(unsigned);
  bool deliver(unsigned,const bth_l2cap_pdu_t&);void processRx(unsigned);
+ bool safeClassicControl(const bth_l2cap_pdu_t&) const;
+ bool deferClassicControl(const bth_l2cap_pdu_t&,uint32_t);bool retryClassicControls();void clearClassicControls(uint16_t cid=0);
  void synchronizeChannels();bool disconnectChannel(uint16_t);void chargeWaiting(uint32_t);void closePeer(unsigned,uint8_t);
- void avrcpPoll(bool secure);void runtimePoll();void refreshStats();bool admission(unsigned,uint32_t);void cancelAdmission(unsigned);
+ void avrcpPoll(bool secure,bool allow_open=true);void runtimePoll();void refreshStats();bool admission(unsigned,uint32_t);void cancelAdmission(unsigned);
  OwnedHostConfig config_;OwnedHostHooks hooks_;RadioStats stats_;
  ClassicProfiles classic_;LeProfiles le_;bth_hci_flow_t flow_={};bth_cmdq_t commands_={};bth_links_t links_={};
  bth_control_tx_t control_={};bth_rx_flow_t rx_={};bth_gap_t gap_={};bth_l2cap_sig_t signaling_={};
  Packet packets_[RxSlots];Peer peers_[2];Bond bonds_[4];bth_rx_admission_t admissions_[2]={};bool reserved_[2]={};
+ DeferredControl classic_deferred_[ClassicDeferredSlots];uint32_t classic_deferred_owner_=0;uint8_t classic_deferred_read_=0,classic_deferred_count_=0;
  Deferred deferred_[8];unsigned deferred_read_=0,deferred_count_=0;
  uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[3]={0x110b,0x110c,0x110e};
  size_t patch_position_=0,patch_pending_bytes_=0;uint16_t pending_opcode_=0;

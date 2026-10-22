@@ -10,6 +10,9 @@ struct RadioCallbacks {
     void* user = nullptr;
     void (*volume)(uint8_t absolute_volume_0_127, void*) = nullptr;
     void (*metadata)(uint8_t attribute_id, const char* text, size_t bytes, void*) = nullptr;
+    // Internal ISR-safe owner notification. It only signals the existing owner;
+    // user must remain alive until radioEnd has detached both UART IRQs.
+    void (*owner_wake)(void*) = nullptr;
 };
 Status radioBegin(const char* local_name, uint32_t codec_mask, const RadioCallbacks& callbacks);
 Status radioBegin(const char* local_name, uint32_t codec_mask, const RadioCallbacks& callbacks, const BleConfig& ble);

@@ -54,6 +54,14 @@ bth_status_t bth_control_tx_commit(bth_control_tx_t *q,bth_control_token_t token
     if (!q || !q->initialized || !cid) return BTH_ERR_PARAM;
     bth_control_slot_t *s=reserved(q,token); if (!s) return BTH_ERR_STATE;
     if (length>BTH_CONTROL_BYTES || length>mtu) return BTH_ERR_CAPACITY;
+    // Validate the complete nonempty CID1 bundle before queue publication.
+    // No command bytes/IDs/options are interpreted or rewritten.
+    if (cid==1) for (size_t pos=0;pos<length;) {
+        if (length-pos<4) return BTH_ERR_LENGTH;
+        const size_t command=4u+bth_read_le16(s->data+pos+2);
+        if (command>length-pos) return BTH_ERR_LENGTH;
+        pos+=command;
+    }
     bth_control_peer_t *p=&q->peers[s->peer];
     if (p->count>=BTH_CONTROL_SLOTS) return BTH_ERR_STATE;
     s->length=(uint16_t)length; s->cid=cid; s->mtu=mtu; s->state=QUEUED;
@@ -77,14 +85,26 @@ bth_status_t bth_control_tx_next(bth_control_tx_t *q,const uint32_t owners[BTH_C
         const bth_control_slot_t *s=&q->slots[i];
         if (s->state!=QUEUED || s->peer!=peer || s->owner!=p->owner) return BTH_ERR_STATE;
         if (!p->tx.active) {
-            bth_status_t st=bth_acl_tx_begin(&p->tx,p->handle,p->owner,s->cid,(bth_span_t){s->data,s->length},s->mtu);
+            if (p->cursor>s->length || (p->cursor && p->cursor==s->length)) return BTH_ERR_STATE;
+            size_t bytes=s->length-p->cursor;
+            if (s->cid==1 && bytes) {
+                if (bytes<4) return BTH_ERR_LENGTH;
+                const size_t command=4u+bth_read_le16(s->data+p->cursor+2);
+                if (command>bytes) return BTH_ERR_LENGTH;
+                bytes=command;
+            }
+            bth_status_t st=bth_acl_tx_begin(&p->tx,p->handle,p->owner,s->cid,(bth_span_t){s->data+p->cursor,bytes},s->mtu);
             if (st!=BTH_OK) return st;
         }
+        const size_t sdu_bytes=p->tx.data.len;
         bth_status_t st=bth_acl_tx_next(&p->tx,owners[peer],flow,out,cap,written);
         if (st==BTH_MORE) continue;
         if (st!=BTH_OK) return st;
         q->next_peer=(uint8_t)(peer^1u);
-        if (!p->tx.active) { p->read=(uint8_t)((p->read+1)&3u); --p->count; release(q,i); }
+        if (!p->tx.active) {
+            p->cursor+=(uint16_t)sdu_bytes;
+            if (p->cursor==s->length) { p->cursor=0; p->read=(uint8_t)((p->read+1)&3u); --p->count; release(q,i); }
+        }
         return BTH_OK;
     }
     return BTH_MORE;

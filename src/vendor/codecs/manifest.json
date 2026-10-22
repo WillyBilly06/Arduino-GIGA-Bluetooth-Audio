@@ -915,21 +915,23 @@
     "source": "decoders/LHDC-V5/lhdc_dec.c",
     "destination": "src/vendor/codecs/lhdc/lhdc_dec.c",
     "source_sha256": "1e205342c05305eddbda9fcdc90f6513fd5949180c7fc786df7f829ec917b9e8",
-    "patched_sha256": "0bca7ff1ec9f701ed9afcf8868adbd26e52e0b1f968605b23464bb222ec38e7a",
+    "patched_sha256": "67e90560a02c356db8390676fddb0d9851d640c60ececf20920b493b18190f7c",
     "patches": [
       "tracked-allocation",
       "portable-clock-quiet-log",
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "per-call-concealment-flags"
     ]
   },
   {
     "source": "decoders/LHDC-V5/lhdc_dec.h",
     "destination": "src/vendor/codecs/lhdc/lhdc_dec.h",
     "source_sha256": "cd59bb9ba2a099a3d26cf526676b4513493fc68edd84609a3c4cd0d3128efaa6",
-    "patched_sha256": "cd59bb9ba2a099a3d26cf526676b4513493fc68edd84609a3c4cd0d3128efaa6",
+    "patched_sha256": "9b0dc4e53e2a9630a45069cdcddadc1ac83ba84bf4860fa5a9f7c0250c719635",
     "patches": [
-      "giga-portable-reviewed-patch-v1"
+      "giga-portable-reviewed-patch-v1",
+      "per-call-concealment-flags"
     ]
   },
   {

@@ -112,6 +112,7 @@ struct GigaBredr::Impl {
     rtos::Thread* host_thread = nullptr;
     rtos::Thread* decoder_thread = nullptr;
     rtos::Semaphore wake{0, 1};
+    rtos::EventFlags host_events;
 #endif
     explicit Impl(const ReceiverConfig& config): options(config) {}
     void note(const char* text) {
@@ -269,6 +270,16 @@ struct GigaBredr::Impl {
             if (result.status != Status::Ok || !result.consumed || result.consumed > input || result.frames > pcm_frames) {
                 ++counters.decode_errors; counters.last_error = result.status == Status::Ok ? Status::CorruptFrame : result.status; break;
             }
+            if (format.codec == Codec::LhdcV5) {
+                if (result.concealment_flags & ConcealRightChannel) {
+                    ++counters.lhdc_right_concealed_blocks;
+                    counters.lhdc_right_concealed_frames += result.frames;
+                }
+                if (result.concealment_flags & ConcealFullFrame) {
+                    ++counters.lhdc_frame_muted_blocks;
+                    counters.lhdc_frame_muted_frames += result.frames;
+                }
+            }
             if (format.channels == 1) {
                 for (size_t i = result.frames; i > 0; --i) { int32_t value = pcm[i - 1]; pcm[(i - 1) * 2] = value; pcm[(i - 1) * 2 + 1] = value; }
             }
@@ -297,7 +308,18 @@ struct GigaBredr::Impl {
         record_work();
     }
 #if defined(ARDUINO)
-    void hostMain() { while (running.load()) { { Lock lock(radio_mutex); detail::radioPoll(); } rtos::ThisThread::sleep_for(1); } }
+    static void onOwnerWake(void* p) { static_cast<Impl*>(p)->host_events.set(1); }
+    void hostMain() {
+        while (running.load()) {
+            { Lock lock(radio_mutex); detail::radioPoll(); }
+            if (!running.load()) break;
+            // Atomic wait-and-clear preserves signals before/during the wait.
+            // Timers and RX retain their existing one millisecond fallback.
+            const uint32_t event = host_events.wait_any(1, 1, true);
+            if ((event & osFlagsError) && event != osFlagsErrorTimeout)
+                rtos::ThisThread::sleep_for(1);
+        }
+    }
     void decoderMain() {
         while (running.load()) {
             wake.try_acquire_for(10);
@@ -329,11 +351,14 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     if (!receiver_owner.compare_exchange_strong(expected, this)) return Status::Busy;
     void* storage = detail::allocate(sizeof(Impl));
     if (!storage) { receiver_owner.store(nullptr); return Status::OutOfMemory; }
-    impl_ = new (storage) Impl(config); impl_->running.store(true);
+    impl_ = new (storage) Impl(config); ++lifetime_; impl_->running.store(true);
     detail::RadioCallbacks callbacks;
     callbacks.configure = Impl::onConfigure; callbacks.media = Impl::onMedia;
     callbacks.stream = Impl::onStream; callbacks.diagnostic = Impl::onDiagnostic; callbacks.user = impl_;
     callbacks.volume = Impl::onVolume; callbacks.metadata = Impl::onMetadata;
+#if defined(ARDUINO)
+    callbacks.owner_wake = Impl::onOwnerWake;
+#endif
     Status status = detail::radioBegin(config.name, config.codecs, callbacks, config.ble);
     if (status != Status::Ok) { end(); return status; }
     impl_->radio_owned = true;
@@ -348,6 +373,7 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
 }
 void GigaBredr::poll() {
     if (!impl_) return;
+    const uint64_t lifetime = lifetime_;
 #if !defined(ARDUINO)
     detail::radioPoll(); impl_->processOne();
 #endif
@@ -361,19 +387,21 @@ void GigaBredr::poll() {
     }
     if (has_event && kind == 0 && impl_->options.diagnostic) impl_->options.diagnostic(text, impl_->options.user);
     else if (has_event && kind && impl_->options.metadata_changed) impl_->options.metadata_changed(kind, text, text_bytes, impl_->options.user);
-    if (!impl_) return; // A user callback may stop the receiver.
+    if (lifetime_ != lifetime || !impl_) return; // Discard old events after callback teardown/restart.
     CodecConfig selected; bool changed = false;
     { Lock lock(impl_->codec_mutex); if (impl_->configuration_event) {
         selected = impl_->format; impl_->configuration_event = false; changed = true;
     } }
     if (changed && impl_->options.configuration_changed) impl_->options.configuration_changed(selected, impl_->options.user);
-    if (!impl_) return;
+    if (lifetime_ != lifetime || !impl_) return;
     if (volume_changed && impl_->options.volume_changed) impl_->options.volume_changed(selected_volume, impl_->options.user);
 }
 void GigaBredr::end() {
     if (!impl_) return;
+    ++lifetime_; // Invalidate an active poll before destroying its Impl.
     impl_->running.store(false);
 #if defined(ARDUINO)
+    impl_->host_events.set(1);
     if (impl_->host_thread) { impl_->host_thread->join(); delete impl_->host_thread; }
     impl_->wake.release();
     if (impl_->decoder_thread) { impl_->decoder_thread->join(); delete impl_->decoder_thread; }
@@ -417,6 +445,14 @@ Status GigaBredr::bleNotify(const uint8_t* data, size_t length) {
     if (!impl_) return Status::Unsupported;
     Lock lock(impl_->radio_mutex);
     return detail::radioBleNotify(data, length);
+}
+Status GigaBredr::bleNotify(const BleWrite& origin) {
+    if (!impl_) return Status::Unsupported;
+    Lock lock(impl_->radio_mutex);
+    const BleStats peer = detail::radioBleStats();
+    if (!origin.generation || !peer.connected || peer.generation != origin.generation)
+        return Status::InvalidArgument;
+    return detail::radioBleNotify(origin.data, origin.length);
 }
 bool GigaBredr::bleReadWrite(BleWrite& value) {
     if (!impl_) return false;

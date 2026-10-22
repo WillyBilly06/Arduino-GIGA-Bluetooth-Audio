@@ -23,7 +23,15 @@ struct CodecConfig {
     uint8_t codec_info[24] = {};
     AacTransport aac_transport = AacTransport::Latm;
 };
-struct DecodeResult { Status status; size_t consumed; size_t frames; };
+enum DecodeConcealment : uint8_t {
+    ConcealRightChannel = 1u << 0,
+    ConcealFullFrame = 1u << 1
+};
+struct DecodeResult {
+    Status status; size_t consumed; size_t frames;
+    // Per successful encoded block; currently supplied by LHDC only.
+    uint8_t concealment_flags = 0;
+};
 struct MemoryStats {
     size_t current_bytes = 0, peak_bytes = 0, current_blocks = 0;
     size_t category_bytes[3] = {};

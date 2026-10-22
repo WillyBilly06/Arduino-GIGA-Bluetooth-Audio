@@ -1,5 +1,6 @@
 #include <GigaBredr.h>
 #include <platform/I2sPins.h>
+#include <platform/GigaI2s.h>
 #include "Console.h"
 using namespace giga_bredr;
 GigaBredr receiver;
@@ -14,6 +15,15 @@ void setup() {
   Serial.begin(115200);
   uint32_t start=millis(); while (!Serial && millis()-start<3000) delay(10);
   ReceiverConfig config; config.name="GIGA Audio";
+  // Codec-local buffering; other codecs inherit ReceiverConfig globals.
+  auto& lhdc=config.codec_buffers[static_cast<size_t>(Codec::LhdcV5)];
+  lhdc.queue_packets=32; lhdc.startup_packets=26;
+  lhdc.maximum_packet_bytes=2048; lhdc.pcm_buffer_ms=20;
+  auto& ldac=config.codec_buffers[static_cast<size_t>(Codec::Ldac)];
+  ldac.queue_packets=40; ldac.startup_packets=16;
+  auto& sbc=config.codec_buffers[static_cast<size_t>(Codec::Sbc)];
+  sbc.queue_packets=12; sbc.startup_packets=4;
+  config.ble.enabled=true; config.ble.maximum_mtu=517;
   config.diagnostic=diagnostic; config.configuration_changed=configured;
   config.volume_changed=volume; config.metadata_changed=metadata;
   Status status=receiver.begin(config);
@@ -28,7 +38,7 @@ void loop() {
   static bool bleEchoPending=false;
   if(!bleEchoPending) bleEchoPending=receiver.bleReadWrite(bleEcho);
   if(bleEchoPending) {
-    Status status=receiver.bleNotify(bleEcho.data,bleEcho.length);
+    Status status=receiver.bleNotify(bleEcho);
     if(status!=Status::Busy && status!=Status::OutputFull) {
       console.print("GBR_BLE_RX generation=%lu bytes=%u notify=%s\n",(unsigned long)bleEcho.generation,bleEcho.length,statusName(status));
       bleEchoPending=false;
@@ -48,8 +58,12 @@ void loop() {
       unsigned(s.output.queued_frames), s.output.running, s.output.priming, (unsigned long)s.output_dropped_frames,
       (unsigned long)s.radio.transport_errors, s.absolute_volume, unsigned(s.memory.current_bytes), unsigned(s.memory.peak_bytes), unsigned(s.decoder_memory_bytes),
       (unsigned long)s.diagnostic_drops, console.dropped, statusName(s.last_error));
+    console.print("GBR_LHDC_CONCEAL ms=%lu right_blocks=%llu right_pcm_frames=%llu muted_blocks=%llu muted_pcm_frames=%llu\n",
+      (unsigned long)millis(), (unsigned long long)s.lhdc_right_concealed_blocks,
+      (unsigned long long)s.lhdc_right_concealed_frames, (unsigned long long)s.lhdc_frame_muted_blocks,
+      (unsigned long long)s.lhdc_frame_muted_frames);
     auto b=receiver.bleStats(); auto t=receiver.audioDiagnostics();
-    console.print("GBR_TIMING ms=%lu epoch=%lu rtp_packets=%llu gaps=%llu missing=%llu duplicates=%llu backward=%llu arrival_max_us=%lu queue_depth=%lu queue_high=%lu queue_full=%llu residence_max_us=%lu work_packets=%llu work_max_us=%lu decode_work_max_us=%lu write_wait_max_us=%lu output_epoch=%lu refills=%llu real_frames=%llu silence_frames=%llu minimum_pcm=%lu underrun_records=%lu ble_advertising=%u ble_connected=%u ble_mtu=%u ble_writes=%lu ble_notifications=%lu\n",
+    console.print("GBR_TIMING ms=%lu epoch=%lu rtp_packets=%llu gaps=%llu missing=%llu duplicates=%llu backward=%llu arrival_max_us=%lu queue_depth=%lu queue_high=%lu queue_full=%llu residence_max_us=%lu work_packets=%llu work_max_us=%lu decode_work_max_us=%lu write_wait_max_us=%lu output_epoch=%lu refills=%llu real_frames=%llu silence_frames=%llu minimum_pcm=%lu underrun_records=%lu ble_advertising=%u ble_connected=%u ble_mtu=%u ble_writes=%lu ble_notifications=%lu ble_command_drops=%lu\n",
       (unsigned long)millis(),(unsigned long)t.rtp.epoch,(unsigned long long)t.rtp.packets,
       (unsigned long long)t.rtp.forward_gaps,(unsigned long long)t.rtp.missing_sequences,
       (unsigned long long)t.rtp.duplicates,(unsigned long long)t.rtp.backward,
@@ -59,7 +73,7 @@ void loop() {
       (unsigned long)t.work.decode_work.maximum_us,(unsigned long)t.work.write_wait.maximum_us,
       (unsigned long)t.output.epoch,(unsigned long long)t.output.refills,(unsigned long long)t.output.real_frames,
       (unsigned long long)t.output.silent_frames,(unsigned long)t.output.minimum_queued,(unsigned long)t.output.record_count,
-      b.advertising,b.connected,b.att_mtu,(unsigned long)b.writes,(unsigned long)b.notifications_queued);
+      b.advertising,b.connected,b.att_mtu,(unsigned long)b.writes,(unsigned long)b.notifications_queued,(unsigned long)b.write_command_drops);
     console.print("GBR_RTP epoch=%lu source_packets=%llu first_ts=%lu last_ts=%lu first_us=%lu last_us=%lu clock_disc=%llu source_changes=%llu queue_residence_total_us=%llu work_total_us=%llu decode_total_us=%llu wait_total_us=%llu discontinuities=%llu timestamp_steps=%llu inner_steps=%llu payload_unknown=%llu payload_malformed=%llu disc_records=%lu disc_not_retained=%llu\n",
       (unsigned long)t.rtp.epoch,(unsigned long long)t.rtp.source_packets,
       (unsigned long)t.rtp.source_first_timestamp,(unsigned long)t.rtp.source_last_timestamp,
@@ -82,6 +96,23 @@ void loop() {
         unsigned(r.arrival_delta_valid),(unsigned long)r.arrival_delta_us,unsigned(r.previous_packet.header),unsigned(r.packet.header),
         unsigned(r.previous_packet.inner_sequence),unsigned(r.packet.inner_sequence),unsigned(r.previous_packet.declared_frames),unsigned(r.packet.declared_frames),
         unsigned(r.previous_packet.scanned_frames),unsigned(r.packet.scanned_frames),unsigned(r.previous_packet.flags),unsigned(r.packet.flags));
+    }
+    auto recovery=detail::i2sRecovery();
+    console.print("GBR_RECOVERY ms=%lu epoch=%lu active=%u holding=%u threshold=%lu half=%lu entries=%lu resumes=%lu\n",
+      (unsigned long)millis(),(unsigned long)recovery.epoch,recovery.active,recovery.recovering,
+      (unsigned long)recovery.threshold,(unsigned long)recovery.half_frames,
+      (unsigned long)recovery.entries,(unsigned long)recovery.resumes);
+    console.print("GBR_RECOVERY_FRAMES epoch=%lu starved=%llu held=%llu hold_refills=%llu current_hold=%llu max_hold=%llu records=%lu lost=%lu\n",
+      (unsigned long)recovery.epoch,(unsigned long long)recovery.starved_frames,(unsigned long long)recovery.hold_frames,
+      (unsigned long long)recovery.hold_refills,(unsigned long long)recovery.current_hold_frames,
+      (unsigned long long)recovery.maximum_hold_frames,(unsigned long)recovery.record_count,(unsigned long)recovery.records_not_retained);
+    static uint32_t recoveryEpoch=0,recoveryIndex=0;
+    if(recoveryEpoch!=recovery.epoch) { recoveryEpoch=recovery.epoch;recoveryIndex=0; }
+    if(recoveryIndex<recovery.record_count) {
+      const auto& r=recovery.records[recoveryIndex++];
+      console.print("GBR_RECOVERY_TRANS epoch=%lu index=%lu kind=%u at_us=%lu queued=%lu real=%lu silent=%lu\n",
+        (unsigned long)recoveryEpoch,(unsigned long)(recoveryIndex-1),r.kind,(unsigned long)r.at_us,
+        (unsigned long)r.queued,(unsigned long)r.real,(unsigned long)r.silent);
     }
     static uint32_t outputEpoch=0,recordIndex=0;
     if(outputEpoch!=t.output.epoch) { outputEpoch=t.output.epoch;recordIndex=0; }

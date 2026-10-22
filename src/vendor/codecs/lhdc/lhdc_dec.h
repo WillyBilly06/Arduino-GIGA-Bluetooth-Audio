@@ -1,3 +1,7 @@
+/* GigaBredr modification notice, 2026-10-21: portable decoder port;
+ * build guards, relative includes, tracked allocation and bounds/ARM fixes.
+ * Original copyright and license notices remain below unchanged.
+ * Per-file original/port SHA-256: docs/source-provenance.json. */
 #ifndef LHDC_DEC_H
 #define LHDC_DEC_H
 
@@ -77,6 +81,12 @@ typedef struct {
     uint8_t                  lossless_enable;
 } lhdc_dec_config_t;
 
+/* Successful-frame concealment categories; both may apply to one block. */
+enum {
+    LHDC_CONCEAL_RIGHT_CHANNEL = 1u << 0,
+    LHDC_CONCEAL_FULL_FRAME = 1u << 1
+};
+
 /* Frame information */
 typedef struct {
     uint32_t  frame_index;
@@ -89,6 +99,8 @@ typedef struct {
     uint8_t   version;
     uint32_t  ext_func_flags;
     uint32_t  target_bitrate;
+    /* Per-call flags. Cleared even on errors; set only on successful output. */
+    uint8_t   concealment_flags;
 } lhdc_dec_frame_info_t;
 
 /* Opaque decoder handle */

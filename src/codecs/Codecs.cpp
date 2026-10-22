@@ -215,7 +215,10 @@ static DecodeResult lhdcDecode(void* p,const uint8_t* in,size_t n,int32_t* pcm,s
         // Expand backwards in the same caller-owned 32-bit buffer.
         auto samples=(int16_t*)pcm;for(size_t i=generated*s->config.channels;i>0;--i)pcm[i-1]=int32_t(samples[i-1])*65536;
     }
-    return result(Status::Ok,used,generated);
+    DecodeResult decoded = result(Status::Ok,used,generated);
+    if(info.concealment_flags & LHDC_CONCEAL_RIGHT_CHANNEL) decoded.concealment_flags |= ConcealRightChannel;
+    if(info.concealment_flags & LHDC_CONCEAL_FULL_FRAME) decoded.concealment_flags |= ConcealFullFrame;
+    return decoded;
 }
 static const DecoderOps lhdcOps={lhdcOpen,lhdcDecode,lhdcClose};
 #endif

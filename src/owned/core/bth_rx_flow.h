@@ -22,6 +22,7 @@ typedef struct {
     uint32_t next_admission_serial;
     uint8_t slot_count;
     bool initialized;
+    uint8_t next_link; // Round-robin preference; advances only after encoding.
 } bth_rx_flow_t;
 // Single event-loop owner, including release. A worker sends its lease back to
 // the owner after its final borrowed packet reference is retired. Slot ownership
@@ -47,6 +48,8 @@ bth_status_t bth_rx_flow_received(bth_rx_flow_t *rx,uint8_t slot,uint16_t handle
 bth_status_t bth_rx_flow_release(bth_rx_flow_t *rx,bth_rx_lease_t lease);
 // Call only immediately before an available VHCI send. Encodes credit-exempt
 // Host Number Of Completed Packets (0x0c35), commits pending acknowledgments.
+// One live handle/count pair per command. Other owners retain pending credits;
+// round-robin preference prevents a continuously busy peer starving its sibling.
 // Never take an ordinary HCI command grant or wait for a Command Complete.
 bth_status_t bth_rx_flow_next_completed(bth_rx_flow_t *rx,uint8_t *out,size_t capacity,size_t *written);
 #ifdef __cplusplus
