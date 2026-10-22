@@ -126,11 +126,13 @@ private:
 
 struct UnderrunRecord {
     uint64_t refill_number = 0; // Monotonic within this output epoch.
+    // silent_frames counts absent input, including nonzero starvation decay.
     uint32_t at_us = 0, queued_before = 0, real_frames = 0, silent_frames = 0;
 };
 struct OutputTimingSnapshot {
     uint32_t epoch = 0;
     bool active = false;
+    // Legacy silent_frames counts absent input; it is not a literal-zero count.
     uint64_t refills = 0, real_frames = 0, silent_frames = 0, underruns = 0;
     uint64_t invalid_sample = 0, rejected_epoch = 0, records_not_retained = 0;
     uint32_t minimum_queued = 0, record_count = 0;

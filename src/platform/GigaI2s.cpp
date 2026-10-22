@@ -189,6 +189,7 @@ size_t i2sWrite(const int32_t* pcm,size_t frames) {
   if((phase!=Priming && phase!=Running) || !ring) return 0;
   const size_t accepted=ring->push(pcm,frames);
   if(phase==Priming && ring->prime(dmaWords,halfFrames)) {
+    recovery.seedPrimed(dmaWords,halfFrames*2);
     clean(dmaWords,halfFrames*2);
     // H747 HAL passes Size unchanged to HAL_DMA_Start_IT, in transfer elements.
     // Both halves contain real PCM; the queue retains its startup jitter reserve.

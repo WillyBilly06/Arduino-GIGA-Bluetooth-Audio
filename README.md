@@ -10,11 +10,12 @@ reserve recovery, copied pending ATT requests and LHDC concealment counters.
 The latest update also copies valid LE key/parameter requests under command
 pressure without falsely stopping Classic; replies queue later in owner poll.
 These correctness fixes do not establish a cure for the remaining audio gaps.
+The following continuity observations predate the PCM transition ramp.
 A recent live LHDC192kHz/24-bit/fixed1000kbps test completed ten512-byte GATT
 ACK/exact echoes but added twelve timestamp/inner steps and1.605s prepared
 silence. A later45s BLE-disconnected epoch still added three steps/.351s;
 advertising remained enabled. Both measured LHDC concealment branches stayed0.
-The latest55s default-pin test completed ten512-byte GATT echoes yet added six
+An earlier55s default-pin test completed ten512-byte GATT echoes yet added six
 timestamp/inner steps and.794s prepared silence. These unmatched tests do not
 establish improvement. See [measured status and limits](docs/STATUS.md).
 
@@ -84,9 +85,22 @@ Per-codec queue/startup/access-unit/PCM overrides allocate only for the selected
 profile; zero fields inherit global settings. The included Receiver uses LHDC
 32/start26/max2048/PCM20ms, LDAC40/start16 and SBC12/start4. These measured profiles
 are not global defaults, a latency guarantee or a stable-playback recommendation.
-PCM recovery preserves queued sample order and emits explicitly counted silence
-until its existing reserve returns after starvation. It cannot reconstruct
-missing encoded periods or establish a physical clock mismatch.
+PCM recovery preserves queued sample order and rebuilds its existing reserve
+after starvation. A short integer ramp now softens the transition toward zero
+and back to received PCM. Uninterrupted PCM is unchanged; initial playback and
+stop behavior are unchanged. There is no additional PCM allocation.
+Legacy `silent_frames` counts missing input slots, not literal zeros. The example
+reports nonzero `synthesized` padding and literal `zero_padding` separately;
+their sum equals `starved + held`. `mixed_real` counts received frames processed
+by the resume envelope and overlaps real-input accounting. See
+[transition details and tests](docs/pcm-transition-ramp.md). Audible improvement
+remains unqualified; this cannot restore missing encoded periods or establish
+a physical clock mismatch.
+
+A 95 s test of the corresponding maintained runtime completed all 30 GATT echoes
+with no local error/drop increases, but retained 27 timestamp/inner steps and
+702336 missing-input slots. The ramp is not a demonstrated cure or a quality
+ranking. This separately built public profile has not been flashed.
 
 BLE is a public unencrypted peripheral/GATT server. Default ATT MTU517 and the
 independent512-byte value cap permit512-byte subscribed updates; the limit is

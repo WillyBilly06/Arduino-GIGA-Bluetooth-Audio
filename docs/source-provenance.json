@@ -34,9 +34,9 @@
       "source": "docs/github/develop/README.md",
       "destination": "README.md",
       "license": "Apache-2.0",
-      "input_sha256": "2ec263fab8e96fd859e87ce786bad59cb002d425c789b31d59303d1d3aaaa3c1",
-      "sha256": "2ec263fab8e96fd859e87ce786bad59cb002d425c789b31d59303d1d3aaaa3c1",
-      "bytes": 5881,
+      "input_sha256": "a564bdf77e3bfdb4c6202d2afeccd76d6fb5c4429b80e9c49725525f5bdced6f",
+      "sha256": "a564bdf77e3bfdb4c6202d2afeccd76d6fb5c4429b80e9c49725525f5bdced6f",
+      "bytes": 6843,
       "export_modified": false
     },
     {
@@ -52,9 +52,9 @@
       "source": "docs/github/develop/STATUS.md",
       "destination": "docs/STATUS.md",
       "license": "Apache-2.0",
-      "input_sha256": "f36f442f7005b063c210950a84592ff306a56de37a4d6f647234a3a33f2afca0",
-      "sha256": "f36f442f7005b063c210950a84592ff306a56de37a4d6f647234a3a33f2afca0",
-      "bytes": 6528,
+      "input_sha256": "f3cd0e57275a98f51c95bf4ba749520f08931d9634e2ee7a22f094bb84f31d9d",
+      "sha256": "f3cd0e57275a98f51c95bf4ba749520f08931d9634e2ee7a22f094bb84f31d9d",
+      "bytes": 8413,
       "export_modified": false
     },
     {
@@ -70,9 +70,9 @@
       "source": "docs/github/develop/run_owned_tests.py",
       "destination": "tools/run_owned_tests.py",
       "license": "Apache-2.0",
-      "input_sha256": "ade4bf5a4f652ee137606cd115bae73736ca070d4112b021fcbb6123a1c4905a",
-      "sha256": "ade4bf5a4f652ee137606cd115bae73736ca070d4112b021fcbb6123a1c4905a",
-      "bytes": 4191,
+      "input_sha256": "58228f4c3fbebdc9fc44a07f168946260fcab946da1b5552fe6a113c0592e59d",
+      "sha256": "58228f4c3fbebdc9fc44a07f168946260fcab946da1b5552fe6a113c0592e59d",
+      "bytes": 4216,
       "export_modified": false
     },
     {
@@ -169,9 +169,9 @@
       "source": "src/detail/AudioTiming.h",
       "destination": "src/detail/AudioTiming.h",
       "license": "Apache-2.0",
-      "input_sha256": "8b0dc1121cc0b22af50e4b85be63d597f6a21b5c9abd46c8f3c5f7f8ff5292ce",
-      "sha256": "8b0dc1121cc0b22af50e4b85be63d597f6a21b5c9abd46c8f3c5f7f8ff5292ce",
-      "bytes": 6646,
+      "input_sha256": "5400cfec0f665e59bab6f3d88d20d0c8b9dd604306718c7b8a5f4a3917d656ca",
+      "sha256": "5400cfec0f665e59bab6f3d88d20d0c8b9dd604306718c7b8a5f4a3917d656ca",
+      "bytes": 6805,
       "export_modified": false
     },
     {
@@ -950,9 +950,9 @@
       "source": "src/platform/GigaI2s.cpp",
       "destination": "src/platform/GigaI2s.cpp",
       "license": "Apache-2.0",
-      "input_sha256": "1329ac53dbb39e98405103fdcefeb9c681ab2d44587a005e7b61054bee15adbd",
-      "sha256": "1329ac53dbb39e98405103fdcefeb9c681ab2d44587a005e7b61054bee15adbd",
-      "bytes": 14304,
+      "input_sha256": "d340dfce0c817caad807e5b3695243ef51dda40ac38ccfc3690c53f5fa402578",
+      "sha256": "d340dfce0c817caad807e5b3695243ef51dda40ac38ccfc3690c53f5fa402578",
+      "bytes": 14353,
       "export_modified": false
     },
     {
@@ -1013,9 +1013,9 @@
       "source": "examples/Receiver/Receiver.ino",
       "destination": "examples/Receiver/Receiver.ino",
       "license": "Apache-2.0",
-      "input_sha256": "deb0c821fb292509cff2846cd0ce7af83cd1c14cf3c3bd94db095c2a6158fb5e",
-      "sha256": "deb0c821fb292509cff2846cd0ce7af83cd1c14cf3c3bd94db095c2a6158fb5e",
-      "bytes": 11586,
+      "input_sha256": "6499e68d83fed2a0f4c6f0c9aceb3d6a56628c194c064eec364f0862372f98e6",
+      "sha256": "6499e68d83fed2a0f4c6f0c9aceb3d6a56628c194c064eec364f0862372f98e6",
+      "bytes": 12225,
       "export_modified": false
     },
     {
@@ -1085,9 +1085,9 @@
       "source": "docs/github/develop/BUILD.json",
       "destination": "docs/BUILD.json",
       "license": "Apache-2.0",
-      "input_sha256": "76c9909d885b7de2b0e4b15ac40af6c28b7bdf049c4ea09b1ad97b3e884f177e",
-      "sha256": "76c9909d885b7de2b0e4b15ac40af6c28b7bdf049c4ea09b1ad97b3e884f177e",
-      "bytes": 58839,
+      "input_sha256": "74ba18850508422c69d2f5c9c934123f9fd3ad7204a44bfe0232a455cd7ff3e2",
+      "sha256": "74ba18850508422c69d2f5c9c934123f9fd3ad7204a44bfe0232a455cd7ff3e2",
+      "bytes": 60886,
       "export_modified": false
     },
     {
@@ -4331,9 +4331,9 @@
       "source": "src/platform/PcmRecovery.h",
       "destination": "src/platform/PcmRecovery.h",
       "license": "Apache-2.0 project source/test",
-      "input_sha256": "fe95a44ccedf846a4ad1512374958500a1f91b6da91ab2d1d08ee640c0f049e0",
-      "sha256": "fe95a44ccedf846a4ad1512374958500a1f91b6da91ab2d1d08ee640c0f049e0",
-      "bytes": 2973,
+      "input_sha256": "6dfb586aef838d2532d759a22b70494c8a1bcb6b2c4882a85e145437af8907ec",
+      "sha256": "6dfb586aef838d2532d759a22b70494c8a1bcb6b2c4882a85e145437af8907ec",
+      "bytes": 6073,
       "export_modified": false
     },
     {
@@ -4613,6 +4613,24 @@
       "input_sha256": "c5c9b6f56a8133d12aae6f826080952cfca9a98c862065f68b4d71dab5835dcb",
       "sha256": "c5c9b6f56a8133d12aae6f826080952cfca9a98c862065f68b4d71dab5835dcb",
       "bytes": 2119,
+      "export_modified": false
+    },
+    {
+      "source": "tests/test_pcm_transition.cpp",
+      "destination": "tests/test_pcm_transition.cpp",
+      "license": "Apache-2.0 project source/test",
+      "input_sha256": "5510f1228077694db33c919ac9e21ce25d3585e9e800292d2125916286641d9f",
+      "sha256": "5510f1228077694db33c919ac9e21ce25d3585e9e800292d2125916286641d9f",
+      "bytes": 5494,
+      "export_modified": false
+    },
+    {
+      "source": "docs/validation/pcm-transition-ramp.md",
+      "destination": "docs/pcm-transition-ramp.md",
+      "license": "Apache-2.0 project source/test",
+      "input_sha256": "8489822e527eb4bce576a54b7e0e2484b638cc99185bdcb1cca4bd10b8fea8a7",
+      "sha256": "8489822e527eb4bce576a54b7e0e2484b638cc99185bdcb1cca4bd10b8fea8a7",
+      "bytes": 4617,
       "export_modified": false
     }
   ]

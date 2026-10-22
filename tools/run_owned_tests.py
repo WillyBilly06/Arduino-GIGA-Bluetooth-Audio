@@ -22,7 +22,7 @@ def main():
  for n in units:
   sources=actor[1:] if n in ('test_owned_host_scheduling','test_owned_host_classic_combined') else actor;exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,'tests/'+n+'.cpp',*sources,*objects,'-o',exe]);run([exe])
  frontend=['tests/empty_registry.cpp','src/GigaBredr.cpp','src/Types.cpp','src/detail/Memory.cpp','src/detail/Decoder.cpp','src/detail/Media.cpp','src/detail/PacketQueue.cpp','src/detail/AudioTiming.cpp']
- portable={'test_audio_timing':['src/detail/AudioTiming.cpp'],'test_rtp_discontinuity':['src/detail/AudioTiming.cpp'],'test_receiver':frontend,'test_receiver_lifetime':frontend,'test_i2s':[],'test_i2s_thread':[],'test_i2s_priming':[],'test_i2s_pins':[],'test_i2s_routes':[],'test_i2s_recovery':[],'test_i2s_runtime':['src/platform/GigaI2s.cpp']}
+ portable={'test_audio_timing':['src/detail/AudioTiming.cpp'],'test_rtp_discontinuity':['src/detail/AudioTiming.cpp'],'test_receiver':frontend,'test_receiver_lifetime':frontend,'test_i2s':[],'test_i2s_thread':[],'test_i2s_priming':[],'test_i2s_pins':[],'test_i2s_routes':[],'test_i2s_recovery':[],'test_pcm_transition':[],'test_i2s_runtime':['src/platform/GigaI2s.cpp']}
  for n,sources in portable.items():
   exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,*(['-pthread']if os.name!='nt'else[]),'tests/'+n+'.cpp',*sources,'-o',exe]);run([exe])
  exe=out/'test_ble_origin.exe';run([cxx,'-std=c++17',*flags,'-Itests/support/receiver_public','tests/test_ble_origin.cpp',*frontend,'src/owned/LeProfiles.cpp',*objects,'-o',exe])

@@ -65,7 +65,7 @@ void loop() {
       (unsigned long long)s.lhdc_right_concealed_frames, (unsigned long long)s.lhdc_frame_muted_blocks,
       (unsigned long long)s.lhdc_frame_muted_frames);
     auto b=receiver.bleStats(); auto t=receiver.audioDiagnostics();
-    console.print("GBR_TIMING ms=%lu epoch=%lu rtp_packets=%llu gaps=%llu missing=%llu duplicates=%llu backward=%llu arrival_max_us=%lu queue_depth=%lu queue_high=%lu queue_full=%llu residence_max_us=%lu work_packets=%llu work_max_us=%lu decode_work_max_us=%lu write_wait_max_us=%lu output_epoch=%lu refills=%llu real_frames=%llu silence_frames=%llu minimum_pcm=%lu underrun_records=%lu ble_advertising=%u ble_connected=%u ble_mtu=%u ble_writes=%lu ble_notifications=%lu ble_command_drops=%lu\n",
+    console.print("GBR_TIMING ms=%lu epoch=%lu rtp_packets=%llu gaps=%llu missing=%llu duplicates=%llu backward=%llu arrival_max_us=%lu queue_depth=%lu queue_high=%lu queue_full=%llu residence_max_us=%lu work_packets=%llu work_max_us=%lu decode_work_max_us=%lu write_wait_max_us=%lu output_epoch=%lu refills=%llu real_frames=%llu missing_pcm_frames=%llu minimum_pcm=%lu underrun_records=%lu ble_advertising=%u ble_connected=%u ble_mtu=%u ble_writes=%lu ble_notifications=%lu ble_command_drops=%lu\n",
       (unsigned long)millis(),(unsigned long)t.rtp.epoch,(unsigned long long)t.rtp.packets,
       (unsigned long long)t.rtp.forward_gaps,(unsigned long long)t.rtp.missing_sequences,
       (unsigned long long)t.rtp.duplicates,(unsigned long long)t.rtp.backward,
@@ -108,11 +108,20 @@ void loop() {
       (unsigned long)recovery.epoch,(unsigned long long)recovery.starved_frames,(unsigned long long)recovery.hold_frames,
       (unsigned long long)recovery.hold_refills,(unsigned long long)recovery.current_hold_frames,
       (unsigned long long)recovery.maximum_hold_frames,(unsigned long)recovery.record_count,(unsigned long)recovery.records_not_retained);
+    console.print("GBR_PCM_TRANSITION epoch=%lu ramp=%lu synthesized=%llu zero_padding=%llu mixed_real=%llu\n",
+      (unsigned long)recovery.epoch,(unsigned long)recovery.ramp_frames,
+      (unsigned long long)recovery.synthesized_frames,(unsigned long long)recovery.zero_frames,
+      (unsigned long long)recovery.mixed_frames);
+#if defined(ARDUINO_GIGA) && defined(CORE_CM7)
+    console.print("GBR_IRQ_PRIORITY dma1_stream7=%lu uart7=%lu grouping=%lu\n",
+      (unsigned long)NVIC_GetPriority(DMA1_Stream7_IRQn),
+      (unsigned long)NVIC_GetPriority(UART7_IRQn),(unsigned long)NVIC_GetPriorityGrouping());
+#endif
     static uint32_t recoveryEpoch=0,recoveryIndex=0;
     if(recoveryEpoch!=recovery.epoch) { recoveryEpoch=recovery.epoch;recoveryIndex=0; }
     if(recoveryIndex<recovery.record_count) {
       const auto& r=recovery.records[recoveryIndex++];
-      console.print("GBR_RECOVERY_TRANS epoch=%lu index=%lu kind=%u at_us=%lu queued=%lu real=%lu silent=%lu\n",
+      console.print("GBR_RECOVERY_TRANS epoch=%lu index=%lu kind=%u at_us=%lu queued=%lu real=%lu missing_pcm=%lu\n",
         (unsigned long)recoveryEpoch,(unsigned long)(recoveryIndex-1),r.kind,(unsigned long)r.at_us,
         (unsigned long)r.queued,(unsigned long)r.real,(unsigned long)r.silent);
     }
@@ -120,7 +129,7 @@ void loop() {
     if(outputEpoch!=t.output.epoch) { outputEpoch=t.output.epoch;recordIndex=0; }
     if(recordIndex<t.output.record_count) {
       const auto& u=t.output.records[recordIndex++];
-      console.print("GBR_UNDERRUN epoch=%lu index=%lu at_us=%lu refill=%llu queued_before=%lu real=%lu silence=%lu\n",
+      console.print("GBR_UNDERRUN epoch=%lu index=%lu at_us=%lu refill=%llu queued_before=%lu real=%lu missing_pcm=%lu\n",
         (unsigned long)outputEpoch,(unsigned long)(recordIndex-1),(unsigned long)u.at_us,
         (unsigned long long)u.refill_number,(unsigned long)u.queued_before,(unsigned long)u.real_frames,(unsigned long)u.silent_frames);
     }

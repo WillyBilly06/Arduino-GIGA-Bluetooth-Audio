@@ -24,12 +24,23 @@ Expiry requests LE disconnect through bounded admission; command capacity and
 the existing controller watchdog still limit physical disconnect guarantees.
 This is not a general all-CID flood or unlimited-delivery promise.
 
-PCM starvation recovery restores the configured reserve without changing sample
-order or hiding zero fill. Starved and intentional-held frames remain separate.
+PCM starvation recovery restores the configured reserve without changing queue
+consumption, sample order or real-input counts. A short integer envelope now
+softens starvation and resume transitions; uninterrupted PCM stays bit-identical.
+Initial-start and stop behavior are unchanged. Legacy `silent_frames` counts
+absent input slots, including possible nonzero decay. The example separates
+nonzero synthesized padding from literal zero padding; their sum equals
+`starved + held`. Received frames processed by the resume envelope are reported
+as `mixed_real`, overlapping real-input counts. There is no new PCM allocation.
+See [implementation and tests](pcm-transition-ramp.md). The audible effect is
+unqualified, and the ramp cannot reconstruct omitted encoded content.
 LHDC per-call flags and cumulative counters expose right-channel concealment and
 full-frame mute while preserving existing PCM/status behavior.
 
 ## Measured continuity remains a failure
+
+The following continuity results predate the PCM transition ramp. Prepared-zero
+frames were literal zero fill in those images, not the new missing-input total.
 
 A readback-verified image with the ATT fix and LHDC counters received live
 LHDC192kHz/24-bit/fixed1000kbps. One ordinary MTU517 GATT session completed ten
@@ -64,13 +75,27 @@ missing periods. Decoder concealment0 excludes only the two measured fallback
 branches, not every numerical/audio defect. Continuous stable playback,
 coexistence/history-dependent failures and acoustic output remain unresolved.
 
+The corresponding maintained runtime with the ramp was readback-verified and
+observed for 95.110 s with LHDC 192 kHz/24-bit/fixed 1000 kbps. All 30 GATT acknowledged
+writes/exact echoes passed; all 45 retained snapshots were streaming with BLE
+connected, without local error/drop increases. It still added 27 timestamp/inner
+steps and 702336 missing-input slots: 61200 nonzero synthesized frames plus 641136
+literal zero frames. Another 61440 received frames were mixed during recovery.
+All 45 post-baseline priority samples reported UART7 priority 0, DMA1 stream7 priority 6 and
+grouping 3. This permits UART preemption but does not measure interrupt latency.
+These periodic snapshots do not establish a closed packet ledger, acoustics,
+an encoded-omission cure or a controlled quality ranking. The independently
+built public profile has not been flashed. See [details](pcm-transition-ramp.md).
+
 ## Validation scope
 
 `BUILD.json` records this isolated export's actual GIGA4.6.0/M7 link, exact
 compiler input hashes and public synthetic checks. Public tests cover real owned
 HCI/ACL/L2CAP/profile paths, honest credit replenishment, whole/251/27-byte ATT
 fragmentation, app/TX pressure, Prepare/Execute, unsubscribe, callback lifetime,
-UART wake and PCM recovery. Controlled LHDC channel tests cover flags/adapter/
+UART wake, PCM recovery and starvation/resume interpolation. The transition
+regression checks primed-tail seeding, cross-half state, early reversal, integer
+extremes and unchanged queue/accounting behavior. Controlled LHDC channel tests cover flags/adapter/
 frontend counters; independent LHDC PCM fidelity is not established.
 
 SBC/SBC-XQ, AAC-LC, experimental HE-AAC v1, aptX/HD, LDAC and Opus retain earlier
@@ -102,7 +127,7 @@ regression reproduced the previous false Classic stop under valid command
 pressure;5980 focused sanitizer checks preserve security/FIFO and real media
 credit return. This conditional bug does not establish the stable-epoch gap cause.
 
-A fresh55s LHDC192kHz/24-bit/fixed1000kbps default-pin test with ten512-byte GATT
+An earlier pre-ramp55s LHDC192kHz/24-bit/fixed1000kbps default-pin test with ten512-byte GATT
 ACK/echoes still added six timestamp/inner steps and152448 prepared-zero frames
 (.794s), with outer loss0 and both concealment counters0. These workloads are
 unmatched to earlier cases; no quality improvement is inferred.

@@ -15,14 +15,12 @@
   "example": "examples/Receiver/Receiver.ino",
   "isolated_receiver_link": "PASS",
   "exported_library_translation_units": 168,
-  "compiler_input_set_sha256": "dd598cc99856f01cdb89aad32c12ac40f80408fd3dff13787b4bc125c45dbfb6",
+  "compiler_input_set_sha256": "45536ffee5c23a1db60d844ef8141b88754366de67833478e4437df41641f003",
   "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
-  "private_application_sha256": "0c3af8780490f3204776421dad9264b4c37e4e42d40d40a66ade0b444dd3def7",
-  "private_application_bytes": 465116,
   "elf_sections": {
-    "text": 460380,
-    "data": 4736,
-    "bss": 327520
+    "text": 461436,
+    "data": 5024,
+    "bss": 327280
   },
   "private_binary_not_distributed": true,
   "vendor_original_input_hashes_checked": 257,
@@ -33,7 +31,7 @@
   "exported_synthetic_host_tests": {
     "address_sanitizer": true,
     "undefined_behavior_trap": true,
-    "portable_owned_runner": "PASS; current actor, HNC, LE lifecycle, Classic config/Abort/scheduling, UART wake, reliable mixed ATT ownership and scoped notifications",
+    "portable_owned_runner": "PASS; actor, HNC, LE lifecycle, Classic config/Abort/scheduling, UART wake, mixed ATT ownership, scoped notifications, PCM reserve recovery and starvation/resume interpolation",
     "mixed_delayed_att_checks": 18179,
     "write_command_policy_checks": 6137,
     "pcm_recovery_assertions": 4027850,
@@ -46,9 +44,10 @@
     "i2s_WS_profiles": [
       74,
       69
-    ]
+    ],
+    "pcm_transition_assertions": 21825
   },
-  "target_execution_of_this_public_profile": "Exporter does not flash hardware. Corresponding maintained runtime runs default D70/D72/D74/-1; latest55s LHDC/GATT test retained six TS-inner discontinuities/.794s zeros. Alternate pins/MCLK electrical behavior remains unqualified; see STATUS.md.",
+  "target_execution_of_this_public_profile": "NOT FLASHED OR EXECUTED. This isolated public-profile binary differs from the separately deployed maintained runtime; compilation, synthetic tests and linked-symbol checks do not establish RF, electrical output or acoustic quality.",
   "source_files": [
     {
       "path": "src/AudioDiagnostics.h",
@@ -92,7 +91,7 @@
     },
     {
       "path": "src/detail/AudioTiming.h",
-      "sha256": "8b0dc1121cc0b22af50e4b85be63d597f6a21b5c9abd46c8f3c5f7f8ff5292ce"
+      "sha256": "5400cfec0f665e59bab6f3d88d20d0c8b9dd604306718c7b8a5f4a3917d656ca"
     },
     {
       "path": "src/detail/Decoder.cpp",
@@ -392,7 +391,7 @@
     },
     {
       "path": "src/platform/GigaI2s.cpp",
-      "sha256": "1329ac53dbb39e98405103fdcefeb9c681ab2d44587a005e7b61054bee15adbd"
+      "sha256": "d340dfce0c817caad807e5b3695243ef51dda40ac38ccfc3690c53f5fa402578"
     },
     {
       "path": "src/platform/GigaI2s.h",
@@ -420,7 +419,7 @@
     },
     {
       "path": "examples/Receiver/Receiver.ino",
-      "sha256": "deb0c821fb292509cff2846cd0ce7af83cd1c14cf3c3bd94db095c2a6158fb5e"
+      "sha256": "6499e68d83fed2a0f4c6f0c9aceb3d6a56628c194c064eec364f0862372f98e6"
     },
     {
       "path": "src/vendor/codecs/sbc/include/oi_assert.h",
@@ -1472,7 +1471,7 @@
     },
     {
       "path": "src/platform/PcmRecovery.h",
-      "sha256": "fe95a44ccedf846a4ad1512374958500a1f91b6da91ab2d1d08ee640c0f049e0"
+      "sha256": "6dfb586aef838d2532d759a22b70494c8a1bcb6b2c4882a85e145437af8907ec"
     },
     {
       "path": "src/I2sConfig.h",
@@ -1505,7 +1504,8 @@
     ],
     "lhdc_independent_decode_reference": "Not available in this native suite; allocation/bounds checks do not establish LHDC bit accuracy",
     "media_distributed": false,
-    "implementation_hashes_reverified_unchanged": 128
+    "implementation_hashes_reverified_unchanged": 128,
+    "scope": "Previously recorded codec/reference suite with unchanged selected implementations; not rerun for this PCM transition public-profile refresh. Current owned-host/LHDC tests and the full M7 link are recorded separately."
   },
   "selected_codec_flags": [
     "SBC",
@@ -1519,8 +1519,8 @@
   ],
   "version": "0.1.0-dev.2",
   "arduino_size_summary": {
-    "program_bytes": 454760,
-    "dynamic_bytes": 53384
+    "program_bytes": 462136,
+    "dynamic_bytes": 53776
   },
   "receiver_defaults": {
     "queue_packets": 8,
@@ -1529,6 +1529,49 @@
     "per_codec_overrides": "all zero inherit"
   },
   "receive_window": 4,
-  "arduino_program_storage_bytes": 460792,
-  "arduino_dynamic_globals_bytes": 53728
+  "arduino_program_storage_bytes": 462136,
+  "arduino_dynamic_globals_bytes": 53776,
+  "public_profile_binary_sha256": "c9dadedc5f2f8f27dbb9af7b696af7d689626e2fefa47130cf9b61efe45a0e8e",
+  "public_profile_binary_bytes": 466460,
+  "public_profile_elf_sha256": "bd4bd2c80f37a06684ea25aca9155b8d42be3008acdff7e46486c3e0ea54f5fe",
+  "arduino_program_bytes": 462136,
+  "arduino_global_bytes": 53776,
+  "main_thread_stack_bytes": 32768,
+  "linked_profile_checks": {
+    "owned_backend": true,
+    "forbidden_host_symbols": 0,
+    "uart_baud": 2000000,
+    "default_WS_pin": 74,
+    "original_controller_patch_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
+    "controller_patch_bytes": 35182,
+    "controller_patch_commands": 139,
+    "compile_commands": 200,
+    "ABI": [
+      "cortex-m7",
+      "thumb",
+      "softfp",
+      "fpv5-d16"
+    ]
+  },
+  "maintained_runtime_observation": {
+    "scope": "Separate readback-verified maintained image, not execution of this public-profile binary",
+    "maintained_runtime_source": "7e676d3",
+    "binary_sha256": "4ece5feffa2cdb14e250318c8b5744f8224b7613cea28e2e9ed046c94a00a4fa",
+    "binary_bytes": 466468,
+    "duration_s": 95.11,
+    "codec": "LHDC 192 kHz / 24-bit / fixed 1000 kbps",
+    "GATT_acknowledged_writes_and_exact_echoes": 30,
+    "streaming_and_BLE_connected_snapshots": 45,
+    "local_error_or_drop_increases": 0,
+    "timestamp_inner_discontinuities": 27,
+    "missing_input_frames": 702336,
+    "nonzero_synthesized_frames": 61200,
+    "literal_zero_padding_frames": 641136,
+    "mixed_received_frames": 61440,
+    "postbaseline_priority_samples": 45,
+    "UART7_priority": 0,
+    "DMA1_stream7_priority": 6,
+    "priority_grouping": 3,
+    "limitations": "Periodic snapshots; no closed packet ledger, measured interrupt latency, encoded-omission cure, acoustic comparison or controlled quality ranking. Details: pcm-transition-ramp.md."
+  }
 }
