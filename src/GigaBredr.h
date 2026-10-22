@@ -78,11 +78,13 @@ public:
     BleStats bleStats() const;
     // Copies the readable TX value; notifies only while connected/subscribed.
     // Ok is admission, not remote delivery. Busy/OutputFull ask for a retry.
+    // Foreground data calls do not wait for the radio owner; contention is Busy.
     Status bleNotify(const uint8_t* data, size_t length);
     // Same-begin connection-bound reply: stale/disconnected origins return
     // InvalidArgument without updating TX. Discard origins after end()/begin().
     Status bleNotify(const BleWrite& origin);
     // Pops one copied write from the GATT RX characteristic, if available.
+    // Returns false without changing value when empty or the radio owner is busy.
     bool bleReadWrite(BleWrite& value);
     static uint32_t availableCodecs();
     using Allocate = void* (*)(size_t bytes, void* user);

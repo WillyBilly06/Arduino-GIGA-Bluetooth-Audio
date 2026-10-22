@@ -78,7 +78,7 @@ bth_status_t bth_cmdq_next(bth_cmdq_t *q,bth_hci_flow_t *flow,uint8_t *out,size_
     bth_status_t status=bth_hci_command_encode(out,capacity,command->opcode,command->params,command->len,written);
     if (status!=BTH_OK) return status;
     if (!bth_hci_flow_take_command(flow)) { *written=0; return BTH_ERR_STATE; }
-    if (command->owner) q->sent[q->sent_count++]=(bth_command_sent_t){command->owner,command->opcode};
+    if (command->owner) q->sent[q->sent_count++]=(bth_command_sent_t){command->owner,command->opcode,command->len>=2?bth_read_le16(command->params):0xffff};
     // Queued commands can contain link keys and PINs. Clear their copied bytes
     // explicitly so the compiler cannot remove this cleanup as a dead store.
     clear_command(command);

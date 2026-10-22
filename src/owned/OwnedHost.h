@@ -32,7 +32,7 @@ public:
  void receive(uint8_t type,const uint8_t* packetWithoutType,size_t length,uint32_t nowMs);
  void end();
  RadioStats radioStats() const;
- BleStats bleStats() const {BleStats s=le_.stats();if(!active_){s.advertising=s.connected=s.notify_enabled=s.encrypted=false;s.generation=0;s.connection_handle=0;}return s;}
+ BleStats bleStats() const {BleStats s=le_.stats();s.qos_data_fragments=qos_data_fragments_;s.qos_data_bytes=qos_data_bytes_;s.qos_paced_deferrals=qos_paced_deferrals_;s.qos_urgent_bypasses=qos_urgent_bypasses_;if(!active_){s.advertising=s.connected=s.notify_enabled=s.encrypted=false;s.generation=0;s.connection_handle=0;}return s;}
  Status bleNotify(const uint8_t* data,size_t length) {return active_?le_.notify(data,length):Status::Unsupported;}
  bool bleReadWrite(BleWrite& value) {return active_&&le_.readWrite(value);}
  Status setVolume(uint8_t v) {return active_?classic_.setVolume(v):Status::Unsupported;}
@@ -66,6 +66,7 @@ private:
  bool deferClassicControl(const bth_l2cap_pdu_t&,uint32_t);bool retryClassicControls();void clearClassicControls(uint16_t cid=0);
  void synchronizeChannels();bool disconnectChannel(uint16_t);void chargeWaiting(uint32_t);void closePeer(unsigned,uint8_t);
  void avrcpPoll(bool secure,bool allow_open=true);void runtimePoll();void refreshStats();bool admission(unsigned,uint32_t);void cancelAdmission(unsigned);
+ bool updateAudioPriority();
  OwnedHostConfig config_;OwnedHostHooks hooks_;RadioStats stats_;
  ClassicProfiles classic_;LeProfiles le_;bth_hci_flow_t flow_={};bth_cmdq_t commands_={};bth_links_t links_={};
  bth_control_tx_t control_={};bth_rx_flow_t rx_={};bth_gap_t gap_={};bth_l2cap_sig_t signaling_={};
@@ -73,6 +74,7 @@ private:
  DeferredControl classic_deferred_[ClassicDeferredSlots];uint32_t classic_deferred_owner_=0;uint8_t classic_deferred_read_=0,classic_deferred_count_=0;
  Deferred deferred_[8];unsigned deferred_read_=0,deferred_count_=0;
  uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[3]={0x110b,0x110c,0x110e};
+ uint8_t le_features_[8]={};bool le_features_known_=false;
  size_t patch_position_=0,patch_pending_bytes_=0;uint16_t pending_opcode_=0;
  uint32_t now_=0,begin_ms_=0,deadline_=0,settle_until_=0,packet_order_=0,command_deadline_=0;
  uint32_t sent_at_[BTH_CMD_QUEUE_LIMIT]={};uint32_t accept_deadline_=0;
@@ -80,6 +82,9 @@ private:
  uint32_t hnc_commands_=0,hnc_packets_=0,hnc_last_ms_=0;uint16_t hnc_handles_[2]={},hnc_counts_[2]={};
  uint32_t avrcp_at_=0;unsigned avrcp_attempts_=0;bool avrcp_recovering_=false;
  unsigned next_peer_=0,bond_cursor_=0,le_trace_=0;Boot boot_=Boot::Failed;
+ uint32_t qos_last_data_ms_=0,qos_classic_owner_=0,qos_le_owner_=0;
+ uint32_t qos_data_fragments_=0,qos_data_bytes_=0,qos_paced_deferrals_=0,qos_urgent_bypasses_=0;
+ uint8_t qos_classic_burst_=0;bool qos_have_data_=false,qos_audio_active_=false;
  bool active_=false,clock_started_=false,pending_=false,tx_turn_=false,last_ack_=false,was_secure_=false;
 };
 }}

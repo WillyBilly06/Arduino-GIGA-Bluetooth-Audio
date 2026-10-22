@@ -188,7 +188,11 @@ static void deferred_ltk_reply_and_bad_parameters() {
     while (bth_cmdq_available(&f.commands)) CHECK(bth_cmdq_push(&f.commands,0xfc01,nullptr,0,false)==BTH_OK);
     f.ble.event(event); f.ble.poll(0,false); // Deferred; cannot drop security reply.
     bth_hci_flow_t flow; bth_hci_flow_init(&flow); uint8_t wire[260]; size_t length=0;
-    CHECK(bth_cmdq_next(&f.commands,&flow,wire,sizeof wire,&length)==BTH_OK);
+    for(unsigned i=0;i<3;++i){
+        CHECK(bth_cmdq_next(&f.commands,&flow,wire,sizeof wire,&length)==BTH_OK);
+        const uint8_t complete[]={1,1,0xfc,0};bth_h4_frame_t ack={};ack.type=BTH_H4_EVENT;ack.event={0x0e,{complete,sizeof complete}};
+        CHECK(bth_hci_flow_on_event(&flow,&ack)==BTH_OK);
+    }
     f.ble.poll(1,false);
     bool found=false;
     for (const auto& command:f.commands.slots) {

@@ -74,16 +74,44 @@ bth_status_t bth_control_tx_cancel(bth_control_tx_t *q,bth_control_token_t token
 }
 bth_status_t bth_control_tx_next(bth_control_tx_t *q,const uint32_t owners[BTH_CONTROL_PEERS],bth_hci_flow_t *flow,
     uint8_t *out,size_t cap,size_t *written) {
+    return bth_control_tx_next_policy(q,owners,flow,NULL,NULL,out,cap,written);
+}
+bth_status_t bth_control_tx_next_policy(bth_control_tx_t *q,const uint32_t owners[BTH_CONTROL_PEERS],bth_hci_flow_t *flow,
+    const bth_control_tx_policy_t *policy,bth_control_tx_info_t *info,
+    uint8_t *out,size_t cap,size_t *written) {
+    if (info) memset(info,0,sizeof *info);
     if (written) *written=0;
-    if (!q || !q->initialized || !owners || !flow || !out || !written) return BTH_ERR_PARAM;
+    if (!q || !q->initialized || !owners || !flow || !out || !written || (policy && policy->first_peer>=BTH_CONTROL_PEERS)) return BTH_ERR_PARAM;
+    bool urgent_le=policy && policy->le_control_pending;
+    // Validate queued LE control before deciding whether its FIFO may be paced.
+    if (policy) {
+        const bth_control_peer_t *p=&q->peers[1];
+        if (p->count>BTH_CONTROL_SLOTS || (p->count && (!p->attached || owners[1]!=p->owner))) return BTH_ERR_STATE;
+        for (unsigned j=0;j<p->count;++j) {
+            const unsigned slot=p->order[(p->read+j)&3u];
+            if (slot>=BTH_CONTROL_SLOTS) return BTH_ERR_STATE;
+            const bth_control_slot_t *s=&q->slots[slot];
+            if (s->state!=QUEUED || s->peer!=1 || s->owner!=p->owner) return BTH_ERR_STATE;
+            if (s->cid==5 || s->cid==6) urgent_le=true;
+        }
+    }
     for (unsigned k=0;k<BTH_CONTROL_PEERS;++k) {
-        unsigned peer=(q->next_peer+k)&1u; bth_control_peer_t *p=&q->peers[peer];
+        unsigned peer=((policy?policy->first_peer:q->next_peer)+k)&1u; bth_control_peer_t *p=&q->peers[peer];
         if (!p->attached || !p->count) continue;
         if (owners[peer]!=p->owner) return BTH_ERR_STATE;
         unsigned i=p->order[p->read];
         if (i>=BTH_CONTROL_SLOTS) return BTH_ERR_STATE;
         const bth_control_slot_t *s=&q->slots[i];
         if (s->state!=QUEUED || s->peer!=peer || s->owner!=p->owner) return BTH_ERR_STATE;
+        const bool le_data=peer==1 && s->cid==4;
+        if (policy && le_data && !policy->le_data_allowed && !urgent_le) {
+            if (info) info->paced=true;
+            continue; // No fragment start, queue cursor, or credit mutation.
+        }
+        if (policy && le_data && !urgent_le && !flow->le.total && flow->classic.total>1 && flow->classic.available<=1) {
+            if (info) info->shared_reserved=true;
+            continue; // Keep one shared controller credit ready for Classic.
+        }
         if (!p->tx.active) {
             if (p->cursor>s->length || (p->cursor && p->cursor==s->length)) return BTH_ERR_STATE;
             size_t bytes=s->length-p->cursor;
@@ -97,9 +125,12 @@ bth_status_t bth_control_tx_next(bth_control_tx_t *q,const uint32_t owners[BTH_C
             if (st!=BTH_OK) return st;
         }
         const size_t sdu_bytes=p->tx.data.len;
-        bth_status_t st=bth_acl_tx_next(&p->tx,owners[peer],flow,out,cap,written);
+        const uint16_t maximum=policy && le_data?policy->le_data_max_payload:0;
+        bth_status_t st=bth_acl_tx_next_limited(&p->tx,owners[peer],flow,maximum,out,cap,written);
         if (st==BTH_MORE) continue;
         if (st!=BTH_OK) return st;
+        if (info) { info->peer=(uint8_t)peer; info->le_data=le_data;
+            info->urgent_bypass=peer==1 && urgent_le; info->payload_bytes=bth_read_le16(out+3); }
         q->next_peer=(uint8_t)(peer^1u);
         if (!p->tx.active) {
             p->cursor+=(uint16_t)sdu_bytes;

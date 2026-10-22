@@ -6,7 +6,9 @@ extern "C" {
 #endif
 enum { BTH_CMD_QUEUE_LIMIT=8, BTH_CMD_PARAM_LIMIT=255 };
 typedef struct { uint32_t owner; uint16_t opcode; uint8_t len, params[BTH_CMD_PARAM_LIMIT]; } bth_command_t;
-typedef struct { uint32_t owner; uint16_t opcode; } bth_command_sent_t;
+// The first parameter word occupies the former two padding bytes. Known
+// handle-bearing LE commands use it for completion preflight, even after detach.
+typedef struct { uint32_t owner; uint16_t opcode,handle; } bth_command_sent_t;
 typedef struct {
     bth_command_t slots[BTH_CMD_QUEUE_LIMIT];
     uint8_t order[2][BTH_CMD_QUEUE_LIMIT], read[2], count[2];

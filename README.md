@@ -102,14 +102,47 @@ with no local error/drop increases, but retained 27 timestamp/inner steps and
 702336 missing-input slots. The ramp is not a demonstrated cure or a quality
 ranking. This separately built public profile has not been flashed.
 
-BLE is a public unencrypted peripheral/GATT server. Default ATT MTU517 and the
-independent512-byte value cap permit512-byte subscribed updates; the limit is
+BLE is a public unencrypted peripheral/GATT server. ATT starts at MTU23 and can
+negotiate up to517. The independent512-byte value cap permits512-byte subscribed
+updates at MTU517; the limit is
 `min(512, negotiated_mtu-3)`. A blocked acknowledged request owns a fixed517-byte
 copy before HCI storage retires. Later valid data commands are best effort,
 with explicit drops while an older request or unread value waits. Generation-
 scoped notification replies reject stale reconnect data. Pairing/encrypted BLE
 and central/client roles remain unsupported. No BTstack protocol backend or
 controller firmware is distributed; the installed Arduino core supplies firmware.
+
+While secure A2DP is streaming, Classic receive work runs first and ordinary
+ATT output defaults to27-byte HCI fragments at least10ms apart. Public BLE data
+calls return immediately on radio-owner contention (`Busy` for notify, false
+without changing the read output). Security, required control, real credits
+and protocol expiry remain prompt. Host limits do not reserve RF airtime.
+BLE transfers can take longer while audio is streaming.
+
+One bounded asynchronous connection preference requests80..120ms intervals,
+latency2 and a5s supervision timeout after the connection is at least5s old.
+`bleStats().connection` and `GBR_BLE_CONN` distinguish requested/submitted
+settings from actual controller observations. The phone can choose other
+settings; no reassert loop is used. For example, before `begin()`:
+
+```cpp
+config.ble.audio_priority = true;
+config.ble.audio_acl_fragment_bytes = 27;
+config.ble.audio_data_interval_ms = 10;
+auto& preference = config.ble.audio_connection_preference;
+preference.interval_min = 64; // 1.25ms units: 80ms
+preference.interval_max = 96; // 120ms
+preference.latency = 2;
+preference.timeout = 500;     // 10ms units: 5s
+// preference.enabled = false; // Host pacing without the optional request.
+```
+
+The private readback-verified image observed120ms/latency2 in all45 retained
+parameter snapshots per95s capture, each with30 exact512-byte GATT echoes. The deterministic waveform
+case had0 timestamp/codec jumps and0 missing PCM; YouTube still had4 jumps and
+103680 missing PCM frames. No acoustic cure is claimed. This independently
+built public profile is a separate artifact from that deployed private image.
+See [policy, tests and measured limits](docs/ble-audio-priority.md).
 
 ## Public checks and packaging
 

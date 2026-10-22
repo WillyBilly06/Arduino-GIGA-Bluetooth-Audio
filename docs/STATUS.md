@@ -39,6 +39,32 @@ full-frame mute while preserving existing PCM/status behavior.
 
 ## Measured continuity remains a failure
 
+The current priority policy services Classic RX first, paces ordinary ATT data,
+and makes foreground BLE data admission use try-locks. Security, required
+control and real HCI credits are outside data pacing. One asynchronous preference
+requests80..120ms intervals/latency2/5s; it never equates command admission or ACK
+with applied settings. Bounded BLE-owned parameter retention cannot block the
+Classic event queue, and optional CID5 work cannot unpace older ATT replies.
+
+The private473560-byte image
+`cbbf53035dfccf2381ff109256b9b5f75b86e91610f37a28dd33dc0c5042cdb8`
+was flashed and fully readback-verified. Both current95s LHDC192kHz/24-bit/
+1000kbps captures completed30 exact512-byte GATT exchanges and observed120ms /
+latency2 /5s in all45 retained parameter snapshots:
+
+| Source | Timestamp / codec jumps | Missing PCM frames |
+|---|---:|---:|
+| Finite deterministic waveform |0 /0|0|
+| YouTube |4 /4|103680|
+
+The waveform source completed with0 AudioTrack underruns and24 exact-route
+observations. Neither capture added local queue, decoder, DMA or transport
+errors. The YouTube failure remains material. A clean finite waveform case is
+not perfectly smooth audio, universal coexistence, a statistical ranking or
+physical output proof. The current public transformed-source build is a
+different artifact; private readback cannot qualify its binary. See
+[bounded policy and receipt](ble-audio-priority.md).
+
 The following continuity results predate the PCM transition ramp. Prepared-zero
 frames were literal zero fill in those images, not the new missing-input total.
 

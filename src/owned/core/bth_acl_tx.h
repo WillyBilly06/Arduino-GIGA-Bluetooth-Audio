@@ -23,6 +23,9 @@ bool bth_acl_tx_cancel(bth_acl_tx_t *tx,uint32_t owner);
 // continuation; the controller pool lengths can split even the L2CAP header.
 bth_status_t bth_acl_tx_next(bth_acl_tx_t *tx,uint32_t current_owner,bth_hci_flow_t *flow,
     uint8_t *out,size_t capacity,size_t *written);
+// Same transaction, additionally bounded by max_payload (zero uses pool size).
+bth_status_t bth_acl_tx_next_limited(bth_acl_tx_t *tx,uint32_t current_owner,bth_hci_flow_t *flow,
+    uint16_t max_payload,uint8_t *out,size_t capacity,size_t *written);
 #ifdef __cplusplus
 }
 #endif

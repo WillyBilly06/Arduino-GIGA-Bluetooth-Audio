@@ -2,7 +2,7 @@
   "schema": 1,
   "date": "2026-10-22",
   "qualification": "developmental source snapshot; hardware qualification pending",
-  "profile": "Full selected user-supplied decoder set; project-owned host",
+  "profile": "Full selected user-supplied decoder set; project-owned host with BLE audio priority and optional standard connection preference",
   "arduino_core": "arduino:mbed_giga 4.6.0",
   "fqbn": "arduino:mbed_giga:giga",
   "jobs": 4,
@@ -15,39 +15,54 @@
   "example": "examples/Receiver/Receiver.ino",
   "isolated_receiver_link": "PASS",
   "exported_library_translation_units": 168,
-  "compiler_input_set_sha256": "45536ffee5c23a1db60d844ef8141b88754366de67833478e4437df41641f003",
+  "compiler_input_set_sha256": "18150cf50f8bec44bed2e5672b9cf346cd0e57437a77f3e63ab47ccfa07cd1fd",
   "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
   "elf_sections": {
-    "text": 461436,
-    "data": 5024,
+    "text": 468464,
+    "data": 5088,
     "bss": 327280
   },
   "private_binary_not_distributed": true,
   "vendor_original_input_hashes_checked": 257,
   "vendor_original_input_hashes_match": true,
   "export_safety_tests": {
-    "passed": 16
+    "status": "PASS",
+    "passed": 16,
+    "scope": "Full unchanged exporter safety suite against private candidate metadata and corrected exact selection"
   },
   "exported_synthetic_host_tests": {
     "address_sanitizer": true,
     "undefined_behavior_trap": true,
-    "portable_owned_runner": "PASS; actor, HNC, LE lifecycle, Classic config/Abort/scheduling, UART wake, mixed ATT ownership, scoped notifications, PCM reserve recovery and starvation/resume interpolation",
-    "mixed_delayed_att_checks": 18179,
-    "write_command_policy_checks": 6137,
+    "vptr_sanitizer_excluded": true,
+    "portable_owned_runner": "PASS; complete exported runner including actor, HNC, LE lifecycle/control/preference, Classic config/Abort/scheduling, UART wake, mixed ATT ownership, paced QoS, nonblocking facade, PCM recovery/transition and wake/lifetime checks",
+    "runner_compile_and_execution_commands": 121,
+    "new_ble_tests": {
+      "qos_actor": 6069,
+      "qos_core": 697,
+      "preference_actor": 5175,
+      "preference_core": 543,
+      "nonblocking_facade": 34,
+      "legacy_le_transport": 76,
+      "legacy_le_control": 69
+    },
+    "mixed_delayed_att_checks": 18219,
+    "write_command_policy_checks": 6698,
+    "le_request_admission_checks": 5980,
     "pcm_recovery_assertions": 4027850,
+    "pcm_transition_assertions": 21825,
     "ble_origin_cases": 6,
     "uart_wake_checks": 85,
     "worker_lifetime_checks": 20,
-    "lhdc_concealment": "PASS controlled channel-flag propagation and frontend totals; no PCM oracle or acoustic claim",
-    "le_request_admission_checks": 5980,
     "i2s_route_checks_per_WS_profile": 2983,
     "i2s_WS_profiles": [
       74,
       69
     ],
-    "pcm_transition_assertions": 21825
+    "qos_exact512_echoes": 30,
+    "qos_classic_media_callbacks": 820,
+    "lhdc_concealment": "PASS controlled three-channel-call seam in real frame branches, adapter and frontend; no independent PCM oracle or acoustic claim"
   },
-  "target_execution_of_this_public_profile": "NOT FLASHED OR EXECUTED. This isolated public-profile binary differs from the separately deployed maintained runtime; compilation, synthetic tests and linked-symbol checks do not establish RF, electrical output or acoustic quality.",
+  "target_execution_of_this_public_profile": "NOT FLASHED OR EXECUTED. This isolated public-profile binary differs from the separately deployed maintained runtime; compilation, synthetic tests and linked-symbol checks do not establish RF, electrical output, acoustic quality or continuous smooth audio.",
   "source_files": [
     {
       "path": "src/AudioDiagnostics.h",
@@ -63,11 +78,11 @@
     },
     {
       "path": "src/GigaBredr.cpp",
-      "sha256": "990344063c64b86753f75bb943b85336fc0e4e9cc62ce2a18261eb6412625cc8"
+      "sha256": "9943740c12b98415fccae1e73bc02a8cab878f60731a6cf4a50df637ba25c045"
     },
     {
       "path": "src/GigaBredr.h",
-      "sha256": "1a2314b438c6c907a064c5416c2bc25f39bf6e70884b254ee872a070291a0751"
+      "sha256": "964cd70b2c0d266a5da0662165bb97055c8089b7d85566e2d28ad4d2e32867f1"
     },
     {
       "path": "src/GigaI2sOutput.h",
@@ -139,7 +154,7 @@
     },
     {
       "path": "src/owned/BleTypes.h",
-      "sha256": "843f917db489c12bc5cd1569e893cfe3b334674d4eb7cf06c560e026b6d33658"
+      "sha256": "71cf6cf581b350626999f877bf32076c9cea1ad5537134c56789acdb9380950e"
     },
     {
       "path": "src/owned/ClassicProfiles.cpp",
@@ -151,11 +166,11 @@
     },
     {
       "path": "src/owned/core/bth_acl_tx.c",
-      "sha256": "81d560205e167414d7c541fbbf7988163b33f8a19760598e8a62b12d9fa9f72c"
+      "sha256": "ee644d97fae18efac9a9bdadf05b341fc7d367fa9757d764330c9ff9a0cd9987"
     },
     {
       "path": "src/owned/core/bth_acl_tx.h",
-      "sha256": "b89f41b9ee9fc7ee8daee4a249744b9e4893bc80f71faddba63ea35a3df74f65"
+      "sha256": "65b09e0c5a122f02ab496b7eb53d4aa016014f2303994e08a3a7ae4d1b5dd880"
     },
     {
       "path": "src/owned/core/bth_att.c",
@@ -207,19 +222,19 @@
     },
     {
       "path": "src/owned/core/bth_cmdq.c",
-      "sha256": "d1d73eed1584cfc9a9d58fbdc2b30fd911b8874861029eb6ed9f10428215f260"
+      "sha256": "b1d96ad78f847641182f5c85a2d151fc54a0302c5ae427e5d4c3e9c628076062"
     },
     {
       "path": "src/owned/core/bth_cmdq.h",
-      "sha256": "1fece2e3969ee0a64ccffa7fe91b418403d0466f2f5e23137395bccb2a28212d"
+      "sha256": "35d81081bba8d03e0c61ad2b8da7a3d74096528e532e934fbb80d646b6572fcc"
     },
     {
       "path": "src/owned/core/bth_control_tx.c",
-      "sha256": "282405a8152d6132b564d8a71f69019fd8cf7e7c838831adea8262b0d32fba2e"
+      "sha256": "bac07aa06fa58816c94c369487adffa6e6564a92fa94d5f10fc05cbcf0f41495"
     },
     {
       "path": "src/owned/core/bth_control_tx.h",
-      "sha256": "f57809fc5b9d3048eb8048d0c1b794b5c8af987361af7e900f11468a6d9fd8c9"
+      "sha256": "9f489cb2cc09ec9b77e525cd5d5339c020caa3363f0774336b4c98e830c93c62"
     },
     {
       "path": "src/owned/core/bth_gap.c",
@@ -271,11 +286,11 @@
     },
     {
       "path": "src/owned/core/bth_le_transport.c",
-      "sha256": "e3c8b02cab8d1bdd372a3c13f1ebb761c63579cec632f2f4ab7c4a1447c838e1"
+      "sha256": "0188ec295ee51b1fca05a60e438e39b325497107edad5b497b463c0ca0cb1245"
     },
     {
       "path": "src/owned/core/bth_le_transport.h",
-      "sha256": "f5d4fc078eab3001dcc619ebf37cb58051502fe43f4d9163ce258421690edb82"
+      "sha256": "79f56a9810170d8ae34ae581886950d9414aa4a3eabc0eb68e877b6c68894e8b"
     },
     {
       "path": "src/owned/core/bth_links.c",
@@ -363,19 +378,19 @@
     },
     {
       "path": "src/owned/LeProfiles.cpp",
-      "sha256": "01fee9b07f43493612b03d2bb83e1e1d42dac319183b1f3531848301fd58b1b2"
+      "sha256": "f2b40466bfb50b14dbffb3b2c595ca8b94f995b05bc5ab6c29430408eee2532b"
     },
     {
       "path": "src/owned/LeProfiles.h",
-      "sha256": "48a0cde5a69f78eddb934a15210cfc55a4e4d44f3623f580f311b655857551fb"
+      "sha256": "c1cf50b90fb02d80f04d80dabd98c6c25d6b6c675ea8d7c8c1b4ca8077a3ba5c"
     },
     {
       "path": "src/owned/OwnedHost.cpp",
-      "sha256": "99adcb01fcc49fe5ee43a77dd0bfe711a57fbd8bbc64c73f6ccaf40fea07c6cb"
+      "sha256": "793dcfc5f164b52aac7031fe480654dd4522b6874b08ad919600b087e412641a"
     },
     {
       "path": "src/owned/OwnedHost.h",
-      "sha256": "3a6dcc1c6adc9dcab480dced4b833aacae1ac2f630747bf206877f6582556d31"
+      "sha256": "55f26e2fcdcd163dee9d822c5421af7611996ce2b8be1fbdde3fd7eb82ee14e7"
     },
     {
       "path": "src/platform/OwnedRadio.cpp",
@@ -419,7 +434,7 @@
     },
     {
       "path": "examples/Receiver/Receiver.ino",
-      "sha256": "6499e68d83fed2a0f4c6f0c9aceb3d6a56628c194c064eec364f0862372f98e6"
+      "sha256": "a3fc96c2a6860e3f21e89876369b8f434255d3bd033f4e1be5526b0e57432b83"
     },
     {
       "path": "src/vendor/codecs/sbc/include/oi_assert.h",
@@ -1478,7 +1493,7 @@
       "sha256": "d4469fe14255fc3af9fb5e178df308531b47a58c1ca926a56122a5013dbc881c"
     }
   ],
-  "snapshot_scope": "Stable four-packet receive-window per-H4-frame service with MTU517/512-byte GATT and optional per-codec buffers; defaults8/2/20 unchanged",
+  "snapshot_scope": "Project-owned dual-mode host; four-packet receive window, ATT maximum517/512-byte attributes, Classic-first host service, paced BLE ATT submissions, nonblocking BLE data facade, and optional standard connection-parameter preference. Requested, submitted and actual parameters remain distinct.",
   "historical_host_translation_units": 0,
   "decoder_source_files": 257,
   "decoder_build_defaults": "Unchanged from local CodecBuildConfig.h",
@@ -1494,7 +1509,7 @@
   "exported_native_codec_tests": {
     "address_sanitizer": true,
     "compiled_exported_units": 128,
-    "status": "PASS",
+    "status": "HISTORICAL PASS; not rerun in this refresh",
     "checks": [
       "configuration/capacity/allocation cleanup",
       "complete independent SBC, SBC-XQ, AAC-LC, LATM, aptX, aptX HD, Opus and LDAC sequences",
@@ -1505,7 +1520,7 @@
     "lhdc_independent_decode_reference": "Not available in this native suite; allocation/bounds checks do not establish LHDC bit accuracy",
     "media_distributed": false,
     "implementation_hashes_reverified_unchanged": 128,
-    "scope": "Previously recorded codec/reference suite with unchanged selected implementations; not rerun for this PCM transition public-profile refresh. Current owned-host/LHDC tests and the full M7 link are recorded separately."
+    "scope": "Previously recorded codec/reference suite; all 128 selected compiled codec implementations reverified unchanged. No codec-vector rerun for this BLE priority public-profile refresh. Fresh owned-host/LHDC tests and full M7 link are recorded separately."
   },
   "selected_codec_flags": [
     "SBC",
@@ -1519,27 +1534,47 @@
   ],
   "version": "0.1.0-dev.2",
   "arduino_size_summary": {
-    "program_bytes": 462136,
-    "dynamic_bytes": 53776
+    "program_bytes": 469184,
+    "dynamic_bytes": 53840
   },
   "receiver_defaults": {
     "queue_packets": 8,
     "startup_packets": 2,
     "pcm_buffer_ms": 20,
-    "per_codec_overrides": "all zero inherit"
+    "per_codec_overrides": {
+      "SBC": {
+        "queue_packets": 12,
+        "startup_packets": 4
+      },
+      "LDAC": {
+        "queue_packets": 40,
+        "startup_packets": 16
+      },
+      "LHDC": {
+        "queue_packets": 32,
+        "startup_packets": 26,
+        "maximum_packet_bytes": 2048,
+        "pcm_buffer_ms": 20
+      }
+    }
   },
   "receive_window": 4,
-  "arduino_program_storage_bytes": 462136,
-  "arduino_dynamic_globals_bytes": 53776,
-  "public_profile_binary_sha256": "c9dadedc5f2f8f27dbb9af7b696af7d689626e2fefa47130cf9b61efe45a0e8e",
-  "public_profile_binary_bytes": 466460,
-  "public_profile_elf_sha256": "bd4bd2c80f37a06684ea25aca9155b8d42be3008acdff7e46486c3e0ea54f5fe",
-  "arduino_program_bytes": 462136,
-  "arduino_global_bytes": 53776,
+  "arduino_program_storage_bytes": 469184,
+  "arduino_dynamic_globals_bytes": 53840,
+  "public_profile_binary_sha256": "b1bcc0d134aedba5ee6be26829db1e4889200376a40c486a765f12f92584977f",
+  "public_profile_binary_bytes": 473552,
+  "public_profile_elf_sha256": "17173d5719548fae96403a5109d9d565c6a6ffc42cb9f2b4d8422df8d2f0738a",
+  "arduino_program_bytes": 469184,
+  "arduino_global_bytes": 53840,
   "main_thread_stack_bytes": 32768,
   "linked_profile_checks": {
     "owned_backend": true,
+    "owned_host_components": 4,
     "forbidden_host_symbols": 0,
+    "inert_arduino_sdk_globals": [
+      "ble::impl::(anonymous namespace)::CCCD_UUID",
+      "ble::impl::BLEInstanceBase::_init_callback"
+    ],
     "uart_baud": 2000000,
     "default_WS_pin": 74,
     "original_controller_patch_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
@@ -1551,10 +1586,18 @@
       "thumb",
       "softfp",
       "fpv5-d16"
-    ]
+    ],
+    "m7_object_sizes": {
+      "BleConfig": 24,
+      "BleStats": 100,
+      "command_queue": 2204,
+      "command_sent": 8,
+      "LeProfiles": 3080,
+      "OwnedHost": 34412
+    }
   },
   "maintained_runtime_observation": {
-    "scope": "Separate readback-verified maintained image, not execution of this public-profile binary",
+    "scope": "Historical prior maintained-image observation, retained for provenance; not current phase2 field evidence and not execution of this public-profile binary. Current phase2 field evidence is documented separately in ble-audio-priority.md/json.",
     "maintained_runtime_source": "7e676d3",
     "binary_sha256": "4ece5feffa2cdb14e250318c8b5744f8224b7613cea28e2e9ed046c94a00a4fa",
     "binary_bytes": 466468,
@@ -1572,6 +1615,23 @@
     "UART7_priority": 0,
     "DMA1_stream7_priority": 6,
     "priority_grouping": 3,
-    "limitations": "Periodic snapshots; no closed packet ledger, measured interrupt latency, encoded-omission cure, acoustic comparison or controlled quality ranking. Details: pcm-transition-ramp.md."
+    "limitations": "Periodic snapshots; no closed packet ledger, measured interrupt latency, encoded-omission cure, acoustic comparison or controlled quality ranking. Details: pcm-transition-ramp.md.",
+    "historical": true
+  },
+  "public_build_source_revision": "e51ba451b4b3074b46daf9887a17ff59ddc39104",
+  "vendor_original_hash_check_scope": "257 original SHA identities matched between the preserved import manifest and allowlist; all 257 pinned imported files and all 260 selected vendor artifacts verified. Logical original import paths are not independently reread in this refresh.",
+  "selected_vendor_artifacts": 260,
+  "ble_audio_defaults": {
+    "audio_priority": true,
+    "audio_data_interval_ms": 10,
+    "audio_acl_fragment_bytes": 27,
+    "optional_connection_preference": {
+      "enabled": true,
+      "interval_min": 64,
+      "interval_max": 96,
+      "latency": 2,
+      "timeout": 500
+    },
+    "scope": "Host scheduling and optional standard preference only; no hard RF airtime floor or smooth-audio cure claim"
   }
 }

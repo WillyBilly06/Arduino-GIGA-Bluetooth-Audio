@@ -24,7 +24,8 @@ template<class T>struct BoundCallback{T*object;void(T::*method)();};
 template<class T>BoundCallback<T> callback(T*p,void(T::*method)()){return {p,method};}
 }
 namespace rtos {
-class Mutex {public:void lock(){}void unlock(){}};
+// This single-thread fixture models uncontended mutex operations only.
+class Mutex {public:void lock(){}void unlock(){}bool trylock(){return true;}};
 class Semaphore {public:Semaphore(int,int){}void release(){}bool try_acquire_for(unsigned){return false;}};
 class Thread {
     int priority_;

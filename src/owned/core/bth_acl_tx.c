@@ -13,6 +13,9 @@ bool bth_acl_tx_cancel(bth_acl_tx_t *tx,uint32_t owner) {
     bth_acl_tx_init(tx); return true;
 }
 bth_status_t bth_acl_tx_next(bth_acl_tx_t *tx,uint32_t owner,bth_hci_flow_t *flow,uint8_t *out,size_t cap,size_t *written) {
+    return bth_acl_tx_next_limited(tx,owner,flow,0,out,cap,written);
+}
+bth_status_t bth_acl_tx_next_limited(bth_acl_tx_t *tx,uint32_t owner,bth_hci_flow_t *flow,uint16_t max_payload,uint8_t *out,size_t cap,size_t *written) {
     if (written) *written=0;
     if (!tx || !flow || !out || !written) return BTH_ERR_PARAM;
     if (!tx->active) return BTH_MORE;
@@ -27,6 +30,7 @@ bth_status_t bth_acl_tx_next(bth_acl_tx_t *tx,uint32_t owner,bth_hci_flow_t *flo
     if (tx->position>=total) return BTH_ERR_STATE;
     uint32_t count=total-tx->position;
     if (count>pool->length) count=pool->length;
+    if (max_payload && count>max_payload) count=max_payload;
     if (cap<5u+count) return BTH_ERR_CAPACITY;
     if (!pool->available) return BTH_MORE;
     if (!bth_hci_flow_take_acl(flow,tx->handle,(uint16_t)count)) return BTH_ERR_STATE;

@@ -28,6 +28,9 @@ typedef struct {
     bool initialized;
 } bth_control_tx_t;
 // Single owner, initialize only with all outstanding reservations retired.
+// Actor selects first peer and data eligibility without changing queue state.
+typedef struct { uint8_t first_peer; bool le_data_allowed; uint16_t le_data_max_payload; bool le_control_pending; } bth_control_tx_policy_t;
+typedef struct { uint16_t payload_bytes; uint8_t peer; bool le_data,urgent_bypass,paced,shared_reserved; } bth_control_tx_info_t;
 void bth_control_tx_init(bth_control_tx_t *q);
 bool bth_control_tx_attach(bth_control_tx_t *q,uint8_t peer,uint16_t handle,uint32_t owner);
 // Entire disconnected generation only; never cancel a partially sent SDU on a
@@ -45,6 +48,11 @@ bth_status_t bth_control_tx_cancel(bth_control_tx_t *q,bth_control_token_t token
 // retaining one queue slot through every command and its final ACL fragment.
 // Other CIDs retain their original SDU boundaries.
 bth_status_t bth_control_tx_next(bth_control_tx_t *q,const uint32_t owners[BTH_CONTROL_PEERS],bth_hci_flow_t *flow,
+    uint8_t *out,size_t capacity,size_t *written);
+// CID5/6 control bypasses ATT pacing. If queued behind ATT, drain that FIFO
+// prefix without pacing; never interleave SDUs on the same handle.
+bth_status_t bth_control_tx_next_policy(bth_control_tx_t *q,const uint32_t owners[BTH_CONTROL_PEERS],bth_hci_flow_t *flow,
+    const bth_control_tx_policy_t *policy,bth_control_tx_info_t *info,
     uint8_t *out,size_t capacity,size_t *written);
 #ifdef __cplusplus
 }

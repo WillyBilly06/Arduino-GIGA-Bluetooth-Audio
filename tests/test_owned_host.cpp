@@ -51,6 +51,9 @@ struct Fixture {
   if(packet[0]==2){CHECK(packet.size()>=9);output.push_back({uint16_t(bth_read_le16(packet.data()+1)&0xfff),bth_read_le16(packet.data()+7),Bytes(packet.begin()+9,packet.end())});uint16_t handle=bth_read_le16(packet.data()+1)&0xfff;event(0x13,{1,uint8_t(handle),uint8_t(handle>>8),1,0});return;}
   uint16_t opcode=op(packet);if(opcode==0x0c35)return;
   if(opcode==0x0409||opcode==0x0411||opcode==0x0413||opcode==0x0406){status(opcode);return;}
+  if(opcode==0x2016){status(opcode);event(0x3e,{4,0,packet[4],packet[5],3,0,0,0,0,0,0,0});return;}
+  if(opcode==0x2013){status(opcode);event(0x3e,{3,0,packet[4],packet[5],packet[6],packet[7],packet[10],packet[11],packet[12],packet[13]});return;}
+  if(opcode==0x201b||opcode==0x2020||opcode==0x2021){complete(opcode,{0,packet[4],packet[5]});return;}
   if(opcode==0x1408){complete(opcode,{0,0x25,0,16});return;}
   if(opcode==0x040b||opcode==0x040c||opcode==0x040d||opcode==0x040e||opcode==0x042b||opcode==0x042c||opcode==0x042d||opcode==0x0434){complete(opcode,{0,1,2,3,4,5,6});return;}
   complete(opcode,response(opcode));

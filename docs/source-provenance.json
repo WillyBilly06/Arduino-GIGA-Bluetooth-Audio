@@ -34,9 +34,9 @@
       "source": "docs/github/develop/README.md",
       "destination": "README.md",
       "license": "Apache-2.0",
-      "input_sha256": "a564bdf77e3bfdb4c6202d2afeccd76d6fb5c4429b80e9c49725525f5bdced6f",
-      "sha256": "a564bdf77e3bfdb4c6202d2afeccd76d6fb5c4429b80e9c49725525f5bdced6f",
-      "bytes": 6843,
+      "input_sha256": "2b53e14e709c817675e94808e9e2a071eff74192fa039ef834e780e0c2237f74",
+      "sha256": "2b53e14e709c817675e94808e9e2a071eff74192fa039ef834e780e0c2237f74",
+      "bytes": 8629,
       "export_modified": false
     },
     {
@@ -52,9 +52,9 @@
       "source": "docs/github/develop/STATUS.md",
       "destination": "docs/STATUS.md",
       "license": "Apache-2.0",
-      "input_sha256": "f3cd0e57275a98f51c95bf4ba749520f08931d9634e2ee7a22f094bb84f31d9d",
-      "sha256": "f3cd0e57275a98f51c95bf4ba749520f08931d9634e2ee7a22f094bb84f31d9d",
-      "bytes": 8413,
+      "input_sha256": "f76876b21e4c23bde65598cfab344329188122bab873a0ac8f170f8f4d66675a",
+      "sha256": "f76876b21e4c23bde65598cfab344329188122bab873a0ac8f170f8f4d66675a",
+      "bytes": 9856,
       "export_modified": false
     },
     {
@@ -70,9 +70,9 @@
       "source": "docs/github/develop/run_owned_tests.py",
       "destination": "tools/run_owned_tests.py",
       "license": "Apache-2.0",
-      "input_sha256": "58228f4c3fbebdc9fc44a07f168946260fcab946da1b5552fe6a113c0592e59d",
-      "sha256": "58228f4c3fbebdc9fc44a07f168946260fcab946da1b5552fe6a113c0592e59d",
-      "bytes": 4216,
+      "input_sha256": "6f580e5c9ab0bc0d7475224611f0f0118dda5aa706f250386fe8520f41ffdba4",
+      "sha256": "6f580e5c9ab0bc0d7475224611f0f0118dda5aa706f250386fe8520f41ffdba4",
+      "bytes": 4910,
       "export_modified": false
     },
     {
@@ -106,18 +106,18 @@
       "source": "src/GigaBredr.cpp",
       "destination": "src/GigaBredr.cpp",
       "license": "Apache-2.0",
-      "input_sha256": "990344063c64b86753f75bb943b85336fc0e4e9cc62ce2a18261eb6412625cc8",
-      "sha256": "990344063c64b86753f75bb943b85336fc0e4e9cc62ce2a18261eb6412625cc8",
-      "bytes": 24065,
+      "input_sha256": "9943740c12b98415fccae1e73bc02a8cab878f60731a6cf4a50df637ba25c045",
+      "sha256": "9943740c12b98415fccae1e73bc02a8cab878f60731a6cf4a50df637ba25c045",
+      "bytes": 25184,
       "export_modified": false
     },
     {
       "source": "src/GigaBredr.h",
       "destination": "src/GigaBredr.h",
       "license": "Apache-2.0",
-      "input_sha256": "1a2314b438c6c907a064c5416c2bc25f39bf6e70884b254ee872a070291a0751",
-      "sha256": "1a2314b438c6c907a064c5416c2bc25f39bf6e70884b254ee872a070291a0751",
-      "bytes": 4519,
+      "input_sha256": "964cd70b2c0d266a5da0662165bb97055c8089b7d85566e2d28ad4d2e32867f1",
+      "sha256": "964cd70b2c0d266a5da0662165bb97055c8089b7d85566e2d28ad4d2e32867f1",
+      "bytes": 4782,
       "export_modified": false
     },
     {
@@ -277,9 +277,9 @@
       "source": "src/owned/BleTypes.h",
       "destination": "src/owned/BleTypes.h",
       "license": "Apache-2.0",
-      "input_sha256": "843f917db489c12bc5cd1569e893cfe3b334674d4eb7cf06c560e026b6d33658",
-      "sha256": "843f917db489c12bc5cd1569e893cfe3b334674d4eb7cf06c560e026b6d33658",
-      "bytes": 1614,
+      "input_sha256": "71cf6cf581b350626999f877bf32076c9cea1ad5537134c56789acdb9380950e",
+      "sha256": "71cf6cf581b350626999f877bf32076c9cea1ad5537134c56789acdb9380950e",
+      "bytes": 3405,
       "export_modified": false
     },
     {
@@ -306,9 +306,9 @@
       "license": "Apache-2.0",
       "input_relative_path": "src/bth_acl_tx.c",
       "original_sha256": "81d560205e167414d7c541fbbf7988163b33f8a19760598e8a62b12d9fa9f72c",
-      "input_sha256": "81d560205e167414d7c541fbbf7988163b33f8a19760598e8a62b12d9fa9f72c",
-      "sha256": "81d560205e167414d7c541fbbf7988163b33f8a19760598e8a62b12d9fa9f72c",
-      "bytes": 2350,
+      "input_sha256": "ee644d97fae18efac9a9bdadf05b341fc7d367fa9757d764330c9ff9a0cd9987",
+      "sha256": "ee644d97fae18efac9a9bdadf05b341fc7d367fa9757d764330c9ff9a0cd9987",
+      "bytes": 2636,
       "export_modified": false
     },
     {
@@ -317,9 +317,9 @@
       "license": "Apache-2.0",
       "input_relative_path": "include/bth_acl_tx.h",
       "original_sha256": "b89f41b9ee9fc7ee8daee4a249744b9e4893bc80f71faddba63ea35a3df74f65",
-      "input_sha256": "b89f41b9ee9fc7ee8daee4a249744b9e4893bc80f71faddba63ea35a3df74f65",
-      "sha256": "b89f41b9ee9fc7ee8daee4a249744b9e4893bc80f71faddba63ea35a3df74f65",
-      "bytes": 1217,
+      "input_sha256": "65b09e0c5a122f02ab496b7eb53d4aa016014f2303994e08a3a7ae4d1b5dd880",
+      "sha256": "65b09e0c5a122f02ab496b7eb53d4aa016014f2303994e08a3a7ae4d1b5dd880",
+      "bytes": 1468,
       "export_modified": false
     },
     {
@@ -460,9 +460,9 @@
       "license": "Apache-2.0",
       "input_relative_path": "src/bth_cmdq.c",
       "original_sha256": "d1d73eed1584cfc9a9d58fbdc2b30fd911b8874861029eb6ed9f10428215f260",
-      "input_sha256": "d1d73eed1584cfc9a9d58fbdc2b30fd911b8874861029eb6ed9f10428215f260",
-      "sha256": "d1d73eed1584cfc9a9d58fbdc2b30fd911b8874861029eb6ed9f10428215f260",
-      "bytes": 4604,
+      "input_sha256": "b1d96ad78f847641182f5c85a2d151fc54a0302c5ae427e5d4c3e9c628076062",
+      "sha256": "b1d96ad78f847641182f5c85a2d151fc54a0302c5ae427e5d4c3e9c628076062",
+      "bytes": 4658,
       "export_modified": false
     },
     {
@@ -471,9 +471,9 @@
       "license": "Apache-2.0",
       "input_relative_path": "include/bth_cmdq.h",
       "original_sha256": "1fece2e3969ee0a64ccffa7fe91b418403d0466f2f5e23137395bccb2a28212d",
-      "input_sha256": "1fece2e3969ee0a64ccffa7fe91b418403d0466f2f5e23137395bccb2a28212d",
-      "sha256": "1fece2e3969ee0a64ccffa7fe91b418403d0466f2f5e23137395bccb2a28212d",
-      "bytes": 2082,
+      "input_sha256": "35d81081bba8d03e0c61ad2b8da7a3d74096528e532e934fbb80d646b6572fcc",
+      "sha256": "35d81081bba8d03e0c61ad2b8da7a3d74096528e532e934fbb80d646b6572fcc",
+      "bytes": 2244,
       "export_modified": false
     },
     {
@@ -482,9 +482,9 @@
       "license": "Apache-2.0",
       "input_relative_path": "src/bth_control_tx.c",
       "original_sha256": "4589d51c04871c660446ff84377a2799df9bea63996b795ab851257f0aebc72b",
-      "input_sha256": "282405a8152d6132b564d8a71f69019fd8cf7e7c838831adea8262b0d32fba2e",
-      "sha256": "282405a8152d6132b564d8a71f69019fd8cf7e7c838831adea8262b0d32fba2e",
-      "bytes": 6226,
+      "input_sha256": "bac07aa06fa58816c94c369487adffa6e6564a92fa94d5f10fc05cbcf0f41495",
+      "sha256": "bac07aa06fa58816c94c369487adffa6e6564a92fa94d5f10fc05cbcf0f41495",
+      "bytes": 8156,
       "export_modified": false
     },
     {
@@ -493,9 +493,9 @@
       "license": "Apache-2.0",
       "input_relative_path": "include/bth_control_tx.h",
       "original_sha256": "f19db356492cbfcd46aac294ea428a347188258c01eb6c94ea2cca9f8a59e76c",
-      "input_sha256": "f57809fc5b9d3048eb8048d0c1b794b5c8af987361af7e900f11468a6d9fd8c9",
-      "sha256": "f57809fc5b9d3048eb8048d0c1b794b5c8af987361af7e900f11468a6d9fd8c9",
-      "bytes": 2574,
+      "input_sha256": "9f489cb2cc09ec9b77e525cd5d5339c020caa3363f0774336b4c98e830c93c62",
+      "sha256": "9f489cb2cc09ec9b77e525cd5d5339c020caa3363f0774336b4c98e830c93c62",
+      "bytes": 3314,
       "export_modified": false
     },
     {
@@ -636,9 +636,9 @@
       "license": "Apache-2.0",
       "input_relative_path": "src/bth_le_transport.c",
       "original_sha256": "e3c8b02cab8d1bdd372a3c13f1ebb761c63579cec632f2f4ab7c4a1447c838e1",
-      "input_sha256": "e3c8b02cab8d1bdd372a3c13f1ebb761c63579cec632f2f4ab7c4a1447c838e1",
-      "sha256": "e3c8b02cab8d1bdd372a3c13f1ebb761c63579cec632f2f4ab7c4a1447c838e1",
-      "bytes": 5882,
+      "input_sha256": "0188ec295ee51b1fca05a60e438e39b325497107edad5b497b463c0ca0cb1245",
+      "sha256": "0188ec295ee51b1fca05a60e438e39b325497107edad5b497b463c0ca0cb1245",
+      "bytes": 12535,
       "export_modified": false
     },
     {
@@ -647,9 +647,9 @@
       "license": "Apache-2.0",
       "input_relative_path": "include/bth_le_transport.h",
       "original_sha256": "f5d4fc078eab3001dcc619ebf37cb58051502fe43f4d9163ce258421690edb82",
-      "input_sha256": "f5d4fc078eab3001dcc619ebf37cb58051502fe43f4d9163ce258421690edb82",
-      "sha256": "f5d4fc078eab3001dcc619ebf37cb58051502fe43f4d9163ce258421690edb82",
-      "bytes": 1767,
+      "input_sha256": "79f56a9810170d8ae34ae581886950d9414aa4a3eabc0eb68e877b6c68894e8b",
+      "sha256": "79f56a9810170d8ae34ae581886950d9414aa4a3eabc0eb68e877b6c68894e8b",
+      "bytes": 4175,
       "export_modified": false
     },
     {
@@ -887,36 +887,36 @@
       "source": "src/owned/LeProfiles.cpp",
       "destination": "src/owned/LeProfiles.cpp",
       "license": "Apache-2.0",
-      "input_sha256": "01fee9b07f43493612b03d2bb83e1e1d42dac319183b1f3531848301fd58b1b2",
-      "sha256": "01fee9b07f43493612b03d2bb83e1e1d42dac319183b1f3531848301fd58b1b2",
-      "bytes": 15117,
+      "input_sha256": "f2b40466bfb50b14dbffb3b2c595ca8b94f995b05bc5ab6c29430408eee2532b",
+      "sha256": "f2b40466bfb50b14dbffb3b2c595ca8b94f995b05bc5ab6c29430408eee2532b",
+      "bytes": 24084,
       "export_modified": false
     },
     {
       "source": "src/owned/LeProfiles.h",
       "destination": "src/owned/LeProfiles.h",
       "license": "Apache-2.0",
-      "input_sha256": "48a0cde5a69f78eddb934a15210cfc55a4e4d44f3623f580f311b655857551fb",
-      "sha256": "48a0cde5a69f78eddb934a15210cfc55a4e4d44f3623f580f311b655857551fb",
-      "bytes": 2919,
+      "input_sha256": "c1cf50b90fb02d80f04d80dabd98c6c25d6b6c675ea8d7c8c1b4ca8077a3ba5c",
+      "sha256": "c1cf50b90fb02d80f04d80dabd98c6c25d6b6c675ea8d7c8c1b4ca8077a3ba5c",
+      "bytes": 4035,
       "export_modified": false
     },
     {
       "source": "src/owned/OwnedHost.cpp",
       "destination": "src/owned/OwnedHost.cpp",
       "license": "Apache-2.0",
-      "input_sha256": "99adcb01fcc49fe5ee43a77dd0bfe711a57fbd8bbc64c73f6ccaf40fea07c6cb",
-      "sha256": "99adcb01fcc49fe5ee43a77dd0bfe711a57fbd8bbc64c73f6ccaf40fea07c6cb",
-      "bytes": 39547,
+      "input_sha256": "793dcfc5f164b52aac7031fe480654dd4522b6874b08ad919600b087e412641a",
+      "sha256": "793dcfc5f164b52aac7031fe480654dd4522b6874b08ad919600b087e412641a",
+      "bytes": 42680,
       "export_modified": false
     },
     {
       "source": "src/owned/OwnedHost.h",
       "destination": "src/owned/OwnedHost.h",
       "license": "Apache-2.0",
-      "input_sha256": "3a6dcc1c6adc9dcab480dced4b833aacae1ac2f630747bf206877f6582556d31",
-      "sha256": "3a6dcc1c6adc9dcab480dced4b833aacae1ac2f630747bf206877f6582556d31",
-      "bytes": 5844,
+      "input_sha256": "55f26e2fcdcd163dee9d822c5421af7611996ce2b8be1fbdde3fd7eb82ee14e7",
+      "sha256": "55f26e2fcdcd163dee9d822c5421af7611996ce2b8be1fbdde3fd7eb82ee14e7",
+      "bytes": 6253,
       "export_modified": false
     },
     {
@@ -1013,9 +1013,9 @@
       "source": "examples/Receiver/Receiver.ino",
       "destination": "examples/Receiver/Receiver.ino",
       "license": "Apache-2.0",
-      "input_sha256": "6499e68d83fed2a0f4c6f0c9aceb3d6a56628c194c064eec364f0862372f98e6",
-      "sha256": "6499e68d83fed2a0f4c6f0c9aceb3d6a56628c194c064eec364f0862372f98e6",
-      "bytes": 12225,
+      "input_sha256": "a3fc96c2a6860e3f21e89876369b8f434255d3bd033f4e1be5526b0e57432b83",
+      "sha256": "a3fc96c2a6860e3f21e89876369b8f434255d3bd033f4e1be5526b0e57432b83",
+      "bytes": 13809,
       "export_modified": false
     },
     {
@@ -1049,18 +1049,18 @@
       "source": "tests/test_owned_ble.cpp",
       "destination": "tests/test_owned_ble.cpp",
       "license": "Apache-2.0",
-      "input_sha256": "3861396d30029d085ad6cf37f7d0e246f0e8692982a53e6d663a4960214f7920",
-      "sha256": "3861396d30029d085ad6cf37f7d0e246f0e8692982a53e6d663a4960214f7920",
-      "bytes": 14830,
+      "input_sha256": "b898036414cb374cf34255a4743be18aced20adb5f29153c78dbba793a0a29f4",
+      "sha256": "b898036414cb374cf34255a4743be18aced20adb5f29153c78dbba793a0a29f4",
+      "bytes": 15068,
       "export_modified": false
     },
     {
       "source": "tests/test_owned_host.cpp",
       "destination": "tests/test_owned_host.cpp",
       "license": "Apache-2.0",
-      "input_sha256": "f9ba248d30128db3cf21c37ad7235e6fbe993bdbb33596c7219c54344cbed37b",
-      "sha256": "f9ba248d30128db3cf21c37ad7235e6fbe993bdbb33596c7219c54344cbed37b",
-      "bytes": 14666,
+      "input_sha256": "7ee6983ca6efb64a75263f4feaa680011766d9eb804d0bbfc56f73304e5e3e85",
+      "sha256": "7ee6983ca6efb64a75263f4feaa680011766d9eb804d0bbfc56f73304e5e3e85",
+      "bytes": 15018,
       "export_modified": false
     },
     {
@@ -1085,9 +1085,9 @@
       "source": "docs/github/develop/BUILD.json",
       "destination": "docs/BUILD.json",
       "license": "Apache-2.0",
-      "input_sha256": "74ba18850508422c69d2f5c9c934123f9fd3ad7204a44bfe0232a455cd7ff3e2",
-      "sha256": "74ba18850508422c69d2f5c9c934123f9fd3ad7204a44bfe0232a455cd7ff3e2",
-      "bytes": 60886,
+      "input_sha256": "39fe811408af24e96eb536c9c0975306f4ad82213fe7ffb73ed2957ab81c4464",
+      "sha256": "39fe811408af24e96eb536c9c0975306f4ad82213fe7ffb73ed2957ab81c4464",
+      "bytes": 61907,
       "export_modified": false
     },
     {
@@ -4448,9 +4448,9 @@
       "source": "tests/support/owned_radio/OwnerRtos.h",
       "destination": "tests/support/owned_radio/OwnerRtos.h",
       "license": "Apache-2.0 project source/test",
-      "input_sha256": "5df4a39190d5bdfd9decee33fce6c7e7131155bef4109b1ce00732f575de4c3c",
-      "sha256": "5df4a39190d5bdfd9decee33fce6c7e7131155bef4109b1ce00732f575de4c3c",
-      "bytes": 2802,
+      "input_sha256": "cc48c89cada545393b6ed84480acdd1e806959fb6334e996ba2e5aa6e7f07945",
+      "sha256": "cc48c89cada545393b6ed84480acdd1e806959fb6334e996ba2e5aa6e7f07945",
+      "bytes": 2971,
       "export_modified": false
     },
     {
@@ -4466,9 +4466,9 @@
       "source": "tests/test_owned_host_ble_commands.cpp",
       "destination": "tests/test_owned_host_ble_commands.cpp",
       "license": "Apache-2.0 project source/test",
-      "input_sha256": "242ed5e2a60986efa4bea54109ac69ea572023a3f8080a14a9b6ad662d5e2d19",
-      "sha256": "242ed5e2a60986efa4bea54109ac69ea572023a3f8080a14a9b6ad662d5e2d19",
-      "bytes": 9263,
+      "input_sha256": "e385629bff067f3a8415fce046ae9b0e1f1a86f0bd751e6fe49c4ca3e6e278e4",
+      "sha256": "e385629bff067f3a8415fce046ae9b0e1f1a86f0bd751e6fe49c4ca3e6e278e4",
+      "bytes": 9393,
       "export_modified": false
     },
     {
@@ -4520,9 +4520,9 @@
       "source": "tests/test_owned_host_mixed_att.cpp",
       "destination": "tests/test_owned_host_mixed_att.cpp",
       "license": "Apache-2.0 project source/test",
-      "input_sha256": "600886e173ef8a4be8f8e5e790ede74b5eb9d67941750ef716c29cd64fd1b688",
-      "sha256": "600886e173ef8a4be8f8e5e790ede74b5eb9d67941750ef716c29cd64fd1b688",
-      "bytes": 8794,
+      "input_sha256": "fe45fe142f92e3fa3c1797d2a92aab5f3287cfc1dbc868d39b353dc17e81a5af",
+      "sha256": "fe45fe142f92e3fa3c1797d2a92aab5f3287cfc1dbc868d39b353dc17e81a5af",
+      "bytes": 9123,
       "export_modified": false
     },
     {
@@ -4601,9 +4601,9 @@
       "source": "tests/test_owned_host_le_requests.cpp",
       "destination": "tests/test_owned_host_le_requests.cpp",
       "license": "Apache-2.0 project source/test",
-      "input_sha256": "73a89bf28447579211d9ee7ff7a19163ff28f33703e7c12f422f73ca986c14a5",
-      "sha256": "73a89bf28447579211d9ee7ff7a19163ff28f33703e7c12f422f73ca986c14a5",
-      "bytes": 4729,
+      "input_sha256": "5f33b58210b0f0be758181711cfdafffa0d3d594157516c73776e7b31ed850e9",
+      "sha256": "5f33b58210b0f0be758181711cfdafffa0d3d594157516c73776e7b31ed850e9",
+      "bytes": 4772,
       "export_modified": false
     },
     {
@@ -4631,6 +4631,87 @@
       "input_sha256": "8489822e527eb4bce576a54b7e0e2484b638cc99185bdcb1cca4bd10b8fea8a7",
       "sha256": "8489822e527eb4bce576a54b7e0e2484b638cc99185bdcb1cca4bd10b8fea8a7",
       "bytes": 4617,
+      "export_modified": false
+    },
+    {
+      "source": "tests/test_ble_audio_qos.cpp",
+      "destination": "tests/test_ble_audio_qos.cpp",
+      "license": "Apache-2.0 project source/test",
+      "input_sha256": "02bbd9439f3a9f018a6e1bc1db867d45ff3f86a99b5c0c1ff0b77b5c859f7092",
+      "sha256": "02bbd9439f3a9f018a6e1bc1db867d45ff3f86a99b5c0c1ff0b77b5c859f7092",
+      "bytes": 10245,
+      "export_modified": false
+    },
+    {
+      "source": "tests/owned_core/test_ble_audio_qos.c",
+      "destination": "tests/owned_core/test_ble_audio_qos.c",
+      "license": "Apache-2.0 project source/test",
+      "input_sha256": "e7242eb2f7c844457debc96a721d3cce99c242eddda987ca816e75278c0bd5f3",
+      "sha256": "e7242eb2f7c844457debc96a721d3cce99c242eddda987ca816e75278c0bd5f3",
+      "bytes": 4597,
+      "export_modified": false
+    },
+    {
+      "source": "tests/test_ble_nonblocking.cpp",
+      "destination": "tests/test_ble_nonblocking.cpp",
+      "license": "Apache-2.0 project source/test",
+      "input_sha256": "a09e86661763c02242b35e8fb4f01e010812e58171cac2b9bc5b889066216915",
+      "sha256": "a09e86661763c02242b35e8fb4f01e010812e58171cac2b9bc5b889066216915",
+      "bytes": 4192,
+      "export_modified": false
+    },
+    {
+      "source": "tests/test_ble_connection_preference.cpp",
+      "destination": "tests/test_ble_connection_preference.cpp",
+      "license": "Apache-2.0 project source/test",
+      "input_sha256": "3b86bef96cd4fefc3c9c60b6ba3faa2ce8d8114a622c31597596def63c7d67d3",
+      "sha256": "3b86bef96cd4fefc3c9c60b6ba3faa2ce8d8114a622c31597596def63c7d67d3",
+      "bytes": 24760,
+      "export_modified": false
+    },
+    {
+      "source": "tests/owned_core/test_le_connection_preference.c",
+      "destination": "tests/owned_core/test_le_connection_preference.c",
+      "license": "Apache-2.0 project source/test",
+      "input_sha256": "a13d5e7c77b877ee015cc2c3d410222b9e39b5d27bec9dcb7b2f0ad7882e84cf",
+      "sha256": "a13d5e7c77b877ee015cc2c3d410222b9e39b5d27bec9dcb7b2f0ad7882e84cf",
+      "bytes": 19162,
+      "export_modified": false
+    },
+    {
+      "source": "docs/validation/ble-audio-priority.md",
+      "destination": "docs/ble-audio-priority.md",
+      "license": "Apache-2.0 project source/test",
+      "input_sha256": "0a180a8ffe6f39c85b90a8efaeec508cd18ceacda23da321f1641125305254fc",
+      "sha256": "0a180a8ffe6f39c85b90a8efaeec508cd18ceacda23da321f1641125305254fc",
+      "bytes": 5735,
+      "export_modified": false
+    },
+    {
+      "source": "docs/validation/ble-audio-priority.json",
+      "destination": "docs/ble-audio-priority.json",
+      "license": "Apache-2.0 project source/test",
+      "input_sha256": "c4238483a91ccacce8579d0bba82c23f3174d18a446bfea8134453543d7fc43a",
+      "sha256": "c4238483a91ccacce8579d0bba82c23f3174d18a446bfea8134453543d7fc43a",
+      "bytes": 7777,
+      "export_modified": false
+    },
+    {
+      "source": "tests/owned_core/test_le_transport.c",
+      "destination": "tests/owned_core/test_le_transport.c",
+      "license": "Apache-2.0 project source/test",
+      "input_sha256": "9462bdbb1573bf02b50befb7818319900f214ad9db9dde0136217685a6b61273",
+      "sha256": "9462bdbb1573bf02b50befb7818319900f214ad9db9dde0136217685a6b61273",
+      "bytes": 6743,
+      "export_modified": false
+    },
+    {
+      "source": "tests/owned_core/test_le_control.c",
+      "destination": "tests/owned_core/test_le_control.c",
+      "license": "Apache-2.0 project source/test",
+      "input_sha256": "e6b41bd17ddc2fbedae76ce1a6001a3c05bd6dc79ea99bfe18fdcec9b6aab0ae",
+      "sha256": "e6b41bd17ddc2fbedae76ce1a6001a3c05bd6dc79ea99bfe18fdcec9b6aab0ae",
+      "bytes": 2954,
       "export_modified": false
     }
   ]

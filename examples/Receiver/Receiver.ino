@@ -5,6 +5,7 @@
 using namespace giga_bredr;
 GigaBredr receiver;
 ReceiverConsole console;
+BleConnectionPreference requestedConnectionPreference;
 void diagnostic(const char* message, void*) { console.print("GBR_EVENT ms=%lu %s\n", (unsigned long)millis(), message); }
 void configured(const CodecConfig& c, void*) {
   console.print("GBR_CONFIG codec=%s rate=%lu channels=%u bits=%u bitrate=%lu duration_us=%lu\n", codecName(c.codec), (unsigned long)c.sample_rate, c.channels, c.bits_per_sample, (unsigned long)c.bitrate, (unsigned long)c.frame_duration_us);
@@ -28,6 +29,7 @@ void setup() {
   config.volume_changed=volume; config.metadata_changed=metadata;
   // Hardware-compatible pins are selected before begin(); -1 disables MCLK.
   config.i2s.bclk=70; config.i2s.data=72; config.i2s.lrck=GIGA_BREDR_I2S_WS_PIN; config.i2s.mclk=-1;
+  requestedConnectionPreference=config.ble.audio_connection_preference;
   Status status=receiver.begin(config);
   console.print("GBR_BEGIN status=%s compiled_mask=%08lx\n", statusName(status), (unsigned long)receiver.availableCodecs());
   console.print("GBR_PINS BCLK=%d DIN=%d LRCK=%d MCLK=%d\n",int(config.i2s.bclk),int(config.i2s.data),int(config.i2s.lrck),int(config.i2s.mclk));
@@ -65,6 +67,17 @@ void loop() {
       (unsigned long long)s.lhdc_right_concealed_frames, (unsigned long long)s.lhdc_frame_muted_blocks,
       (unsigned long long)s.lhdc_frame_muted_frames);
     auto b=receiver.bleStats(); auto t=receiver.audioDiagnostics();
+    console.print("GBR_BLE_QOS ms=%lu generation=%lu data_fragments=%lu data_bytes=%lu paced_deferrals=%lu urgent_bypasses=%lu\n",
+      (unsigned long)millis(),(unsigned long)b.generation,(unsigned long)b.qos_data_fragments,(unsigned long)b.qos_data_bytes,
+      (unsigned long)b.qos_paced_deferrals,(unsigned long)b.qos_urgent_bypasses);
+    const auto& c=b.connection;const auto& requested=requestedConnectionPreference;
+    console.print("GBR_BLE_CONN ms=%lu gen=%lu requested=%u/%u/%u/%u enabled=%u started=%u stage=%u error=%u submitted=%u/%u/%u/%u feature_sub=%lu update_sub=%lu reply_sub=%lu signal_queued=%lu status_reports=%lu command_status=%u actual_known=%u actual_source=%u actual=%u/%u/%u update_seen=%u update_status=%u match=%u\n",
+      (unsigned long)millis(),(unsigned long)b.generation,unsigned(requested.interval_min),unsigned(requested.interval_max),unsigned(requested.latency),unsigned(requested.timeout),
+      unsigned(requested.enabled),unsigned(c.preference_started),unsigned(c.preference_stage),unsigned(c.preference_error),
+      unsigned(c.submitted_min),unsigned(c.submitted_max),unsigned(c.submitted_latency),unsigned(c.submitted_timeout),
+      (unsigned long)c.feature_submissions,(unsigned long)c.update_submissions,(unsigned long)c.reply_submissions,(unsigned long)c.signaling_requests_queued,
+      (unsigned long)c.command_status_reports,unsigned(c.command_status),unsigned(c.known),unsigned(c.source),unsigned(c.interval),unsigned(c.latency),unsigned(c.timeout),
+      unsigned(c.update_reported),unsigned(c.update_status),unsigned(c.matches_preference));
     console.print("GBR_TIMING ms=%lu epoch=%lu rtp_packets=%llu gaps=%llu missing=%llu duplicates=%llu backward=%llu arrival_max_us=%lu queue_depth=%lu queue_high=%lu queue_full=%llu residence_max_us=%lu work_packets=%llu work_max_us=%lu decode_work_max_us=%lu write_wait_max_us=%lu output_epoch=%lu refills=%llu real_frames=%llu missing_pcm_frames=%llu minimum_pcm=%lu underrun_records=%lu ble_advertising=%u ble_connected=%u ble_mtu=%u ble_writes=%lu ble_notifications=%lu ble_command_drops=%lu\n",
       (unsigned long)millis(),(unsigned long)t.rtp.epoch,(unsigned long long)t.rtp.packets,
       (unsigned long long)t.rtp.forward_gaps,(unsigned long long)t.rtp.missing_sequences,

@@ -35,6 +35,22 @@ uint32_t clockUs() {
 }
 void waitOne() {}
 #endif
+// Foreground BLE data calls never wait for the radio actor's ownership lock.
+// Lifecycle and snapshot access retain their original synchronization.
+struct TryLock {
+    Mutex& mutex; bool held;
+    explicit TryLock(Mutex& m):mutex(m),held(false) {
+#if defined(ARDUINO)
+        held=mutex.trylock();
+#else
+        held=mutex.try_lock();
+#endif
+    }
+    ~TryLock(){if(held)mutex.unlock();}
+    explicit operator bool()const{return held;}
+    TryLock(const TryLock&)=delete;
+    TryLock& operator=(const TryLock&)=delete;
+};
 bool sameConfiguration(const CodecConfig& a, const CodecConfig& b) {
     return a.codec == b.codec && a.sample_rate == b.sample_rate && a.bitrate == b.bitrate &&
         a.frame_duration_us == b.frame_duration_us && a.channels == b.channels &&
@@ -446,12 +462,14 @@ AudioDiagnostics GigaBredr::audioDiagnostics() const {
 }
 Status GigaBredr::bleNotify(const uint8_t* data, size_t length) {
     if (!impl_) return Status::Unsupported;
-    Lock lock(impl_->radio_mutex);
+    TryLock lock(impl_->radio_mutex);
+    if (!lock) return Status::Busy;
     return detail::radioBleNotify(data, length);
 }
 Status GigaBredr::bleNotify(const BleWrite& origin) {
     if (!impl_) return Status::Unsupported;
-    Lock lock(impl_->radio_mutex);
+    TryLock lock(impl_->radio_mutex);
+    if (!lock) return Status::Busy;
     const BleStats peer = detail::radioBleStats();
     if (!origin.generation || !peer.connected || peer.generation != origin.generation)
         return Status::InvalidArgument;
@@ -459,7 +477,8 @@ Status GigaBredr::bleNotify(const BleWrite& origin) {
 }
 bool GigaBredr::bleReadWrite(BleWrite& value) {
     if (!impl_) return false;
-    Lock lock(impl_->radio_mutex);
+    TryLock lock(impl_->radio_mutex);
+    if (!lock) return false;
     return detail::radioBleReadWrite(value);
 }
 }
