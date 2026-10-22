@@ -66,6 +66,15 @@ struct I2sBufferGeometry {
   uint32_t half_frames = 0, ring_frames = 0;
   size_t dma_bytes = 0, ring_offset = 0, total_bytes = 0;
 };
+// H747 CLKGEN/HAL: ratio1 bypass is DIV0/ODD1; ratio3 is forbidden.
+inline bool i2sPrescaler(uint32_t rate,bool mclk,uint32_t& div,uint32_t& odd) {
+ I2sClock c;if(!i2sClock(rate,c))return false;
+ const uint32_t unit=(mclk?256u:64u)*rate;
+ if(!unit || c.kernel_hz%unit)return false;
+ const uint32_t ratio=c.kernel_hz/unit;
+ if(!ratio || ratio==3 || ratio>511)return false;
+ div=ratio/2;odd=ratio&1u;return true;
+}
 inline bool i2sBufferGeometry(uint32_t rate, uint16_t buffer_ms, I2sBufferGeometry& out) {
   out = {};
   I2sClock clock;

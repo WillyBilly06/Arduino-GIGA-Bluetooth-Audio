@@ -7,12 +7,16 @@ allocation and PCM5102A I2S output. **Continuous audio is not qualified.**
 This refresh includes the current Classic lifecycle/configuration fixes,
 transactional HCI credits, one-command signaling SDUs, UART owner wake, PCM
 reserve recovery, copied pending ATT requests and LHDC concealment counters.
+The latest update also copies valid LE key/parameter requests under command
+pressure without falsely stopping Classic; replies queue later in owner poll.
 These correctness fixes do not establish a cure for the remaining audio gaps.
 A recent live LHDC192kHz/24-bit/fixed1000kbps test completed ten512-byte GATT
 ACK/exact echoes but added twelve timestamp/inner steps and1.605s prepared
 silence. A later45s BLE-disconnected epoch still added three steps/.351s;
 advertising remained enabled. Both measured LHDC concealment branches stayed0.
-See [measured status and limits](docs/STATUS.md).
+The latest55s default-pin test completed ten512-byte GATT echoes yet added six
+timestamp/inner steps and.794s prepared silence. These unmatched tests do not
+establish improvement. See [measured status and limits](docs/STATUS.md).
 
 ## Full supplied codec source
 
@@ -40,9 +44,12 @@ PCM fidelity. `docs/BUILD.json` records this export's actual build and tests.
 | GND | GND |
 
 Use the supply required by the actual breakout,3.3V digital signaling and
-Philips I2S. Stereo slots are32-bit with24-bit samples left-aligned. D68/MCLK is
-unused; the PCM5102A can use its BCLK PLL. **Runtime I2S pin selection and optional
-MCLK output have been requested but are not implemented in this snapshot.**
+Philips I2S. Stereo slots are32-bit with24-bit samples left-aligned. MCLK is disabled by
+default (`-1`); the PCM5102A can use its BCLK PLL. Runtime `config.i2s` selects
+hardware-compatible SPI1/2/3 pins, validated against27 board signal routes. Only
+MCLK accepts `-1`, which leaves that pad unused. Optional MCLK is256Fs; alternate
+pads and MCLK electrical output remain physically unqualified. See
+[valid routes and limits](docs/runtime-i2s-pins.md).
 Do not infer clock accuracy or physical audio from compilation/counters.
 
 ## Build and API
@@ -60,6 +67,10 @@ giga_bredr::GigaBredr receiver;
 void setup() {
   giga_bredr::ReceiverConfig config;
   config.name = "GIGA Audio";
+  config.i2s.bclk = 70;
+  config.i2s.data = 72;
+  config.i2s.lrck = 74;
+  config.i2s.mclk = -1; // Disabled; use68 for the compatible I2S2 MCLK route.
   receiver.begin(config);
 }
 void loop() { receiver.poll(); delay(1); }

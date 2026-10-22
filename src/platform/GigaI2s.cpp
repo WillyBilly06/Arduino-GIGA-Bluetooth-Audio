@@ -28,8 +28,18 @@ bool owned=false,pllOwned=false,dmaReady=false;
 enum : uint32_t { Stopped=0, Running=1, Priming=2 };
 uint32_t outputPhase=Stopped;
 uint32_t oldVector=0,oldPriority=0,oldSpiClock=0,oldPllDiv=0,oldPllFrac=0,oldPllCfg=0,oldPllM=0;
-constexpr I2sPinPlan pinPlan=i2sPinPlan(GIGA_BREDR_I2S_WS_PIN);
-I2sGpioSnapshot oldPinsB,oldPinsI;
+I2sRoutePlan pinPlan;
+I2sGpioSnapshot oldPins[4];
+GPIO_TypeDef* gpioPort(uint8_t port) {
+  switch(port){case 0:return GPIOA;case 1:return GPIOB;case 2:return GPIOC;case 3:return GPIOD;case 6:return GPIOG;case 8:return GPIOI;default:return nullptr;}
+}
+void gpioClock(uint8_t port) {
+  switch(port){case 0:__HAL_RCC_GPIOA_CLK_ENABLE();break;case 1:__HAL_RCC_GPIOB_CLK_ENABLE();break;case 2:__HAL_RCC_GPIOC_CLK_ENABLE();break;case 3:__HAL_RCC_GPIOD_CLK_ENABLE();break;case 6:__HAL_RCC_GPIOG_CLK_ENABLE();break;case 8:__HAL_RCC_GPIOI_CLK_ENABLE();break;}
+}
+SPI_TypeDef* spiInstance(uint8_t id){return id==1?SPI1:id==2?SPI2:SPI3;}
+void spiClockEnable(){switch(pinPlan.peripheral){case 1:__HAL_RCC_SPI1_CLK_ENABLE();break;case 2:__HAL_RCC_SPI2_CLK_ENABLE();break;case 3:__HAL_RCC_SPI3_CLK_ENABLE();break;}}
+void spiReset(){switch(pinPlan.peripheral){case 1:__HAL_RCC_SPI1_FORCE_RESET();__HAL_RCC_SPI1_RELEASE_RESET();break;case 2:__HAL_RCC_SPI2_FORCE_RESET();__HAL_RCC_SPI2_RELEASE_RESET();break;case 3:__HAL_RCC_SPI3_FORCE_RESET();__HAL_RCC_SPI3_RELEASE_RESET();break;}}
+void spiClockDisable(){switch(pinPlan.peripheral){case 1:__HAL_RCC_SPI1_CLK_DISABLE();break;case 2:__HAL_RCC_SPI2_CLK_DISABLE();break;case 3:__HAL_RCC_SPI3_CLK_DISABLE();break;}}
 I2sGpioRegisters gpioRegisters(GPIO_TypeDef* gpio) {
   return {gpio->MODER,gpio->OTYPER,gpio->OSPEEDR,gpio->PUPDR,gpio->AFR[0],gpio->AFR[1]};
 }
@@ -55,12 +65,12 @@ void dmaError(DMA_HandleTypeDef*) {
   DMA1->HIFCR=DMA_HIFCR_CHTIF7|DMA_HIFCR_CTCIF7|DMA_HIFCR_CTEIF7|DMA_HIFCR_CDMEIF7|DMA_HIFCR_CFEIF7;
   recovery.end(micros(),ring?uint32_t(ring->queued()):0);
   ++stats.dma_errors; stats.running=false; stats.priming=false; __atomic_store_n(&outputPhase,uint32_t(Stopped),__ATOMIC_RELEASE);
-  CLEAR_BIT(SPI2->CFG1,SPI_CFG1_TXDMAEN); CLEAR_BIT(SPI2->CR1,SPI_CR1_SPE);
+  CLEAR_BIT(i2s.Instance->CFG1,SPI_CFG1_TXDMAEN); CLEAR_BIT(i2s.Instance->CR1,SPI_CR1_SPE);
 }
 void dmaIrq() {
   // If both halves completed before service, the producer missed an entire
   // DMA cycle. Do not write a buffer that may already be transmitting again.
-  if(SPI2->SR & SPI_SR_UDR) {
+  if(i2s.Instance->SR & SPI_SR_UDR) {
     DMA1_Stream7->CR &= ~DMA_SxCR_EN;
     dmaError(&dma); return;
   }
@@ -95,7 +105,7 @@ Status clockBegin(uint32_t rate) {
   oldPllDiv=RCC->PLL2DIVR; oldPllFrac=RCC->PLL2FRACR;
   oldPllM=RCC->PLLCKSELR&RCC_PLLCKSELR_DIVM2; oldPllCfg=RCC->PLLCFGR&pllMask;
   pllOwned=true;
-  RCC_PeriphCLKInitTypeDef clk={}; clk.PeriphClockSelection=RCC_PERIPHCLK_SPI2;
+  RCC_PeriphCLKInitTypeDef clk={}; clk.PeriphClockSelection=RCC_PERIPHCLK_SPI123;
   clk.Spi123ClockSelection=RCC_SPI123CLKSOURCE_PLL2;
   // 4 MHz VCI, VCO = kernel*8 (~361/393 MHz). Fractional PLL error < 1 ppm.
 
@@ -111,18 +121,21 @@ Status i2sBegin(uint32_t sampleRate) {
   return i2sBegin(sampleRate, GIGA_BREDR_I2S_BUFFER_MS);
 }
 Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs) {
+  return i2sBegin(sampleRate,bufferMs,I2sPins());
+}
+Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs,const I2sPins& pins) {
   if(owned) return Status::Busy;
   if(bufferMs<2 || bufferMs>100) return Status::InvalidArgument;
+  I2sRoutePlan selected;if(!i2sRoutePlan(pins,selected))return Status::InvalidArgument;
   I2sClock clock; if(!i2sClock(sampleRate,clock)) return Status::Unsupported;
+  uint32_t div=0,odd=0;if(!i2sPrescaler(sampleRate,pins.mclk!=-1,div,odd))return Status::Unsupported;
   I2sBufferGeometry geometry; if(!i2sBufferGeometry(sampleRate,bufferMs,geometry)) return Status::InvalidArgument;
   // SPI123 shares its kernel mux. Reject even clock-enabled idle SPI users.
   if(RCC->APB1LENR&(RCC_APB1LENR_SPI2EN|RCC_APB1LENR_SPI3EN)) return Status::Busy;
   if(RCC->APB2ENR&RCC_APB2ENR_SPI1EN) return Status::Busy;
-  __HAL_RCC_DMA1_CLK_ENABLE(); __HAL_RCC_GPIOI_CLK_ENABLE();
-  if(pinPlan.portB.pins) __HAL_RCC_GPIOB_CLK_ENABLE();
   if(DMA1_Stream7->CR || DMAMUX1_Channel7->CCR || NVIC_GetEnableIRQ(DMA1_Stream7_IRQn) || NVIC_GetPendingIRQ(DMA1_Stream7_IRQn)) return Status::Busy;
-  if(i2sPinsBusy(gpioRegisters(GPIOI),pinPlan.portI) ||
-     i2sPinsBusy(gpioRegisters(GPIOB),pinPlan.portB)) return Status::Busy;
+  for(uint8_t i=0;i<selected.count;++i)if(i2sPinsBusy(gpioRegisters(gpioPort(selected.pins[i].port)),I2sPortPins(1u<<selected.pins[i].pin)))return Status::Busy;
+  __HAL_RCC_DMA1_CLK_ENABLE();
   halfFrames=geometry.half_frames; // ~1 ms, each DMA half is cache-line isolated.
   const uint32_t ringFrames=geometry.ring_frames;
   const size_t dmaBytes=geometry.dma_bytes, ringOffset=geometry.ring_offset, bytes=geometry.total_bytes;
@@ -133,33 +146,34 @@ Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs) {
   ring=new(static_cast<uint8_t*>(arena)+dmaBytes) I2sRing(reinterpret_cast<int32_t*>(static_cast<uint8_t*>(arena)+ringOffset),ringFrames);
   Status result=clockBegin(sampleRate);
   if(result!=Status::Ok) { ring->~I2sRing(); ring=nullptr; release(arena); arena=nullptr; return result; }
+  pinPlan=selected;oldVector=NVIC_GetVector(DMA1_Stream7_IRQn);oldPriority=NVIC_GetPriority(DMA1_Stream7_IRQn);
   owned=true; stats=OutputStats(); stats.sample_rate=sampleRate;
   if(!++timingEpoch) ++timingEpoch;
   timing.beginEpoch(timingEpoch);
   recovery.begin(timingEpoch,ringFrames,halfFrames);
-  oldPinsI=i2sCapturePins(gpioRegisters(GPIOI),pinPlan.portI);
-  oldPinsB=i2sCapturePins(gpioRegisters(GPIOB),pinPlan.portB);
-  GPIO_InitTypeDef gpio={}; gpio.Pin=pinPlan.portI.pins; gpio.Mode=GPIO_MODE_AF_PP;
-  gpio.Pull=GPIO_NOPULL; gpio.Speed=GPIO_SPEED_FREQ_VERY_HIGH; gpio.Alternate=GPIO_AF5_SPI2;
-  HAL_GPIO_Init(GPIOI,&gpio);
-  if(pinPlan.portB.pins) { gpio.Pin=pinPlan.portB.pins; HAL_GPIO_Init(GPIOB,&gpio); }
-  __HAL_RCC_SPI2_CLK_ENABLE(); __HAL_RCC_SPI2_FORCE_RESET(); __HAL_RCC_SPI2_RELEASE_RESET();
-  memset(&i2s,0,sizeof(i2s)); i2s.Instance=SPI2;
+  for(uint8_t i=0;i<pinPlan.count;++i) {
+    const auto& pin=pinPlan.pins[i];gpioClock(pin.port);
+    oldPins[i]=i2sCapturePins(gpioRegisters(gpioPort(pin.port)),I2sPortPins(1u<<pin.pin));
+    GPIO_InitTypeDef gpio={};gpio.Pin=1u<<pin.pin;gpio.Mode=GPIO_MODE_AF_PP;
+    gpio.Pull=GPIO_NOPULL;gpio.Speed=GPIO_SPEED_FREQ_VERY_HIGH;gpio.Alternate=pin.af;HAL_GPIO_Init(gpioPort(pin.port),&gpio);
+  }
+  spiClockEnable();spiReset();
+  memset(&i2s,0,sizeof(i2s)); i2s.Instance=spiInstance(pinPlan.peripheral);
   // Avoid global weak MSP hooks: resources above are exclusively managed here.
   i2s.State=HAL_I2S_STATE_READY;
   i2s.Init.Mode=I2S_MODE_MASTER_TX; i2s.Init.Standard=I2S_STANDARD_PHILIPS;
-  i2s.Init.DataFormat=I2S_DATAFORMAT_32B; i2s.Init.MCLKOutput=I2S_MCLKOUTPUT_DISABLE;
+  i2s.Init.DataFormat=I2S_DATAFORMAT_32B; i2s.Init.MCLKOutput=pins.mclk==-1?I2S_MCLKOUTPUT_DISABLE:I2S_MCLKOUTPUT_ENABLE;
   i2s.Init.AudioFreq=sampleRate; i2s.Init.CPOL=I2S_CPOL_LOW; i2s.Init.FirstBit=I2S_FIRSTBIT_MSB;
   i2s.Init.WSInversion=I2S_WS_INVERSION_DISABLE; i2s.Init.Data24BitAlignment=I2S_DATA_24BIT_ALIGNMENT_LEFT;
   i2s.Init.MasterKeepIOState=I2S_MASTER_KEEP_IO_STATE_ENABLE;
-  oldVector=NVIC_GetVector(DMA1_Stream7_IRQn); oldPriority=NVIC_GetPriority(DMA1_Stream7_IRQn);
   memset(&dma,0,sizeof(dma)); dma.Instance=DMA1_Stream7;
-  dma.Init.Request=DMA_REQUEST_SPI2_TX; dma.Init.Direction=DMA_MEMORY_TO_PERIPH;
+  dma.Init.Request=pinPlan.peripheral==1?DMA_REQUEST_SPI1_TX:pinPlan.peripheral==2?DMA_REQUEST_SPI2_TX:DMA_REQUEST_SPI3_TX; dma.Init.Direction=DMA_MEMORY_TO_PERIPH;
   dma.Init.PeriphInc=DMA_PINC_DISABLE; dma.Init.MemInc=DMA_MINC_ENABLE;
   dma.Init.PeriphDataAlignment=DMA_PDATAALIGN_WORD; dma.Init.MemDataAlignment=DMA_MDATAALIGN_WORD;
   dma.Init.Mode=DMA_CIRCULAR; dma.Init.Priority=DMA_PRIORITY_HIGH; dma.Init.FIFOMode=DMA_FIFOMODE_DISABLE;
   dmaReady=false;
   if(HAL_I2S_Init(&i2s)!=HAL_OK) { i2sEnd(); return Status::HardwareError; }
+  if((i2s.Instance->I2SCFGR&(SPI_I2SCFGR_I2SDIV|SPI_I2SCFGR_ODD))!=((div<<SPI_I2SCFGR_I2SDIV_Pos)|(odd?SPI_I2SCFGR_ODD:0u))) {i2sEnd();return Status::HardwareError;}
   if(HAL_DMA_Init(&dma)!=HAL_OK) { i2sEnd(); return Status::HardwareError; }
   dmaReady=true;
   __HAL_LINKDMA(&i2s,hdmatx,dma);
@@ -194,7 +208,7 @@ void i2sEnd() {
   recovery.end(micros(),ring?uint32_t(ring->queued()):0);
   timing.endEpoch(timingEpoch);
   stats.running=false; stats.priming=false; stats.initialized=false; __atomic_store_n(&outputPhase,uint32_t(Stopped),__ATOMIC_RELEASE);
-  CLEAR_BIT(SPI2->CFG1,SPI_CFG1_TXDMAEN); CLEAR_BIT(SPI2->CR1,SPI_CR1_SPE);
+  CLEAR_BIT(i2s.Instance->CFG1,SPI_CFG1_TXDMAEN); CLEAR_BIT(i2s.Instance->CR1,SPI_CR1_SPE);
   if(dmaReady) { HAL_DMA_Abort(&dma); HAL_DMA_DeInit(&dma); dmaReady=false; }
   else {
     // Do not pass an uninitialized HAL DMA handle through abort/deinit when
@@ -204,9 +218,8 @@ void i2sEnd() {
     DMAMUX1_Channel7->CCR=0;
   }
   NVIC_ClearPendingIRQ(DMA1_Stream7_IRQn); NVIC_SetVector(DMA1_Stream7_IRQn,oldVector); NVIC_SetPriority(DMA1_Stream7_IRQn,oldPriority);
-  __HAL_RCC_SPI2_FORCE_RESET(); __HAL_RCC_SPI2_RELEASE_RESET(); __HAL_RCC_SPI2_CLK_DISABLE();
-  i2sRestorePins(gpioRegisters(GPIOI),pinPlan.portI,oldPinsI);
-  i2sRestorePins(gpioRegisters(GPIOB),pinPlan.portB,oldPinsB);
+  spiReset();spiClockDisable();
+  for(uint8_t i=0;i<pinPlan.count;++i) {const auto& pin=pinPlan.pins[i];i2sRestorePins(gpioRegisters(gpioPort(pin.port)),I2sPortPins(1u<<pin.pin),oldPins[i]);}
   restoreClock();
   if(ring) { ring->~I2sRing(); ring=nullptr; }
   release(arena); arena=nullptr; dmaWords=nullptr; stats.queued_frames=0; owned=false;
@@ -219,6 +232,7 @@ PcmRecoverySnapshot i2sRecovery() { Critical guard; return recovery.snapshot(); 
 namespace giga_bredr { namespace detail {
 Status i2sBegin(uint32_t) { return Status::Unsupported; }
 Status i2sBegin(uint32_t, uint16_t bufferMs) { return bufferMs<2 || bufferMs>100 ? Status::InvalidArgument : Status::Unsupported; }
+Status i2sBegin(uint32_t,uint16_t bufferMs,const I2sPins& pins) {I2sRoutePlan plan;return bufferMs<2 || bufferMs>100 || !i2sRoutePlan(pins,plan)?Status::InvalidArgument:Status::Unsupported;}
 size_t i2sWrite(const int32_t*,size_t) { return 0; }
 void i2sEnd() {}
 OutputStats i2sStats() { return OutputStats(); }

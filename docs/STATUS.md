@@ -78,8 +78,31 @@ independent decoder/reference and M7 evidence. Those do not qualify every codec
 on this host or every sender. Source grants and unresolved third-party table/
 decoder conditions remain in THIRD_PARTY; source inclusion is not relicensing.
 
-Fixed wiring is D70 BCLK, D74 WS and D72 data, with32-bit stereo slots.
-Runtime pin assignment and optional MCLK output are **not implemented** here.
+Default wiring is D70 BCLK, D74 WS and D72 data, with32-bit stereo slots.
+`ReceiverConfig.i2s` selects compatible SPI1/2/3 routes; MCLK defaults to-1
+(disabled), with optional256Fs output. Alternate pads and MCLK electrical
+behavior remain physically unqualified; see the routing update below.
 No source export/build action flashes hardware. Raw captures, addresses, user
 identities, phone packages, media fixtures, controller assets and binaries are
 excluded from this tree. No main-branch update or new release asset is implied.
+
+## Runtime pins and LE request admission update
+
+`ReceiverConfig.i2s.{bclk,data,lrck,mclk}` now selects a compatible SPI1/2/3
+hardware route. Defaults remain70/72/74/-1; legacy WS69 builds remain supported.
+The27 validated signal routes compose138 requested routes including disabled
+MCLK. Optional MCLK is256Fs with unchanged kernel clocks. Native/M7 evidence
+does not qualify physical alternate pins, MCLK frequency/duty cycle or a DAC.
+The readback-verified default three-wire route runs on target.
+
+Exact LE LTK Request13-byte and Remote Connection Parameter Request11-byte
+events now copy into existing profile-owned pending fields without requiring
+HCI command queue slots. Their real replies still queue later. A public-H4
+regression reproduced the previous false Classic stop under valid command
+pressure;5980 focused sanitizer checks preserve security/FIFO and real media
+credit return. This conditional bug does not establish the stable-epoch gap cause.
+
+A fresh55s LHDC192kHz/24-bit/fixed1000kbps default-pin test with ten512-byte GATT
+ACK/echoes still added six timestamp/inner steps and152448 prepared-zero frames
+(.794s), with outer loss0 and both concealment counters0. These workloads are
+unmatched to earlier cases; no quality improvement is inferred.

@@ -103,3 +103,7 @@ int main(int argc,char** argv){
     check(detail::memoryStats().current_bytes==0&&detail::memoryStats().current_blocks==0,"zero allocations at case end");
     std::printf("PASS %s checks=%u\n",name,checks);
 }
+
+namespace giga_bredr { namespace detail {
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins&){return i2sBegin(rate,ms);}
+}}

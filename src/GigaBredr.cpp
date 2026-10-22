@@ -7,6 +7,7 @@
 #include "codecs/Codecs.h"
 #include "platform/GigaRadio.h"
 #include "platform/GigaI2s.h"
+#include "platform/I2sPins.h"
 #include <atomic>
 #include <new>
 #include <string.h>
@@ -178,7 +179,7 @@ struct GigaBredr::Impl {
             if (!packet || !pcm) status = Status::OutOfMemory;
         }
         if (status == Status::Ok && options.enable_i2s) {
-            status = detail::i2sBegin(c.sample_rate, selected_buffers.pcm_buffer_ms); output_owned = status == Status::Ok;
+            status = detail::i2sBegin(c.sample_rate, selected_buffers.pcm_buffer_ms, options.i2s); output_owned = status == Status::Ok;
         }
         if (status != Status::Ok) { releaseCodec(); counters.last_error = status; return status; }
         format = c; pcm_frames = capacity; configured = true; counters.last_error = Status::Ok;
@@ -338,6 +339,8 @@ uint32_t GigaBredr::availableCodecs() { return detail::compiledCodecs(); }
 bool GigaBredr::setExternalAllocator(Allocate a, Free f, void* user) { return detail::setMemoryProvider(MemoryKind::External, a, f, user); }
 Status GigaBredr::begin(const ReceiverConfig& input) {
     if (impl_) return Status::Busy;
+    detail::I2sRoutePlan route;
+    if (input.enable_i2s && !detail::i2sRoutePlan(input.i2s, route)) return Status::InvalidArgument;
     if (!input.name || !*input.name || input.maximum_packet_bytes < 64 || input.maximum_packet_bytes > 65535 ||
         input.maximum_access_unit_bytes < 64 || input.maximum_access_unit_bytes > 65535 ||
         !input.queue_packets || input.queue_packets > 64 || !input.startup_packets || input.startup_packets > 64 ||

@@ -112,3 +112,7 @@ int main(){
     focusedChecks<GigaBredr::Impl>();
     printf("PASS owner wake realHNC/coalescing/CTS/RX/error/lifetime %u checks\n",checks);
 }
+
+namespace giga_bredr { namespace detail {
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins&){return i2sBegin(rate,ms);}
+}}

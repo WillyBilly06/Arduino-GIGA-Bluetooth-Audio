@@ -92,3 +92,7 @@ static void frontend() {
     puts("LHDC_FRONTEND_CONCEALMENT_SNAPSHOT_LIFETIME_PASS");
 }
 int main(int argc,char**argv){setvbuf(stdout,nullptr,_IONBF,0);if(argc<2 || !strcmp(argv[1],"vendor"))vendor();if(argc<2 || !strcmp(argv[1],"adapter"))adapter();if(argc<2 || !strcmp(argv[1],"frontend"))frontend();}
+
+namespace giga_bredr { namespace detail {
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins&){return i2sBegin(rate,ms);}
+}}

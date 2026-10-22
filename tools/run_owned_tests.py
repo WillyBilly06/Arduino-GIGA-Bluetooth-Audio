@@ -18,16 +18,17 @@ def main():
  actor=['src/owned/OwnedHost.cpp','src/owned/ClassicProfiles.cpp','src/owned/LeProfiles.cpp','src/platform/RadioProtocol.cpp']
  for n in ['test_single_hnc','test_single_signal']:
   exe=out/(n+'.exe');run([cc,'-std=c11',*flags,'tests/owned_core/'+n+'.c',*objects,'-o',exe]);run([exe])
- units=['test_owned_classic','test_owned_ble','test_owned_host','test_owned_host_review','test_owned_host_bootstrap','test_owned_host_ble_large','test_owned_host_service','test_owned_host_single_hnc','test_owned_host_hnc','test_owned_host_benign','test_owned_host_signaling','test_owned_host_ble_commands','test_owned_host_ble_unsubscribe','test_owned_host_config_reject','test_owned_host_abort','test_owned_host_scheduling','test_owned_host_classic_combined','test_owned_host_mixed_att','test_uart_tx_mailbox']
+ units=['test_owned_classic','test_owned_ble','test_owned_host','test_owned_host_review','test_owned_host_bootstrap','test_owned_host_ble_large','test_owned_host_service','test_owned_host_single_hnc','test_owned_host_hnc','test_owned_host_benign','test_owned_host_le_requests','test_owned_host_signaling','test_owned_host_ble_commands','test_owned_host_ble_unsubscribe','test_owned_host_config_reject','test_owned_host_abort','test_owned_host_scheduling','test_owned_host_classic_combined','test_owned_host_mixed_att','test_uart_tx_mailbox']
  for n in units:
   sources=actor[1:] if n in ('test_owned_host_scheduling','test_owned_host_classic_combined') else actor;exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,'tests/'+n+'.cpp',*sources,*objects,'-o',exe]);run([exe])
  frontend=['tests/empty_registry.cpp','src/GigaBredr.cpp','src/Types.cpp','src/detail/Memory.cpp','src/detail/Decoder.cpp','src/detail/Media.cpp','src/detail/PacketQueue.cpp','src/detail/AudioTiming.cpp']
- portable={'test_audio_timing':['src/detail/AudioTiming.cpp'],'test_rtp_discontinuity':['src/detail/AudioTiming.cpp'],'test_receiver':frontend,'test_receiver_lifetime':frontend,'test_i2s':[],'test_i2s_thread':[],'test_i2s_priming':[],'test_i2s_pins':[],'test_i2s_recovery':[],'test_i2s_runtime':['src/platform/GigaI2s.cpp']}
+ portable={'test_audio_timing':['src/detail/AudioTiming.cpp'],'test_rtp_discontinuity':['src/detail/AudioTiming.cpp'],'test_receiver':frontend,'test_receiver_lifetime':frontend,'test_i2s':[],'test_i2s_thread':[],'test_i2s_priming':[],'test_i2s_pins':[],'test_i2s_routes':[],'test_i2s_recovery':[],'test_i2s_runtime':['src/platform/GigaI2s.cpp']}
  for n,sources in portable.items():
   exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,*(['-pthread']if os.name!='nt'else[]),'tests/'+n+'.cpp',*sources,'-o',exe]);run([exe])
  exe=out/'test_ble_origin.exe';run([cxx,'-std=c++17',*flags,'-Itests/support/receiver_public','tests/test_ble_origin.cpp',*frontend,'src/owned/LeProfiles.cpp',*objects,'-o',exe])
  for case in ['actual_loop_reconnect','copy_retry','stale_generation','byte_value_semantics','disconnect_after_admission','stopped']:run([exe,case])
  exe=out/'test_i2s_pins_legacy.exe';run([cxx,'-std=c++17',*flags,'-DGIGA_BREDR_I2S_WS_PIN=69','tests/test_i2s_pins.cpp','-o',exe]);run([exe])
+ exe=out/'test_i2s_routes_legacy.exe';run([cxx,'-std=c++17',*flags,'-DGIGA_BREDR_I2S_WS_PIN=69','tests/test_i2s_routes.cpp','-o',exe]);run([exe])
  run([sys.executable,'tests/test_owned_wake.py','--cc',cc,'--cxx',cxx,*(['--sanitize']if a.sanitize else[]),*(['--asan']if a.asan else[])])
  print('PASS public synthetic receiver, owned host, HCI/ATT lifecycle, PCM recovery and wake checks; no physical qualification')
 if __name__=='__main__':main()

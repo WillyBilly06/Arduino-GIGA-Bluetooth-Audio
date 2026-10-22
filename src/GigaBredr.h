@@ -2,6 +2,7 @@
 #include "Types.h"
 #include "GigaBle.h"
 #include "AudioDiagnostics.h"
+#include "I2sConfig.h"
 
 namespace giga_bredr {
 // Zero fields inherit ReceiverConfig's global settings. Stats report the
@@ -38,6 +39,7 @@ struct ReceiverConfig {
     void (*volume_changed)(uint8_t absolute_volume_0_127, void* user) = nullptr;
     void (*metadata_changed)(uint8_t attribute_id, const char* text, size_t bytes, void* user) = nullptr;
     void* user = nullptr;
+    I2sPins i2s; // Hardware-compatible output route; optional MCLK=-1.
 };
 struct ReceiverStats {
     RadioStats radio;

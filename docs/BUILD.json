@@ -15,14 +15,14 @@
   "example": "examples/Receiver/Receiver.ino",
   "isolated_receiver_link": "PASS",
   "exported_library_translation_units": 168,
-  "compiler_input_set_sha256": "c5a543d84aa2ddda38b0f14c22d884568a21ed0606f2cbedaf7a54cd33b8e671",
+  "compiler_input_set_sha256": "dd598cc99856f01cdb89aad32c12ac40f80408fd3dff13787b4bc125c45dbfb6",
   "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
-  "private_application_sha256": "ecc564af1bc0f28e1b133bc34db0d9810aaed52e18cef2d8d5f948d33e8d1831",
-  "private_application_bytes": 463924,
+  "private_application_sha256": "0c3af8780490f3204776421dad9264b4c37e4e42d40d40a66ade0b444dd3def7",
+  "private_application_bytes": 465116,
   "elf_sections": {
-    "text": 459188,
+    "text": 460380,
     "data": 4736,
-    "bss": 327448
+    "bss": 327520
   },
   "private_binary_not_distributed": true,
   "vendor_original_input_hashes_checked": 257,
@@ -40,9 +40,15 @@
     "ble_origin_cases": 6,
     "uart_wake_checks": 85,
     "worker_lifetime_checks": 20,
-    "lhdc_concealment": "PASS controlled channel-flag propagation and frontend totals; no PCM oracle or acoustic claim"
+    "lhdc_concealment": "PASS controlled channel-flag propagation and frontend totals; no PCM oracle or acoustic claim",
+    "le_request_admission_checks": 5980,
+    "i2s_route_checks_per_WS_profile": 2983,
+    "i2s_WS_profiles": [
+      74,
+      69
+    ]
   },
-  "target_execution_of_this_public_profile": "Exporter does not flash hardware. Corresponding maintained runtime had measured ingress omissions with GATT and after BLE disconnect; see STATUS.md. This build is source/link evidence only.",
+  "target_execution_of_this_public_profile": "Exporter does not flash hardware. Corresponding maintained runtime runs default D70/D72/D74/-1; latest55s LHDC/GATT test retained six TS-inner discontinuities/.794s zeros. Alternate pins/MCLK electrical behavior remains unqualified; see STATUS.md.",
   "source_files": [
     {
       "path": "src/AudioDiagnostics.h",
@@ -58,11 +64,11 @@
     },
     {
       "path": "src/GigaBredr.cpp",
-      "sha256": "87ddb9f414a9d4b8654e54af4a2f3700823598a3ae9b75aa7d40c4574e8cb420"
+      "sha256": "990344063c64b86753f75bb943b85336fc0e4e9cc62ce2a18261eb6412625cc8"
     },
     {
       "path": "src/GigaBredr.h",
-      "sha256": "a2bb863e1f73052484caad4e5be1cbdcd7d5f0e6162cd7b608131a3d6323a77a"
+      "sha256": "1a2314b438c6c907a064c5416c2bc25f39bf6e70884b254ee872a070291a0751"
     },
     {
       "path": "src/GigaI2sOutput.h",
@@ -366,7 +372,7 @@
     },
     {
       "path": "src/owned/OwnedHost.cpp",
-      "sha256": "3af97d829570c3d9db49524f0b68edcbc2d300802c160844bedc62fc8b9628c0"
+      "sha256": "99adcb01fcc49fe5ee43a77dd0bfe711a57fbd8bbc64c73f6ccaf40fea07c6cb"
     },
     {
       "path": "src/owned/OwnedHost.h",
@@ -386,19 +392,19 @@
     },
     {
       "path": "src/platform/GigaI2s.cpp",
-      "sha256": "25b8d5884b27adcf0bcd3803be3c155a44665e128858bbe83ab109746b923667"
+      "sha256": "1329ac53dbb39e98405103fdcefeb9c681ab2d44587a005e7b61054bee15adbd"
     },
     {
       "path": "src/platform/GigaI2s.h",
-      "sha256": "7b9727dd4dc127f42550d9797559ff0697c08b9f2c3f6324821d8d54bd70beca"
+      "sha256": "4d66b3b730ea62c3c6ecba0e15677a85451764f5f2581e7f77a53d08c7c92ecc"
     },
     {
       "path": "src/platform/I2sBuffer.h",
-      "sha256": "0b7b8e3c02e3b225ccc5397fa2087941d6d26205f189da8c8247e4199af0b941"
+      "sha256": "689ff6b666155c18cf054cac6f4f2994fde3afa8d0cbf196b2cae3b2ff1f5a7e"
     },
     {
       "path": "src/platform/I2sPins.h",
-      "sha256": "d9adf456fbfc39549cbdc486ec8a0a4fe49f40edd305bb97ed46c13aad145b08"
+      "sha256": "1b3ef89408dc20e4f01a27aa08919fb6156ac198c0fbbaee7cd959503e1c4e33"
     },
     {
       "path": "src/platform/RadioProtocol.cpp",
@@ -414,7 +420,7 @@
     },
     {
       "path": "examples/Receiver/Receiver.ino",
-      "sha256": "a76bfad32882828acce18a43ca6a41c90772a0b72b1d51b157e0665231087ded"
+      "sha256": "deb0c821fb292509cff2846cd0ce7af83cd1c14cf3c3bd94db095c2a6158fb5e"
     },
     {
       "path": "src/vendor/codecs/sbc/include/oi_assert.h",
@@ -1467,6 +1473,10 @@
     {
       "path": "src/platform/PcmRecovery.h",
       "sha256": "fe95a44ccedf846a4ad1512374958500a1f91b6da91ab2d1d08ee640c0f049e0"
+    },
+    {
+      "path": "src/I2sConfig.h",
+      "sha256": "d4469fe14255fc3af9fb5e178df308531b47a58c1ca926a56122a5013dbc881c"
     }
   ],
   "snapshot_scope": "Stable four-packet receive-window per-H4-frame service with MTU517/512-byte GATT and optional per-codec buffers; defaults8/2/20 unchanged",
@@ -1519,6 +1529,6 @@
     "per_codec_overrides": "all zero inherit"
   },
   "receive_window": 4,
-  "arduino_program_storage_bytes": 459600,
-  "arduino_dynamic_globals_bytes": 53656
+  "arduino_program_storage_bytes": 460792,
+  "arduino_dynamic_globals_bytes": 53728
 }

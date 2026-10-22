@@ -14,6 +14,7 @@ static void volumeChanged(uint8_t v, void*) { observedVolume = v; }
 static void metadataChanged(uint8_t attribute, const char*, size_t bytes, void*) { observedAttribute = attribute; observedTextBytes = bytes; }
 namespace giga_bredr { namespace detail {
 static RadioCallbacks callbacks;
+static I2sPins selectedPins;
 static bool failOutput = false;
 static bool radioUnavailable = false;
 static unsigned radioEndCalls = 0;
@@ -47,6 +48,8 @@ OutputTimingSnapshot i2sTiming() { return {}; }
 int main() {
     GigaBredr receiver;
     ReceiverConfig config; config.maximum_packet_bytes = 128; config.maximum_access_unit_bytes = 128; config.queue_packets = 2;
+    config.i2s=I2sPins{91,47,84,15};
+    {ReceiverConfig bad=config;bad.i2s.mclk=-2;assert(receiver.begin(bad)==Status::InvalidArgument && detail::memoryStats().current_bytes==0);}
     uint8_t notification[] = {1,2,3}; BleWrite bleWrite;
     assert(receiver.bleNotify(notification, sizeof(notification)) == Status::Unsupported);
     assert(!receiver.bleReadWrite(bleWrite) && !receiver.bleStats().enabled);
@@ -66,6 +69,7 @@ int main() {
     assert(receiver.stats().absolute_volume == 64);
     CodecConfig format; format.codec = Codec::Sbc; format.channels = 1; format.sample_rate = 16000;
     assert(detail::callbacks.configure(format, detail::callbacks.user) == Status::Ok);
+    assert(detail::selectedPins.bclk==91 && detail::selectedPins.data==47 && detail::selectedPins.lrck==84 && detail::selectedPins.mclk==15);
     auto allocated = receiver.stats().memory.current_bytes;
     assert(receiver.stats().decoder_memory_bytes == 64);
     assert(detail::callbacks.configure(format, detail::callbacks.user) == Status::Ok);
@@ -259,3 +263,7 @@ int main() {
     printf("BUFFER_PROFILES idle=%zu sbc=%zu lhdc192=%zu failure_positions=%u\n",idleBytes,sbcBytes,lhdcBytes,failurePositions);
     puts("PASS receiver lazy open/idempotent config/mono pipeline/stop/failed output/failed allocation cleanup");
 }
+
+namespace giga_bredr { namespace detail {
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins& pins){selectedPins=pins;return i2sBegin(rate,ms);}
+}}

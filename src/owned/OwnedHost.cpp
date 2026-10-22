@@ -12,6 +12,8 @@ unsigned completionSlots(const bth_h4_frame_t& e){
  const auto p=e.event.params;
  // Connection Update Complete is ignored by both LE handlers; no command follows.
  if(e.event.code==0x3e&&p.data&&p.len==10&&p.data[0]==3)return 0;
+ // These LE requests copy into profile-owned pending fields; replies queue in poll.
+ if(e.event.code==0x3e&&p.data&&((p.len==13&&p.data[0]==5)||(p.len==11&&p.data[0]==6)))return 0;
  if(e.event.code==0x0e&&p.len>=3){uint16_t op=bth_read_le16(p.data+1);return op==0x040b||op==0x040c||op==0x040d||op==0x040e||op==0x042b||op==0x0434||op==0x042c||op==0x042d||op==0x1408?1:0;}
  if(e.event.code==0x0f&&p.len==4){uint16_t op=bth_read_le16(p.data+2);return op==0x0411||op==0x0413?1:0;}
  return 2;

@@ -26,9 +26,11 @@ void setup() {
   config.ble.enabled=true; config.ble.maximum_mtu=517;
   config.diagnostic=diagnostic; config.configuration_changed=configured;
   config.volume_changed=volume; config.metadata_changed=metadata;
+  // Hardware-compatible pins are selected before begin(); -1 disables MCLK.
+  config.i2s.bclk=70; config.i2s.data=72; config.i2s.lrck=GIGA_BREDR_I2S_WS_PIN; config.i2s.mclk=-1;
   Status status=receiver.begin(config);
   console.print("GBR_BEGIN status=%s compiled_mask=%08lx\n", statusName(status), (unsigned long)receiver.availableCodecs());
-  console.print("GBR_PINS BCLK=70 DIN=72 LRCK=%u\n", unsigned(GIGA_BREDR_I2S_WS_PIN));
+  console.print("GBR_PINS BCLK=%d DIN=%d LRCK=%d MCLK=%d\n",int(config.i2s.bclk),int(config.i2s.data),int(config.i2s.lrck),int(config.i2s.mclk));
 }
 void loop() {
   receiver.poll();

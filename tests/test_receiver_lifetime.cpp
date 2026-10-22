@@ -143,3 +143,7 @@ int main(int argc,char** argv){
     else for(unsigned t=0;t<4;++t)for(unsigned a=0;a<6;++a)run(static_cast<Trigger>(t),static_cast<Action>(a));
     std::printf("PASS callback lifetime checks=%u deterministic_Impl_allocations=%u sizeof_GigaBredr=%zu alignof_GigaBredr=%zu\n",checks,arenaReuses,sizeof(GigaBredr),alignof(GigaBredr));
 }
+
+namespace giga_bredr { namespace detail {
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins&){return i2sBegin(rate,ms);}
+}}

@@ -54,3 +54,7 @@ int main(){
     }
     printf("PASS actual public startup/early wake/join/producer close/flag destruction %u checks\n",checks);
 }
+
+namespace giga_bredr { namespace detail {
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins&){return i2sBegin(rate,ms);}
+}}

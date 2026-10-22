@@ -29,8 +29,8 @@ static void le3_unchanged(){
 static void le3_bounds_and_other_events(){
  for(size_t n=0;n<=11;++n){Pressure p;auto event=le3();event.resize(n,0);p.f.event(0x3e,event);CHECK(p.f.host.deferred_count_==(n==10?0:1));CHECK(p.f.host.commands_.used==7&&p.f.host.commands_.sent_count==1&&p.f.host.flow_.command_credits==0);CHECK(p.f.host.radioStats().transport_errors==0);}
  {Pressure p;const uint8_t broken[]={0x3e,10,3,0,0x26,0,24,0,0,0,0xf4};p.f.host.receive(4,broken,sizeof broken,p.f.now);CHECK(p.f.host.radioStats().transport_errors==1);CHECK(p.f.host.flow_.command_credits==0);}
- // These valid command-producing LE events keep the original preflight path.
- for(auto event:{Bytes{5,0x26,0,0,0,0,0,0,0,0,0,0,0},Bytes{6,0x26,0,6,0,6,0,0,0,0xf4,1}}){Pressure p;p.f.event(0x3e,event);CHECK(p.f.host.deferred_count_==1&&p.f.host.commands_.used==7&&p.f.host.flow_.command_credits==0);}
+ // Exact LE requests copy pending data now; actual reply admission occurs in poll.
+ for(auto event:{Bytes{5,0x26,0,0,0,0,0,0,0,0,0,0,0},Bytes{6,0x26,0,6,0,6,0,0,0,0xf4,1}}){Pressure p;p.f.event(0x3e,event);CHECK(p.f.host.deferred_count_==0&&p.f.host.commands_.used==7&&p.f.host.flow_.command_credits==0);p.f.poll();p.unchanged();}
  {Pressure p;auto event=le3();event[0]=7;p.f.event(0x3e,event);CHECK(p.f.host.deferred_count_==1);}
 }
 static void le3_credits(){
