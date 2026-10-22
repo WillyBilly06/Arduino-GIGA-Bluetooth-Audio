@@ -2,6 +2,7 @@
 #include "Types.h"
 #include "GigaBle.h"
 #include "AudioDiagnostics.h"
+#include "AudioClock.h"
 #include "I2sConfig.h"
 
 namespace giga_bredr {
@@ -30,6 +31,7 @@ struct ReceiverConfig {
     CodecBufferConfig codec_buffers[static_cast<size_t>(Codec::Count)] = {}; // Index by Codec; data only until configured.
     bool external_buffers = false; // caller supplies/initializes external memory
     bool enable_i2s = true;
+    AudioClockConfig clock;
     bool apply_remote_volume = true;
     BleConfig ble;
     size_t host_stack_bytes = 8192;
@@ -42,6 +44,7 @@ struct ReceiverConfig {
     I2sPins i2s; // Hardware-compatible output route; optional MCLK=-1.
 };
 struct ReceiverStats {
+    AudioClockStats clock;
     RadioStats radio;
     OutputStats output;
     MemoryStats memory;
@@ -83,6 +86,16 @@ public:
     // Same-begin connection-bound reply: stale/disconnected origins return
     // InvalidArgument without updating TX. Discard origins after end()/begin().
     Status bleNotify(const BleWrite& origin);
+    // Same-begin generation from bleStats(): queues one LE-only HCI Disconnect.
+    // Discard the scalar after end()/begin(), as with BleWrite origins. Ok is
+    // admission, not physical departure; only a controller event clears gen.
+    // false holds future advertising until resume; Busy retries change no hold.
+    // Matching admitted duplicates are Ok without requeue/deadline extension;
+    // different options or an automatic close in progress return Busy.
+    Status bleDisconnect(uint32_t expected_generation,bool advertise_after_disconnect=true);
+    // Idempotent release of an advertising hold. Busy while a held peer is
+    // attached/disconnecting; actual advertising follows normal GAP/RX admission.
+    Status bleResumeAdvertising();
     // Pops one copied write from the GATT RX characteristic, if available.
     // Returns false without changing value when empty or the radio owner is busy.
     bool bleReadWrite(BleWrite& value);

@@ -265,6 +265,8 @@ RadioStats radioStats() { return context?context->host.radioStats():stopped_stat
 BleStats radioBleStats() { return context?context->host.bleStats():stopped_ble; }
 Status radioBleNotify(const uint8_t* data,size_t length) { return context?context->host.bleNotify(data,length):Status::Unsupported; }
 bool radioBleReadWrite(BleWrite& value) { return context && context->host.bleReadWrite(value); }
+Status radioBleDisconnect(uint32_t expected,bool advertise_after) { return context?context->host.bleDisconnect(expected,advertise_after):Status::Unsupported; }
+Status radioBleResumeAdvertising() { return context?context->host.bleResumeAdvertising():Status::Unsupported; }
 Status radioAvrcpInit(const RadioCallbacks&) { return Status::Unsupported; }
 void radioAvrcpPoll() {}
 void radioAvrcpDeinit() {}

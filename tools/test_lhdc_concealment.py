@@ -20,7 +20,7 @@ def main():
  commands=[];objects=[]
  for i,s in enumerate(sources):
   obj=out/(str(i)+'.o');cmd=[cc,'-std=c11',*flags,'-c',str(s),'-o',str(obj)];commands.append(cmd);subprocess.run(cmd,cwd=R,check=True);objects.append(str(obj))
- cpp=['tests/test_lhdc_concealment.cpp','src/codecs/Codecs.cpp','src/GigaBredr.cpp','src/Types.cpp','src/detail/Memory.cpp','src/detail/Decoder.cpp','src/detail/Media.cpp','src/detail/PacketQueue.cpp','src/detail/AudioTiming.cpp'];exe=out/('test_lhdc_concealment.exe'if os.name=='nt'else'test_lhdc_concealment');cmd=[cxx,'-std=c++14',*flags,*[str(R/x)for x in cpp],*objects,'-o',str(exe)];commands.append(cmd);subprocess.run(cmd,cwd=R,check=True)
+ cpp=['tests/test_lhdc_concealment.cpp','src/codecs/Codecs.cpp','src/GigaBredr.cpp','src/Types.cpp','src/detail/Memory.cpp','src/detail/Decoder.cpp','src/detail/Media.cpp','src/detail/PacketQueue.cpp','src/detail/AudioTiming.cpp','tests/support/clock_backend_unavailable.cpp'];exe=out/('test_lhdc_concealment.exe'if os.name=='nt'else'test_lhdc_concealment');cmd=[cxx,'-std=c++14',*flags,*[str(R/x)for x in cpp],*objects,'-o',str(exe)];commands.append(cmd);subprocess.run(cmd,cwd=R,check=True)
  results={}
  for case in ('vendor','adapter','frontend'):
   r=subprocess.run([str(exe),case],cwd=R,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True);(out/(case+'.log')).write_text(r.stdout);results[case]={'exit_code':r.returncode,'output':r.stdout}

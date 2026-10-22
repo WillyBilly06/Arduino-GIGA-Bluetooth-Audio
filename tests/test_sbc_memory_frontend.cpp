@@ -62,3 +62,9 @@ int main(){
     receiver.end();check(giga_bredr::detail::memoryStats().current_bytes==0,"mono frontend cleanup");
     puts("SBC_FRONTEND_MONO_STEREO_STRIDE_PASS");
 }
+
+// Link boundary for lifecycle APIs unused by this existing regression.
+namespace giga_bredr { namespace detail {
+Status radioBleDisconnect(uint32_t,bool){return Status::Unsupported;}
+Status radioBleResumeAdvertising(){return Status::Unsupported;}
+}}

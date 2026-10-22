@@ -7,6 +7,7 @@ struct RtpView {
 };
 Status parseRtp(const uint8_t* packet, size_t bytes, RtpView& result);
 struct MediaView { const uint8_t* data = nullptr; size_t bytes = 0; };
+struct MediaRetainedState { size_t retained_bytes = 0; uint32_t assembly_generation = 0; };
 class MediaAssembler {
 public:
     ~MediaAssembler() { close(); }
@@ -17,10 +18,13 @@ public:
     void consumed();
     void reset();
     void close();
+    // Read-only bookkeeping; no payload parsing/copy or acceptance change.
+    MediaRetainedState retainedState() const { return {used_, assembly_generation_}; }
 private:
     Codec codec_ = Codec::Count;
     uint8_t* assembly_ = nullptr;
     size_t capacity_ = 0, used_ = 0;
+    uint32_t assembly_generation_ = 0;
     uint16_t previous_sequence_ = 0;
     uint32_t timestamp_ = 0;
     uint8_t fragment_remaining_ = 0;

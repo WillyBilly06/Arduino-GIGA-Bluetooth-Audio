@@ -2,17 +2,8 @@
   "schema": 1,
   "qualification": "developmental source snapshot; hardware qualification pending",
   "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
-  "decoder_source_files": 257,
   "decoder_build_defaults": "Unchanged from local CodecBuildConfig.h",
   "license_clearance": "Not asserted; original terms and unresolved grants are listed in THIRD_PARTY.md",
-  "codec_translation_units": {
-    "sbc": 14,
-    "aac": 29,
-    "aptx": 1,
-    "ldac": 2,
-    "lhdc": 7,
-    "opus": 74
-  },
   "selected_codec_flags": [
     "SBC",
     "AAC",
@@ -23,11 +14,11 @@
     "LHDC V5",
     "Opus"
   ],
-  "version": "0.1.0-dev.3",
+  "version": "0.1.0-dev.4",
   "date": "2026-10-22",
-  "profile": "Full selected decoder set; current owned audio scheduling/control/MTU fixes, configuration-sized SBC and compact Opus storage, per-codec reserve profiles and portable audio regression coverage",
+  "profile": "Complete supplied decoder set; owned BLE lifecycle, common audio-clock accounting/control and selectively guarded PLL2 trim",
   "arduino_core": "arduino:mbed_giga 4.6.0",
-  "fqbn": "arduino:mbed_giga:giga",
+  "fqbn": "arduino:mbed_giga:giga:target_core=cm7",
   "jobs": 4,
   "abi": [
     "cortex-m7",
@@ -38,7 +29,7 @@
   "example": "examples/Receiver/Receiver.ino",
   "isolated_receiver_link": "PASS",
   "exported_library_translation_units": 168,
-  "compiler_input_set_sha256": "79f66b5dd5ac7347cba42a655f927ddc18a20cfed1f36a936a25f2e8b49133a0",
+  "compiler_input_set_sha256": "80a591e777b22ab6263eab8a95210dd8b5a52de85b8113c830ff015281dc24ce",
   "source_files": [
     {
       "path": "src/AudioDiagnostics.h",
@@ -54,11 +45,11 @@
     },
     {
       "path": "src/GigaBredr.cpp",
-      "sha256": "fbfa109d03cee29e7ed5bf75ad7bb44463fc25c09372bd587bba55172f868bd7"
+      "sha256": "f7e0c0f04733675aa26abb86096bec8764196f55f1f6c405acd89be1a3e6478e"
     },
     {
       "path": "src/GigaBredr.h",
-      "sha256": "964cd70b2c0d266a5da0662165bb97055c8089b7d85566e2d28ad4d2e32867f1"
+      "sha256": "ead1d208f9a1dc04d505f9ec7725c6fffe3a2906dba7eb351fd81523b43ab1a0"
     },
     {
       "path": "src/GigaI2sOutput.h",
@@ -94,11 +85,11 @@
     },
     {
       "path": "src/detail/Media.cpp",
-      "sha256": "966b324f10c1fe62f348865ac7269f931b08300a40f1b57233790e5e7585ab57"
+      "sha256": "0c84887e68f154967adef3f28b8b88c7fb3d2a159f7bb8137664abb09b5c213f"
     },
     {
       "path": "src/detail/Media.h",
-      "sha256": "fec4e8d30e47848b21e93064c1f5acfdc6e5147b51d5e7eb6a9cfb0479a6e298"
+      "sha256": "7fb7a2593a1bbfe8e97fc701e2b47f984ff27c2f98ba6d2e4e0a211da461ef2a"
     },
     {
       "path": "src/detail/Memory.cpp",
@@ -362,19 +353,19 @@
     },
     {
       "path": "src/owned/OwnedHost.cpp",
-      "sha256": "7a8afdbc62615eede8bdba84a7618ba5f2b14f2b94b39614b046221cce928c0f"
+      "sha256": "ea52f534f038177d19c7c926204728036315384f482a3832f7e5c4be40ecd793"
     },
     {
       "path": "src/owned/OwnedHost.h",
-      "sha256": "22d0e9e26294b87e0f7ce7d7cf18c643a168921462d28e59976d195c610e2573"
+      "sha256": "6ec1a88606d3a12d663c5f10749a6a4928055178d529215bbc78ce4e27050050"
     },
     {
       "path": "src/platform/OwnedRadio.cpp",
-      "sha256": "114ae821b61e8886cdf67a816b6b4b55881f3f391a1f9db9963fad2b8836a33c"
+      "sha256": "ed5829be050c4b8c261de59d270c72e9124d5f70d8c0a61bcefff4e67ee57811"
     },
     {
       "path": "src/platform/GigaRadio.h",
-      "sha256": "7ad3eb124101b6227c2ef821178cdae6056d013351ce863c7bf2df8e9f813ede"
+      "sha256": "b9e4192eb54a824045f18cf2f8f0325ad83f8dbc46dfc6f96e92abef02a53b55"
     },
     {
       "path": "src/platform/GigaAvrcp.h",
@@ -382,11 +373,11 @@
     },
     {
       "path": "src/platform/GigaI2s.cpp",
-      "sha256": "f76570909e299b0c447939dbf1d26cf94a99ebe71b6c9bd552a3d2e1d38918bc"
+      "sha256": "cd8f83b08ffd89e586b7d1fb8f9bf77821efe55ceaf920535fa407e54bb052d6"
     },
     {
       "path": "src/platform/GigaI2s.h",
-      "sha256": "4d66b3b730ea62c3c6ecba0e15677a85451764f5f2581e7f77a53d08c7c92ecc"
+      "sha256": "5c05080d4f9f2d2b28915317a51c4875137f2f3eb6d28bca7fc1c8b43bdbe735"
     },
     {
       "path": "src/platform/I2sBuffer.h",
@@ -410,7 +401,7 @@
     },
     {
       "path": "examples/Receiver/Receiver.ino",
-      "sha256": "9c2e3aae54945ce0150097a9b778b6418b88092ff15aaa9bd370dff7ceeafd6e"
+      "sha256": "d04265b198ecc51bfcdc4e7a75e4bb4587e9a88d8aebfc3fb7d5b6e1de253078"
     },
     {
       "path": "src/vendor/codecs/sbc/include/oi_assert.h",
@@ -1471,115 +1462,64 @@
     {
       "path": "src/detail/SbcConfig.h",
       "sha256": "aca2bab3d8d92550fe07ff38afd067b18e332cbd265bcced7a2d15770cb2fd2f"
+    },
+    {
+      "path": "src/AudioClock.h",
+      "sha256": "31ddd632cde1448d89dfe7f901ea2ca2da282ec8a9387c73c8030c57cd7e0722"
+    },
+    {
+      "path": "src/detail/AudioClockControl.h",
+      "sha256": "a0b4851f8b13adc4d829be7851117c55b2f1b124490e1f4267732c84ac57c3ed"
+    },
+    {
+      "path": "src/platform/I2sClockTrim.h",
+      "sha256": "62480f31d6ed89058f7e1f99fe7aa890340d6a0b2e9997fa2071d22245e9bb53"
     }
   ],
   "elf_sections": {
-    "text": 469740,
-    "data": 5088,
-    "bss": 327280
+    "text": 482472,
+    "data": 5344,
+    "bss": 327320
   },
   "private_binary_not_distributed": true,
+  "public_profile_binary_sha256": "ea46fd9890264334138a0c817215bd7dc0a2a374ce5af4237da834ee023457fe",
+  "public_profile_binary_bytes": 487816,
+  "public_profile_elf_sha256": "f6bf8c44b6806f3f86d37efa21338b2faecfe33b7d092c9e76ea7f51553dc4f5",
+  "arduino_program_bytes": 483280,
+  "arduino_global_bytes": 54136,
+  "arduino_program_storage_bytes": 483280,
+  "arduino_dynamic_globals_bytes": 54136,
+  "arduino_size_summary": {
+    "program_bytes": 483280,
+    "dynamic_bytes": 54136
+  },
+  "main_thread_stack_bytes": 32768,
+  "library_metadata_version_at_M7_build": "0.1.0-dev.4",
+  "final_source_metadata_version": "0.1.0-dev.4",
+  "snapshot_scope": "Exact dev.4 transformed compiler inputs with final field documentation; public binary remains separately identified and unexecuted.",
+  "public_build_source_state": "Final reviewed source tree; source commit/tag are bound by the external release manifest.",
+  "target_execution_of_this_public_profile": "NOT FLASHED OR EXECUTED. This transformed public binary is distinct from the private132 image. No physical frequency, RF, acoustic, all-phone or permanent-quality claim.",
+  "historical_host_translation_units": 0,
+  "decoder_source_files": 257,
   "vendor_original_input_hashes_checked": 257,
   "vendor_original_input_hashes_match": true,
   "selected_vendor_artifacts": 260,
-  "vendor_original_hash_check_scope": "All257 manifest original identities match the strict allowlist; all pinned imported files/260 vendor artifacts reverified. No importer rerun or blanket licensing clearance.",
-  "historical_host_translation_units": 0,
-  "export_safety_tests": {
-    "status": "PASS",
-    "passed": 17,
-    "scope": "Full real unchanged exporter safety suite after final dev.3 docs/version and reviewed startup/packet-label corrections; compiler inputs match fresh public M7/native proof"
-  },
-  "target_execution_of_this_public_profile": "NOT FLASHED OR EXECUTED. This independently built transformed public-profile binary is distinct from deployed maintained E69 despite equal byte counts. Native checks and M7 compilation/link do not establish RF, electrical/analog output, acoustic quality, all-codec interoperability or sustained continuity.",
-  "snapshot_scope": "Exact transformed current owned-host source plus reviewed publication test candidate. Current native actor/control/MTU/output-wait/priming regressions and all-codec M7 link are qualified separately from target reception. Root owns final version, documentation synchronization and target receipts.",
-  "public_profile_binary_sha256": "d088c35d287483db5acb761af2f0cfaf4e3297be06c0360d103f5cf94e009ed3",
-  "public_profile_binary_bytes": 474828,
-  "public_profile_elf_sha256": "3c60b7196d3d9889bee110f734caf1fc3f37bc1004c7435c757824ea8c4c1e36",
-  "arduino_program_bytes": 470432,
-  "arduino_global_bytes": 53840,
-  "arduino_program_storage_bytes": 470432,
-  "arduino_dynamic_globals_bytes": 53840,
-  "arduino_size_summary": {
-    "program_bytes": 470432,
-    "dynamic_bytes": 53840
-  },
-  "main_thread_stack_bytes": 32768,
-  "public_build_source_revision": "42e2d39743ddb99b967a9a75bfdb4206580d8a56",
-  "public_build_source_state": "Dirty maintained memory/audio integration plus reviewed private five-file publication candidate; not a final release source commit",
-  "public_build_candidate_patch_sha256": "72f5a3d3b7b21780526d329f29b22fb292a075c2f9a36ee196b2605842dd13ab",
-  "receiver_defaults": {
-    "queue_packets": 8,
-    "startup_packets": 2,
-    "pcm_buffer_ms": 20,
-    "per_codec_overrides": {
-      "LhdcV5": {
-        "queue_packets": 32,
-        "startup_packets": 26,
-        "maximum_packet_bytes": 2048,
-        "pcm_buffer_ms": 20
-      },
-      "Ldac": {
-        "queue_packets": 40,
-        "startup_packets": 16
-      },
-      "Sbc": {
-        "queue_packets": 12,
-        "startup_packets": 4
-      },
-      "Aac": {
-        "queue_packets": 16,
-        "startup_packets": 6,
-        "maximum_packet_bytes": 2048
-      },
-      "AacHe": {
-        "queue_packets": 16,
-        "startup_packets": 6,
-        "maximum_packet_bytes": 2048
-      },
-      "Aptx": {
-        "queue_packets": 24,
-        "startup_packets": 10,
-        "maximum_packet_bytes": 2048
-      },
-      "AptxHd": {
-        "queue_packets": 32,
-        "startup_packets": 15,
-        "maximum_packet_bytes": 2048
-      },
-      "Opus": {
-        "queue_packets": 16,
-        "startup_packets": 7,
-        "maximum_packet_bytes": 2048
-      }
-    },
-    "example_connection_preference": {
-      "interval_min": 96,
-      "interval_max": 96,
-      "latency": 2,
-      "timeout": 500,
-      "scope": "Requested values only; this public binary has not executed"
-    }
-  },
-  "ble_audio_defaults": {
-    "audio_priority": true,
-    "audio_data_interval_ms": 10,
-    "audio_acl_fragment_bytes": 27,
-    "optional_connection_preference": {
-      "enabled": true,
-      "interval_min": 64,
-      "interval_max": 96,
-      "latency": 2,
-      "timeout": 500
-    },
-    "scope": "Host scheduling and optional standard preference only; no hard RF airtime floor or smooth-audio cure claim"
+  "codec_translation_units": {
+    "sbc": 14,
+    "aac": 29,
+    "aptx": 1,
+    "ldac": 2,
+    "lhdc": 7,
+    "opus": 74
   },
   "linked_profile_checks": {
     "owned_backend": true,
     "owned_host_components": 4,
     "forbidden_host_symbols": 0,
-    "inert_arduino_sdk_globals": [
-      "ble::impl::(anonymous namespace)::CCCD_UUID",
-      "ble::impl::BLEInstanceBase::_init_callback"
-    ],
+    "all_codec_ops_linked": true,
+    "exact_selected_translation_units": true,
+    "maintained_source_leakage": false,
+    "historical_host_source_leakage": false,
     "uart_baud": 2000000,
     "default_WS_pin": 74,
     "original_controller_patch_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
@@ -1598,341 +1538,389 @@
       "command_queue": 2204,
       "command_sent": 8,
       "LeProfiles": 3080,
-      "OwnedHost": 34432
-    },
-    "all_codec_ops_linked": true,
-    "exact_selected_translation_units": true,
-    "maintained_source_leakage": false,
-    "historical_host_source_leakage": false,
-    "maintained_reference_translation_units": 199,
-    "historical_only_translation_units_excluded": 31
+      "OwnedHost": 34440
+    }
   },
   "exported_synthetic_host_tests": {
     "status": "PASS",
-    "portable_owned_runner": "Fresh actual exported actor/HCI/LE/Classic/ATT/PCM/wake runner including codec-memory and audio-scheduling children",
+    "runner": "tools/run_owned_tests.py",
+    "runner_compile_and_execution_commands": 128,
+    "all_command_exits_zero": true,
     "address_sanitizer": true,
     "undefined_behavior_trap": true,
     "vptr_sanitizer_excluded": true,
-    "runner_compile_and_execution_commands": 123,
-    "all_command_exits_zero": true,
+    "clock_child": "tools/test_audio_clock.py",
+    "clock_cases": [
+      "test_audio_clock_control",
+      "test_media_retained",
+      "test_clock_frontend",
+      "test_clock_trim",
+      "test_source_counters",
+      "test_clock_release",
+      "test_clock_priority:uart",
+      "test_clock_priority:nested",
+      "test_clock_priority:contract",
+      "test_clock_priority:duration",
+      "test_clock_priority:guard"
+    ],
+    "clock_verbatim_extraction_count": 13,
+    "clock_source_inputs_verified_unchanged": true,
     "audio_scheduling_child_cases": 20,
-    "audio_scheduling_C_kernels": 27,
-    "audio_scheduling_inputs_rehashed_unchanged": 365,
-    "audio_scheduling_scope": "Actual source plus explicit native hardware/RTOS boundaries: expanded signaling/MTU, wait ownership/lifecycle, finite block-duration deadlines, priming and healthy/stopped output consumers; no M7 timing/RF/fidelity proof",
-    "LHDC_boundary_checks": {
-      "sanitizers": true,
-      "controlled_channel_call_replacements": 3,
-      "frame_adapter_frontend_results": {
-        "vendor": 0,
-        "adapter": 0,
-        "frontend": 0
+    "codec_memory_status": "PASS",
+    "BLE_lifecycle_actor_checks": 852,
+    "BLE_lifecycle_facade_checks": 138,
+    "LHDC_boundary_child_status": "PASS",
+    "scope": "Fresh actual transformed source with explicit native codec/RTOS/DMA/register boundaries; no MCU timing/masking or physical quality proof"
+  },
+  "clock_defaults": {
+    "enabled": true,
+    "limit_ppm": 500,
+    "slew_ppm_per_second": 10,
+    "minimum_ring": "four actual rounded DMA halves; deliberately tiny rings remain playable without tracking",
+    "actuator": "Owned PLL2 fractional numerator only, Q16 accepted interval; BASEPRI0x60 at validated CMSISgroup3/DMA6/UART0/PendSV>=6",
+    "readback_scope": "Coefficient/register readback is not physical frequency"
+  },
+  "independent_codec_reference_scope": "No encoded media is distributed or newly exercised by this exported-profile run. Original target vectors and sender interoperability remain separate dated validation documents.",
+  "export_safety_tests": {
+    "status": "PASS",
+    "passed": 17,
+    "scope": "Unchanged exporter real safety suite on exact fresh compiler binding and BUILD pin"
+  },
+  "maintained_runtime_passive_30min_observation": {
+    "tested_binary_sha256": "1322442572a145d7dd7e82c14f601479383eeeedc6bd882809aba1e08024f62c",
+    "host_interval_seconds": 1801.9370000000054,
+    "receiver_interval_ms": 1802510,
+    "complete_diagnostic_cycles": 902,
+    "actual_ble_parameters": "96/2/500",
+    "scope": "Passive established BLE connection during LHDC192; separate finite reconnect/GATT and six-codec tests. Software counters, not acoustics or physical frequency.",
+    "raw_sha256": "4ea005534b7e9431e708dc1306dda1321d9e89f5a8176bb273b3186356e67036",
+    "receipt_sha256": "6737b8a8e6cb33f87e462988d135bb4790522f92737f5019ed1ad7b5f8f603c0",
+    "counter_deltas": {
+      "GBR_STATUS.errors": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
       },
-      "scope": "Controlled actual branches and lifecycle; not independent PCM correctness"
+      "GBR_STATUS.dropped": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_STATUS.underruns": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_STATUS.dma_errors": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_STATUS.output_dropped": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_STATUS.transport_errors": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_STATUS.diagnostic_drops": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_STATUS.console_drops": {
+        "first": 9410,
+        "last": 9410,
+        "delta": 0
+      },
+      "GBR_LHDC_CONCEAL.right_blocks": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_LHDC_CONCEAL.right_pcm_frames": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_LHDC_CONCEAL.muted_blocks": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_LHDC_CONCEAL.muted_pcm_frames": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_TIMING.gaps": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_TIMING.missing": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_TIMING.duplicates": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_TIMING.backward": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_TIMING.queue_full": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_TIMING.missing_pcm_frames": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_TIMING.underrun_records": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_TIMING.ble_command_drops": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RTP.clock_disc": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RTP.source_changes": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RTP.discontinuities": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RTP.timestamp_steps": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RTP.inner_steps": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RTP.payload_unknown": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RTP.payload_malformed": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RTP.disc_records": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RTP.disc_not_retained": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RECOVERY.entries": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RECOVERY.resumes": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RECOVERY_FRAMES.starved": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RECOVERY_FRAMES.held": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RECOVERY_FRAMES.hold_refills": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RECOVERY_FRAMES.current_hold": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RECOVERY_FRAMES.max_hold": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RECOVERY_FRAMES.records": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_RECOVERY_FRAMES.lost": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_PCM_TRANSITION.synthesized": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_PCM_TRANSITION.zero_padding": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_PCM_TRANSITION.mixed_real": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_CLOCK_FRAMES.D": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_CLOCK_FRAMES.Z": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_CLOCK_FRAMES.assembly_discards": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_CLOCK_WORK.refused": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_CLOCK_WORK.invalid": {
+        "first": 0,
+        "last": 0,
+        "delta": 0
+      },
+      "GBR_STATUS.rx_packets": {
+        "first": 389366,
+        "last": 749772,
+        "delta": 360406
+      },
+      "GBR_STATUS.rx_bytes": {
+        "first": 250071826,
+        "last": 480731666,
+        "delta": 230659840
+      },
+      "GBR_STATUS.hci_packets": {
+        "first": 401577,
+        "last": 770651,
+        "delta": 369074
+      },
+      "GBR_STATUS.hci_bytes": {
+        "first": 253285794,
+        "last": 486864358,
+        "delta": 233578564
+      },
+      "GBR_STATUS.decoded_packets": {
+        "first": 389222,
+        "last": 749630,
+        "delta": 360408
+      },
+      "GBR_STATUS.frames": {
+        "first": 368570076,
+        "last": 714561756,
+        "delta": 345991680
+      },
+      "GBR_STATUS.output_frames": {
+        "first": 104443392,
+        "last": 450435264,
+        "delta": 345991872
+      },
+      "GBR_TIMING.rtp_packets": {
+        "first": 108823,
+        "last": 469229,
+        "delta": 360406
+      },
+      "GBR_TIMING.work_packets": {
+        "first": 108799,
+        "last": 469207,
+        "delta": 360408
+      },
+      "GBR_TIMING.refills": {
+        "first": 543977,
+        "last": 2346018,
+        "delta": 1802041
+      },
+      "GBR_TIMING.real_frames": {
+        "first": 104443584,
+        "last": 450435456,
+        "delta": 345991872
+      },
+      "GBR_RTP.source_packets": {
+        "first": 108823,
+        "last": 469229,
+        "delta": 360406
+      },
+      "GBR_CLOCK_FRAMES.A": {
+        "first": 104448000,
+        "last": 450439680,
+        "delta": 345991680
+      },
+      "GBR_CLOCK_FRAMES.P": {
+        "first": 104443584,
+        "last": 450435456,
+        "delta": 345991872
+      },
+      "GBR_CLOCK_FRAMES.F": {
+        "first": 108799,
+        "last": 469207,
+        "delta": 360408
+      },
+      "GBR_CLOCK_FRAMES.G": {
+        "first": 104447040,
+        "last": 450438720,
+        "delta": 345991680
+      },
+      "GBR_CLOCK_WORK.observations": {
+        "first": 266474,
+        "last": 1147238,
+        "delta": 880764
+      },
+      "GBR_CLOCK_WORK.decisions": {
+        "first": 542,
+        "last": 2342,
+        "delta": 1800
+      },
+      "GBR_CLOCK_WORK.accepted": {
+        "first": 542,
+        "last": 2342,
+        "delta": 1800
+      }
     }
-  },
-  "exported_codec_memory_tests": {
-    "status": "PASS",
-    "address_sanitizer": true,
-    "undefined_behavior_trap": true,
-    "legacy_UBSan_exclusions": [
-      "shift",
-      "signed-integer-overflow"
-    ],
-    "compile_and_execution_commands": 95,
-    "compiled_C_units": {
-      "sbc": 14,
-      "opus": 74
-    },
-    "source_files_rehashed_unchanged": 356,
-    "sbc": {
-      "configurations": 256,
-      "frames": 15360,
-      "malformed_before_allocation": 22,
-      "allocation_budget_attempts": 32,
-      "no_info_choices": 256,
-      "bounded_vendor_API_configurations": 16,
-      "partial_raw_configurations": 384,
-      "partial_pulls": 2080,
-      "actual_frontend_mono_stereo_stride": true
-    },
-    "opus": {
-      "CNG_capacity": 256,
-      "CNG_transitions": 12288,
-      "CNG_precompaction_state_output_digest": "987871150d65a70a",
-      "vendor_transition_calls": 10160,
-      "PLC_calls": 500,
-      "FEC_calls": 380,
-      "wrapper_configurations": 60,
-      "allocation_budget_attempts": 300,
-      "wrapper_packet_calls": 15240,
-      "mutations": 1440,
-      "alias_caller_geometry_error_state_guards": true,
-      "hot_decode_allocation_attempts": 0
-    },
-    "scope": "Fresh exported memory/state/bounds/equivalence checks; generated SBC and same-library comparisons do not establish independent four-band fidelity, target deadlines, CPU improvement, sender interoperability or acoustics."
-  },
-  "exported_native_codec_tests": {
-    "status": "HISTORICAL independent reference suite; not rerun for this public profile",
-    "historical_compiled_units": 128,
-    "historical_checks": [
-      "configuration/capacity/allocation cleanup",
-      "complete independent SBC, SBC-XQ, AAC-LC, LATM, aptX, aptX HD, Opus and LDAC sequences",
-      "ADTS/SBR/all-codec bounds",
-      "LHDC allocation failure/cleanup across 44.1/48/96/192 kHz",
-      "local-only HE-AACv1 mono/stereo/LATM reference sequences"
-    ],
-    "media_distributed": false,
-    "translation_unit_source_hashes_unchanged": 122,
-    "translation_unit_sources_changed": [
-      "src/codecs/Codecs.cpp",
-      "src/vendor/codecs/sbc/srce/alloc.c",
-      "src/vendor/codecs/sbc/srce/decoder-private.c",
-      "src/vendor/codecs/sbc/srce/decoder-sbc.c",
-      "src/vendor/codecs/sbc/srce/synthesis-sbc.c",
-      "src/vendor/codecs/opus/silk/CNG.c"
-    ],
-    "scope": "Changed shared headers also affect compiled implementations. Current exported memory/boundary tests and all-codec M7 link are fresh; independent full reference/HE vectors and actual target execution are separate maintained-source evidence."
-  },
-  "maintained_runtime_observation": {
-    "scope": "Historical prior maintained-image observation, retained for provenance; not current phase2 field evidence and not execution of this public-profile binary. Current phase2 field evidence is documented separately in ble-audio-priority.md/json.",
-    "maintained_runtime_source": "7e676d3",
-    "binary_sha256": "4ece5feffa2cdb14e250318c8b5744f8224b7613cea28e2e9ed046c94a00a4fa",
-    "binary_bytes": 466468,
-    "duration_s": 95.11,
-    "codec": "LHDC 192 kHz / 24-bit / fixed 1000 kbps",
-    "GATT_acknowledged_writes_and_exact_echoes": 30,
-    "streaming_and_BLE_connected_snapshots": 45,
-    "local_error_or_drop_increases": 0,
-    "timestamp_inner_discontinuities": 27,
-    "missing_input_frames": 702336,
-    "nonzero_synthesized_frames": 61200,
-    "literal_zero_padding_frames": 641136,
-    "mixed_received_frames": 61440,
-    "postbaseline_priority_samples": 45,
-    "UART7_priority": 0,
-    "DMA1_stream7_priority": 6,
-    "priority_grouping": 3,
-    "limitations": "Periodic snapshots; no closed packet ledger, measured interrupt latency, encoded-omission cure, acoustic comparison or controlled quality ranking. Details: pcm-transition-ramp.md.",
-    "historical": true
-  },
-  "library_metadata_version_at_M7_build": "0.1.0-dev.2",
-  "final_source_metadata_version": "0.1.0-dev.3",
-  "post_build_docs_version_sync": {
-    "compiler_input_rows": 358,
-    "compiler_input_set_sha256": "79f66b5dd5ac7347cba42a655f927ddc18a20cfed1f36a936a25f2e8b49133a0",
-    "compiler_inputs_byte_identical": true,
-    "library_properties_and_top_level_docs_outside_compiler_manifest": true,
-    "version_string_absent_from_compile_arguments": true,
-    "scope": "Metadata/docs changed after the fresh public build; no claim of a rebuilt or target-executed public binary."
-  },
-  "separate_current_maintained_source_M7_execution": {
-    "status": "PASS",
-    "scope": "Finite current M7 decoder vectors and allocation lifecycles; no radio/I2S/acoustic evidence",
-    "public_profile_binary_target_tested": false,
-    "device_receipt_sha256": "e585397f54eaf6ba011f2e91181869781c8d0c73ae116fb91af45d2378be0864",
-    "vector_image_sha256": "81ad5fe1a3b5c1f7f0743c7cbb6def1f28521f61b36a1cc6e21413c36b94a4b5",
-    "memory_image_sha256": "4773f6c48727bdd14e567ed83568c30ad919a4802f2716be6530db5e2a7f5783",
-    "diagnostic_readback_verified": true,
-    "vector_result_sha256": "d73c94017858e36b1edd7620a83f3e95edeb7cb4dfa452daae42123971b8f831",
-    "vector_raw_sha256": "fcb2ec55342d51cad3c9cbb4ffd1ad3feb4fb002fbca6f7e0183caa126cc6660",
-    "memory_result_sha256": "091687e1d417c84d72c250cc3e9d0849e02d54096a12aca2ea45753956588ac4",
-    "memory_raw_sha256": "9435035997d35f298c3eb79037ba262b48ca9f66be80cbde7c5a277eaddfb99d",
-    "public_raw_source_inputs_matching_target_snapshot": 356,
-    "vector_cases": 12,
-    "passes_per_case": 20,
-    "timed_decode_calls": 3440,
-    "CPU_hz": 480000000,
-    "observed_deadline_misses": 0,
-    "vector_failures": 0,
-    "vector_residual_bytes_blocks": 0,
-    "allocation_configuration_lifecycles": 220,
-    "allocation_errors": 0,
-    "allocation_residual_bytes_blocks": 0,
-    "Opus_tracked_payload_bytes": {
-      "minimum": 17348,
-      "maximum": 37548
-    },
-    "observed_vector_maximum_us": {
-      "sbc": 79,
-      "sbc-xq": 80,
-      "aac-adts": 676,
-      "aac-latm": 687,
-      "aptx": 420,
-      "aptx-hd": 421,
-      "opus": 1410,
-      "ldac-stereo-hq": 275,
-      "ldac-mono-hq": 144,
-      "ldac-mono-mq": 118,
-      "he-mono": 1753,
-      "he-stereo": 3395
-    },
-    "no_radio_no_I2S": true,
-    "LHDC_independent_encoded_PCM_fixture": false,
-    "measurement_report_json_sha256": "b1f447e142fba6d9ec90ab5d5d6ef6e372a9ad65383eeec1f1107b0445de7a03",
-    "measurement_report_markdown_sha256": "f7b75fc0b0c0eeb9aec46b4907f7cc418cf3d31fe192c8c5d57154b79368c7b6",
-    "scope_limits": "Finite isolated maintained-source diagnostics; no public binary execution, universal deadline bound, phone interoperability, electrical/analog or acoustic claim. Tracked payload excludes heap metadata, static storage and stacks."
-  },
-  "separate_current_maintained_receiver_field_evidence": {
-    "receiver_sha256": "e69d84fc7bb4edcc91502834ceb89bfeea6a12b003c13f7064e0353f728184ea",
-    "public_profile_binary_target_tested": false,
-    "six_mode_source_seconds_each": 30,
-    "six_modes": [
-      {
-        "codec": "SBC/SBC-XQ",
-        "sample_rate": 44100,
-        "phone_selector": [
-          0,
-          1,
-          1,
-          2,
-          0
-        ],
-        "exact_512_byte_GATT_echoes": 10,
-        "missing_input_PCM_frames": 0,
-        "recovery_entries": 0,
-        "queue_full": 0,
-        "decoder_errors_delta": 0,
-        "outer_RTP_gaps": 0
-      },
-      {
-        "codec": "AAC-LC",
-        "sample_rate": 44100,
-        "phone_selector": [
-          1,
-          1,
-          1,
-          2,
-          0
-        ],
-        "exact_512_byte_GATT_echoes": 10,
-        "missing_input_PCM_frames": 0,
-        "recovery_entries": 0,
-        "queue_full": 0,
-        "decoder_errors_delta": 0,
-        "outer_RTP_gaps": 0
-      },
-      {
-        "codec": "aptX",
-        "sample_rate": 48000,
-        "phone_selector": [
-          2,
-          2,
-          1,
-          2,
-          0
-        ],
-        "exact_512_byte_GATT_echoes": 10,
-        "missing_input_PCM_frames": 0,
-        "recovery_entries": 0,
-        "queue_full": 0,
-        "decoder_errors_delta": 0,
-        "outer_RTP_gaps": null
-      },
-      {
-        "codec": "aptX HD",
-        "sample_rate": 48000,
-        "phone_selector": [
-          3,
-          2,
-          2,
-          2,
-          0
-        ],
-        "exact_512_byte_GATT_echoes": 10,
-        "missing_input_PCM_frames": 0,
-        "recovery_entries": 0,
-        "queue_full": 0,
-        "decoder_errors_delta": 0,
-        "outer_RTP_gaps": 0
-      },
-      {
-        "codec": "LDAC",
-        "sample_rate": 96000,
-        "phone_selector": [
-          4,
-          8,
-          4,
-          2,
-          1000
-        ],
-        "exact_512_byte_GATT_echoes": 10,
-        "missing_input_PCM_frames": 0,
-        "recovery_entries": 0,
-        "queue_full": 0,
-        "decoder_errors_delta": 0,
-        "outer_RTP_gaps": 0
-      },
-      {
-        "codec": "LHDC V5",
-        "sample_rate": 192000,
-        "phone_selector": [
-          15,
-          32,
-          2,
-          2,
-          32776
-        ],
-        "exact_512_byte_GATT_echoes": 10,
-        "missing_input_PCM_frames": 0,
-        "recovery_entries": 0,
-        "queue_full": 0,
-        "decoder_errors_delta": 0,
-        "outer_RTP_gaps": 0
-      }
-    ],
-    "ATT_MTU": 517,
-    "actual_BLE_during_active_audio_GATT": "96/2/500",
-    "initial_SBC_pre_audio_actual_BLE": [
-      "6/0/500",
-      "24/0/500"
-    ],
-    "LHDC_long": {
-      "finite_source_seconds": 110,
-      "exact_512_byte_echoes": 30,
-      "received_packets": 22602,
-      "worked_packets": 22592,
-      "missing_input_PCM_frames": 0,
-      "recovery_entries": 0,
-      "timestamp_steps": 0,
-      "inner_steps": 0,
-      "scope": "Ten received/worked lifecycle-tail packets are retained separately from incoming loss."
-    },
-    "field_review_receipt_sha256": "69431f0a6d19eee9fa8ca1771cc179a09f175612c0172c558c98752e5cb7eeaa",
-    "prior_95_second_six_event_raw_sha256": "c0762387174febdfd95685eb634bcb96aeea7236d7a29eca0ba37ad4d8cc5f7b",
-    "prior_failed_evidence_retained": true,
-    "receiver_restored_and_readback_verified": true,
-    "post_restore_capture_seconds": 8,
-    "post_restore_capture_GATT_echoes": 0,
-    "post_restore_console_drop_counter": 33,
-    "fresh_physical_BLE_reconnect_during_active_A2DP_qualified": false,
-    "phone_unavailable_modes": [
-      "Opus",
-      "HE-AAC profile",
-      "separate SBC-XQ selection"
-    ],
-    "scope_limits": "Maintained E69 only, established-link finite traffic; no acoustic/electrical, all-phone/all-mode, permanent continuity or unique causal claim. LHDC/LDAC selector values are not measured encoded throughput.",
-    "initial_SBC_actual_BLE_observations": [
-      {
-        "ms": 10000,
-        "actual": "6/0/500",
-        "match": 0
-      },
-      {
-        "ms": 14000,
-        "actual": "24/0/500",
-        "match": 0
-      },
-      {
-        "ms": 16000,
-        "actual": "24/0/500",
-        "match": 0
-      },
-      {
-        "ms": 18000,
-        "actual": "96/2/500",
-        "match": 1
-      }
-    ],
-    "initial_SBC_connection_startup_scope": "Both observed pre-audio states are retained; actual96/2/500 is observed from the first active audio snapshot. These observations do not qualify connection-triggered stutter resolution or fresh physical BLE reconnect during active A2DP."
   }
 }

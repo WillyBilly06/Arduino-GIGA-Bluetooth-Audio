@@ -30,7 +30,7 @@ def main():
    obj=out/'sbc-adapter.o';run([cxx,'-std=c++14',*current,'-c',source/'src/codecs/Codecs.cpp','-o',obj]);objects.append(obj)
    exe=out/'test_sbc_memory.exe';run([cxx,'-std=c++14',*current,ROOT/'tests/test_sbc_memory.cpp',*objects,'-o',exe]);run([exe])
    exe=out/'test_sbc_memory_frontend.exe';deps=['detail/Memory.cpp','detail/Decoder.cpp','detail/Media.cpp','detail/PacketQueue.cpp','detail/AudioTiming.cpp']
-   run([cxx,'-std=c++14',*current,*(['-pthread'] if os.name!='nt' else []),ROOT/'tests/test_sbc_memory_frontend.cpp',*[source/'src'/s for s in deps],*objects,'-o',exe]);run([exe])
+   run([cxx,'-std=c++14',*current,*(['-pthread'] if os.name!='nt' else []),ROOT/'tests/test_sbc_memory_frontend.cpp',*([ROOT/'tests/support/clock_backend_unavailable.cpp'] if 'i2sSourceSnapshot' in (source/'src/platform/GigaI2s.h').read_text() else []),*[source/'src'/s for s in deps],*objects,'-o',exe]);run([exe])
   else:
    exe=out/'test_opus_memory.exe';run([cxx,'-std=c++14',*current,ROOT/'tests/test_opus_memory.cpp',*objects,'-o',exe]);run([exe])
   groups[codec]=len(sources)

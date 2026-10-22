@@ -81,9 +81,11 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  deferred_count_=deferred_read_=0;event_serial_=retired_event_=0;close_media_=close_avrcp_=0;now_=begin_ms_=deadline_=settle_until_=packet_order_=command_deadline_=0;
  qos_last_data_ms_=qos_classic_owner_=qos_le_owner_=0;qos_data_fragments_=qos_data_bytes_=qos_paced_deferrals_=qos_urgent_bypasses_=0;qos_classic_burst_=0;qos_have_data_=qos_audio_active_=false;
  memset(le_features_,0,sizeof le_features_);le_features_known_=false;
+ le_disconnect_owner_=0;le_advertising_held_=false;le_disconnect_advertise_after_=true;
  memset(sent_at_,0,sizeof sent_at_);accept_deadline_=0;next_peer_=le_trace_=0;clock_started_=pending_=tx_turn_=last_ack_=was_secure_=false;boot_=Boot::PatchReset;active_=true;return Status::Ok;
 }
 void OwnedHost::end(){
+ le_disconnect_owner_=0;le_advertising_held_=false;le_disconnect_advertise_after_=true;
  if(!active_)return;active_=false;stats_.controller_ready=stats_.connected=stats_.streaming=false;
  for(unsigned i=0;i<2;++i){detach(i);cancelAdmission(i);}classic_.reset(0);
  for(auto& p:packets_)p.used=false;deferred_count_=0;bth_cmdq_init(&commands_);bth_control_tx_init(&control_);erase(bonds_,sizeof bonds_);erase(&links_,sizeof links_);
@@ -192,6 +194,35 @@ void OwnedHost::detach(unsigned i){
  bth_control_tx_detach(&control_,uint8_t(i),peer.owner);
  if(i==0){clearClassicControls();classic_.reset(0);memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
  peer.attached=peer.has_pending=false;peer.owner=0;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
+ if(i==1){le_disconnect_owner_=0;le_disconnect_advertise_after_=true;}
+}
+Status OwnedHost::bleDisconnect(uint32_t expected,bool advertise_after){
+ if(!active_||!config_.ble.enabled)return Status::Unsupported;
+ if(!expected)return Status::InvalidArgument;
+ if(boot_!=Boot::Ready)return Status::Busy;
+ const auto& peer=peers_[1];const auto& link=links_.le;const auto& stats=le_.stats();
+ if(!peer.attached||!stats.connected||peer.owner!=expected||stats.generation!=peer.owner||
+    stats.connection_handle!=peer.handle||link.state!=BTH_PEER_CONNECTED||link.owner!=peer.owner||link.handle!=peer.handle)
+  return Status::InvalidArgument;
+ // Retained lifecycle events and an older GAP enable must retire first. In
+ // particular, never commit a hold which an in-flight200a could undo at detach.
+ if(deferred_count_||le_.controlState().pending)return Status::Busy;
+ if(link.disconnecting)return le_disconnect_owner_==expected&&le_disconnect_advertise_after_==advertise_after?Status::Ok:Status::Busy;
+ if(bth_cmdq_available(&commands_)<3)return Status::Busy; // Preserve two security slots.
+ const auto result=bth_links_disconnect(&links_,peer.handle,0x13);
+ if(result==BTH_ERR_CAPACITY)return Status::Busy;
+ if(result!=BTH_OK)return Status::HardwareError;
+ le_disconnect_owner_=expected;le_disconnect_advertise_after_=advertise_after;
+ if(!advertise_after)le_advertising_held_=true;
+ if(!peers_[1].disconnect_deadline)peers_[1].disconnect_deadline=now_+5000;
+ return Status::Ok;
+}
+Status OwnedHost::bleResumeAdvertising(){
+ if(!active_||!config_.ble.enabled)return Status::Unsupported;
+ if(boot_!=Boot::Ready||deferred_count_)return Status::Busy;
+ if(!le_advertising_held_)return Status::Ok;
+ if(peers_[1].attached||le_.stats().connected)return Status::Busy;
+ le_advertising_held_=false;return Status::Ok;
 }
 void OwnedHost::closePeer(unsigned i,uint8_t reason){if(!peers_[i].attached)return;if(bth_links_disconnect(&links_,peers_[i].handle,reason)==BTH_ERR_CAPACITY)return;
  if(!peers_[i].disconnect_deadline)peers_[i].disconnect_deadline=now_+5000;if(i==0){clearClassicControls();classic_.reset(0);}
@@ -204,6 +235,8 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
  // link and then discovering that its required command has no storage.
  if(bth_cmdq_available(&commands_)<completionSlots(event))return false;
  const auto p=event.event.params;
+ const uint32_t previous_le_owner=peers_[1].attached?peers_[1].owner:0;
+ const uint16_t previous_le_handle=peers_[1].handle;
  if(event.event.code==4&&p.len==10&&links_.classic.state==BTH_PEER_EMPTY&&!reserved_[0]){
   uint8_t reply[7];memcpy(reply,p.data,6);reply[6]=0x0d;bth_cmdq_push(&commands_,0x040a,reply,7,true);return true;
  }
@@ -231,6 +264,14 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
   snprintf(line,sizeof line,"Owned LE HCI event=%02x op=%04x status=%02x n=%u stage=%u credit=%u",event.event.code,leControl.opcode,status,unsigned(p.len),leControl.stage,flow_.command_credits);diagnose(line);++le_trace_;
  }
  le_.event(event,command_owner);
+ // Bounded actor records are copied through the existing diagnostic mailbox;
+ // user printing occurs only from foreground poll, never UART/DMA IRQ.
+ char lifecycle[96];
+ if(previous_le_owner&&!peers_[1].attached&&event.event.code==5&&p.len==4&&!p.data[0]&&bth_read_le16(p.data+1)==previous_le_handle){
+  snprintf(lifecycle,sizeof lifecycle,"Owned LE detached owner=%lu handle=%04x generation=0",(unsigned long)previous_le_owner,previous_le_handle);diagnose(lifecycle);
+ }else if(!previous_le_owner&&peers_[1].attached){
+  snprintf(lifecycle,sizeof lifecycle,"Owned LE attached owner=%lu handle=%04x generation=%lu",(unsigned long)peers_[1].owner,peers_[1].handle,(unsigned long)le_.stats().generation);diagnose(lifecycle);
+ }
  if(event.event.code==0x0e&&gap_.pending){if(bth_gap_on_event(&gap_,&event)<0){fail("Owned scan completion rejected");return true;}}
  return true;
 }
@@ -486,7 +527,7 @@ void OwnedHost::runtimePoll(){
   if(due(now_,peers_[i].disconnect_deadline)){fail("Owned disconnect completion timeout");return;}}
  if(links_.classic.state==BTH_PEER_EMPTY&&!reserved_[0])admission(0,0);
  if(config_.ble.enabled&&links_.le.state==BTH_PEER_EMPTY&&!reserved_[1])admission(1,0);
-  le_.poll(now_,reserved_[1],updateAudioPriority());
+  le_.poll(now_,reserved_[1]&&!le_advertising_held_,updateAudioPriority());
   if(le_.closeRequested())closePeer(1,0x13);
  if(le_.stats().status==Status::HardwareError){const auto state=le_.controlState();char line[128];snprintf(line,sizeof line,"Owned LE failure op=%04x stage=%u error=%02x pending=%u now=%lu deadline=%lu",state.opcode,state.stage,state.error,state.pending,(unsigned long)now_,(unsigned long)state.deadline);diagnose(line);fail("Owned LE profile control failure");return;}
  if(!hooks_.txReady(hooks_.user))return;

@@ -54,3 +54,9 @@ static int exercise(const char* action){const bool replace=!strcmp(action,"repla
  }
  receiver.end();CHECK(detail::memoryStats().current_blocks==0);printf("ACTUAL_ARDUINO_FRONTEND action=%s mutex_available_during_wait=%u host_blocked_by_codec=%u writes=%u checks=%u\n",action,unsigned(available),unsigned(!available),scenario.writes.load(),checks.load());current=nullptr;return available?0:3;}
 int main(int argc,char**argv){return exercise(argc>1?argv[1]:"stop");}
+
+// Link boundary for lifecycle APIs unused by this existing regression.
+namespace giga_bredr { namespace detail {
+Status radioBleDisconnect(uint32_t,bool){return Status::Unsupported;}
+Status radioBleResumeAdvertising(){return Status::Unsupported;}
+}}

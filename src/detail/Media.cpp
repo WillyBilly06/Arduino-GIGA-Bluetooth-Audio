@@ -64,7 +64,7 @@ Status MediaAssembler::configure(const CodecConfig& c, size_t cap, MemoryKind ki
     }
     return Status::Ok;
 }
-void MediaAssembler::consumed() { used_ = 0; fragmented_ = false; fragment_remaining_ = 0; }
+void MediaAssembler::consumed() { used_ = 0; fragmented_ = false; fragment_remaining_ = 0; if (!++assembly_generation_) ++assembly_generation_; }
 void MediaAssembler::reset() { consumed(); have_sequence_ = false; have_timestamp_ = false; }
 void MediaAssembler::close() { release(assembly_); assembly_ = nullptr; capacity_ = 0; codec_ = Codec::Count; reset(); }
 Status MediaAssembler::feed(const uint8_t* packet, size_t length, MediaView& view) {

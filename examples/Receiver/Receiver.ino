@@ -51,6 +51,21 @@ void setup() {
 }
 void loop() {
   receiver.poll();
+  // Private qualification controls: one foreground byte/attempt per turn.
+  // Actor lifecycle diagnostics above expose actual detach/new-owner edges.
+  if(Serial.available()>0) {
+    const int command=Serial.read();
+    if(command=='d') {
+      const auto current=receiver.bleStats();
+      const auto result=receiver.bleDisconnect(current.generation,false);
+      console.print("GBR_BLE_CONTROL ms=%lu action=disconnect expected=%lu advertise_after=0 status=%s\n",
+        (unsigned long)millis(),(unsigned long)current.generation,statusName(result));
+    } else if(command=='a') {
+      const auto result=receiver.bleResumeAdvertising();
+      console.print("GBR_BLE_CONTROL ms=%lu action=resume_advertising status=%s\n",
+        (unsigned long)millis(),statusName(result));
+    }
+  }
   // Example data service: one copied RX write is echoed through TX notify.
   // Keep the pending value until the bounded actor queue accepts it.
   static BleWrite bleEcho;
@@ -66,6 +81,24 @@ void loop() {
   static uint32_t last=0;
   if (millis()-last>=2000) {
     last=millis(); auto s=receiver.stats();
+    const auto& clock=s.clock;
+    console.print("GBR_CLOCK ms=%lu observed_us=%lu stream=%lu output=%lu expected_output=%lu enabled=%u eligible=%u ring_capacity=%lu required_ring=%lu state=%u backend=%u fault=%u applied_valid=%u inventory_valid=%u requested_q16=%ld applied_q16=%ld fraction=%u readback=%u\n",
+      (unsigned long)millis(),(unsigned long)clock.observation_us,(unsigned long)clock.stream_epoch,
+      (unsigned long)clock.output_epoch,(unsigned long)clock.expected_output_epoch,clock.enabled,clock.eligible,
+      (unsigned long)clock.ring_capacity,(unsigned long)clock.required_ring_frames,unsigned(clock.state),unsigned(clock.backend_status),
+      clock.backend_fault,clock.applied_valid,clock.inventory_valid,(long)clock.requested_ppm_q16,(long)clock.applied_ppm_q16,
+      unsigned(clock.fraction),unsigned(clock.readback_fraction));
+    console.print("GBR_CLOCK_FRAMES stream=%lu A=%llu D=%llu P=%llu Z=%llu F=%llu G=%llu units_q16=%lu retained_q16=%lu estimated=%llu target=%llu fpp_q16=%llu assembly_discards=%lu\n",
+      (unsigned long)clock.stream_epoch,(unsigned long long)clock.decoded_frames,(unsigned long long)clock.discarded_frames,
+      (unsigned long long)clock.prepared_frames,(unsigned long long)clock.missing_frames,(unsigned long long)clock.completed_packets,
+      (unsigned long long)clock.completed_frames,(unsigned long)clock.compressed_units_q16,(unsigned long)clock.retained_units_q16,
+      (unsigned long long)clock.estimated_inventory_frames,(unsigned long long)clock.target_frames,
+      (unsigned long long)clock.frames_per_packet_q16,(unsigned long)clock.assembly_discards);
+    console.print("GBR_CLOCK_WORK stream=%lu observations=%lu decisions=%lu accepted=%lu refused=%lu invalid=%lu duration_cycles=%lu wait0_cycles=%lu wait1_cycles=%lu max_critical_cycles=%lu duration_valid=%u wall_overruns=%u\n",
+      (unsigned long)clock.stream_epoch,(unsigned long)clock.observations,(unsigned long)clock.decisions,(unsigned long)clock.accepted,
+      (unsigned long)clock.refused,(unsigned long)clock.invalid_samples,(unsigned long)clock.duration_cycles,
+      (unsigned long)clock.wait_cycles[0],(unsigned long)clock.wait_cycles[1],(unsigned long)clock.maximum_critical_cycles,
+      clock.duration_valid,unsigned(clock.wall_overruns));
     console.print("GBR_STATUS ms=%lu ready=%u bredr=%u address=%02X:%02X:%02X:%02X:%02X:%02X connected=%u streaming=%u codec=%s rate=%lu rx_packets=%lu rx_bytes=%lu hci_packets=%lu hci_bytes=%lu decoded_packets=%lu frames=%llu errors=%lu dropped=%lu decode_max_us=%lu underruns=%lu dma_errors=%lu output_frames=%llu queued=%u output_running=%u priming=%u output_dropped=%lu transport_errors=%lu volume=%u memory=%u peak=%u codec_bytes=%u diagnostic_drops=%lu console_drops=%u last=%s\n",
       (unsigned long)millis(), s.radio.controller_ready, s.radio.bredr_supported,
       s.radio.address[0], s.radio.address[1], s.radio.address[2], s.radio.address[3], s.radio.address[4], s.radio.address[5],
@@ -141,9 +174,15 @@ void loop() {
       (unsigned long long)recovery.synthesized_frames,(unsigned long long)recovery.zero_frames,
       (unsigned long long)recovery.mixed_frames);
 #if defined(ARDUINO_GIGA) && defined(CORE_CM7)
-    console.print("GBR_IRQ_PRIORITY dma1_stream7=%lu uart7=%lu grouping=%lu\n",
+    console.print("GBR_IRQ_PRIORITY dma1_stream7=%lu uart7=%lu grouping=%lu pendsv=%lu systick=%lu\n",
       (unsigned long)NVIC_GetPriority(DMA1_Stream7_IRQn),
-      (unsigned long)NVIC_GetPriority(UART7_IRQn),(unsigned long)NVIC_GetPriorityGrouping());
+      (unsigned long)NVIC_GetPriority(UART7_IRQn),(unsigned long)NVIC_GetPriorityGrouping(),
+      (unsigned long)NVIC_GetPriority(PendSV_IRQn),(unsigned long)NVIC_GetPriority(SysTick_IRQn));
+    const bool uartEnabled=(RCC->APB1LENR&RCC_APB1LENR_UART7EN)!=0;
+    const uint32_t uartCr1=uartEnabled?UART7->CR1:0;
+    console.print("GBR_UART_HW enabled=%u fifo=%u cr1=%08lx cr3=%08lx isr=%08lx\n",uartEnabled,
+      unsigned((uartCr1&USART_CR1_FIFOEN)!=0),(unsigned long)uartCr1,
+      (unsigned long)(uartEnabled?UART7->CR3:0),(unsigned long)(uartEnabled?UART7->ISR:0));
 #endif
     static uint32_t recoveryEpoch=0,recoveryIndex=0;
     if(recoveryEpoch!=recovery.epoch) { recoveryEpoch=recovery.epoch;recoveryIndex=0; }

@@ -20,6 +20,7 @@ static void NVIC_EnableIRQ(unsigned irq_number){CHECK(irq_number==DMA1_Stream7_I
 static void halfDone(DMA_HandleTypeDef*){}static void fullDone(DMA_HandleTypeDef*){}
 static void dmaError(DMA_HandleTypeDef* device){CHECK(device==&dma);++errors;++stats.dma_errors;irq=false;stats.running=stats.priming=false;outputPhase=Stopped;recovery.end(0,ring?uint32_t(ring->queued()):0);events.push_back(5);}
 // The generated include contains the production i2sWrite function verbatim.
+static uint64_t sourcePrepared=0; // Mock storage for verbatim production prime credit.
 #include "i2s_write.inc"
 }}
 using namespace giga_bredr;using namespace giga_bredr::detail;

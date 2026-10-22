@@ -34,6 +34,8 @@ public:
  RadioStats radioStats() const;
  BleStats bleStats() const {BleStats s=le_.stats();s.qos_data_fragments=qos_data_fragments_;s.qos_data_bytes=qos_data_bytes_;s.qos_paced_deferrals=qos_paced_deferrals_;s.qos_urgent_bypasses=qos_urgent_bypasses_;if(!active_){s.advertising=s.connected=s.notify_enabled=s.encrypted=false;s.generation=0;s.connection_handle=0;}return s;}
  Status bleNotify(const uint8_t* data,size_t length) {return active_?le_.notify(data,length):Status::Unsupported;}
+ Status bleDisconnect(uint32_t expected_generation,bool advertise_after_disconnect=true);
+ Status bleResumeAdvertising();
  bool bleReadWrite(BleWrite& value) {return active_&&le_.readWrite(value);}
  Status setVolume(uint8_t v) {return active_?classic_.setVolume(v):Status::Unsupported;}
  AvrcpStatus avrcpStatus() const {return classic_.avrcpStatus();}
@@ -88,5 +90,8 @@ private:
  uint32_t qos_data_fragments_=0,qos_data_bytes_=0,qos_paced_deferrals_=0,qos_urgent_bypasses_=0;
  uint8_t qos_classic_burst_=0;bool qos_have_data_=false,qos_audio_active_=false;
  bool active_=false,clock_started_=false,pending_=false,tx_turn_=false,last_ack_=false,was_secure_=false;
+ // Foreground admission state; controller lifecycle alone detaches the peer.
+ uint32_t le_disconnect_owner_=0;
+ bool le_advertising_held_=false,le_disconnect_advertise_after_=true;
 };
 }}

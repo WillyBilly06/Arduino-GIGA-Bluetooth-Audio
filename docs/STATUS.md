@@ -1,53 +1,44 @@
 # Develop evidence and remaining limitations
 
-Version 0.1.0-dev.3; updated 2026-10-22. Full supplied257-file decoder set and all eight codec build
-defaults remain enabled. The selected runtime is the project-owned Classic/BLE
-host; no historical reference-host source is distributed. This is developmental
-source, not a stable audio release. Main/release qualification is separate.
+Version 0.1.0-dev.4; updated 2026-10-22. All257 selected decoder files and all eight
+codec defaults remain enabled. The public source profile selects the owned
+Classic/BLE host and excludes the historical reference host. Main remains a
+separate stable-branch decision.
 
-## Current maintained-source phone and BLE evidence
+## Current all-codec output and BLE evidence
 
-The readback-verified maintained receiver image
-`e69d84fc7bb4edcc91502834ceb89bfeea6a12b003c13f7064e0353f728184ea`
-completed six 30-second phone sources: SBC 44.1 kHz, AAC-LC 44.1 kHz,
-aptX/aptX HD 48 kHz, LDAC 96 kHz and LHDC V5 192 kHz/24-bit. Each case
-completed ten exact 512-byte GATT echoes at ATT MTU 517, with zero recorded
-missing-input PCM, local queue-full or decoder-error increments. Actual BLE
-96/2/500 (120 ms interval, latency 2, 5-second timeout) was observed during
-active audio/GATT; the initial SBC link used a shorter interval before audio.
+The shared output path now includes bounded clock compensation for every codec,
+with source-frame accounting and UART-safe fractional PLL updates. All eight
+codec identities remain enabled. Decoder allocation follows the selected codec
+and configuration; immutable tables stay in flash.
 
-A separate 110-second LHDC source with three ten-echo jobs recorded zero
-missing-input PCM, recovery entries, local full/errors and timestamp/inner
-jumps. Its 22602 received versus 22592 worked packets retain a ten-packet
-lifecycle-tail distinction. LHDC selector 32776 requests nominal 1000 kbps;
-LDAC quality selector 1000 is not a measured encoded bitrate. Applicable outer
-RTP counters were zero; aptX has no RTP here and detailed timestamp/inner
-inspection is LHDC-specific. These finite sequential results do not invalidate
-earlier failed captures or prove permanent continuity or a unique cause.
+The readback-verified maintained image `1322442572a145d7dd7e82c14f601479383eeeedc6bd882809aba1e08024f62c`
+passed fresh BLE disconnect/reconnect during LHDC192 playback, applied120ms
+connection parameters, MTU517, and ten exact512-byte writes/notifications/actual
+reads. The150-second source completed naturally; later active observations
+through148 seconds recorded no new RTP/PCM/recovery/decoder/drop/DMA/transport
+errors. Six separate30-second sources also passed with ten512-byte GATT echoes
+each: SBC44.1, AAC-LC44.1, aptX/HD48, LDAC96 and LHDC V5 192kHz/24-bit with the
+nominal1000kbps selector. A continuous30-minute LHDC192 observation also passed with an established120ms BLE connection and zero new recorded audio/protocol errors. This passive run did not generate continuous GATT traffic.
 
-Fresh maintained-source GIGA M7 diagnostics passed 12 vector cases, 20 passes
-per case and 3440 timed decode calls at 480 MHz, with zero observed deadline
-misses, failures or residual allocations. They cover SBC/SBC-XQ, AAC ADTS/LATM,
-aptX/HD, encoded Opus, LDAC known-source tones and HE-AAC v1 SBR. LHDC has no
-independent encoded PCM fixture. A separate allocation probe passed 220 exact
-configuration lifecycles; Opus tracked payload ranged from 17348 to 37548 bytes.
-Observed finite maxima were 1410 us for the tested Opus 48 kHz/20 ms stereo
-packets and 1753/3395 us for HE mono/stereo prefixes. These decoder/allocation
-diagnostics ran without radio/I2S; their maxima are not universal time bounds.
-See [M7 measurements and proof hashes](validation/codec-target-2026-10-22.md).
+[Clock API and nonblocking LE control](AUDIO_CLOCK.md) and
+[all-codec validation](validation/audio-clock-2026-10-22.md) explain the
+implementation, exact observed intervals and limits. A tiny legal PCM ring can
+be ineligible for tracking; the default20ms profiles meet the headroom guard.
+Requested/readback ppm coefficients are not measured physical clock frequency.
 
-Opus, HE-AAC and separate SBC-XQ phone selection remain unqualified on the
-available phone. Fresh physical BLE reconnect during already-active A2DP,
-electrical/analog output, acoustics, sustained drift/continuity and matched
-performance remain separate work. After the diagnostics, E69 was fully
-readback-restored; a short eight-second LHDC/actual-120-ms BLE capture was a
-playback restoration check, with no new GATT echo workload.
+The unchanged decoder sources separately passed12 M7 vector cases/3440 timed
+calls and220 allocation/configuration lifecycles; see
+[M7 measurements](validation/codec-target-2026-10-22.md). The available phone
+cannot select Opus, HE-AAC or distinct SBC-XQ, so their decoder/native coverage
+is separate from sender interoperability. HE-AAC v1 is experimental; v2/PS and
+xHE-AAC are unsupported. LHDC has no independent encoded PCM oracle. Acoustics,
+electrical I2S accuracy and matched performance against another stack remain
+separate qualification work.
 
-The public-profile binary recorded in `BUILD.json` is
-`d088c35d287483db5acb761af2f0cfaf4e3297be06c0360d103f5cf94e009ed3`.
-It has fresh native/M7 compilation and source-export checks, but has **not
-been flashed or executed**. The physical results above belong to separate
-maintained-source diagnostics and E69, not this public binary.
+`docs/BUILD.json` identifies the fresh public-profile build. Its execution status
+is recorded separately from the maintained image above. No binary inherits
+hardware qualification merely because it was exported from related source.
 
 ## Earlier correctness changes (historical)
 

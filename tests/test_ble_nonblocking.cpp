@@ -83,3 +83,9 @@ int main(int argc,char** argv){
     }
     return 0;
 }
+
+// Link boundary for lifecycle APIs unused by this existing regression.
+namespace giga_bredr { namespace detail {
+Status radioBleDisconnect(uint32_t,bool){return Status::Unsupported;}
+Status radioBleResumeAdvertising(){return Status::Unsupported;}
+}}

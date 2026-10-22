@@ -162,7 +162,7 @@ def main():
             exe = out / (name + ('.exe' if os.name == 'nt' else ''))
             actual_frontend = name != 'test_output_priming'
             extra_flags = ['-DARDUINO=1', '-I' + str(support), *(['-pthread'] if os.name != 'nt' else [])] if actual_frontend else []
-            run(name + '-compile', [cxx, '-std=c++17', *flags, *extra_flags, '-I' + str(ROOT / 'src'), '-I' + str(out), ROOT / 'tests' / (name + '.cpp'), *(frontend if actual_frontend else []), '-o', exe])
+            run(name + '-compile', [cxx, '-std=c++17', *flags, *extra_flags, '-I' + str(ROOT / 'src'), '-I' + str(out), ROOT / 'tests' / (name + '.cpp'), *(frontend if actual_frontend else []), *([ROOT / 'tests/support/clock_backend_unavailable.cpp'] if actual_frontend else []), '-o', exe])
             artifacts.append(exe)
             if name == 'test_output_wait_lifecycle':
                 for action in ('stop', 'replace', 'same', 'shutdown', 'stall'):

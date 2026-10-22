@@ -267,3 +267,9 @@ int main() {
 namespace giga_bredr { namespace detail {
 Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins& pins){selectedPins=pins;return i2sBegin(rate,ms);}
 }}
+
+// Link boundary for lifecycle APIs unused by this existing regression.
+namespace giga_bredr { namespace detail {
+Status radioBleDisconnect(uint32_t,bool){return Status::Unsupported;}
+Status radioBleResumeAdvertising(){return Status::Unsupported;}
+}}

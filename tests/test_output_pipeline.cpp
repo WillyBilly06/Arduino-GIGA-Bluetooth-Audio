@@ -35,6 +35,7 @@ Status i2sBegin(uint32_t rate,uint16_t ms){if(!i2sBufferGeometry(rate,ms,geometr
 Status i2sBegin(uint32_t rate){return i2sBegin(rate,20);}Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins&){return i2sBegin(rate,ms);}
 // Only rename the symbol; the included platform function body is verbatim.
 #define i2sWrite verbatimPlatformWrite
+static uint64_t sourcePrepared=0; // Mock storage for verbatim production prime credit.
 #include "i2s_write.inc"
 #undef i2sWrite
 size_t i2sWrite(const int32_t* p,size_t n){++writes;return verbatimPlatformWrite(p,n);}
@@ -44,3 +45,9 @@ OutputStats i2sStats(){stats.queued_frames=ring?uint32_t(ring->queued()):0;retur
 }}
 static void sleep(unsigned ms){for(unsigned i=0;i<ms;++i){tick+=1000;if(running){auto n=detail::recovery.refill(*ring,dma_storage.data(),tick);consumed+=unsigned(n);if(n<geometry.half_frames)++starved;}}}
 int main(int argc,char**argv){bool he=argc>1&&!strcmp(argv[1],"he");unsigned buffer=argc>2?unsigned(std::strtoul(argv[2],nullptr,10)):20;GigaBredr receiver;ReceiverConfig cfg;cfg.codecs=detail::compiledCodecs();cfg.queue_packets=2;cfg.startup_packets=1;cfg.pcm_buffer_ms=uint16_t(buffer);cfg.apply_remote_volume=false;if(receiver.begin(cfg)!=Status::Ok)return 2;CodecConfig c;c.codec=he?Codec::AacHe:Codec::Aac;c.sample_rate=argc>3?unsigned(std::strtoul(argv[3],nullptr,10)):(he?16000:8000);c.channels=2;c.bits_per_sample=16;c.aac_transport=AacTransport::Raw;if(callbacks.configure(c,callbacks.user)!=Status::Ok)return 2;callbacks.stream(true,callbacks.user);uint8_t packet[13]={0x80,0x60,0,1};packet[12]=0x44;probe::sleepHook=sleep;unsigned blocks=argc>4?unsigned(std::strtoul(argv[4],nullptr,10)):1;std::vector<unsigned> per_block;for(unsigned i=0;i<blocks;++i){const auto before=writes;packet[3]=uint8_t(i+1);callbacks.media(packet,sizeof packet,callbacks.user);receiver.impl_->processOne();per_block.push_back(writes-before);}auto dropped=receiver.impl_->counters.output_dropped_frames;printf("ACTUAL_FRONTEND_HEALTHY_CONSUMER codec=%s rate=%u decoded=%zu buffer_ms=%u elapsed_us=%u dropped=%u dma_starved_refills=%u accepted=%zu writes=%u\n",he?"HE":"LC",c.sample_rate,detail::decodedFrames,buffer,tick-100,dropped,starved,detail::decodedFrames*blocks-dropped,writes);printf("MODEL_WRITES_BY_BLOCK");for(auto n:per_block)printf(" %u",n);puts("");const auto maximum=unsigned((detail::decodedFrames+geometry.half_frames-1)/geometry.half_frames+1);bool bounded=true;for(size_t i=1;i<per_block.size();++i)if(per_block[i]>maximum)bounded=false;printf("MODEL_RUNNING_WRITE_CALL_BOUND max=%u pass=%u\n",maximum,unsigned(bounded));receiver.end();return (dropped||starved||!bounded)?3:0;}
+
+// Link boundary for lifecycle APIs unused by this existing regression.
+namespace giga_bredr { namespace detail {
+Status radioBleDisconnect(uint32_t,bool){return Status::Unsupported;}
+Status radioBleResumeAdvertising(){return Status::Unsupported;}
+}}

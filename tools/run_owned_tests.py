@@ -18,13 +18,13 @@ def main():
  actor=['src/owned/OwnedHost.cpp','src/owned/ClassicProfiles.cpp','src/owned/LeProfiles.cpp','src/platform/RadioProtocol.cpp']
  for n in ['test_single_hnc','test_single_signal','test_ble_audio_qos','test_le_connection_preference','test_le_transport','test_le_control']:
   exe=out/(n+'.exe');run([cc,'-std=c11',*flags,'tests/owned_core/'+n+'.c',*objects,'-o',exe]);run([exe])
- units=['test_owned_classic','test_owned_ble','test_owned_host','test_owned_host_review','test_owned_host_bootstrap','test_owned_host_ble_large','test_owned_host_service','test_owned_host_single_hnc','test_owned_host_hnc','test_owned_host_benign','test_owned_host_le_requests','test_owned_host_signaling','test_owned_host_ble_commands','test_owned_host_ble_unsubscribe','test_owned_host_config_reject','test_owned_host_abort','test_owned_host_scheduling','test_owned_host_classic_combined','test_owned_host_mixed_att','test_uart_tx_mailbox','test_ble_audio_qos','test_ble_connection_preference']
+ units=['test_owned_classic','test_owned_ble','test_owned_host','test_owned_host_review','test_owned_host_bootstrap','test_owned_host_ble_large','test_owned_host_service','test_owned_host_single_hnc','test_owned_host_hnc','test_owned_host_benign','test_owned_host_le_requests','test_owned_host_signaling','test_owned_host_ble_commands','test_owned_host_ble_unsubscribe','test_owned_host_config_reject','test_owned_host_abort','test_owned_host_scheduling','test_owned_host_classic_combined','test_owned_host_mixed_att','test_uart_tx_mailbox','test_ble_audio_qos','test_ble_connection_preference','test_owned_ble_lifecycle']
  for n in units:
   sources=actor[1:] if n in ('test_owned_host_scheduling','test_owned_host_classic_combined') else actor
   extra=['-DGBR_QOS_CANDIDATE=1'] if n=='test_ble_audio_qos' else []
   arguments=['all'] if n in ('test_ble_audio_qos','test_ble_connection_preference') else []
   exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,*extra,'-Itests','tests/'+n+'.cpp',*sources,*objects,'-o',exe]);run([exe,*arguments])
- frontend=['tests/empty_registry.cpp','src/GigaBredr.cpp','src/Types.cpp','src/detail/Memory.cpp','src/detail/Decoder.cpp','src/detail/Media.cpp','src/detail/PacketQueue.cpp','src/detail/AudioTiming.cpp']
+ frontend=['tests/empty_registry.cpp','src/GigaBredr.cpp','src/Types.cpp','src/detail/Memory.cpp','src/detail/Decoder.cpp','src/detail/Media.cpp','src/detail/PacketQueue.cpp','src/detail/AudioTiming.cpp','tests/support/clock_backend_unavailable.cpp']
  portable={'test_audio_timing':['src/detail/AudioTiming.cpp'],'test_rtp_discontinuity':['src/detail/AudioTiming.cpp'],'test_receiver':frontend,'test_receiver_lifetime':frontend,'test_i2s':[],'test_i2s_thread':[],'test_i2s_priming':[],'test_i2s_pins':[],'test_i2s_routes':[],'test_i2s_recovery':[],'test_pcm_transition':[],'test_i2s_runtime':['src/platform/GigaI2s.cpp']}
  for n,sources in portable.items():
   exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,*(['-pthread']if os.name!='nt'else[]),'tests/'+n+'.cpp',*sources,'-o',exe]);run([exe])
@@ -37,6 +37,11 @@ def main():
  for case in ['actual_loop_reconnect','copy_retry','stale_generation','byte_value_semantics','disconnect_after_admission','stopped']:run([exe,case])
  exe=out/'test_i2s_pins_legacy.exe';run([cxx,'-std=c++17',*flags,'-DGIGA_BREDR_I2S_WS_PIN=69','tests/test_i2s_pins.cpp','-o',exe]);run([exe])
  exe=out/'test_i2s_routes_legacy.exe';run([cxx,'-std=c++17',*flags,'-DGIGA_BREDR_I2S_WS_PIN=69','tests/test_i2s_routes.cpp','-o',exe]);run([exe])
+ # The new facade fixture forwards to the real owned actor. Its I2S boundary
+ # is unavailable, while its BLE controller admission remains fully exercised.
+ exe=out/'test_ble_lifecycle_facade.exe'
+ run([cxx,'-std=c++17',*flags,*(['-pthread']if os.name!='nt'else[]),'tests/test_ble_lifecycle_facade.cpp',*facade,*actor,*objects,'-o',exe]);run([exe])
+ run([sys.executable,'tools/test_audio_clock.py','--compiler',cxx,'--cc',cc,'--output',out/'audio-clock'])
  run([sys.executable,'tests/test_owned_wake.py','--cc',cc,'--cxx',cxx,*(['--sanitize']if a.sanitize else[]),*(['--asan']if a.asan else[])])
  run([sys.executable,'tools/test_codec_memory.py',*(['--sanitize']if a.sanitize else[]),*(['--asan']if a.asan else[])])
  # This child always enables ASan/UBSan and keeps its receipt under this run.

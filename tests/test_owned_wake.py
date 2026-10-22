@@ -34,7 +34,7 @@ def main():
         if result:return result
         objects.append(obj)
     frontend=['tests/empty_registry.cpp','src/Types.cpp','src/detail/Memory.cpp',
-              'src/detail/Decoder.cpp','src/detail/Media.cpp','src/detail/PacketQueue.cpp','src/detail/AudioTiming.cpp']
+              'src/detail/Decoder.cpp','src/detail/Media.cpp','src/detail/PacketQueue.cpp','src/detail/AudioTiming.cpp','tests/support/clock_backend_unavailable.cpp']
     actor=['src/owned/OwnedHost.cpp','src/owned/ClassicProfiles.cpp','src/owned/LeProfiles.cpp','src/platform/RadioProtocol.cpp']
     for name in ['test_owned_radio_wake','test_receiver_wake_lifetime']:
         extra=[*[root/n for n in actor],*objects]if name=='test_owned_radio_wake'else[]

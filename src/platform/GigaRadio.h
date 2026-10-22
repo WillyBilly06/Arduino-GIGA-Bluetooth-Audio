@@ -22,4 +22,6 @@ RadioStats radioStats();
 BleStats radioBleStats();
 Status radioBleNotify(const uint8_t* data, size_t length);
 bool radioBleReadWrite(BleWrite& value);
+Status radioBleDisconnect(uint32_t expected_generation,bool advertise_after_disconnect);
+Status radioBleResumeAdvertising();
 }}

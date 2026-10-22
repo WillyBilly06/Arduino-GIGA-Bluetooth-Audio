@@ -5,6 +5,7 @@
 #include "detail/Media.h"
 #include "detail/PacketQueue.h"
 #include "detail/Volume.h"
+#include "detail/AudioClockControl.h"
 #include "codecs/Codecs.h"
 #include "platform/GigaRadio.h"
 #include "platform/GigaI2s.h"
@@ -144,7 +145,168 @@ struct GigaBredr::Impl {
     rtos::Semaphore wake{0, 1};
     rtos::EventFlags host_events;
 #endif
-    explicit Impl(const ReceiverConfig& config): options(config) {}
+    // All mutable control/bookkeeping belongs to codec_mutex's decoder worker.
+    detail::AudioClockControl clock_control;
+    AudioClockStats clock_published; // Public row; live bookkeeping stays worker-private.
+    uint32_t clock_output_epoch = 0, clock_last_us = 0;
+    uint32_t clock_whole_units = 0, clock_remaining_units = 0;
+    uint32_t clock_previous_decode_errors = 0, clock_previous_dropped = 0;
+    uint64_t clock_previous_discarded = 0, clock_packet_start = 0, clock_rtp_errors[9] = {};
+    bool clock_have_time = false, clock_packet_active = false, clock_input_fault = false, clock_local_backend_fault = false;
+    bool clock_eligible = false; // Epoch geometry only; never changes requested enable.
+    bool clockEnabled() const { return options.clock.enabled && options.enable_i2s; }
+    void clockBegin() {
+        clock_control = {}; clock_output_epoch = 0; clock_have_time = clock_packet_active = clock_input_fault = false; clock_eligible = false;
+        clock_whole_units = clock_remaining_units = 0; clock_packet_start = 0; clock_local_backend_fault = false;
+        clock_previous_decode_errors = counters.decode_errors; clock_previous_dropped = dropped.load(); clock_previous_discarded = 0;
+        memset(clock_rtp_errors, 0, sizeof clock_rtp_errors);
+        counters.clock = {}; counters.clock.enabled = clockEnabled();
+        counters.clock.state = clockEnabled() ? AudioClockState::Inactive : AudioClockState::Disabled;
+        counters.clock.observation_us = clockUs(); clock_published = counters.clock;
+        if (!clockEnabled()) return;
+        auto& stats = counters.clock; stats.stream_epoch = stream_epoch; stats.sample_rate = format.sample_rate;
+        const auto source = detail::i2sSourceSnapshot();
+        stats.ring_capacity = source.ring_capacity;
+        // Match the actual I2S geometry: ceil(rate/1000), rounded to four frames.
+        // A nominal millisecond threshold is wrong at44.1/88.2/176.4kHz.
+        const uint32_t half = uint32_t(((uint64_t(format.sample_rate) + 999u) / 1000u + 3u) & ~uint64_t(3u));
+        stats.required_ring_frames = half * 4u;
+        stats.observation_us = clockUs(); clock_published = stats;
+        if (!source.initialized || !source.output_epoch || source.sample_rate != format.sample_rate || !source.ring_capacity) return;
+        clock_output_epoch = source.output_epoch; stats.output_epoch = stats.expected_output_epoch = source.output_epoch;
+        stats.prepared_frames = source.prepared; stats.missing_frames = source.missing;
+        stats.inventory_valid = source.prepared == 0;
+        detail::AudioClockConfig config; config.limit_ppm = options.clock.limit_ppm; config.slew_ppm = options.clock.slew_ppm_per_second;
+        if (source.ring_capacity >= stats.required_ring_frames)
+            clock_eligible = clock_control.begin(stream_epoch, source.output_epoch, format.sample_rate, source.ring_capacity, active_buffers.queue_packets, config);
+        stats.eligible = clock_eligible;
+        stats.observation_us = clockUs(); clock_published = stats;
+    }
+    void clockStop() {
+        if (clockEnabled() && clock_output_epoch) {
+            const auto source = detail::i2sSourceSnapshot(); auto& stats = counters.clock;
+            stats.output_epoch = source.output_epoch; stats.prepared_frames = source.prepared; stats.missing_frames = source.missing;
+            stats.inventory_valid = source.output_epoch == clock_output_epoch && stats.discarded_frames <= stats.decoded_frames &&
+                                    stats.prepared_frames <= stats.decoded_frames - stats.discarded_frames;
+            // Releasing the ring/unfinished PCM explicitly discards its real inventory.
+            if (stats.inventory_valid) stats.discarded_frames = stats.decoded_frames - stats.prepared_frames;
+        }
+        clock_control = {}; clock_output_epoch = 0; clock_have_time = clock_packet_active = false; clock_eligible = false;
+        clock_whole_units = clock_remaining_units = 0; counters.clock.retained_units_q16 = counters.clock.compressed_units_q16 = 0;
+        counters.clock.state = clockEnabled() ? AudioClockState::Inactive : AudioClockState::Disabled;
+        counters.clock.observation_us = clockUs(); clock_published = counters.clock;
+    }
+    void clockStartPacket(detail::MediaRetainedState before, detail::MediaRetainedState after) {
+        if (!clockEnabled()) return;
+        auto& stats = counters.clock;
+        if (stats.retained_units_q16 && before.assembly_generation != after.assembly_generation) {
+            stats.retained_units_q16 = 0; ++stats.assembly_discards; clock_input_fault = true;
+        }
+        // The access-unit capacity bounds retained entries to at most65535 byte packets.
+        if (stats.retained_units_q16 > UINT32_MAX - 65536u) { stats.retained_units_q16 = 0; clock_input_fault = true; }
+        clock_whole_units = stats.retained_units_q16 + 65536u;
+        clock_remaining_units = clock_whole_units; stats.retained_units_q16 = 0;
+        clock_packet_start = stats.decoded_frames; clock_packet_active = true;
+    }
+    void clockDecoded(size_t consumed, size_t total, size_t frames) {
+        if (!clockEnabled()) return;
+        if (!total || consumed > total) { clock_input_fault = true; clock_remaining_units = 0; }
+        else clock_remaining_units = uint32_t(uint64_t(clock_whole_units) * (total - consumed) / total);
+        counters.clock.decoded_frames += frames; // Credit before any PCM is prepared.
+    }
+    void clockDiscard(size_t frames) { if (clockEnabled()) counters.clock.discarded_frames += frames; }
+    void clockFinishPacket(bool valid, bool retained) {
+        if (!clockEnabled() || !clock_packet_active) return;
+        auto& stats = counters.clock;
+        if (valid) { ++stats.completed_packets; stats.completed_frames += stats.decoded_frames - clock_packet_start; }
+        else clock_input_fault = true;
+        stats.retained_units_q16 = valid && retained ? clock_remaining_units : 0;
+        clock_whole_units = clock_remaining_units = 0; clock_packet_active = false;
+    }
+    static AudioClockBackendStatus clockBackendStatus(detail::ClockTrimCode code) {
+        switch (code) {
+            case detail::ClockTrimCode::Applied: return AudioClockBackendStatus::Applied;
+            case detail::ClockTrimCode::Unchanged: return AudioClockBackendStatus::Unchanged;
+            case detail::ClockTrimCode::Inactive: return AudioClockBackendStatus::Inactive;
+            case detail::ClockTrimCode::StaleEpoch: return AudioClockBackendStatus::StaleEpoch;
+            case detail::ClockTrimCode::InvalidArgument: return AudioClockBackendStatus::InvalidArgument;
+            case detail::ClockTrimCode::Unrepresentable: return AudioClockBackendStatus::Unrepresentable;
+            case detail::ClockTrimCode::Unsupported: return AudioClockBackendStatus::Unsupported;
+            case detail::ClockTrimCode::ForeignClock: return AudioClockBackendStatus::ForeignClock;
+            case detail::ClockTrimCode::TimerUnavailable: return AudioClockBackendStatus::TimerUnavailable;
+            case detail::ClockTrimCode::TimerStalled: return AudioClockBackendStatus::TimerStalled;
+            case detail::ClockTrimCode::ReadbackFault: return AudioClockBackendStatus::ReadbackFault;
+            case detail::ClockTrimCode::InvalidContext: return AudioClockBackendStatus::InvalidContext;
+        }
+        return AudioClockBackendStatus::Unsupported;
+    }
+    void clockFeedback() {
+        if (!clockEnabled() || !clock_eligible || !running.load() || !configured || !playing.load() || !clock_output_epoch) return;
+        const uint32_t now = clockUs();
+        // Gate BEFORE backend IRQ exclusion, queue lock and occupancy arithmetic.
+        if (clock_have_time && uint32_t(now - clock_last_us) < 1000u) return;
+        clock_have_time = true; clock_last_us = now;
+        auto& stats = counters.clock; ++stats.observations; stats.observation_us = now;
+        const auto source = detail::i2sSourceSnapshot();
+        const auto backend = detail::i2sClockTrimStats();
+        uint32_t queued; bool rtp_changed = false;
+        { Lock queue_lock(queue_mutex); queued = uint32_t(queue.count());
+          const auto rtp = rtp_timing.snapshot();
+          const uint64_t errors[] = {rtp.forward_gaps,rtp.duplicates,rtp.backward,rtp.source_changes,rtp.clock_discontinuities,
+                                    rtp.timestamp_discontinuities,rtp.inner_sequence_discontinuities,rtp.malformed_payloads,rtp.rejected_epoch};
+          for (unsigned i = 0; i < 9; ++i) { if (errors[i] != clock_rtp_errors[i]) rtp_changed = true; clock_rtp_errors[i] = errors[i]; }
+        }
+        const uint32_t dropped_now = dropped.load();
+        const bool new_error = counters.decode_errors != clock_previous_decode_errors || dropped_now != clock_previous_dropped ||
+                               stats.discarded_frames != clock_previous_discarded || rtp_changed || clock_input_fault;
+        clock_previous_decode_errors = counters.decode_errors; clock_previous_dropped = dropped_now;
+        clock_previous_discarded = stats.discarded_frames; clock_input_fault = false;
+        stats.output_epoch = source.output_epoch;
+        stats.prepared_frames = source.prepared; stats.missing_frames = source.missing;
+        stats.inventory_valid = source.output_epoch == clock_output_epoch && stats.discarded_frames <= stats.decoded_frames && source.prepared <= stats.decoded_frames - stats.discarded_frames;
+        const uint64_t units = uint64_t(queued) * 65536u + (clock_packet_active ? clock_remaining_units : stats.retained_units_q16);
+        stats.compressed_units_q16 = units > UINT32_MAX ? UINT32_MAX : uint32_t(units);
+        detail::AudioClockSample sample;
+        sample.stream_epoch = stream_epoch; sample.output_epoch = source.output_epoch; sample.now_us = now;
+        sample.decoded = stats.decoded_frames; sample.discarded = stats.discarded_frames; sample.prepared = source.prepared; sample.zeros = source.missing;
+        sample.completed_packets = stats.completed_packets; sample.completed_frames = stats.completed_frames;
+        sample.compressed_units_q16 = stats.compressed_units_q16;
+        sample.running = source.initialized && source.running; sample.recovering = source.recovering;
+        sample.healthy = !new_error && !backend.faulted && !clock_local_backend_fault && source.output_epoch == clock_output_epoch && source.sample_rate == format.sample_rate && units <= UINT32_MAX;
+        const auto decision = clock_control.observe(sample);
+        if (decision.update) {
+            stats.requested_ppm_q16 = decision.requested_q16;
+            const auto result = detail::i2sClockTrim(decision.output_epoch, decision.requested_q16, decision.lower_q16, decision.upper_q16);
+            const bool correct_epoch = result.output_epoch == decision.output_epoch;
+            bool accepted = result.accepted && correct_epoch;
+            const bool acknowledged = clock_control.acknowledge(decision, accepted, result.applied_q16);
+            if (!acknowledged) { clock_control.acknowledge(decision, false, 0); clock_local_backend_fault = true; accepted = false; }
+            if (result.accepted && !correct_epoch) clock_local_backend_fault = true;
+            if (result.partial && !accepted) clock_local_backend_fault = true;
+            stats.backend_status = !acknowledged ? AudioClockBackendStatus::ReadbackFault :
+                                   result.accepted && !correct_epoch ? AudioClockBackendStatus::StaleEpoch : clockBackendStatus(result.status);
+            stats.backend_fault = detail::i2sClockTrimStats().faulted || clock_local_backend_fault;
+            stats.duration_cycles = result.duration_cycles; stats.wait_cycles[0] = result.wait_cycles[0]; stats.wait_cycles[1] = result.wait_cycles[1];
+            if (result.max_critical_cycles > stats.maximum_critical_cycles) stats.maximum_critical_cycles = result.max_critical_cycles;
+            stats.duration_valid = result.duration_valid; stats.wall_overruns = result.wall_overruns;
+            stats.fraction = result.fraction; stats.readback_fraction = result.readback_fraction;
+            if (accepted) stats.applied_valid = true;
+        } else stats.backend_fault = backend.faulted || clock_local_backend_fault;
+        if (stats.backend_fault || source.output_epoch != clock_output_epoch) stats.applied_valid = false;
+        const auto control = clock_control.snapshot();
+        stats.applied_ppm_q16 = control.applied_q16; stats.decisions = control.decisions; stats.accepted = control.accepted; stats.refused = control.refused;
+        stats.invalid_samples = control.invalid_samples; stats.estimated_inventory_frames = control.inventory_frames;
+        stats.target_frames = control.target_frames; stats.frames_per_packet_q16 = control.frames_per_packet_q16;
+        stats.state = stats.backend_fault ? AudioClockState::BackendFault : control.tracking ? AudioClockState::Tracking :
+                      control.learning ? AudioClockState::Learning : control.suspended ? AudioClockState::Suspended : AudioClockState::Inactive;
+        clock_published = stats;
+    }
+
+    explicit Impl(const ReceiverConfig& config): options(config) {
+        counters.clock.enabled = clockEnabled();
+        counters.clock.state = clockEnabled() ? AudioClockState::Inactive : AudioClockState::Disabled;
+        counters.clock.observation_us = clockUs(); clock_published = counters.clock;
+    }
     void note(const char* text) {
         if (!text) return;
         Lock lock(event_mutex);
@@ -169,6 +331,7 @@ struct GigaBredr::Impl {
         Lock lock(event_mutex); volume.store(value); volume_event = true;
     }
     void releaseCodec() { // caller owns codec_mutex; queued packets cannot refer to freed storage
+        clockStop();
         playing.store(false);
         { Lock lock(queue_mutex);
           rtp_timing.endEpoch(stream_epoch); queue_timing.endEpoch(stream_epoch);
@@ -221,6 +384,7 @@ struct GigaBredr::Impl {
         }
         work_timing.beginEpoch(stream_epoch);
         counters.buffers = selected_buffers;
+        clockBegin();
         configuration_event = true;
         return Status::Ok;
     }
@@ -261,6 +425,7 @@ struct GigaBredr::Impl {
     }
     void processOne() {
         Lock codec_lock(codec_mutex);
+        clockFeedback();
         if (!playing.load() || !configured || !packet || !pcm) return;
         size_t n;
         { Lock queue_lock(queue_mutex);
@@ -281,10 +446,12 @@ struct GigaBredr::Impl {
         const uint32_t packet_began = clockUs();
         auto record_work = [&]() { work.elapsed_us = clockUs() - packet_began; work_timing.record(packet_epoch, work); };
         detail::MediaView view;
+        const auto retained_before = media.retainedState();
         Status status = media.feed(packet, n, view);
-        if (status == Status::NeedMoreData) { record_work(); return; }
-        if (status != Status::Ok) { ++counters.decode_errors; counters.last_error = status; record_work(); return; }
-        size_t offset = 0; bool need_more = false;
+        clockStartPacket(retained_before, media.retainedState());
+        if (status == Status::NeedMoreData) { clockFinishPacket(true, true); clockFeedback(); record_work(); return; }
+        if (status != Status::Ok) { ++counters.decode_errors; counters.last_error = status; clockFinishPacket(false, false); clockFeedback(); record_work(); return; }
+        size_t offset = 0; bool need_more = false, valid_packet = true;
         while (offset < view.bytes) {
             size_t input = view.bytes - offset;
             if (format.codec == Codec::Aptx || format.codec == Codec::AptxHd) {
@@ -299,7 +466,7 @@ struct GigaBredr::Impl {
             if (elapsed > counters.maximum_decode_us) counters.maximum_decode_us = elapsed;
             if (result.status == Status::NeedMoreData && !result.consumed) { need_more = true; break; }
             if (result.status != Status::Ok || !result.consumed || result.consumed > input || result.frames > pcm_frames) {
-                ++counters.decode_errors; counters.last_error = result.status == Status::Ok ? Status::CorruptFrame : result.status; break;
+                ++counters.decode_errors; counters.last_error = result.status == Status::Ok ? Status::CorruptFrame : result.status; valid_packet = false; break;
             }
             if (format.codec == Codec::LhdcV5) {
                 if (result.concealment_flags & ConcealRightChannel) {
@@ -315,6 +482,8 @@ struct GigaBredr::Impl {
                 for (size_t i = result.frames; i > 0; --i) { int32_t value = pcm[i - 1]; pcm[(i - 1) * 2] = value; pcm[(i - 1) * 2 + 1] = value; }
             }
             counters.decoded_frames += result.frames;
+            clockDecoded(offset + result.consumed, view.bytes, result.frames);
+            clockFeedback();
             if (options.apply_remote_volume) detail::scaleStereoVolume(pcm, result.frames, volume.load());
             if (options.enable_i2s) {
                 const uint64_t write_budget = 100000u +
@@ -325,21 +494,23 @@ struct GigaBredr::Impl {
                     sent += detail::i2sWrite(pcm + sent * 2, result.frames - sent);
                     OutputStats output = detail::i2sStats();
                     if (!output.initialized || (!output.running && !output.priming)) {
-                        counters.output_dropped_frames += uint32_t(result.frames - sent);
+                        counters.output_dropped_frames += uint32_t(result.frames - sent); clockDiscard(result.frames - sent);
                         counters.last_error = Status::HardwareError;
                         note("I2S stopped; output and decoder released");
                         record_work(); releaseCodec(); return;
                     }
                     if (sent == result.frames) break;
-                    if (!running.load() || clockUs() - began > write_limit_us) { counters.output_dropped_frames += uint32_t(result.frames - sent); break; }
+                    if (!running.load() || clockUs() - began > write_limit_us) { counters.output_dropped_frames += uint32_t(result.frames - sent); clockDiscard(result.frames - sent); break; }
                     uint32_t waiting = clockUs();
+                    clockFeedback();
                     { UnlockDuringWait unlock(codec_mutex); waitOne(); }
                     work.write_wait_us += clockUs() - waiting;
                     // Stop/reconfigure can release every saved packet/PCM view
                     // during the wait. Validate before any pointer is reused.
                     if (packet_epoch != stream_epoch || !configured || !playing.load()) return;
+                    clockFeedback();
                     if (!running.load()) {
-                        counters.output_dropped_frames += uint32_t(result.frames - sent);
+                        counters.output_dropped_frames += uint32_t(result.frames - sent); clockDiscard(result.frames - sent);
                         record_work(); return;
                     }
                 }
@@ -348,6 +519,7 @@ struct GigaBredr::Impl {
         }
         if (!need_more) media.consumed();
         if (offset == view.bytes) ++counters.decoded_packets;
+        clockFinishPacket(valid_packet, need_more); clockFeedback();
         record_work();
     }
 #if defined(ARDUINO)
@@ -381,6 +553,7 @@ uint32_t GigaBredr::availableCodecs() { return detail::compiledCodecs(); }
 bool GigaBredr::setExternalAllocator(Allocate a, Free f, void* user) { return detail::setMemoryProvider(MemoryKind::External, a, f, user); }
 Status GigaBredr::begin(const ReceiverConfig& input) {
     if (impl_) return Status::Busy;
+    if (input.clock.limit_ppm > 500 || input.clock.slew_ppm_per_second > 10) return Status::InvalidArgument;
     detail::I2sRoutePlan route;
     if (input.enable_i2s && !detail::i2sRoutePlan(input.i2s, route)) return Status::InvalidArgument;
     if (!input.name || !*input.name || input.maximum_packet_bytes < 64 || input.maximum_packet_bytes > 65535 ||
@@ -460,7 +633,7 @@ ReceiverStats GigaBredr::stats() const {
     ReceiverStats result;
     if (impl_) {
         Lock lock(impl_->codec_mutex);
-        result = impl_->counters; result.configuration = impl_->format;
+        result = impl_->counters; result.clock = impl_->clock_published; result.configuration = impl_->format;
         result.configured = impl_->configured; result.playing = impl_->playing.load();
         result.dropped_packets = impl_->dropped.load();
         result.absolute_volume = impl_->volume.load();
@@ -506,5 +679,17 @@ bool GigaBredr::bleReadWrite(BleWrite& value) {
     TryLock lock(impl_->radio_mutex);
     if (!lock) return false;
     return detail::radioBleReadWrite(value);
+}
+Status GigaBredr::bleDisconnect(uint32_t expected,bool advertise_after) {
+    if (!impl_) return Status::Unsupported;
+    TryLock lock(impl_->radio_mutex);
+    if (!lock) return Status::Busy;
+    return detail::radioBleDisconnect(expected,advertise_after);
+}
+Status GigaBredr::bleResumeAdvertising() {
+    if (!impl_) return Status::Unsupported;
+    TryLock lock(impl_->radio_mutex);
+    if (!lock) return Status::Busy;
+    return detail::radioBleResumeAdvertising();
 }
 }
