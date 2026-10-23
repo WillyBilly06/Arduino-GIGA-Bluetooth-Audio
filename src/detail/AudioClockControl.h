@@ -66,9 +66,10 @@ public:
    learnArea_+=area_;learnElapsed_+=elapsed_;
    if(learnElapsed_>=2000000u){
     uint64_t target=q16mean(learnArea_,learnElapsed_);
-    const uint64_t capacity=uint64_t(pcmCapacity_)*65536u+stats_.frames_per_packet_q16*queueCapacity_;
+    const uint64_t measured=target;
+    const uint64_t capacity=targetCeilingQ16();
     if(target>capacity)target=capacity;
-    targetQ16_=filterQ16_=target;stats_.target_frames=target>>16;
+    targetQ16_=target;filterQ16_=queueCapacity_>=4?measured:target;stats_.target_frames=target>>16;
     stats_.tracking=true;stats_.learning=false;previousError_=0;
    }
   }else if(stats_.tracking){
@@ -79,6 +80,10 @@ public:
   const uint64_t packetDelta=s.completed_packets-windowF_,frameDelta=s.completed_frames-windowG_;
   if(packetDelta){const uint64_t next=ratio(frameDelta,packetDelta);
    stats_.frames_per_packet_q16+= (int64_t(next)-int64_t(stats_.frames_per_packet_q16))/8;}
+  // A packetization contraction can reduce the estimated usable capacity
+  // without a lifecycle/error event. Never retain an unreachable old target.
+  if(stats_.tracking&&queueCapacity_>=4){const uint64_t ceiling=targetCeilingQ16();
+   if(targetQ16_>ceiling){targetQ16_=ceiling;stats_.target_frames=ceiling>>16;}}
   windowF_=s.completed_packets;windowG_=s.completed_frames;
   area_=elapsed_=0;windowStart_=s.now_us;
   if(!stats_.tracking||pending_.update)return {};
@@ -108,6 +113,13 @@ public:
   stats_.applied_q16=applied_q16;++stats_.accepted;return true;
  }
 private:
+ uint64_t targetCeilingQ16()const{
+  // Estimated inventory headroom, not guaranteed free physical packet slots:
+  // PCM need not be full and frames-per-packet is an average. Tiny queues
+  // retain the exact prior policy; this does not promise burst absorption.
+  const uint32_t reserve=queueCapacity_>=4?(queueCapacity_+3)/4:0;
+  return uint64_t(pcmCapacity_)*65536u+stats_.frames_per_packet_q16*(queueCapacity_-reserve);
+ }
  static uint64_t q16mean(uint64_t area,uint64_t time){return (area/time)*65536+(area%time)*65536/time;}
  static uint64_t ratio(uint64_t frames,uint64_t packets){
   const uint64_t whole=frames/packets;if(whole>UINT32_MAX)return uint64_t(UINT32_MAX)*65536;

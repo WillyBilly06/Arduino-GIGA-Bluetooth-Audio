@@ -25,8 +25,8 @@
       "source": "library.properties",
       "destination": "library.properties",
       "license": "Apache-2.0",
-      "input_sha256": "bded447a9af61edb82fd8f4fa9a7a313bcc0a8e37d357d35a853785bbccb6ccf",
-      "sha256": "cb433f927fc33649a59eec537045b956eaf7ec559d07424a0ff7730e7486c0a0",
+      "input_sha256": "6ce0b951b445946931d8336df82a8dea49a37a4d3d6397f4f04485cc195d19cd",
+      "sha256": "c9377fc0a8b7c98ce1b9891f25036c674646a84f5f3acca29de1ab84625ee002",
       "bytes": 430,
       "export_modified": true
     },
@@ -34,9 +34,9 @@
       "source": "docs/github/develop/README.md",
       "destination": "README.md",
       "license": "Apache-2.0",
-      "input_sha256": "41db90b5ead96d92026a701c26ac2da74f9d9afd70abedc4e95160038bc8dd80",
-      "sha256": "41db90b5ead96d92026a701c26ac2da74f9d9afd70abedc4e95160038bc8dd80",
-      "bytes": 11930,
+      "input_sha256": "99b70cfb89c2133fc62807d0924e3d22f8df6057ef116df9d68eab720f432b8e",
+      "sha256": "99b70cfb89c2133fc62807d0924e3d22f8df6057ef116df9d68eab720f432b8e",
+      "bytes": 14145,
       "export_modified": false
     },
     {
@@ -52,9 +52,9 @@
       "source": "docs/github/develop/STATUS.md",
       "destination": "docs/STATUS.md",
       "license": "Apache-2.0",
-      "input_sha256": "f4207f2c2bafc09b4643d0c0660c2de7e92927fa63f98552a8bdc834d87a28e5",
-      "sha256": "f4207f2c2bafc09b4643d0c0660c2de7e92927fa63f98552a8bdc834d87a28e5",
-      "bytes": 11992,
+      "input_sha256": "df3027bd83acf038ae600f1ffbac6f16201248853497ffc592f35fbde40abe6e",
+      "sha256": "df3027bd83acf038ae600f1ffbac6f16201248853497ffc592f35fbde40abe6e",
+      "bytes": 14207,
       "export_modified": false
     },
     {
@@ -1013,9 +1013,9 @@
       "source": "examples/Receiver/Receiver.ino",
       "destination": "examples/Receiver/Receiver.ino",
       "license": "Apache-2.0",
-      "input_sha256": "d04265b198ecc51bfcdc4e7a75e4bb4587e9a88d8aebfc3fb7d5b6e1de253078",
-      "sha256": "d04265b198ecc51bfcdc4e7a75e4bb4587e9a88d8aebfc3fb7d5b6e1de253078",
-      "bytes": 18727,
+      "input_sha256": "b6379992a0a81a4afd09cb5dd2d7d835851b71762a871fb5c302d7e9f9d946a1",
+      "sha256": "b6379992a0a81a4afd09cb5dd2d7d835851b71762a871fb5c302d7e9f9d946a1",
+      "bytes": 18521,
       "export_modified": false
     },
     {
@@ -1085,9 +1085,9 @@
       "source": "docs/github/develop/BUILD.json",
       "destination": "docs/BUILD.json",
       "license": "Apache-2.0",
-      "input_sha256": "e29804c49d77a2e5c373559ddaa2c43c9a204dcb3badab571df994213896f92b",
-      "sha256": "e29804c49d77a2e5c373559ddaa2c43c9a204dcb3badab571df994213896f92b",
-      "bytes": 69116,
+      "input_sha256": "3a479fe11e294575d85a5ddc48276b748ce52a7ea24485ffffbcd52af4393b09",
+      "sha256": "3a479fe11e294575d85a5ddc48276b748ce52a7ea24485ffffbcd52af4393b09",
+      "bytes": 72388,
       "export_modified": false
     },
     {
@@ -4907,9 +4907,9 @@
       "source": "src/detail/AudioClockControl.h",
       "destination": "src/detail/AudioClockControl.h",
       "license": "Apache-2.0 project source/test/documentation",
-      "input_sha256": "a0b4851f8b13adc4d829be7851117c55b2f1b124490e1f4267732c84ac57c3ed",
-      "sha256": "a0b4851f8b13adc4d829be7851117c55b2f1b124490e1f4267732c84ac57c3ed",
-      "bytes": 7829,
+      "input_sha256": "3329879dd9bafd03ac400385d5f37648e156c2f4f490545baf5bbf66e292a1ee",
+      "sha256": "3329879dd9bafd03ac400385d5f37648e156c2f4f490545baf5bbf66e292a1ee",
+      "bytes": 8589,
       "export_modified": false
     },
     {
@@ -4928,6 +4928,24 @@
       "input_sha256": "288fa77b9e3485a2ebb358a7676035bd63779bc0f6d38ac45c788a43d2e5e03b",
       "sha256": "288fa77b9e3485a2ebb358a7676035bd63779bc0f6d38ac45c788a43d2e5e03b",
       "bytes": 6262,
+      "export_modified": false
+    },
+    {
+      "source": "tests/test_clock_queue_headroom.cpp",
+      "destination": "tests/test_clock_queue_headroom.cpp",
+      "license": "Apache-2.0 project source/test/documentation",
+      "input_sha256": "fbf6846304ca5fc1f9586ece8fb91fa438a8c5c428cb7d34e9ded01d1c87e1b1",
+      "sha256": "fbf6846304ca5fc1f9586ece8fb91fa438a8c5c428cb7d34e9ded01d1c87e1b1",
+      "bytes": 4535,
+      "export_modified": false
+    },
+    {
+      "source": "tests/test_clock_queue_pressure.cpp",
+      "destination": "tests/test_clock_queue_pressure.cpp",
+      "license": "Apache-2.0 project source/test/documentation",
+      "input_sha256": "ab7aae1fdab942ad32657c3524c0979432237d123249d38a53eeb8612674d337",
+      "sha256": "ab7aae1fdab942ad32657c3524c0979432237d123249d38a53eeb8612674d337",
+      "bytes": 10847,
       "export_modified": false
     },
     {
@@ -5024,27 +5042,45 @@
       "source": "tools/test_audio_clock.py",
       "destination": "tools/test_audio_clock.py",
       "license": "Apache-2.0 project source/test/documentation",
-      "input_sha256": "4789a95caf3c54c0fc6a47e90ca971579262d46e9554ed244b385d23c4eea4b6",
-      "sha256": "4789a95caf3c54c0fc6a47e90ca971579262d46e9554ed244b385d23c4eea4b6",
-      "bytes": 5856,
+      "input_sha256": "fc28e6e3317ecdeac4b7eade3c6d872a37c07ab4c9b0d0bde93a7d9f0a8c17fc",
+      "sha256": "fc28e6e3317ecdeac4b7eade3c6d872a37c07ab4c9b0d0bde93a7d9f0a8c17fc",
+      "bytes": 6180,
       "export_modified": false
     },
     {
       "source": "docs/github/develop/AUDIO_CLOCK.md",
       "destination": "docs/AUDIO_CLOCK.md",
       "license": "Apache-2.0 project source/test/documentation",
-      "input_sha256": "0d32ea2d87ccd9196988a021d920a0fada030b992435da5124ba26163adef2fe",
-      "sha256": "0d32ea2d87ccd9196988a021d920a0fada030b992435da5124ba26163adef2fe",
-      "bytes": 4721,
+      "input_sha256": "8b6ed27537c02379d6b45afd285b5d63faef8c5b5cb8aeda4b28f3a24e0d6fdf",
+      "sha256": "8b6ed27537c02379d6b45afd285b5d63faef8c5b5cb8aeda4b28f3a24e0d6fdf",
+      "bytes": 5517,
       "export_modified": false
     },
     {
       "source": "docs/validation/audio-clock-2026-10-22.md",
       "destination": "docs/validation/audio-clock-2026-10-22.md",
       "license": "Apache-2.0",
-      "input_sha256": "92577913e1b32dd8c94523611fec710c4f735f27cdfe11f6b5b4f70b99f94e89",
-      "sha256": "92577913e1b32dd8c94523611fec710c4f735f27cdfe11f6b5b4f70b99f94e89",
-      "bytes": 5750,
+      "input_sha256": "128cc5bc95f3af2c4bed520dbbaa124594528e95d855b85a433b631cd9fe1ef6",
+      "sha256": "128cc5bc95f3af2c4bed520dbbaa124594528e95d855b85a433b631cd9fe1ef6",
+      "bytes": 14906,
+      "export_modified": false
+    },
+    {
+      "source": "tools/release_checksums.py",
+      "destination": "tools/release_checksums.py",
+      "license": "Apache-2.0 project packaging/test",
+      "input_sha256": "d1be1b6c029daf2d4d35761fda90ac56586c3d6893ad1c9001fd9fd9f4a88526",
+      "sha256": "d1be1b6c029daf2d4d35761fda90ac56586c3d6893ad1c9001fd9fd9f4a88526",
+      "bytes": 1141,
+      "export_modified": false
+    },
+    {
+      "source": "tests/test_release_checksums.py",
+      "destination": "tests/test_release_checksums.py",
+      "license": "Apache-2.0 project packaging/test",
+      "input_sha256": "bcfe46a471e19a0273df2a567b68e12016ea07151625ad54bed459309c0c7dab",
+      "sha256": "bcfe46a471e19a0273df2a567b68e12016ea07151625ad54bed459309c0c7dab",
+      "bytes": 1409,
       "export_modified": false
     }
   ]

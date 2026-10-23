@@ -14,9 +14,9 @@
     "LHDC V5",
     "Opus"
   ],
-  "version": "0.1.0-dev.4",
+  "version": "0.1.0-dev.5",
   "date": "2026-10-22",
-  "profile": "Complete supplied decoder set; owned BLE lifecycle, common audio-clock accounting/control and selectively guarded PLL2 trim",
+  "profile": "Complete supplied codec set; owned BLE lifecycle, common audio-clock control with estimated queue headroom, selectively guarded PLL2 trim",
   "arduino_core": "arduino:mbed_giga 4.6.0",
   "fqbn": "arduino:mbed_giga:giga:target_core=cm7",
   "jobs": 4,
@@ -29,7 +29,7 @@
   "example": "examples/Receiver/Receiver.ino",
   "isolated_receiver_link": "PASS",
   "exported_library_translation_units": 168,
-  "compiler_input_set_sha256": "80a591e777b22ab6263eab8a95210dd8b5a52de85b8113c830ff015281dc24ce",
+  "compiler_input_set_sha256": "f6e998f0c25ae44bf4f6a1d46223726493bf41bc4c5541ebe5f0cdddbbf0f827",
   "source_files": [
     {
       "path": "src/AudioDiagnostics.h",
@@ -401,7 +401,7 @@
     },
     {
       "path": "examples/Receiver/Receiver.ino",
-      "sha256": "d04265b198ecc51bfcdc4e7a75e4bb4587e9a88d8aebfc3fb7d5b6e1de253078"
+      "sha256": "b6379992a0a81a4afd09cb5dd2d7d835851b71762a871fb5c302d7e9f9d946a1"
     },
     {
       "path": "src/vendor/codecs/sbc/include/oi_assert.h",
@@ -1469,7 +1469,7 @@
     },
     {
       "path": "src/detail/AudioClockControl.h",
-      "sha256": "a0b4851f8b13adc4d829be7851117c55b2f1b124490e1f4267732c84ac57c3ed"
+      "sha256": "3329879dd9bafd03ac400385d5f37648e156c2f4f490545baf5bbf66e292a1ee"
     },
     {
       "path": "src/platform/I2sClockTrim.h",
@@ -1477,28 +1477,28 @@
     }
   ],
   "elf_sections": {
-    "text": 482472,
+    "text": 482600,
     "data": 5344,
     "bss": 327320
   },
   "private_binary_not_distributed": true,
-  "public_profile_binary_sha256": "ea46fd9890264334138a0c817215bd7dc0a2a374ce5af4237da834ee023457fe",
-  "public_profile_binary_bytes": 487816,
-  "public_profile_elf_sha256": "f6bf8c44b6806f3f86d37efa21338b2faecfe33b7d092c9e76ea7f51553dc4f5",
-  "arduino_program_bytes": 483280,
+  "public_profile_binary_sha256": "210791643c83b4de1f79ae45c55e741511d392cfd311ad74304956d161b0cf10",
+  "public_profile_binary_bytes": 487944,
+  "public_profile_elf_sha256": "7035fe2f690172c30bb458a6b0600a1350729b8c1d750464ddc64fddeee8d9c9",
+  "arduino_program_bytes": 483408,
   "arduino_global_bytes": 54136,
-  "arduino_program_storage_bytes": 483280,
+  "arduino_program_storage_bytes": 483408,
   "arduino_dynamic_globals_bytes": 54136,
   "arduino_size_summary": {
-    "program_bytes": 483280,
+    "program_bytes": 483408,
     "dynamic_bytes": 54136
   },
   "main_thread_stack_bytes": 32768,
-  "library_metadata_version_at_M7_build": "0.1.0-dev.4",
-  "final_source_metadata_version": "0.1.0-dev.4",
-  "snapshot_scope": "Exact dev.4 transformed compiler inputs with final field documentation; public binary remains separately identified and unexecuted.",
-  "public_build_source_state": "Final reviewed source tree; source commit/tag are bound by the external release manifest.",
-  "target_execution_of_this_public_profile": "NOT FLASHED OR EXECUTED. This transformed public binary is distinct from the private132 image. No physical frequency, RF, acoustic, all-phone or permanent-quality claim.",
+  "library_metadata_version_at_M7_build": "0.1.0-dev.5",
+  "final_source_metadata_version": "0.1.0-dev.5",
+  "snapshot_scope": "Final dev.5 fixed runtime/compiler projection, fresh native/M7/extracted-ZIP proof and separately hashed finite exact-binary observations. Final metadata-only export/commit/tag bound externally.",
+  "public_build_source_state": "Final reviewed source tree; exact source commit/tag and ZIP are bound by the external release manifest.",
+  "target_execution_of_this_public_profile": "Exact2107BIN/full487944readback; finitecold38.007s LHDC/GATT; six natural30s phone-codec/GATT sources with independent complete-raw review; continuous1801.937host/1802.520receiver seconds LHDC192/passiveactual120ms BLE observation independently accepted. Sampled clock-update timing overruns retained; no acoustics/permanent/all-codec-soak or unavailable-phone-codec interoperability claim.",
   "historical_host_translation_units": 0,
   "decoder_source_files": 257,
   "vendor_original_input_hashes_checked": 257,
@@ -1552,8 +1552,13 @@
     "clock_child": "tools/test_audio_clock.py",
     "clock_cases": [
       "test_audio_clock_control",
+      "test_clock_queue_headroom",
       "test_media_retained",
       "test_clock_frontend",
+      "test_clock_queue_pressure:35000:1",
+      "test_clock_queue_pressure:35000:0",
+      "test_clock_queue_pressure:70000:1",
+      "test_clock_queue_pressure:70000:0",
       "test_clock_trim",
       "test_source_counters",
       "test_clock_release",
@@ -1569,358 +1574,402 @@
     "codec_memory_status": "PASS",
     "BLE_lifecycle_actor_checks": 852,
     "BLE_lifecycle_facade_checks": 138,
-    "LHDC_boundary_child_status": "PASS",
-    "scope": "Fresh actual transformed source with explicit native codec/RTOS/DMA/register boundaries; no MCU timing/masking or physical quality proof"
+    "LHDC_boundary_child_status": "PASS_FRESH",
+    "evidence_reuse": "None: actual exported owned/frontend/clock/audio/memory and LHDC boundary checks were freshly run after the headroom change",
+    "scope": "Actual transformed source with synthetic codec/RTOS/DMA/register boundaries; no MCU timing, RF or physical quality proof"
   },
   "clock_defaults": {
     "enabled": true,
     "limit_ppm": 500,
     "slew_ppm_per_second": 10,
-    "minimum_ring": "four actual rounded DMA halves; deliberately tiny rings remain playable without tracking",
-    "actuator": "Owned PLL2 fractional numerator only, Q16 accepted interval; BASEPRI0x60 at validated CMSISgroup3/DMA6/UART0/PendSV>=6",
-    "readback_scope": "Coefficient/register readback is not physical frequency"
+    "minimum_ring": "four actual rounded DMA halves; tiny rings remain playable without tracking",
+    "estimated_headroom": "Q>=4 reserves ceil(Q/4) estimated compressed inventory units at learning/relearning and after packetization contraction; heuristic, not guaranteed free slots",
+    "LHDC_example_queue_packets": 48,
+    "LHDC_example_startup_packets": 26,
+    "actuator": "Owned PLL2 fractional numerator only; accepted Q16 interval, BASEPRI0x60 at validated CMSIS group3/DMA6/UART0/PendSV>=6",
+    "readback_scope": "Coefficient readback is not physical frequency"
   },
-  "independent_codec_reference_scope": "No encoded media is distributed or newly exercised by this exported-profile run. Original target vectors and sender interoperability remain separate dated validation documents.",
+  "fresh_checksum_tests": {
+    "status": "PASS",
+    "cases": 3,
+    "actual_writer": "tools/release_checksums.py",
+    "format": "ASCII literal LF, final newline, two-space GNU basename records",
+    "actual_GNU_check": "PASS",
+    "control_SHA256": "cff6dc5a44cdfacf3f7c58d9b47433dcc3c8dac0d4cae8f0689632e22f941e81"
+  },
+  "independent_codec_reference_scope": "Encoded decoder vectors and sender interoperability remain separately scoped dated validation evidence. These native tests do not establish physical audio fidelity.",
   "export_safety_tests": {
     "status": "PASS",
     "passed": 17,
-    "scope": "Unchanged exporter real safety suite on exact fresh compiler binding and BUILD pin"
+    "scope": "Unchanged strict exporter safety suite on fresh compiler binding and BUILD pin"
   },
-  "maintained_runtime_passive_30min_observation": {
-    "tested_binary_sha256": "1322442572a145d7dd7e82c14f601479383eeeedc6bd882809aba1e08024f62c",
-    "host_interval_seconds": 1801.9370000000054,
-    "receiver_interval_ms": 1802510,
-    "complete_diagnostic_cycles": 902,
-    "actual_ble_parameters": "96/2/500",
-    "scope": "Passive established BLE connection during LHDC192; separate finite reconnect/GATT and six-codec tests. Software counters, not acoustics or physical frequency.",
-    "raw_sha256": "4ea005534b7e9431e708dc1306dda1321d9e89f5a8176bb273b3186356e67036",
-    "receipt_sha256": "6737b8a8e6cb33f87e462988d135bb4790522f92737f5019ed1ad7b5f8f603c0",
-    "counter_deltas": {
-      "GBR_STATUS.errors": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_STATUS.dropped": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_STATUS.underruns": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_STATUS.dma_errors": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_STATUS.output_dropped": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_STATUS.transport_errors": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_STATUS.diagnostic_drops": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_STATUS.console_drops": {
-        "first": 9410,
-        "last": 9410,
-        "delta": 0
-      },
-      "GBR_LHDC_CONCEAL.right_blocks": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_LHDC_CONCEAL.right_pcm_frames": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_LHDC_CONCEAL.muted_blocks": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_LHDC_CONCEAL.muted_pcm_frames": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_TIMING.gaps": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_TIMING.missing": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_TIMING.duplicates": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_TIMING.backward": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_TIMING.queue_full": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_TIMING.missing_pcm_frames": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_TIMING.underrun_records": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_TIMING.ble_command_drops": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RTP.clock_disc": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RTP.source_changes": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RTP.discontinuities": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RTP.timestamp_steps": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RTP.inner_steps": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RTP.payload_unknown": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RTP.payload_malformed": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RTP.disc_records": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RTP.disc_not_retained": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RECOVERY.entries": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RECOVERY.resumes": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RECOVERY_FRAMES.starved": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RECOVERY_FRAMES.held": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RECOVERY_FRAMES.hold_refills": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RECOVERY_FRAMES.current_hold": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RECOVERY_FRAMES.max_hold": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RECOVERY_FRAMES.records": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_RECOVERY_FRAMES.lost": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_PCM_TRANSITION.synthesized": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_PCM_TRANSITION.zero_padding": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_PCM_TRANSITION.mixed_real": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_CLOCK_FRAMES.D": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_CLOCK_FRAMES.Z": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_CLOCK_FRAMES.assembly_discards": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_CLOCK_WORK.refused": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_CLOCK_WORK.invalid": {
-        "first": 0,
-        "last": 0,
-        "delta": 0
-      },
-      "GBR_STATUS.rx_packets": {
-        "first": 389366,
-        "last": 749772,
-        "delta": 360406
-      },
-      "GBR_STATUS.rx_bytes": {
-        "first": 250071826,
-        "last": 480731666,
-        "delta": 230659840
-      },
-      "GBR_STATUS.hci_packets": {
-        "first": 401577,
-        "last": 770651,
-        "delta": 369074
-      },
-      "GBR_STATUS.hci_bytes": {
-        "first": 253285794,
-        "last": 486864358,
-        "delta": 233578564
-      },
-      "GBR_STATUS.decoded_packets": {
-        "first": 389222,
-        "last": 749630,
-        "delta": 360408
-      },
-      "GBR_STATUS.frames": {
-        "first": 368570076,
-        "last": 714561756,
-        "delta": 345991680
-      },
-      "GBR_STATUS.output_frames": {
-        "first": 104443392,
-        "last": 450435264,
-        "delta": 345991872
-      },
-      "GBR_TIMING.rtp_packets": {
-        "first": 108823,
-        "last": 469229,
-        "delta": 360406
-      },
-      "GBR_TIMING.work_packets": {
-        "first": 108799,
-        "last": 469207,
-        "delta": 360408
-      },
-      "GBR_TIMING.refills": {
-        "first": 543977,
-        "last": 2346018,
-        "delta": 1802041
-      },
-      "GBR_TIMING.real_frames": {
-        "first": 104443584,
-        "last": 450435456,
-        "delta": 345991872
-      },
-      "GBR_RTP.source_packets": {
-        "first": 108823,
-        "last": 469229,
-        "delta": 360406
-      },
-      "GBR_CLOCK_FRAMES.A": {
-        "first": 104448000,
-        "last": 450439680,
-        "delta": 345991680
-      },
-      "GBR_CLOCK_FRAMES.P": {
-        "first": 104443584,
-        "last": 450435456,
-        "delta": 345991872
-      },
-      "GBR_CLOCK_FRAMES.F": {
-        "first": 108799,
-        "last": 469207,
-        "delta": 360408
-      },
-      "GBR_CLOCK_FRAMES.G": {
-        "first": 104447040,
-        "last": 450438720,
-        "delta": 345991680
-      },
-      "GBR_CLOCK_WORK.observations": {
-        "first": 266474,
-        "last": 1147238,
-        "delta": 880764
-      },
-      "GBR_CLOCK_WORK.decisions": {
-        "first": 542,
-        "last": 2342,
-        "delta": 1800
-      },
-      "GBR_CLOCK_WORK.accepted": {
-        "first": 542,
-        "last": 2342,
-        "delta": 1800
+  "public_profile_binary_executed": true,
+  "public_exact_binary_execution": {
+    "binary_sha256": "210791643c83b4de1f79ae45c55e741511d392cfd311ad74304956d161b0cf10",
+    "binary_bytes": 487944,
+    "initial_source_ZIP_sha256": "09c655c41e5c045b353f1428078daec8777ce1fabafc330990b85529f9299892",
+    "source_projection_sha256": "f6e998f0c25ae44bf4f6a1d46223726493bf41bc4c5541ebe5f0cdddbbf0f827",
+    "full_readback": true,
+    "full_readback_receipt_sha256": "41ede4c8091de23dd7f96528092f6709f24257164a7486d5cbf18eb7855d6273",
+    "cold_receipt_sha256": "3dd390bedc64c6c2ac6ccf73f5697251061f0e3e24e0ce992f965f537ade30fb",
+    "cold_active_seconds": 38.007,
+    "cold_raw_sha256": "f411dd829fa19d6582e74339880ce1fefb2846fa01ca28bdbbbbd64dae744f98",
+    "six_receipt_sha256": "a33f74f8f7d4ea544363b4d86b8dd3ed8b907b94e3c9cb900596106d49cd99c6",
+    "six_independent_raw_review_sha256": "8edceb1943ffd732fa8d26eb0648d13c00dd20ac8d12176b9929a1ae7f33dca2",
+    "six_cases": [
+      {
+        "codec": "SBC/SBC-XQ",
+        "rate": 44100,
+        "source_seconds": 30,
+        "active_observed_ms": 30000,
+        "exact_512_byte_writes": 10,
+        "exact_512_byte_notifications": 10,
+        "MTU": 517,
+        "actual_LE": "96/2/500",
+        "raw_sha256": "f914f921c1341323c8a0260e2017d18f34370181093d9b457567080fd68f9f11"
+      },
+      {
+        "codec": "AAC-LC",
+        "rate": 44100,
+        "source_seconds": 30,
+        "active_observed_ms": 30000,
+        "exact_512_byte_writes": 10,
+        "exact_512_byte_notifications": 10,
+        "MTU": 517,
+        "actual_LE": "96/2/500",
+        "raw_sha256": "8034b9db6fb359f2009db1e28af014daf5e929d1a8d4e21909b295a1d46d7f03"
+      },
+      {
+        "codec": "aptX",
+        "rate": 48000,
+        "source_seconds": 30,
+        "active_observed_ms": 30001,
+        "exact_512_byte_writes": 10,
+        "exact_512_byte_notifications": 10,
+        "MTU": 517,
+        "actual_LE": "96/2/500",
+        "raw_sha256": "467fec8c1aa634475c679fa0c1a1d6086b5098c27c738b6c15d576d8d51e3ceb"
+      },
+      {
+        "codec": "aptX HD",
+        "rate": 48000,
+        "source_seconds": 30,
+        "active_observed_ms": 30007,
+        "exact_512_byte_writes": 10,
+        "exact_512_byte_notifications": 10,
+        "MTU": 517,
+        "actual_LE": "96/2/500",
+        "raw_sha256": "ae2da48ec7725207476ef68cc8efc5629c0327aa260fecb1a874fce02261c450"
+      },
+      {
+        "codec": "LDAC",
+        "rate": 96000,
+        "source_seconds": 30,
+        "active_observed_ms": 30000,
+        "exact_512_byte_writes": 10,
+        "exact_512_byte_notifications": 10,
+        "MTU": 517,
+        "actual_LE": "96/2/500",
+        "raw_sha256": "cdefc6587aa56adcc6cb03a94651fa59057ab3265d2b26d46472d4a568ebed8b"
+      },
+      {
+        "codec": "LHDC V5",
+        "rate": 192000,
+        "source_seconds": 30,
+        "active_observed_ms": 30006,
+        "exact_512_byte_writes": 10,
+        "exact_512_byte_notifications": 10,
+        "MTU": 517,
+        "actual_LE": "96/2/500",
+        "raw_sha256": "280116f1b0effc8006916296d05bde96a63b520eb3cab0e9499b213aaa034825"
       }
+    ],
+    "soak_status": "PASS_FINITE_30MIN_PASSIVE_SOFTWARE_OBSERVATION",
+    "scope": "Exact binary identity applies; debug ELF and final metadata-only source archive identities are separately recorded. No characteristic-read loop or continuous GATT workload is claimed here.",
+    "passive_30min": {
+      "receipt_sha256": "8c779e81c37689b9978b9340bb506fb144915a2391e9715626217b22fb1d38a2",
+      "independent_review_receipt_sha256": "73042b0728ebe75dbccba86d27879e3821c34808aef097c878090e29aa9bc849",
+      "raw_sha256": "d9966a318f9eeafa6ea30502bcb4208f8f7869c6570a224020e516c405c05835",
+      "raw_bytes": 2616946,
+      "host_interval_seconds": 1801.9370000000054,
+      "receiver_interval_ms": 1802520,
+      "complete_groups": 902,
+      "epochs": [
+        9,
+        9
+      ],
+      "physical_BLE_generation": 2,
+      "actual_LE": "96/2/500",
+      "port_closed": true,
+      "tracked_current_bytes": 245664,
+      "accepted_updates_first": 86,
+      "accepted_updates_last": 1886,
+      "error_counter_deltas": {
+        "GBR_STATUS.errors": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_STATUS.dropped": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_STATUS.underruns": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_STATUS.dma_errors": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_STATUS.output_dropped": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_STATUS.transport_errors": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_STATUS.diagnostic_drops": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_STATUS.console_drops": {
+          "first": 684,
+          "last": 684,
+          "delta": 0
+        },
+        "GBR_LHDC_CONCEAL.right_blocks": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_LHDC_CONCEAL.right_pcm_frames": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_LHDC_CONCEAL.muted_blocks": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_LHDC_CONCEAL.muted_pcm_frames": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_TIMING.gaps": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_TIMING.missing": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_TIMING.duplicates": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_TIMING.backward": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_TIMING.queue_full": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_TIMING.missing_pcm_frames": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_TIMING.underrun_records": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_TIMING.ble_command_drops": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RTP.clock_disc": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RTP.source_changes": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RTP.discontinuities": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RTP.timestamp_steps": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RTP.inner_steps": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RTP.payload_unknown": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RTP.payload_malformed": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RTP.disc_records": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RTP.disc_not_retained": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RECOVERY.entries": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RECOVERY.resumes": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RECOVERY_FRAMES.starved": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RECOVERY_FRAMES.held": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RECOVERY_FRAMES.hold_refills": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RECOVERY_FRAMES.current_hold": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RECOVERY_FRAMES.max_hold": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RECOVERY_FRAMES.records": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_RECOVERY_FRAMES.lost": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_PCM_TRANSITION.synthesized": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_PCM_TRANSITION.zero_padding": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_PCM_TRANSITION.mixed_real": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_CLOCK_FRAMES.D": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_CLOCK_FRAMES.Z": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_CLOCK_FRAMES.assembly_discards": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_CLOCK_WORK.refused": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        },
+        "GBR_CLOCK_WORK.invalid": {
+          "first": 0,
+          "last": 0,
+          "delta": 0
+        }
+      },
+      "timing_diagnostics": {
+        "distinct_sampled_last_transaction_wall_overrun_rows": 4,
+        "sampled_transaction_max_cycles": 269038,
+        "cumulative_critical_max_cycles": 257916,
+        "scope": "Not cumulative overrun count, isolated cause,20us wall bound or physical IRQ/clock measurement"
+      },
+      "scope": "Passive established BLE; separate finite GATT tests. Exact2107 identity only; not acoustics/permanent/all-codec30min continuity."
     }
+  },
+  "matched_current_classic_only": {
+    "pair_build_receipt_sha256": "e8199104ebb99a06c15405e069c3fde20cb641b16601d12fe64e292a9ff28a86",
+    "paired_independent_review_receipt_sha256": "75f832c15d696842a5c490aaa0ef46795784d452d029f19848c9024cd2ce6a5e",
+    "BLE_enabled_in_both": false,
+    "source_seconds": 45,
+    "source": "Same installed owned PCM_FLOAT/stress source, LHDC192/24/nominal1000kbps selection, equal volume",
+    "own_binary_sha256": "9cf985d31623717b79378b353f5d74212f1d8f056a45567a07d653a77d745ff5",
+    "reference_binary_sha256": "00385fbc8cce73096258baaf21d83bbc2db123a7821ef474a07deeedefe75fc3",
+    "own_program_bytes": 483872,
+    "reference_program_bytes": 504856,
+    "own_reported_static_globals": 54136,
+    "reference_reported_static_globals": 77120,
+    "own_active_tracked_requested_bytes": 245664,
+    "reference_active_tracked_requested_bytes": 199584,
+    "own_sdk_sleep_accounted_busy_percent": 89.149,
+    "reference_sdk_sleep_accounted_busy_percent": 88.232,
+    "own_tracking_seconds": 40.018,
+    "reference_tracking_seconds": 40.008,
+    "media_errors_recorded": 0,
+    "scope": "Finite private comparison images with shared decoder/output/clock/profiles/pins,195 identical allocated objects and four intended backend object differences. SDK busy is not exclusive CPU. No total-RAM, combined-BLE, statistical or acoustic superiority. Original checker/startup NQs retained; separate corrected/ready-gated actual interpretations qualify these intervals."
+  },
+  "radio_context_accounting": {
+    "own_requested_context_bytes": 46080,
+    "common_active_tracked_bytes": 199584,
+    "codec_workspace_duplicated": false,
+    "scope": "Exact ARM Context accounts for tracked difference; static sections and requested payloads are separate metrics, not total RAM. Only selected codec workspaces are allocated."
   }
 }

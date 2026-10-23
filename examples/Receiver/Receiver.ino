@@ -18,7 +18,7 @@ void setup() {
   ReceiverConfig config; config.name="GIGA Audio";
   // Codec-local buffering; other codecs inherit ReceiverConfig globals.
   auto& lhdc=config.codec_buffers[static_cast<size_t>(Codec::LhdcV5)];
-  lhdc.queue_packets=32; lhdc.startup_packets=26;
+  lhdc.queue_packets=48; lhdc.startup_packets=26;
   lhdc.maximum_packet_bytes=2048; lhdc.pcm_buffer_ms=20;
   auto& ldac=config.codec_buffers[static_cast<size_t>(Codec::Ldac)];
   ldac.queue_packets=40; ldac.startup_packets=16;

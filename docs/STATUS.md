@@ -1,44 +1,88 @@
 # Develop evidence and remaining limitations
 
-Version 0.1.0-dev.4; updated 2026-10-22. All257 selected decoder files and all eight
+Version 0.1.0-dev.5; updated 2026-10-22. All257 selected decoder files and all eight
 codec defaults remain enabled. The public source profile selects the owned
 Classic/BLE host and excludes the historical reference host. Main remains a
 separate stable-branch decision.
 
 ## Current all-codec output and BLE evidence
 
-The shared output path now includes bounded clock compensation for every codec,
-with source-frame accounting and UART-safe fractional PLL updates. All eight
-codec identities remain enabled. Decoder allocation follows the selected codec
-and configuration; immutable tables stay in flash.
+The dev.5 queue-headroom image `210791643c83b4de1f79ae45c55e741511d392cfd311ad74304956d161b0cf10`
+was built from a fresh extracted Arduino source ZIP and all487944 application
+bytes passed readback. All eight codec identities are enabled. Start with the
+bundled **Receiver** example for the measured codec-local buffer settings.
+Immutable decoder tables stay in flash; decoder and buffer allocations follow
+the selected codec/configuration.
 
-The readback-verified maintained image `1322442572a145d7dd7e82c14f601479383eeeedc6bd882809aba1e08024f62c`
-passed fresh BLE disconnect/reconnect during LHDC192 playback, applied120ms
-connection parameters, MTU517, and ten exact512-byte writes/notifications/actual
-reads. The150-second source completed naturally; later active observations
-through148 seconds recorded no new RTP/PCM/recovery/decoder/drop/DMA/transport
-errors. Six separate30-second sources also passed with ten512-byte GATT echoes
-each: SBC44.1, AAC-LC44.1, aptX/HD48, LDAC96 and LHDC V5 192kHz/24-bit with the
-nominal1000kbps selector. A continuous30-minute LHDC192 observation also passed with an established120ms BLE connection and zero new recorded audio/protocol errors. This passive run did not generate continuous GATT traffic.
+The new physical six-mode matrix passed ten exact512-byte GATT write/notification
+echoes per mode at MTU517, with actual120ms BLE connection parameters. Each owned
+30-second source completed naturally; the complete sampled windows and raw/chunk
+receipts were retained. The active observed spans are:
 
-[Clock API and nonblocking LE control](AUDIO_CLOCK.md) and
-[all-codec validation](validation/audio-clock-2026-10-22.md) explain the
-implementation, exact observed intervals and limits. A tiny legal PCM ring can
-be ineligible for tracking; the default20ms profiles meet the headroom guard.
-Requested/readback ppm coefficients are not measured physical clock frequency.
+| Phone codec | Sample rate (Hz) | Active observed span |
+| --- | ---: | ---: |
+| SBC/SBC-XQ | 44100 | 30.000 s |
+| AAC-LC | 44100 | 30.000 s |
+| aptX | 48000 | 30.001 s |
+| aptX HD | 48000 | 30.007 s |
+| LDAC | 96000 | 30.000 s |
+| LHDC V5 | 192000 | 30.006 s |
 
-The unchanged decoder sources separately passed12 M7 vector cases/3440 timed
-calls and220 allocation/configuration lifecycles; see
-[M7 measurements](validation/codec-target-2026-10-22.md). The available phone
-cannot select Opus, HE-AAC or distinct SBC-XQ, so their decoder/native coverage
-is separate from sender interoperability. HE-AAC v1 is experimental; v2/PS and
-xHE-AAC are unsupported. LHDC has no independent encoded PCM oracle. Acoustics,
-electrical I2S accuracy and matched performance against another stack remain
-separate qualification work.
+Recorded decoder/drop, queue-full, PCM missing/recovery, DMA/transport and
+applicable RTP/detail counters stayed zero. aptX uses raw transport here; its
+zero RTP counters are not RTP coverage. The companion checks the complete
+sampled source window; it does not prove every intervening instant or acoustics.
+The continuous LHDC192/120 ms BLE observation also passed: 1801.937 host
+seconds, 1802.520 receiver seconds and 902 complete diagnostic groups. Stream
+and output epochs and the physical BLE owner stayed unchanged. All monitored
+media/backend error counters stayed zero. This was passive established BLE;
+the six GATT workloads above are separate finite tests.
 
-`docs/BUILD.json` identifies the fresh public-profile build. Its execution status
-is recorded separately from the maintained image above. No binary inherits
-hardware qualification merely because it was exported from related source.
+Timing diagnostics retain four distinct sampled accepted updates with the
+last-transaction wall-overrun flag set; this is not a cumulative event count.
+The sampled transaction maximum was269038 cycles and cumulative maximum critical
+interval257916 cycles. No tiny wall-time bound or specific preemption cause is
+inferred. These accepted updates caused no recorded PCM/media fault in this
+interval; acoustics remain unqualified.
+
+The initial38.007-second LHDC192/GATT gate separately passed full readback,
+MTU517 and ten512-byte write/notification echoes. It did not run a characteristic
+read loop. The earlier private132 image has separately dated reconnect/read
+and30-minute evidence; that evidence is not transferred between binary hashes.
+
+All257 selected supplied decoder files remain included. The unchanged decoder
+sources separately passed12 M7 vector cases/3440 timed calls and220 allocation
+lifecycles. The phone cannot select Opus, HE-AAC or a distinct SBC-XQ mode;
+those have separate decoder/native/M7 coverage. HE-AAC v1 is experimental;
+v2/PS and xHE-AAC are unsupported. LHDC has no independent encoded-PCM oracle.
+Apple-device interoperability, electrical I2S accuracy and acoustics remain
+unqualified here. No finite counter test establishes permanent continuity.
+
+[Clock API and limits](AUDIO_CLOCK.md) and [dated validation](validation/audio-clock-2026-10-22.md) record the implementation and evidence.
+
+## Measured Classic comparison
+
+Both private comparison images use the current decoder/output/clock path,
+LHDC48/start26 profile and70/72/74/MCLK-1 pins, with BLE disabled in both.
+Each ran the same45-second owned LHDC192/24-bit/nominal1000-kbps-selection source.
+Both recorded zero media errors in clean40.018/40.008-second tracking windows.
+
+| Matched metric | Project-owned host | Maintained BTstack reference |
+| --- | ---: | ---: |
+| Arduino reported program bytes | 483872 | 504856 |
+| Arduino reported static globals | 54136 | 77120 |
+| Active tracked requested allocation bytes | 245664 | 199584 |
+| SDK sleep-accounted busy fraction | 89.149% | 88.232% |
+
+Program/static totals and tracked requested allocations measure different things.
+The SDK fraction is not exclusive CPU or thread utilization. This finite pair
+shows lower program/static counts, higher tracked allocations and no observed
+CPU advantage for the owned host. It does not establish total-RAM superiority,
+combined-BLE superiority, statistical performance or better acoustic quality.
+The original own-run checker failure is preserved; a separate corrected replay
+validates startup fields only when their validity flag permits it. The reference
+run waits for actual controller readiness before connecting. No historical EA/132
+or unmatched old binary supplies these comparison numbers.
 
 ## Earlier correctness changes (historical)
 
