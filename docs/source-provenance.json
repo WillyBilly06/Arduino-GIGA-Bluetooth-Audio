@@ -25,8 +25,8 @@
       "source": "library.properties",
       "destination": "library.properties",
       "license": "Apache-2.0",
-      "input_sha256": "6ce0b951b445946931d8336df82a8dea49a37a4d3d6397f4f04485cc195d19cd",
-      "sha256": "c9377fc0a8b7c98ce1b9891f25036c674646a84f5f3acca29de1ab84625ee002",
+      "input_sha256": "a3f9c8a05e36aab7be1302b9ce136fca2e076ce4b99809759e6622ec2b11a6cd",
+      "sha256": "1e075b32d8d4169932770cab6bf54a3695e8b17a684d8ba124988277d0eb602f",
       "bytes": 430,
       "export_modified": true
     },
@@ -34,9 +34,9 @@
       "source": "docs/github/develop/README.md",
       "destination": "README.md",
       "license": "Apache-2.0",
-      "input_sha256": "99b70cfb89c2133fc62807d0924e3d22f8df6057ef116df9d68eab720f432b8e",
-      "sha256": "99b70cfb89c2133fc62807d0924e3d22f8df6057ef116df9d68eab720f432b8e",
-      "bytes": 14145,
+      "input_sha256": "ec1d61e3e9140389460b1d4d4d1906d3dd642e86409be20874e3af660de3461c",
+      "sha256": "ec1d61e3e9140389460b1d4d4d1906d3dd642e86409be20874e3af660de3461c",
+      "bytes": 8243,
       "export_modified": false
     },
     {
@@ -52,9 +52,9 @@
       "source": "docs/github/develop/STATUS.md",
       "destination": "docs/STATUS.md",
       "license": "Apache-2.0",
-      "input_sha256": "df3027bd83acf038ae600f1ffbac6f16201248853497ffc592f35fbde40abe6e",
-      "sha256": "df3027bd83acf038ae600f1ffbac6f16201248853497ffc592f35fbde40abe6e",
-      "bytes": 14207,
+      "input_sha256": "4826ba1f20cbb3a9e85dff576ef77f21bdf1c5e4411efeac7e06636d8b4cff4b",
+      "sha256": "4826ba1f20cbb3a9e85dff576ef77f21bdf1c5e4411efeac7e06636d8b4cff4b",
+      "bytes": 5232,
       "export_modified": false
     },
     {
@@ -277,9 +277,9 @@
       "source": "src/owned/BleTypes.h",
       "destination": "src/owned/BleTypes.h",
       "license": "Apache-2.0",
-      "input_sha256": "71cf6cf581b350626999f877bf32076c9cea1ad5537134c56789acdb9380950e",
-      "sha256": "71cf6cf581b350626999f877bf32076c9cea1ad5537134c56789acdb9380950e",
-      "bytes": 3405,
+      "input_sha256": "1e2d37d2c0a02526ed08db10ab0d5408e2ecb884f560a058566cb57fcd011792",
+      "sha256": "1e2d37d2c0a02526ed08db10ab0d5408e2ecb884f560a058566cb57fcd011792",
+      "bytes": 3439,
       "export_modified": false
     },
     {
@@ -887,18 +887,18 @@
       "source": "src/owned/LeProfiles.cpp",
       "destination": "src/owned/LeProfiles.cpp",
       "license": "Apache-2.0",
-      "input_sha256": "f2b40466bfb50b14dbffb3b2c595ca8b94f995b05bc5ab6c29430408eee2532b",
-      "sha256": "f2b40466bfb50b14dbffb3b2c595ca8b94f995b05bc5ab6c29430408eee2532b",
-      "bytes": 24084,
+      "input_sha256": "92909f14b48725b3745590c4393ddaab434d539fe9e87af4f2412470bf456436",
+      "sha256": "92909f14b48725b3745590c4393ddaab434d539fe9e87af4f2412470bf456436",
+      "bytes": 24313,
       "export_modified": false
     },
     {
       "source": "src/owned/LeProfiles.h",
       "destination": "src/owned/LeProfiles.h",
       "license": "Apache-2.0",
-      "input_sha256": "c1cf50b90fb02d80f04d80dabd98c6c25d6b6c675ea8d7c8c1b4ca8077a3ba5c",
-      "sha256": "c1cf50b90fb02d80f04d80dabd98c6c25d6b6c675ea8d7c8c1b4ca8077a3ba5c",
-      "bytes": 4035,
+      "input_sha256": "43b2e9cd336d35a80d739e1799a5e50fbb42a86f214759413dbcfeee20893feb",
+      "sha256": "43b2e9cd336d35a80d739e1799a5e50fbb42a86f214759413dbcfeee20893feb",
+      "bytes": 4141,
       "export_modified": false
     },
     {
@@ -923,9 +923,9 @@
       "source": "src/platform/OwnedRadio.cpp",
       "destination": "src/platform/OwnedRadio.cpp",
       "license": "Apache-2.0",
-      "input_sha256": "ed5829be050c4b8c261de59d270c72e9124d5f70d8c0a61bcefff4e67ee57811",
-      "sha256": "ed5829be050c4b8c261de59d270c72e9124d5f70d8c0a61bcefff4e67ee57811",
-      "bytes": 13125,
+      "input_sha256": "073c5a7040d6587919d04b86861146a17f41626428b71791a53a72a57fb18a21",
+      "sha256": "073c5a7040d6587919d04b86861146a17f41626428b71791a53a72a57fb18a21",
+      "bytes": 13650,
       "export_modified": false
     },
     {
@@ -1085,9 +1085,9 @@
       "source": "docs/github/develop/BUILD.json",
       "destination": "docs/BUILD.json",
       "license": "Apache-2.0",
-      "input_sha256": "3a479fe11e294575d85a5ddc48276b748ce52a7ea24485ffffbcd52af4393b09",
-      "sha256": "3a479fe11e294575d85a5ddc48276b748ce52a7ea24485ffffbcd52af4393b09",
-      "bytes": 72388,
+      "input_sha256": "9b17b13524159c4a4f2a87bd4a80f7f34a5282d41f7e68eba5c289cef176bb1a",
+      "sha256": "9b17b13524159c4a4f2a87bd4a80f7f34a5282d41f7e68eba5c289cef176bb1a",
+      "bytes": 62922,
       "export_modified": false
     },
     {
@@ -5081,6 +5081,24 @@
       "input_sha256": "bcfe46a471e19a0273df2a567b68e12016ea07151625ad54bed459309c0c7dab",
       "sha256": "bcfe46a471e19a0273df2a567b68e12016ea07151625ad54bed459309c0c7dab",
       "bytes": 1409,
+      "export_modified": false
+    },
+    {
+      "source": "src/detail/TxAdmissionOrder.h",
+      "destination": "src/detail/TxAdmissionOrder.h",
+      "license": "Apache-2.0 project source",
+      "input_sha256": "34f1109aecc39c748d075315d3751f405fd96800420be0c43922f262811e5b0c",
+      "sha256": "34f1109aecc39c748d075315d3751f405fd96800420be0c43922f262811e5b0c",
+      "bytes": 478,
+      "export_modified": false
+    },
+    {
+      "source": "src/detail/InitialBleNotificationGate.h",
+      "destination": "src/detail/InitialBleNotificationGate.h",
+      "license": "Apache-2.0 project source",
+      "input_sha256": "aa87336b2ed35bc182ccedaeb753aa6544c59eab1cbcc27e7a56cf6a66f81da6",
+      "sha256": "aa87336b2ed35bc182ccedaeb753aa6544c59eab1cbcc27e7a56cf6a66f81da6",
+      "bytes": 1275,
       "export_modified": false
     }
   ]

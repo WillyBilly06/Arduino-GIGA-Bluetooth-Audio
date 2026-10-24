@@ -1,5 +1,6 @@
 #pragma once
 #include "BleTypes.h"
+#include "../detail/InitialBleNotificationGate.h"
 #include "core/bth_att.h"
 #include "core/bth_control_tx.h"
 #include "core/bth_le_gap.h"
@@ -52,6 +53,7 @@ private:
     bth_le_gap_t gap_ = {};
     bth_le_transport_t transport_ = {};
     uint32_t connected_at_ = 0;
+    InitialBleNotificationGate notification_startup_;
     bth_att_attribute_t attributes_[13] = {};
     BleWrite write_;
     uint8_t advertisement_[21] = {}, scan_response_[31] = {};

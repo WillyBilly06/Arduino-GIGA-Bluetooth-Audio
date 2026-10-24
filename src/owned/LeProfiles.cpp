@@ -90,7 +90,7 @@ bool LeProfiles::attach(uint32_t generation,uint16_t handle,uint8_t role,const u
     const auto& p=config_.audio_connection_preference;
     const bth_le_transport_policy_t policy={p.interval_min,p.interval_max,p.latency,p.timeout};
     if (!bth_le_transport_configure(&transport_,generation,handle,role,localFeatures,&policy)) return false;
-    connected_at_=now;
+    connected_at_=now;notification_startup_.attach(generation,now);
     parameter_read_=parameter_count_=0;parameter_reply_seen_=peer_update_waiting_=close_requested_=false;
     ltk_pending_=parameters_pending_=false;resetConnectionStats();
     stats_.generation=generation; stats_.connection_handle=handle; stats_.att_mtu=23;
@@ -100,6 +100,7 @@ bool LeProfiles::attach(uint32_t generation,uint16_t handle,uint8_t role,const u
 }
 void LeProfiles::detach(uint32_t generation) {
     if (!stats_.connected || stats_.generation!=generation) return;
+    notification_startup_.detach(generation);
     (void)bth_le_transport_cancel(&transport_,generation);
     parameter_read_=parameter_count_=0;parameter_reply_seen_=peer_update_waiting_=close_requested_=false;
     resetConnectionStats();
@@ -306,8 +307,8 @@ void LeProfiles::poll(uint32_t now,bool mayAdvertise,bool audioActive) {
     stats_.advertising=gap_.advertising;
     if (stats_.connected) {
         if (prefer && !transport_.started && !parameters_pending_ && !ltk_pending_ &&
-            (!parameter_reply_seen_ || (!peer_update_waiting_ && uint32_t(now-parameter_reply_at_)>=5000)) &&
-            bth_cmdq_available(commands_)>=3 && uint32_t(now-connected_at_)>=5000)
+            (!parameter_reply_seen_ || (!peer_update_waiting_ && uint32_t(now-parameter_reply_at_)>=1000)) &&
+            bth_cmdq_available(commands_)>=3 && uint32_t(now-connected_at_)>=1000)
             (void)bth_le_transport_start(&transport_,now);
         if (transport_.started && transport_.stage!=BTH_LE_TRANSPORT_SIGNAL && bth_cmdq_available(commands_)>=3) {
                 uint8_t unused[16];size_t written=0;
@@ -317,6 +318,7 @@ void LeProfiles::poll(uint32_t now,bool mayAdvertise,bool audioActive) {
         syncTransportStats();
     }
     if (!stats_.connected || !notify_pending_) return;
+    if (!notification_startup_.allow(stats_.generation,now,prefer,stats_.connection.known&&stats_.connection.matches_preference)) return;
     bth_control_reservation_t slot;
     if (bth_control_tx_reserve(replies_,1,&slot)!=BTH_OK) return;
     size_t written=0;

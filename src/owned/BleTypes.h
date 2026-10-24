@@ -30,7 +30,7 @@ struct BleConfig {
     uint16_t audio_data_interval_ms = 10; // 1..100ms between ATT ACL fragments.
     uint16_t audio_acl_fragment_bytes = 27; // 4..251 HCI payload bytes.
     // One optional preference chain per connection after audio starts and the
-    // connection is at least5s old. This does not impose a controller RF floor.
+    // connection is at least1s old (intentional experimental timing). This does not impose a controller RF floor.
     BleConnectionPreference audio_connection_preference;
 };
 struct BleWrite {

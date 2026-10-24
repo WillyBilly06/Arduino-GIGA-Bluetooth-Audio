@@ -6,6 +6,7 @@
 #include "TxMailbox.h"
 #include "../owned/OwnedHost.h"
 #include "../detail/Memory.h"
+#include "../detail/TxAdmissionOrder.h"
 #include <Arduino.h>
 #include <mbed.h>
 #include <drivers/UnbufferedSerial.h>
@@ -119,19 +120,32 @@ bool txReady(void* user) {
     const auto& c=*static_cast<Context*>(user);
     return c.uart && c.tx.empty() && !__atomic_load_n(&c.tx_failed,__ATOMIC_ACQUIRE);
 }
+// The serialized actor is the sole producer. TX IRQ detaches before publishing
+// empty, so no prior consumer can read this copy/preparation before IRQ arm.
+struct TxAdmissionIO {
+    Context& c;
+    const uint8_t* packet;
+    size_t length;
+    bool copyIfReady() { return txReady(&c) && c.tx.submit(packet,length); }
+    void prepare() {
+        c.tx_pos=0;c.tx_size=unsigned(length);c.tx_started=millis();
+        c.tx_hnc_credits=0;
+        if(length>=9 && packet[0]==1 && packet[1]==0x35 && packet[2]==0x0c &&
+           length==size_t(5+4*packet[4]) && packet[3]==length-4) {
+            for(unsigned i=0;i<packet[4];++i) c.tx_hnc_credits+=uint32_t(packet[7+4*i])|(uint32_t(packet[8+4*i])<<8);
+            ++c.hnc_submitted;c.hnc_submitted_credits+=c.tx_hnc_credits;
+        }
+    }
+    struct ArmGuard : Critical {
+        explicit ArmGuard(TxAdmissionIO&) {}
+    };
+    void arm() { c.uart->attach(mbed::callback(txIrq),mbed::SerialBase::TxIrq); }
+    void afterArm() {}
+};
 bool sendH4(const uint8_t* packet,size_t length,void* user) {
     auto& c=*static_cast<Context*>(user);
-    Critical guard;
-    if(!txReady(user) || !c.tx.submit(packet,length)) return false;
-    c.tx_pos=0;c.tx_size=unsigned(length);c.tx_started=millis();
-    c.tx_hnc_credits=0;
-    if(length>=9 && packet[0]==1 && packet[1]==0x35 && packet[2]==0x0c &&
-       length==size_t(5+4*packet[4]) && packet[3]==length-4) {
-        for(unsigned i=0;i<packet[4];++i) c.tx_hnc_credits+=uint32_t(packet[7+4*i])|(uint32_t(packet[8+4*i])<<8);
-        ++c.hnc_submitted;c.hnc_submitted_credits+=c.tx_hnc_credits;
-    }
-    c.uart->attach(mbed::callback(txIrq),mbed::SerialBase::TxIrq);
-    return true;
+    TxAdmissionIO io{c,packet,length};
+    return admitTxBeforeIrqArm(io);
 }
 bool setBaud(uint32_t baud,void* user) {
     auto& c=*static_cast<Context*>(user);

@@ -1,35 +1,16 @@
 {
-  "schema": 1,
+  "schema": 2,
   "qualification": "developmental source snapshot; hardware qualification pending",
+  "version": "0.1.0-dev.6",
+  "date": "2026-10-24",
+  "final_source_metadata_version": "0.1.0-dev.6",
+  "library_metadata_version_at_M7_build": "0.1.0-dev.5",
+  "profile": "Observer-free project-owned dual-mode host; H TX ordering and early1s eligibility plus J initial optional-notification gate; complete selected decoder set",
+  "developmental_snapshot_with_known_issues": true,
+  "source_fixed": false,
+  "stable": false,
   "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
-  "decoder_build_defaults": "Unchanged from local CodecBuildConfig.h",
-  "license_clearance": "Not asserted; original terms and unresolved grants are listed in THIRD_PARTY.md",
-  "selected_codec_flags": [
-    "SBC",
-    "AAC",
-    "HE-AACv1",
-    "aptX",
-    "aptX HD",
-    "LDAC",
-    "LHDC V5",
-    "Opus"
-  ],
-  "version": "0.1.0-dev.5",
-  "date": "2026-10-22",
-  "profile": "Complete supplied codec set; owned BLE lifecycle, common audio-clock control with estimated queue headroom, selectively guarded PLL2 trim",
-  "arduino_core": "arduino:mbed_giga 4.6.0",
-  "fqbn": "arduino:mbed_giga:giga:target_core=cm7",
-  "jobs": 4,
-  "abi": [
-    "cortex-m7",
-    "thumb",
-    "softfp",
-    "fpv5-d16"
-  ],
-  "example": "examples/Receiver/Receiver.ino",
-  "isolated_receiver_link": "PASS",
-  "exported_library_translation_units": 168,
-  "compiler_input_set_sha256": "f6e998f0c25ae44bf4f6a1d46223726493bf41bc4c5541ebe5f0cdddbbf0f827",
+  "compiler_input_set_sha256": "fa55d143f18cba48d490161485b567e6d15190a80b8d3b7d0e11b13970c9a9ad",
   "source_files": [
     {
       "path": "src/AudioDiagnostics.h",
@@ -121,7 +102,7 @@
     },
     {
       "path": "src/owned/BleTypes.h",
-      "sha256": "71cf6cf581b350626999f877bf32076c9cea1ad5537134c56789acdb9380950e"
+      "sha256": "1e2d37d2c0a02526ed08db10ab0d5408e2ecb884f560a058566cb57fcd011792"
     },
     {
       "path": "src/owned/ClassicProfiles.cpp",
@@ -345,11 +326,11 @@
     },
     {
       "path": "src/owned/LeProfiles.cpp",
-      "sha256": "f2b40466bfb50b14dbffb3b2c595ca8b94f995b05bc5ab6c29430408eee2532b"
+      "sha256": "92909f14b48725b3745590c4393ddaab434d539fe9e87af4f2412470bf456436"
     },
     {
       "path": "src/owned/LeProfiles.h",
-      "sha256": "c1cf50b90fb02d80f04d80dabd98c6c25d6b6c675ea8d7c8c1b4ca8077a3ba5c"
+      "sha256": "43b2e9cd336d35a80d739e1799a5e50fbb42a86f214759413dbcfeee20893feb"
     },
     {
       "path": "src/owned/OwnedHost.cpp",
@@ -361,7 +342,7 @@
     },
     {
       "path": "src/platform/OwnedRadio.cpp",
-      "sha256": "ed5829be050c4b8c261de59d270c72e9124d5f70d8c0a61bcefff4e67ee57811"
+      "sha256": "073c5a7040d6587919d04b86861146a17f41626428b71791a53a72a57fb18a21"
     },
     {
       "path": "src/platform/GigaRadio.h",
@@ -1474,502 +1455,211 @@
     {
       "path": "src/platform/I2sClockTrim.h",
       "sha256": "62480f31d6ed89058f7e1f99fe7aa890340d6a0b2e9997fa2071d22245e9bb53"
+    },
+    {
+      "path": "src/detail/TxAdmissionOrder.h",
+      "sha256": "34f1109aecc39c748d075315d3751f405fd96800420be0c43922f262811e5b0c"
+    },
+    {
+      "path": "src/detail/InitialBleNotificationGate.h",
+      "sha256": "aa87336b2ed35bc182ccedaeb753aa6544c59eab1cbcc27e7a56cf6a66f81da6"
     }
   ],
+  "exported_library_translation_units": 168,
+  "package_files_after_strict_export": 470,
+  "arduino_core": "arduino:mbed_giga 4.6.0",
+  "fqbn": "arduino:mbed_giga:giga:target_core=cm7",
+  "jobs": 4,
+  "abi": [
+    "cortex-m7",
+    "thumb",
+    "softfp",
+    "fpv5-d16"
+  ],
+  "example": "examples/Receiver/Receiver.ino",
+  "isolated_receiver_link": "PASS",
+  "binary_sha256": "1b080275e7dd79b335dbc489b9f924092dfc82780e455789a526233085e49601",
+  "binary_bytes": 488004,
+  "elf_sha256": "775fb51bd8fa092e1a61489a64506a82d6e0565046b64bba3255b7752b31df50",
   "elf_sections": {
-    "text": 482600,
+    "text": 482660,
     "data": 5344,
     "bss": 327320
   },
-  "private_binary_not_distributed": true,
-  "public_profile_binary_sha256": "210791643c83b4de1f79ae45c55e741511d392cfd311ad74304956d161b0cf10",
-  "public_profile_binary_bytes": 487944,
-  "public_profile_elf_sha256": "7035fe2f690172c30bb458a6b0600a1350729b8c1d750464ddc64fddeee8d9c9",
-  "arduino_program_bytes": 483408,
+  "arduino_program_bytes": 483472,
   "arduino_global_bytes": 54136,
-  "arduino_program_storage_bytes": 483408,
-  "arduino_dynamic_globals_bytes": 54136,
-  "arduino_size_summary": {
-    "program_bytes": 483408,
-    "dynamic_bytes": 54136
-  },
+  "compile_commands": 200,
   "main_thread_stack_bytes": 32768,
-  "library_metadata_version_at_M7_build": "0.1.0-dev.5",
-  "final_source_metadata_version": "0.1.0-dev.5",
-  "snapshot_scope": "Final dev.5 fixed runtime/compiler projection, fresh native/M7/extracted-ZIP proof and separately hashed finite exact-binary observations. Final metadata-only export/commit/tag bound externally.",
-  "public_build_source_state": "Final reviewed source tree; exact source commit/tag and ZIP are bound by the external release manifest.",
-  "target_execution_of_this_public_profile": "Exact2107BIN/full487944readback; finitecold38.007s LHDC/GATT; six natural30s phone-codec/GATT sources with independent complete-raw review; continuous1801.937host/1802.520receiver seconds LHDC192/passiveactual120ms BLE observation independently accepted. Sampled clock-update timing overruns retained; no acoustics/permanent/all-codec-soak or unavailable-phone-codec interoperability claim.",
-  "historical_host_translation_units": 0,
-  "decoder_source_files": 257,
-  "vendor_original_input_hashes_checked": 257,
-  "vendor_original_input_hashes_match": true,
-  "selected_vendor_artifacts": 260,
-  "codec_translation_units": {
-    "sbc": 14,
-    "aac": 29,
-    "aptx": 1,
-    "ldac": 2,
-    "lhdc": 7,
-    "opus": 74
+  "all_six_decoder_ops": [
+    "sbcOps",
+    "aacOps",
+    "aptxOps",
+    "ldacOps",
+    "lhdcOps",
+    "opusOps"
+  ],
+  "selected_decoder_defaults": {
+    "GBR_ENABLE_SBC": "1",
+    "GBR_ENABLE_AAC": "1",
+    "GBR_ENABLE_APTX": "1",
+    "GBR_ENABLE_LDAC": "1",
+    "GBR_ENABLE_LHDC": "1",
+    "GBR_ENABLE_OPUS": "1",
+    "GBR_ENABLE_AAC_HE": "1"
   },
-  "linked_profile_checks": {
-    "owned_backend": true,
+  "selected_codec_flags": [
+    "SBC",
+    "AAC",
+    "HE-AACv1",
+    "aptX",
+    "aptX HD",
+    "LDAC",
+    "LHDC V5",
+    "Opus"
+  ],
+  "decoder_build_defaults": "All seven source/build macros remain1; eight codec identities remain supplied. One A2DP codec is negotiated at a time.",
+  "owned_host": {
+    "elf_sha256": "775fb51bd8fa092e1a61489a64506a82d6e0565046b64bba3255b7752b31df50",
     "owned_host_components": 4,
     "forbidden_host_symbols": 0,
-    "all_codec_ops_linked": true,
-    "exact_selected_translation_units": true,
-    "maintained_source_leakage": false,
-    "historical_host_source_leakage": false,
-    "uart_baud": 2000000,
-    "default_WS_pin": 74,
-    "original_controller_patch_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
-    "controller_patch_bytes": 35182,
-    "controller_patch_commands": 139,
-    "compile_commands": 200,
-    "ABI": [
-      "cortex-m7",
-      "thumb",
-      "softfp",
-      "fpv5-d16"
+    "inert_arduino_sdk_globals": [
+      "ble::impl::(anonymous namespace)::CCCD_UUID",
+      "ble::impl::BLEInstanceBase::_init_callback"
     ],
-    "m7_host_object_sizes": {
-      "BleConfig": 24,
-      "BleStats": 100,
-      "command_queue": 2204,
-      "command_sent": 8,
-      "LeProfiles": 3080,
-      "OwnedHost": 34440
-    }
+    "scope": "defined-symbol selection only; not RF or audio proof"
   },
-  "exported_synthetic_host_tests": {
-    "status": "PASS",
-    "runner": "tools/run_owned_tests.py",
-    "runner_compile_and_execution_commands": 128,
-    "all_command_exits_zero": true,
-    "address_sanitizer": true,
-    "undefined_behavior_trap": true,
-    "vptr_sanitizer_excluded": true,
-    "clock_child": "tools/test_audio_clock.py",
-    "clock_cases": [
-      "test_audio_clock_control",
-      "test_clock_queue_headroom",
-      "test_media_retained",
-      "test_clock_frontend",
-      "test_clock_queue_pressure:35000:1",
-      "test_clock_queue_pressure:35000:0",
-      "test_clock_queue_pressure:70000:1",
-      "test_clock_queue_pressure:70000:0",
-      "test_clock_trim",
-      "test_source_counters",
-      "test_clock_release",
-      "test_clock_priority:uart",
-      "test_clock_priority:nested",
-      "test_clock_priority:contract",
-      "test_clock_priority:duration",
-      "test_clock_priority:guard"
-    ],
-    "clock_verbatim_extraction_count": 13,
-    "clock_source_inputs_verified_unchanged": true,
-    "audio_scheduling_child_cases": 20,
-    "codec_memory_status": "PASS",
-    "BLE_lifecycle_actor_checks": 852,
-    "BLE_lifecycle_facade_checks": 138,
-    "LHDC_boundary_child_status": "PASS_FRESH",
-    "evidence_reuse": "None: actual exported owned/frontend/clock/audio/memory and LHDC boundary checks were freshly run after the headroom change",
-    "scope": "Actual transformed source with synthetic codec/RTOS/DMA/register boundaries; no MCU timing, RF or physical quality proof"
+  "controller_patch": {
+    "hcd_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
+    "hcd_bytes": 35182,
+    "hcd_commands": 139,
+    "version": "BCM4343A1_001.002.009.0083.0000_Generic_UART_37_4MHz_wlbga_wiced"
   },
-  "clock_defaults": {
-    "enabled": true,
-    "limit_ppm": 500,
-    "slew_ppm_per_second": 10,
-    "minimum_ring": "four actual rounded DMA halves; tiny rings remain playable without tracking",
-    "estimated_headroom": "Q>=4 reserves ceil(Q/4) estimated compressed inventory units at learning/relearning and after packetization contraction; heuristic, not guaranteed free slots",
-    "LHDC_example_queue_packets": 48,
-    "LHDC_example_startup_packets": 26,
-    "actuator": "Owned PLL2 fractional numerator only; accepted Q16 interval, BASEPRI0x60 at validated CMSIS group3/DMA6/UART0/PendSV>=6",
-    "readback_scope": "Coefficient readback is not physical frequency"
+  "compiler": {
+    "basename": "arm-none-eabi-g++.exe",
+    "sha256": "0b007086d0b2e4a403440c09a907dd9f5da296a4163378d2cd2e85e35d8c13b5"
   },
-  "fresh_checksum_tests": {
-    "status": "PASS",
-    "cases": 3,
-    "actual_writer": "tools/release_checksums.py",
-    "format": "ASCII literal LF, final newline, two-space GNU basename records",
-    "actual_GNU_check": "PASS",
-    "control_SHA256": "cff6dc5a44cdfacf3f7c58d9b47433dcc3c8dac0d4cae8f0689632e22f941e81"
+  "sdk_response_file_sha256": {
+    "defines.txt": "1a6c848906ccd16d9c30559e7cccc0f3179b260c8431063b32d98f5789e3b32b",
+    "cxxflags.txt": "d1a2fbe88fa0581e1a0c6a83125a91cbd380cd569369d4013583ba1e151aa01a",
+    "includes.txt": "ec05ed1ce9e095407409bd402e8317765729de71f14440d617b1f7c3bd35bfee",
+    "cflags.txt": "00ec7abd811cc7a6d24b35f047c5f1f29e8d891fa62e80ca26079ba7c0d42350"
   },
-  "independent_codec_reference_scope": "Encoded decoder vectors and sender interoperability remain separately scoped dated validation evidence. These native tests do not establish physical audio fidelity.",
-  "export_safety_tests": {
-    "status": "PASS",
-    "passed": 17,
-    "scope": "Unchanged strict exporter safety suite on fresh compiler binding and BUILD pin"
+  "compile_database_sha256": "27f0b906fe731719a4ededcfc3943fd55e6fd2c2045de4cba5a1a7f3c0c39664",
+  "evidence_receipt_sha256": {
+    "production_M7_command": "756f88742b40a3d9bec878b709ae8d885975b6d78dfe441c9da23951fb8540ad",
+    "production_M7_static_audit": "72780f3c6abf57b80622347268ec287a3be2eabd6be7d9c149eb2e8ea4849ab2",
+    "production_field_not_qualified": "fc4b02da45e9d1ad2bb95c264824bd2f53456f3078ee0f936987e345045b50b8"
   },
-  "public_profile_binary_executed": true,
-  "public_exact_binary_execution": {
-    "binary_sha256": "210791643c83b4de1f79ae45c55e741511d392cfd311ad74304956d161b0cf10",
-    "binary_bytes": 487944,
-    "initial_source_ZIP_sha256": "09c655c41e5c045b353f1428078daec8777ce1fabafc330990b85529f9299892",
-    "source_projection_sha256": "f6e998f0c25ae44bf4f6a1d46223726493bf41bc4c5541ebe5f0cdddbbf0f827",
-    "full_readback": true,
-    "full_readback_receipt_sha256": "41ede4c8091de23dd7f96528092f6709f24257164a7486d5cbf18eb7855d6273",
-    "cold_receipt_sha256": "3dd390bedc64c6c2ac6ccf73f5697251061f0e3e24e0ce992f965f537ade30fb",
-    "cold_active_seconds": 38.007,
-    "cold_raw_sha256": "f411dd829fa19d6582e74339880ce1fefb2846fa01ca28bdbbbbd64dae744f98",
-    "six_receipt_sha256": "a33f74f8f7d4ea544363b4d86b8dd3ed8b907b94e3c9cb900596106d49cd99c6",
-    "six_independent_raw_review_sha256": "8edceb1943ffd732fa8d26eb0648d13c00dd20ac8d12176b9929a1ae7f33dca2",
-    "six_cases": [
-      {
-        "codec": "SBC/SBC-XQ",
-        "rate": 44100,
-        "source_seconds": 30,
-        "active_observed_ms": 30000,
-        "exact_512_byte_writes": 10,
-        "exact_512_byte_notifications": 10,
-        "MTU": 517,
-        "actual_LE": "96/2/500",
-        "raw_sha256": "f914f921c1341323c8a0260e2017d18f34370181093d9b457567080fd68f9f11"
-      },
-      {
-        "codec": "AAC-LC",
-        "rate": 44100,
-        "source_seconds": 30,
-        "active_observed_ms": 30000,
-        "exact_512_byte_writes": 10,
-        "exact_512_byte_notifications": 10,
-        "MTU": 517,
-        "actual_LE": "96/2/500",
-        "raw_sha256": "8034b9db6fb359f2009db1e28af014daf5e929d1a8d4e21909b295a1d46d7f03"
-      },
-      {
-        "codec": "aptX",
-        "rate": 48000,
-        "source_seconds": 30,
-        "active_observed_ms": 30001,
-        "exact_512_byte_writes": 10,
-        "exact_512_byte_notifications": 10,
-        "MTU": 517,
-        "actual_LE": "96/2/500",
-        "raw_sha256": "467fec8c1aa634475c679fa0c1a1d6086b5098c27c738b6c15d576d8d51e3ceb"
-      },
-      {
-        "codec": "aptX HD",
-        "rate": 48000,
-        "source_seconds": 30,
-        "active_observed_ms": 30007,
-        "exact_512_byte_writes": 10,
-        "exact_512_byte_notifications": 10,
-        "MTU": 517,
-        "actual_LE": "96/2/500",
-        "raw_sha256": "ae2da48ec7725207476ef68cc8efc5629c0327aa260fecb1a874fce02261c450"
-      },
-      {
-        "codec": "LDAC",
-        "rate": 96000,
-        "source_seconds": 30,
-        "active_observed_ms": 30000,
-        "exact_512_byte_writes": 10,
-        "exact_512_byte_notifications": 10,
-        "MTU": 517,
-        "actual_LE": "96/2/500",
-        "raw_sha256": "cdefc6587aa56adcc6cb03a94651fa59057ab3265d2b26d46472d4a568ebed8b"
-      },
-      {
-        "codec": "LHDC V5",
-        "rate": 192000,
-        "source_seconds": 30,
-        "active_observed_ms": 30006,
-        "exact_512_byte_writes": 10,
-        "exact_512_byte_notifications": 10,
-        "MTU": 517,
-        "actual_LE": "96/2/500",
-        "raw_sha256": "280116f1b0effc8006916296d05bde96a63b520eb3cab0e9499b213aaa034825"
-      }
-    ],
-    "soak_status": "PASS_FINITE_30MIN_PASSIVE_SOFTWARE_OBSERVATION",
-    "scope": "Exact binary identity applies; debug ELF and final metadata-only source archive identities are separately recorded. No characteristic-read loop or continuous GATT workload is claimed here.",
-    "passive_30min": {
-      "receipt_sha256": "8c779e81c37689b9978b9340bb506fb144915a2391e9715626217b22fb1d38a2",
-      "independent_review_receipt_sha256": "73042b0728ebe75dbccba86d27879e3821c34808aef097c878090e29aa9bc849",
-      "raw_sha256": "d9966a318f9eeafa6ea30502bcb4208f8f7869c6570a224020e516c405c05835",
-      "raw_bytes": 2616946,
-      "host_interval_seconds": 1801.9370000000054,
-      "receiver_interval_ms": 1802520,
-      "complete_groups": 902,
-      "epochs": [
-        9,
-        9
-      ],
-      "physical_BLE_generation": 2,
-      "actual_LE": "96/2/500",
-      "port_closed": true,
-      "tracked_current_bytes": 245664,
-      "accepted_updates_first": 86,
-      "accepted_updates_last": 1886,
-      "error_counter_deltas": {
-        "GBR_STATUS.errors": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
+  "qualification_scopes": {
+    "M7_static_build": {
+      "status": "PASS_OBSERVER_FREE_PRODUCTION_ALL_CODEC_M7_STATIC_AUDIT",
+      "metadata_version_at_build": "0.1.0-dev.5",
+      "scope": "Actual clean source build/link audit. No fresh final-properties dev.6 extracted-ZIP proof is implied."
+    },
+    "production_ordinary_six_mode_field": {
+      "status": "NOT_QUALIFIED",
+      "intended_source_seconds_each": 45,
+      "completed_case_results": [
+        {
+          "codec": "SBC/SBC-XQ",
+          "rate": 44100,
+          "result": "PASS_CODEC45_PHYSICAL_BLE_RECONNECT_SOFTWARE_GATE"
         },
-        "GBR_STATUS.dropped": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
+        {
+          "codec": "AAC-LC",
+          "rate": 44100,
+          "result": "PASS_CODEC45_PHYSICAL_BLE_RECONNECT_SOFTWARE_GATE"
         },
-        "GBR_STATUS.underruns": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
+        {
+          "codec": "aptX",
+          "rate": 48000,
+          "result": "PASS_CODEC45_PHYSICAL_BLE_RECONNECT_SOFTWARE_GATE"
         },
-        "GBR_STATUS.dma_errors": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
+        {
+          "codec": "aptX HD",
+          "rate": 48000,
+          "result": "PASS_CODEC45_PHYSICAL_BLE_RECONNECT_SOFTWARE_GATE"
         },
-        "GBR_STATUS.output_dropped": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_STATUS.transport_errors": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_STATUS.diagnostic_drops": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_STATUS.console_drops": {
-          "first": 684,
-          "last": 684,
-          "delta": 0
-        },
-        "GBR_LHDC_CONCEAL.right_blocks": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_LHDC_CONCEAL.right_pcm_frames": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_LHDC_CONCEAL.muted_blocks": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_LHDC_CONCEAL.muted_pcm_frames": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_TIMING.gaps": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_TIMING.missing": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_TIMING.duplicates": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_TIMING.backward": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_TIMING.queue_full": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_TIMING.missing_pcm_frames": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_TIMING.underrun_records": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_TIMING.ble_command_drops": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RTP.clock_disc": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RTP.source_changes": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RTP.discontinuities": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RTP.timestamp_steps": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RTP.inner_steps": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RTP.payload_unknown": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RTP.payload_malformed": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RTP.disc_records": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RTP.disc_not_retained": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RECOVERY.entries": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RECOVERY.resumes": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RECOVERY_FRAMES.starved": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RECOVERY_FRAMES.held": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RECOVERY_FRAMES.hold_refills": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RECOVERY_FRAMES.current_hold": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RECOVERY_FRAMES.max_hold": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RECOVERY_FRAMES.records": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_RECOVERY_FRAMES.lost": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_PCM_TRANSITION.synthesized": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_PCM_TRANSITION.zero_padding": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_PCM_TRANSITION.mixed_real": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_CLOCK_FRAMES.D": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_CLOCK_FRAMES.Z": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_CLOCK_FRAMES.assembly_discards": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_CLOCK_WORK.refused": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
-        },
-        "GBR_CLOCK_WORK.invalid": {
-          "first": 0,
-          "last": 0,
-          "delta": 0
+        {
+          "codec": "LDAC",
+          "rate": 96000,
+          "result": "PASS_CODEC45_PHYSICAL_BLE_RECONNECT_SOFTWARE_GATE"
         }
+      ],
+      "LHDC_V5_192000": {
+        "status": "NOT_QUALIFIED",
+        "selected_bits": 24,
+        "nominal_quality_selection_kbps": 1000,
+        "GATT_terminal": "deadline",
+        "client_connection_seconds_after_first_log": 20.94710145,
+        "client_terminal_writes": 0,
+        "client_terminal_echoes": 0,
+        "observed_MTU": 517,
+        "observed_preferred_LE_parameters": "96/2/500",
+        "missing_input_refills_in_failure_snapshots": [
+          63,
+          101
+        ],
+        "missing_input_frames_in_failure_snapshots": [
+          12096,
+          19392
+        ],
+        "RTP_packet_sequence_gaps": 0,
+        "RTP_timestamp_steps": 1,
+        "LHDC_inner_sequence_steps": 1,
+        "first_starvation_precedes_first_recorded_RTP_step_us": 130463,
+        "natural_source_completion": false,
+        "scope": "Real shortages plus held recovery input; recurrence after helper failure. No acoustic-duration or unique-cause claim."
       },
-      "timing_diagnostics": {
-        "distinct_sampled_last_transaction_wall_overrun_rows": 4,
-        "sampled_transaction_max_cycles": 269038,
-        "cumulative_critical_max_cycles": 257916,
-        "scope": "Not cumulative overrun count, isolated cause,20us wall bound or physical IRQ/clock measurement"
-      },
-      "scope": "Passive established BLE; separate finite GATT tests. Exact2107 identity only; not acoustics/permanent/all-codec30min continuity."
+      "scope": "Five finite45s software gates passed; LHDC failed. This is not a six-case PASS or stable qualification."
+    },
+    "separate_diagnostic_600_second_attempt": {
+      "status": "NOT_QUALIFIED",
+      "image_sha256": "f3ae67b535499fa458fa58ff28d1450aa69e62a939949083c08090ffda3265bc",
+      "production_evidence_transferred": false,
+      "LDAC_fourth_reconnect": "callback status133, no qualified600s completion",
+      "LHDC_600s": "NOT_RUN",
+      "scope": "Separate observer image and independent failed result; no long-duration production qualification."
+    },
+    "native_and_decoder_evidence": {
+      "new_full_native_suite_executed_for_this_snapshot": false,
+      "prior_component_scalar_evidence": "Reused only for unchanged exact component bytes; no fresh full-source native verdict",
+      "positive_codec_vectors_and_allocation_probes": "Separate historical/private evidence; not a fresh production image run",
+      "malformed_parser_crash_stress_fixtures": "No new execution for this snapshot"
+    },
+    "fresh_final_dev6_extracted_ZIP": {
+      "status": "REQUIRED_LATER",
+      "complete": false,
+      "build_reuse_allowed": false
+    },
+    "physical_audio_RF_SDRAM_worker_stack_full_fidelity": {
+      "status": "UNQUALIFIED"
     }
   },
-  "matched_current_classic_only": {
-    "pair_build_receipt_sha256": "e8199104ebb99a06c15405e069c3fde20cb641b16601d12fe64e292a9ff28a86",
-    "paired_independent_review_receipt_sha256": "75f832c15d696842a5c490aaa0ef46795784d452d029f19848c9024cd2ce6a5e",
-    "BLE_enabled_in_both": false,
-    "source_seconds": 45,
-    "source": "Same installed owned PCM_FLOAT/stress source, LHDC192/24/nominal1000kbps selection, equal volume",
-    "own_binary_sha256": "9cf985d31623717b79378b353f5d74212f1d8f056a45567a07d653a77d745ff5",
-    "reference_binary_sha256": "00385fbc8cce73096258baaf21d83bbc2db123a7821ef474a07deeedefe75fc3",
-    "own_program_bytes": 483872,
-    "reference_program_bytes": 504856,
-    "own_reported_static_globals": 54136,
-    "reference_reported_static_globals": 77120,
-    "own_active_tracked_requested_bytes": 245664,
-    "reference_active_tracked_requested_bytes": 199584,
-    "own_sdk_sleep_accounted_busy_percent": 89.149,
-    "reference_sdk_sleep_accounted_busy_percent": 88.232,
-    "own_tracking_seconds": 40.018,
-    "reference_tracking_seconds": 40.008,
-    "media_errors_recorded": 0,
-    "scope": "Finite private comparison images with shared decoder/output/clock/profiles/pins,195 identical allocated objects and four intended backend object differences. SDK busy is not exclusive CPU. No total-RAM, combined-BLE, statistical or acoustic superiority. Original checker/startup NQs retained; separate corrected/ready-gated actual interpretations qualify these intervals."
+  "serial_diagnostics": {
+    "example_queue_bytes": 4096,
+    "maximum_nonblocking_USB_pump_bytes": 64,
+    "USB_API": "send_nb",
+    "formatting_and_USB_pump_context": "main thread",
+    "host_worker_diagnostic_mailbox_records": 8,
+    "drops_reported": true,
+    "source_behavior": "Disconnected monitor skips USB transmission; full queues drop diagnostic records instead of waiting. Setup monitor wait is bounded and separate from streaming.",
+    "claim": "Existing bounded/nonblocking diagnostic source path; no new serial scheduling fix or latency guarantee is asserted."
   },
-  "radio_context_accounting": {
-    "own_requested_context_bytes": 46080,
-    "common_active_tracked_bytes": 199584,
-    "codec_workspace_duplicated": false,
-    "scope": "Exact ARM Context accounts for tracked difference; static sections and requested payloads are separate metrics, not total RAM. Only selected codec workspaces are allocated."
+  "excluded_changes": [
+    "Rejected initial-age0 eligibility experiment; no0x3B experiment included",
+    "Unqualified receive-clock candidate pending separate source decision",
+    "Private decode-boundary observers",
+    "Private compact AAC RawChannels promotion"
+  ],
+  "license_clearance": "Not asserted. Original component notices and unresolved grants remain in THIRD_PARTY.md; project Apache-2.0 does not relicense bundled codec/table data.",
+  "historical_dev5": {
+    "status": "HISTORICAL_NOT_CURRENT_QUALIFICATION",
+    "version": "0.1.0-dev.5",
+    "image_sha256": "210791643c83b4de1f79ae45c55e741511d392cfd311ad74304956d161b0cf10",
+    "application_bytes": 487944,
+    "finite_six_mode_source_seconds": 30,
+    "LHDC_passive_BLE_receiver_seconds": 1802.52,
+    "scope": "Retained dated dev.5 evidence; not transferred to this code/image or promoted into a new stable result."
   }
 }
