@@ -1,5 +1,5 @@
 {
-  "qualification": "dev.7 development snapshot; conditional correction retained, general audio not qualified",
+  "qualification": "Dev.8 selected AAC allocation measured; general audio/fidelity unqualified",
   "profile": "Project-owned host and complete selected supplied decoder set; original notices retained, unresolved grants identified separately.",
   "source_selection": "Exact per-file audited allowlist; no local source roots or history.",
   "files": [
@@ -25,8 +25,8 @@
       "source": "library.properties",
       "destination": "library.properties",
       "license": "Apache-2.0",
-      "input_sha256": "1e075b32d8d4169932770cab6bf54a3695e8b17a684d8ba124988277d0eb602f",
-      "sha256": "58cbae0aa1a96b0ec5b688b148e2c91f13b85f0f0f2a2528a6e6f574205ccfed",
+      "input_sha256": "58cbae0aa1a96b0ec5b688b148e2c91f13b85f0f0f2a2528a6e6f574205ccfed",
+      "sha256": "f3b5223e6f1b996088c967d2f3122d8939c58a774751318f8d62104f755a3257",
       "bytes": 430,
       "export_modified": true
     },
@@ -34,9 +34,9 @@
       "source": "docs/github/develop/README.md",
       "destination": "README.md",
       "license": "Apache-2.0",
-      "input_sha256": "ec1d61e3e9140389460b1d4d4d1906d3dd642e86409be20874e3af660de3461c",
-      "sha256": "089c56b069bd12fbd599c35e8bbe6e23fcf56aeb7cf16c847ee2b0466fac93c2",
-      "bytes": 9452,
+      "input_sha256": "089c56b069bd12fbd599c35e8bbe6e23fcf56aeb7cf16c847ee2b0466fac93c2",
+      "sha256": "981b68117f70d93ddc20a38fb3cfae30828801f0bcf6fab0ef5f3fd8713d2771",
+      "bytes": 7848,
       "export_modified": true
     },
     {
@@ -44,17 +44,17 @@
       "destination": "THIRD_PARTY.md",
       "license": "Apache-2.0",
       "input_sha256": "68c783a0d29a14e7dc90b9cdbfcd2bc84979e358847c2e4c4554a7270db39e07",
-      "sha256": "68c783a0d29a14e7dc90b9cdbfcd2bc84979e358847c2e4c4554a7270db39e07",
-      "bytes": 4798,
-      "export_modified": false
+      "sha256": "7016c67cc4d4c82fb5bf33fe27abd4054a7640e937cdf3568b137683a696b622",
+      "bytes": 5276,
+      "export_modified": true
     },
     {
       "source": "docs/github/develop/STATUS.md",
       "destination": "docs/STATUS.md",
       "license": "Apache-2.0",
-      "input_sha256": "4826ba1f20cbb3a9e85dff576ef77f21bdf1c5e4411efeac7e06636d8b4cff4b",
-      "sha256": "abb8a5c479d3a3544cbb77fde7f305efe6be25d78ba25e2f5baf35acf1cd7dca",
-      "bytes": 7831,
+      "input_sha256": "abb8a5c479d3a3544cbb77fde7f305efe6be25d78ba25e2f5baf35acf1cd7dca",
+      "sha256": "f6cb2d013189fea2d847a4f49b3a2f25996cf90885ae45ee7c2aa5a44a653700",
+      "bytes": 9099,
       "export_modified": true
     },
     {
@@ -259,9 +259,9 @@
       "source": "src/codecs/Codecs.cpp",
       "destination": "src/codecs/Codecs.cpp",
       "license": "Apache-2.0",
-      "input_sha256": "fe15c1763797400034505fe3cdd163d3da19fc0dc40804a5da1127308a0d1339",
-      "sha256": "fe15c1763797400034505fe3cdd163d3da19fc0dc40804a5da1127308a0d1339",
-      "bytes": 18476,
+      "input_sha256": "a3448fcd0702fc905f7d7da0d27ea6d235487f4db624911d21f7bfb14f40f981",
+      "sha256": "a3448fcd0702fc905f7d7da0d27ea6d235487f4db624911d21f7bfb14f40f981",
+      "bytes": 18479,
       "export_modified": false
     },
     {
@@ -1085,9 +1085,9 @@
       "source": "docs/github/develop/BUILD.json",
       "destination": "docs/BUILD.json",
       "license": "Apache-2.0",
-      "input_sha256": "9b17b13524159c4a4f2a87bd4a80f7f34a5282d41f7e68eba5c289cef176bb1a",
-      "sha256": "a809b9fd1ed97a002edafcad5bba7a75ee453df364ed4db921f23e2ce070dc8f",
-      "bytes": 63967,
+      "input_sha256": "a809b9fd1ed97a002edafcad5bba7a75ee453df364ed4db921f23e2ce070dc8f",
+      "sha256": "917a30c3a6573d6c76673066521b511b244d4da653b4ec940ef21281ee57b660",
+      "bytes": 65229,
       "export_modified": true
     },
     {
@@ -1133,10 +1133,10 @@
       "input_relative_path": "decoders/SBC/decoder/include/oi_codec_sbc.h",
       "original_sha256": "ce7dc1330e1f3109f530f86a2606a1709b3ff790df3d2c2d747c01a353fea4a4",
       "imported_sha256": "61ee265f1c54378d84161de3528fb96ce5e11acfb04fd3f58adf643617ddb304",
-      "input_sha256": "61ee265f1c54378d84161de3528fb96ce5e11acfb04fd3f58adf643617ddb304",
+      "input_sha256": "bde111db12562c1cd2a27fd3f0c22a9ffc38b66679935958ae7ae448687e5186",
       "sha256": "bde111db12562c1cd2a27fd3f0c22a9ffc38b66679935958ae7ae448687e5186",
       "bytes": 20264,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/include/oi_codec_sbc_private.h",
@@ -1145,10 +1145,10 @@
       "input_relative_path": "decoders/SBC/decoder/include/oi_codec_sbc_private.h",
       "original_sha256": "9a02e0e5f37f9ab7daed9c160e9314cd86483926003c764ff6739379ef14f746",
       "imported_sha256": "279c9c4ac170ed12dad2425ec116a83ac10d8775a44fd5d1ca6d064c4aa63e0e",
-      "input_sha256": "279c9c4ac170ed12dad2425ec116a83ac10d8775a44fd5d1ca6d064c4aa63e0e",
+      "input_sha256": "09e2b5ecb1e76c5e90f031be7052b863fc31ecfc2e285ca5cd5983d5e1833db0",
       "sha256": "09e2b5ecb1e76c5e90f031be7052b863fc31ecfc2e285ca5cd5983d5e1833db0",
       "bytes": 8546,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/include/oi_common.h",
@@ -1229,10 +1229,10 @@
       "input_relative_path": "decoders/SBC/decoder/include/oi_string.h",
       "original_sha256": "b0f48989f96dd9b9dc3699f2b9da729346f9b1b223b7767c15fa07a3f8e8105e",
       "imported_sha256": "0d5298fddb0831c6d2c8c38c447483949feefb3a94a81a4ebc8507921447e2f9",
-      "input_sha256": "0d5298fddb0831c6d2c8c38c447483949feefb3a94a81a4ebc8507921447e2f9",
+      "input_sha256": "dcb6c8086dfbdc5875fac2c9646979391632f70a2cfde26f014f274b56c8469c",
       "sha256": "dcb6c8086dfbdc5875fac2c9646979391632f70a2cfde26f014f274b56c8469c",
       "bytes": 5200,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/include/oi_time.h",
@@ -1265,10 +1265,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/alloc.c",
       "original_sha256": "ecd547035eb0fba050c6d13bf9e718a790721d2d6b06ab633935b14bbc70c811",
       "imported_sha256": "35a50468b5484364c152cbc67976c12058a1a4a6a33ea4c9539a5c6fd147bbef",
-      "input_sha256": "35a50468b5484364c152cbc67976c12058a1a4a6a33ea4c9539a5c6fd147bbef",
+      "input_sha256": "00f2aba07bcf941f27920e6954e0a98b5e1de05e6e1556ebe1b38193cf9d8d46",
       "sha256": "00f2aba07bcf941f27920e6954e0a98b5e1de05e6e1556ebe1b38193cf9d8d46",
       "bytes": 3710,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/bitalloc-sbc.c",
@@ -1277,10 +1277,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/bitalloc-sbc.c",
       "original_sha256": "b8844523f85a2c0c786423b0915b1c4bc048c3877cc551e3cff7c46dde16593c",
       "imported_sha256": "284d7547d8ed5dd598e655fe21254f6d91f5dd6d96de89d4fab9693d041a72a6",
-      "input_sha256": "284d7547d8ed5dd598e655fe21254f6d91f5dd6d96de89d4fab9693d041a72a6",
+      "input_sha256": "0fbccf660215bf287225070ae7e883fb815628da5e0f966f09f3cb1d48784af5",
       "sha256": "0fbccf660215bf287225070ae7e883fb815628da5e0f966f09f3cb1d48784af5",
       "bytes": 5893,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/bitalloc.c",
@@ -1289,10 +1289,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/bitalloc.c",
       "original_sha256": "ff7efd977f3a508c3c0d6adf21d8610a3a312d76064a4e87c829d07ad3f2c2e7",
       "imported_sha256": "aef4c638a1a7d76b4a84473c2cb6779f053c017799bc7b66326a72d4bfa3719e",
-      "input_sha256": "aef4c638a1a7d76b4a84473c2cb6779f053c017799bc7b66326a72d4bfa3719e",
+      "input_sha256": "ada74eae93b4334c545e38c83f6b4c5f09cc20e2c4325860b96c06472a23dda0",
       "sha256": "ada74eae93b4334c545e38c83f6b4c5f09cc20e2c4325860b96c06472a23dda0",
       "bytes": 12446,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/bitstream-decode.c",
@@ -1301,10 +1301,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/bitstream-decode.c",
       "original_sha256": "66edfda98ee34ff8a8831541ef576288ee8df5844ffc1e2d062082808199bac6",
       "imported_sha256": "0cefecbf5735fcddb8e62f9285c18115c0569b30e79d54f53585b865d7199bc7",
-      "input_sha256": "0cefecbf5735fcddb8e62f9285c18115c0569b30e79d54f53585b865d7199bc7",
+      "input_sha256": "2cbf2c7936e2f974d2c3f7b9739140f7a147d32f56efd37054fbfd9001363a14",
       "sha256": "2cbf2c7936e2f974d2c3f7b9739140f7a147d32f56efd37054fbfd9001363a14",
       "bytes": 3392,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/decoder-oina.c",
@@ -1313,10 +1313,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/decoder-oina.c",
       "original_sha256": "442d28b2591e3a992f8b3d7743a5bd8cd3ab9915f655171c65c95c7daa2186de",
       "imported_sha256": "84483d2df78c5025c4a223d43b8ec02328e9346ed6c4e1082dea263ed995e698",
-      "input_sha256": "84483d2df78c5025c4a223d43b8ec02328e9346ed6c4e1082dea263ed995e698",
+      "input_sha256": "95e127554b412a25e71db90e1424eb24ca194e7ad4b8686149cf7091a96bb228",
       "sha256": "95e127554b412a25e71db90e1424eb24ca194e7ad4b8686149cf7091a96bb228",
       "bytes": 4511,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/decoder-private.c",
@@ -1325,10 +1325,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/decoder-private.c",
       "original_sha256": "4b35095621c3420a35b3c3d74d9002733f3224847c0240a8c131844029b8a348",
       "imported_sha256": "e73fec6c7e5e663a1dd92b699e18b75f71c0a03cf166a33e70ef8ed042aa8199",
-      "input_sha256": "e73fec6c7e5e663a1dd92b699e18b75f71c0a03cf166a33e70ef8ed042aa8199",
+      "input_sha256": "829ee354a9b0334a54a042b3eeca724d1f553b3992f5242ac06ca375dff310f3",
       "sha256": "829ee354a9b0334a54a042b3eeca724d1f553b3992f5242ac06ca375dff310f3",
       "bytes": 9194,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/decoder-sbc.c",
@@ -1337,10 +1337,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/decoder-sbc.c",
       "original_sha256": "6fd76e013bea1e772be1d15a987ed704fcdedf454f2128eb6b735a729c4502cd",
       "imported_sha256": "4efd06a382612ac2e5434c378785dbff6540496455d34569f21c57180d2a5861",
-      "input_sha256": "4efd06a382612ac2e5434c378785dbff6540496455d34569f21c57180d2a5861",
+      "input_sha256": "d2b62cc163e3e7c657894a28e94b3ec5d1073423acce909523a8cfc6b54cace2",
       "sha256": "d2b62cc163e3e7c657894a28e94b3ec5d1073423acce909523a8cfc6b54cace2",
       "bytes": 18215,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/dequant.c",
@@ -1349,10 +1349,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/dequant.c",
       "original_sha256": "fb9cdcebc8ccbce65f627fef580c97d9d993e91fb9eeb1262ca37b2d7ce8e81c",
       "imported_sha256": "b55a6d32c955b434b913220913c011c64d224c5369f0304ab868271059ff6430",
-      "input_sha256": "b55a6d32c955b434b913220913c011c64d224c5369f0304ab868271059ff6430",
+      "input_sha256": "f0d75a292313072830891b58aff3239bc2cb7f3025d078ca7072fb0a1eef53ea",
       "sha256": "f0d75a292313072830891b58aff3239bc2cb7f3025d078ca7072fb0a1eef53ea",
       "bytes": 6593,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/framing-sbc.c",
@@ -1361,10 +1361,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/framing-sbc.c",
       "original_sha256": "3ee504f1049627d8b85532670c7a3b7afff89d46a198faed6dd9eb2e54169f2b",
       "imported_sha256": "864873784841406ebf60688a57a3947db5d7867fad4211c98561b1f78993ae69",
-      "input_sha256": "864873784841406ebf60688a57a3947db5d7867fad4211c98561b1f78993ae69",
+      "input_sha256": "3bb92a0b572f64c0eb992e46d689c2e36b3d6ca1fc1e4d4e313dae6f7fb651a4",
       "sha256": "3bb92a0b572f64c0eb992e46d689c2e36b3d6ca1fc1e4d4e313dae6f7fb651a4",
       "bytes": 3053,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/framing.c",
@@ -1373,10 +1373,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/framing.c",
       "original_sha256": "c5809d968bd2758dcdada3be3ae253cc17d9ff61120055a52182e061d91a70f8",
       "imported_sha256": "392bde1e92d3d2cd882fb2101995a9714fab8881072476d7bc2bf020398dce81",
-      "input_sha256": "392bde1e92d3d2cd882fb2101995a9714fab8881072476d7bc2bf020398dce81",
+      "input_sha256": "15dce2ee655c7bf3c09673358f4b7fc65713174e19a665ba48fe476d0b7142a0",
       "sha256": "15dce2ee655c7bf3c09673358f4b7fc65713174e19a665ba48fe476d0b7142a0",
       "bytes": 11253,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/oi_codec_version.c",
@@ -1385,10 +1385,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/oi_codec_version.c",
       "original_sha256": "4fe4447bc5b553ef20b63687ddf98ba72ed8b31308d7097622b72451c4e67fa3",
       "imported_sha256": "1e62c575768332ccf4e49b52f73efc2f178b9e5fbc4207c9f24448c7536ffdb5",
-      "input_sha256": "1e62c575768332ccf4e49b52f73efc2f178b9e5fbc4207c9f24448c7536ffdb5",
+      "input_sha256": "75c3e922cd7064c447f8a57997b92af344089aeaa243bf0723419ef62a5e5a3a",
       "sha256": "75c3e922cd7064c447f8a57997b92af344089aeaa243bf0723419ef62a5e5a3a",
       "bytes": 2442,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/readsamplesjoint.inc",
@@ -1409,10 +1409,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/synthesis-8-generated.c",
       "original_sha256": "a3be662f21808f4cd585038e5add666a0a4d072e681c245ac07112a75139bad5",
       "imported_sha256": "650612b47c414ab69dc59c4f7184116e5c2fb3436ae6f1e39a1018edc0f334a1",
-      "input_sha256": "650612b47c414ab69dc59c4f7184116e5c2fb3436ae6f1e39a1018edc0f334a1",
+      "input_sha256": "159d4b27875587520cc74ada5b070bdd96abf93ba51c047be2de213c2861da65",
       "sha256": "159d4b27875587520cc74ada5b070bdd96abf93ba51c047be2de213c2861da65",
       "bytes": 8465,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/synthesis-dct8.c",
@@ -1421,10 +1421,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/synthesis-dct8.c",
       "original_sha256": "48594579f5fd8dffc7b11b67a130e356395d78e671d4cdc0d13f1ab6f268d3e7",
       "imported_sha256": "6eaee2213a7811be12c1d8285970b198b19037073920df1a758a8d99ad22b257",
-      "input_sha256": "6eaee2213a7811be12c1d8285970b198b19037073920df1a758a8d99ad22b257",
+      "input_sha256": "e3f1dc25418edfa9a5a2b2a47b1dd652cc7c97637558b0e1ab316e9349c42786",
       "sha256": "e3f1dc25418edfa9a5a2b2a47b1dd652cc7c97637558b0e1ab316e9349c42786",
       "bytes": 10338,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/sbc/srce/synthesis-sbc.c",
@@ -1433,10 +1433,10 @@
       "input_relative_path": "decoders/SBC/decoder/srce/synthesis-sbc.c",
       "original_sha256": "05cf5d8720bd4ebdb5659d760fbf9be618971dc968eb18e54ff4a1aadfaadc81",
       "imported_sha256": "ced9ce86daaa653731bd335d1821141a62b369a2df8ca192a3165b88af10e6b0",
-      "input_sha256": "ced9ce86daaa653731bd335d1821141a62b369a2df8ca192a3165b88af10e6b0",
+      "input_sha256": "7fc35d0e6c21445caf4afa4fa9b7794b2c70c7b8004e6637cf5203145ccdf5ef",
       "sha256": "7fc35d0e6c21445caf4afa4fa9b7794b2c70c7b8004e6637cf5203145ccdf5ef",
       "bytes": 19127,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/aaccommon.h",
@@ -1445,10 +1445,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/aaccommon.h",
       "original_sha256": "a47fd286b38cd92e92ad81234b2113d8187c5e3a79d3ba96c15ceb3ce59c95c9",
       "imported_sha256": "5ce7adbb32de630a0d7cef2fb3dd1ec5404902f395c551e03e75ed6682b720bc",
-      "input_sha256": "5ce7adbb32de630a0d7cef2fb3dd1ec5404902f395c551e03e75ed6682b720bc",
+      "input_sha256": "d1f5b11a1266045da4792b887097e5a7d2530a2a920a1119042b9582b698bd76",
       "sha256": "d1f5b11a1266045da4792b887097e5a7d2530a2a920a1119042b9582b698bd76",
       "bytes": 7737,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/aacdec.c",
@@ -1457,10 +1457,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/aacdec.c",
       "original_sha256": "d698eac58225e2a0411b5e37b4aa8d762845c9ea63a0426d06be9f6d61d1fec4",
       "imported_sha256": "5aefa92b9a944c03becbea04c6a411028061f8cadaa472bfb76efc139bf4f3bf",
-      "input_sha256": "5aefa92b9a944c03becbea04c6a411028061f8cadaa472bfb76efc139bf4f3bf",
-      "sha256": "1170611e266b4e93026763d882c709263bd4700338effe36cddf4fba02369cec",
-      "bytes": 17328,
-      "export_modified": true
+      "input_sha256": "eeebcbb43244b5c70f91d5bb3c39dc8b5b231df768d4ccdbc592cea17af9477a",
+      "sha256": "eeebcbb43244b5c70f91d5bb3c39dc8b5b231df768d4ccdbc592cea17af9477a",
+      "bytes": 17608,
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/aacdec.h",
@@ -1469,10 +1469,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/aacdec.h",
       "original_sha256": "372c3b5cc319278bf554b0c7fbff570a12cb1c39a4be60d7dcbe13bc808fc687",
       "imported_sha256": "e466a08d892665bdc4a9d958f39e233f737df5445ae7cd9847800f120c643586",
-      "input_sha256": "e466a08d892665bdc4a9d958f39e233f737df5445ae7cd9847800f120c643586",
-      "sha256": "789746172601b9a5930246f39644efaaf854ecdc4185846f631c590ce2e3772c",
-      "bytes": 5965,
-      "export_modified": true
+      "input_sha256": "f59ab58e762801603b36fc4e44bf7f262f3f174df8b5fd5c2af3f8db057d597e",
+      "sha256": "f59ab58e762801603b36fc4e44bf7f262f3f174df8b5fd5c2af3f8db057d597e",
+      "bytes": 6104,
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/aactabs.c",
@@ -1481,10 +1481,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/aactabs.c",
       "original_sha256": "b01580b8a936d40b2a3c4e2425b54ff28b35082da61613fde6efa37b162bee42",
       "imported_sha256": "2a9c0c968ca33ecb9d18d00da9666572ba7847abb1fad5529eef010b7a2e7646",
-      "input_sha256": "2a9c0c968ca33ecb9d18d00da9666572ba7847abb1fad5529eef010b7a2e7646",
+      "input_sha256": "54939622e1ba1580709de9468b45049f11fa9b5e9d45f9148c383639f52daf2e",
       "sha256": "54939622e1ba1580709de9468b45049f11fa9b5e9d45f9148c383639f52daf2e",
       "bytes": 7464,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/assembly.h",
@@ -1493,10 +1493,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/assembly.h",
       "original_sha256": "33b875b4c26279c7cc5f242057e41df0a7c0aa8802161c41348f20292b92198c",
       "imported_sha256": "eff28041f889bdb22e2a47e8cebc9069e409e3292598a0a68055e868e84dfce9",
-      "input_sha256": "eff28041f889bdb22e2a47e8cebc9069e409e3292598a0a68055e868e84dfce9",
+      "input_sha256": "66ffdc57202a4e16fe3c355afb567dcbb1c3d607b3cea9756f632c7edef69ef8",
       "sha256": "66ffdc57202a4e16fe3c355afb567dcbb1c3d607b3cea9756f632c7edef69ef8",
       "bytes": 3865,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/bitstream.c",
@@ -1505,10 +1505,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/bitstream.c",
       "original_sha256": "38bc9e7ea926776cc5c01751024bf1ef60efa825214a5ebb4208aa440134176f",
       "imported_sha256": "92659047c8e583306b54ef9e4a5aa564f31e1e63673fd591e7ef27ec39205fdb",
-      "input_sha256": "92659047c8e583306b54ef9e4a5aa564f31e1e63673fd591e7ef27ec39205fdb",
+      "input_sha256": "4fe5f81bce3aed4c8645046b8e20276f93b72746cdac74ba9df22cee82a44f5a",
       "sha256": "4fe5f81bce3aed4c8645046b8e20276f93b72746cdac74ba9df22cee82a44f5a",
       "bytes": 9870,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/bitstream.h",
@@ -1517,10 +1517,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/bitstream.h",
       "original_sha256": "8a5fddd2f5545f524c5954fa3b0481d71fdcb7cc52e5605c1482f471d4648db7",
       "imported_sha256": "4ed211b90c5b94b7495c3d1608257875b4163d72b5186d8629a9b32c0ea5d8b8",
-      "input_sha256": "4ed211b90c5b94b7495c3d1608257875b4163d72b5186d8629a9b32c0ea5d8b8",
+      "input_sha256": "840fec530b1dbd124c4f5f4d235c0fc3fbcd265502b05bdfcba820d90c6bd553",
       "sha256": "840fec530b1dbd124c4f5f4d235c0fc3fbcd265502b05bdfcba820d90c6bd553",
       "bytes": 3359,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/buffers.c",
@@ -1529,10 +1529,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/buffers.c",
       "original_sha256": "37f93d80076666c899c291c093eda2261d914c6941e6359b0d37b266065e6d74",
       "imported_sha256": "2c5cfb9e2b1bddc2a1d90d5e0bbc2d94985844f9ed650127c068f349b314985b",
-      "input_sha256": "2c5cfb9e2b1bddc2a1d90d5e0bbc2d94985844f9ed650127c068f349b314985b",
-      "sha256": "be98ce613c2fe68a0ac240746ec92726ed8758dbf824fe89c685d23b71ac7d95",
-      "bytes": 5698,
-      "export_modified": true
+      "input_sha256": "1579c9fb6a66d8b0a026fb83c903e29a81f113ee49f8d28bc0157de740f61eb8",
+      "sha256": "1579c9fb6a66d8b0a026fb83c903e29a81f113ee49f8d28bc0157de740f61eb8",
+      "bytes": 6073,
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/coder.h",
@@ -1541,10 +1541,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/coder.h",
       "original_sha256": "6b15275c99a95f0bd56482868cd0274ce9f162555ef502a4c5e6ef7b95df9570",
       "imported_sha256": "ea8dc66176a59a007f9849e1d31eaa2624cc199bd860306047454616b6bd8958",
-      "input_sha256": "ea8dc66176a59a007f9849e1d31eaa2624cc199bd860306047454616b6bd8958",
-      "sha256": "e67d95c075fb108e6afe8b589abce0c567409ad3a20d3a968e2ae6fd6701a9e9",
-      "bytes": 17849,
-      "export_modified": true
+      "input_sha256": "e5461c94f3cced63e11ca4cf97c8e66e94b81cfbb336c23697d9bb1e5e8f0681",
+      "sha256": "e5461c94f3cced63e11ca4cf97c8e66e94b81cfbb336c23697d9bb1e5e8f0681",
+      "bytes": 17872,
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/ConfigHelix.h",
@@ -1553,10 +1553,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/ConfigHelix.h",
       "original_sha256": "3a61910b89d92ca26c0f9dd32d4dcb9d7bd82b0a7212ec14948cda74905e4fe2",
       "imported_sha256": "f70acd438e9b1a97328dc4b82d4ac97a3b3452c9a1ff52274f0b551e350a7c9d",
-      "input_sha256": "f70acd438e9b1a97328dc4b82d4ac97a3b3452c9a1ff52274f0b551e350a7c9d",
+      "input_sha256": "6e9299ab08875e2ebd8a068f82bf5f38ce1f530d937a976828366f8fcc8877ca",
       "sha256": "6e9299ab08875e2ebd8a068f82bf5f38ce1f530d937a976828366f8fcc8877ca",
       "bytes": 499,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/dct4.c",
@@ -1565,10 +1565,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/dct4.c",
       "original_sha256": "5fa2067146563a3f1577c70cd6eb27648e494bc6e12dce314b1ef0c4bfef1d06",
       "imported_sha256": "207d0e6fd3f18ef36971192ae0d0a4e70fe56c97f1cb778b337e71dfe0d90800",
-      "input_sha256": "207d0e6fd3f18ef36971192ae0d0a4e70fe56c97f1cb778b337e71dfe0d90800",
+      "input_sha256": "bc7c2af5fbbea4d2af729a94f2d4d75db92e8431034abe57a5f0709ad37c242b",
       "sha256": "bc7c2af5fbbea4d2af729a94f2d4d75db92e8431034abe57a5f0709ad37c242b",
       "bytes": 11398,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/decelmnt.c",
@@ -1577,10 +1577,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/decelmnt.c",
       "original_sha256": "0585c4a2b69465f67349dce0e07ac8ec2261ae59469d8a98a5e308aff3fd834d",
       "imported_sha256": "8cd50ff0b0821cb9194ece89c31655389cd35cfd3861c8ad1991366fb8dcc5e3",
-      "input_sha256": "8cd50ff0b0821cb9194ece89c31655389cd35cfd3861c8ad1991366fb8dcc5e3",
+      "input_sha256": "5b001233bc0c10a9697b51e8b4d648b9263fe192edebaf7049c2ce07208bc1ee",
       "sha256": "5b001233bc0c10a9697b51e8b4d648b9263fe192edebaf7049c2ce07208bc1ee",
       "bytes": 14503,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/dequant.c",
@@ -1589,10 +1589,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/dequant.c",
       "original_sha256": "3f878db89e28c02cd0f9ff73b983575c1c4b33df888f042f481a2cce98458295",
       "imported_sha256": "ff143c4f8f13ab34781b9c5d7fde93a49f017df849639043d95282b7a6c867a7",
-      "input_sha256": "ff143c4f8f13ab34781b9c5d7fde93a49f017df849639043d95282b7a6c867a7",
+      "input_sha256": "185af1579800b376b7708053475b348b72c204c66c5dab04eca44c039e247af7",
       "sha256": "185af1579800b376b7708053475b348b72c204c66c5dab04eca44c039e247af7",
       "bytes": 12776,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/fft.c",
@@ -1601,10 +1601,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/fft.c",
       "original_sha256": "fdefc984624a531e026582840318aed65df147f21408fef1ada67a6a0b437498",
       "imported_sha256": "64b2d2228f505adaf9d21f6b94dd8ad935c2b8cd0ad7e3936718e9c4971bec3b",
-      "input_sha256": "64b2d2228f505adaf9d21f6b94dd8ad935c2b8cd0ad7e3936718e9c4971bec3b",
+      "input_sha256": "b61013fb429647d3ea250f0c427feccfd5ff3cb5fbd4adfb78ba0edb163a87a4",
       "sha256": "b61013fb429647d3ea250f0c427feccfd5ff3cb5fbd4adfb78ba0edb163a87a4",
       "bytes": 12245,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/filefmt.c",
@@ -1613,10 +1613,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/filefmt.c",
       "original_sha256": "f85837af1dad0a63025bd80d08046e7766bd1fc6d1c42515229bb3531b9353dc",
       "imported_sha256": "0cf96d417b920bc5e9cfb415d812d7ba39194702c52ca7ba93c18291b9dc672b",
-      "input_sha256": "0cf96d417b920bc5e9cfb415d812d7ba39194702c52ca7ba93c18291b9dc672b",
-      "sha256": "1003a4be8140f47481bb6f236a5e867f7fe018ca3d4633aeb963541aebfe29d7",
-      "bytes": 17354,
-      "export_modified": true
+      "input_sha256": "a816b801cb6095a55cf31b6ee0d4c8a03b5aa30c130b84cf5797de1f89a2026b",
+      "sha256": "a816b801cb6095a55cf31b6ee0d4c8a03b5aa30c130b84cf5797de1f89a2026b",
+      "bytes": 17442,
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/huffman.c",
@@ -1625,10 +1625,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/huffman.c",
       "original_sha256": "c04fa2d9918f500bb5cb16073c65ff59efbfefe2e687a6ee925663b3c8734855",
       "imported_sha256": "7f0fffcaffc190a832c9bd53d19b8cea05df6ff49b824433e365983e02570891",
-      "input_sha256": "7f0fffcaffc190a832c9bd53d19b8cea05df6ff49b824433e365983e02570891",
+      "input_sha256": "3b3a61eca4b9b1558ccb654458ccaa01543010cd17c9bbbfdd85573fdeb9c0de",
       "sha256": "3b3a61eca4b9b1558ccb654458ccaa01543010cd17c9bbbfdd85573fdeb9c0de",
       "bytes": 15127,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/hufftabs.c",
@@ -1637,10 +1637,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/hufftabs.c",
       "original_sha256": "569b7f00c477ea85253ce9c433cc2a56627062b0bc4b8575c7e4f5e69446ad6f",
       "imported_sha256": "ff82d1d83bf61fde158352fef0509a8a5579d461e58e44616a47b67d313534c6",
-      "input_sha256": "ff82d1d83bf61fde158352fef0509a8a5579d461e58e44616a47b67d313534c6",
+      "input_sha256": "8cc940507f3b6a48899b3d6a63aa1ee5bc14733f5a65ec885ddf1953cbae45aa",
       "sha256": "8cc940507f3b6a48899b3d6a63aa1ee5bc14733f5a65ec885ddf1953cbae45aa",
       "bytes": 15247,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/imdct.c",
@@ -1649,10 +1649,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/imdct.c",
       "original_sha256": "d2ff1324bd7a61373aba9c0c48b5b4e3533cad0de53e2345cbfc85dc3f17d2ae",
       "imported_sha256": "d7a8811103e0215474081268d24aa12359d700d96fff95a5997a073e25966cc4",
-      "input_sha256": "d7a8811103e0215474081268d24aa12359d700d96fff95a5997a073e25966cc4",
+      "input_sha256": "737d46e2e825ca0daad89360ade2d044ddd84437c19f3143444a58e9d14b3b2b",
       "sha256": "737d46e2e825ca0daad89360ade2d044ddd84437c19f3143444a58e9d14b3b2b",
       "bytes": 20949,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/noiseless.c",
@@ -1661,10 +1661,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/noiseless.c",
       "original_sha256": "486dc191f68df41b50cd42ee6ccb881351b9d8183e641e81129084f99313b5ff",
       "imported_sha256": "25698da4ece613c7f3452154b0dc80558fb72f3484498e71b6ebede609741a50",
-      "input_sha256": "25698da4ece613c7f3452154b0dc80558fb72f3484498e71b6ebede609741a50",
+      "input_sha256": "1bedcfa6db219059c5206af22345885b33ef27ea8fd5c4ea6b45958008792c20",
       "sha256": "1bedcfa6db219059c5206af22345885b33ef27ea8fd5c4ea6b45958008792c20",
       "bytes": 17321,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/pns.c",
@@ -1673,10 +1673,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/pns.c",
       "original_sha256": "9a0462b62186df4d4072b50ee07312fac3ee5a75b5b5dc6f11440a4fce5fcb84",
       "imported_sha256": "f424401f7d885d7918202d5fd0770a81c54c9c9ff50671fa7e9d922a8c6f3a38",
-      "input_sha256": "f424401f7d885d7918202d5fd0770a81c54c9c9ff50671fa7e9d922a8c6f3a38",
+      "input_sha256": "7fcf8e0e78696ab0511ffe6dda9b88f977123b10afb769b45dfdcab1b179a22a",
       "sha256": "7fcf8e0e78696ab0511ffe6dda9b88f977123b10afb769b45dfdcab1b179a22a",
       "bytes": 12820,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbr.c",
@@ -1685,10 +1685,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbr.c",
       "original_sha256": "59dba38285e1c9dce453dea520f1385fab7d24572744fc59ce459ef4546a66a9",
       "imported_sha256": "602c25dac2f97ea0845750054e72c3c060da10151de787fe495f431057dc20b8",
-      "input_sha256": "602c25dac2f97ea0845750054e72c3c060da10151de787fe495f431057dc20b8",
+      "input_sha256": "814daed38f527a86ecc1aa3c1efc5e3f145a81459aab8ce55f0bc2a5d26a2771",
       "sha256": "814daed38f527a86ecc1aa3c1efc5e3f145a81459aab8ce55f0bc2a5d26a2771",
       "bytes": 17609,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbr.h",
@@ -1697,10 +1697,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbr.h",
       "original_sha256": "75740331241a1c0ed56e629ce3fe99e03fc180c53ddb847c0345f65a398004bf",
       "imported_sha256": "4051bb4d2c5a9e48c91efbad8eb1e17c33a6f7fa3738de6937c8bc32ebb9e7c4",
-      "input_sha256": "4051bb4d2c5a9e48c91efbad8eb1e17c33a6f7fa3738de6937c8bc32ebb9e7c4",
+      "input_sha256": "811a8487e3f9398eac08cc892f49db51218c5546bcbd874d95da78735a31ba26",
       "sha256": "811a8487e3f9398eac08cc892f49db51218c5546bcbd874d95da78735a31ba26",
       "bytes": 14095,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbrfft.c",
@@ -1709,10 +1709,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbrfft.c",
       "original_sha256": "3104d971c1be41f34b12bab5b78cb179f4ad382e6292d53725deeefd56318e3a",
       "imported_sha256": "5933a9ebf22dccc00d04cad81987f7af09afa593859b1bf3b40ee4f200d78b4a",
-      "input_sha256": "5933a9ebf22dccc00d04cad81987f7af09afa593859b1bf3b40ee4f200d78b4a",
+      "input_sha256": "407a3af251f5c21498bc66c4976ad367b7a057826d40979979e99c565ce9eba5",
       "sha256": "407a3af251f5c21498bc66c4976ad367b7a057826d40979979e99c565ce9eba5",
       "bytes": 10287,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbrfreq.c",
@@ -1721,10 +1721,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbrfreq.c",
       "original_sha256": "5ed80e1718d12caba2c2e7d5dee14554f5f88ef0cdfb73882f4321dcc29f0fb1",
       "imported_sha256": "de6fe500da20d1fcfb9d81427c9e173d74b5c651ee7a624d569a694205054276",
-      "input_sha256": "de6fe500da20d1fcfb9d81427c9e173d74b5c651ee7a624d569a694205054276",
+      "input_sha256": "b16f9f1cf6f6d6c821f53df7bc8791270de4359711f04e15fc3608595e695dcb",
       "sha256": "b16f9f1cf6f6d6c821f53df7bc8791270de4359711f04e15fc3608595e695dcb",
       "bytes": 20721,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbrhfadj.c",
@@ -1733,10 +1733,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbrhfadj.c",
       "original_sha256": "21d7a0de419647a265515747dc9cfa3aff201074a7b3d407ff06b9e623143b2d",
       "imported_sha256": "2442fa0735166e537cc98fa0893bab66e08d8fad259acb134f463c242714c174",
-      "input_sha256": "2442fa0735166e537cc98fa0893bab66e08d8fad259acb134f463c242714c174",
+      "input_sha256": "730c129e34b2f66a0916d7c4285fd5b1096a1aa21f93becd599c24d7b1c05299",
       "sha256": "730c129e34b2f66a0916d7c4285fd5b1096a1aa21f93becd599c24d7b1c05299",
       "bytes": 33062,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbrhfgen.c",
@@ -1745,10 +1745,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbrhfgen.c",
       "original_sha256": "4352d31b59ba23f89976290bc4286c5e46a8746b33a09f80e33eece5b51230dd",
       "imported_sha256": "eac538aec824e81e2991cead4005f67cdf6e76fe433b4ee1f4e64eea4c8dec1f",
-      "input_sha256": "eac538aec824e81e2991cead4005f67cdf6e76fe433b4ee1f4e64eea4c8dec1f",
+      "input_sha256": "21df030a45462d3adc1a0010077ae1b82a6bd17bc4a2d29337d8b9360f349453",
       "sha256": "21df030a45462d3adc1a0010077ae1b82a6bd17bc4a2d29337d8b9360f349453",
       "bytes": 22853,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbrhuff.c",
@@ -1757,10 +1757,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbrhuff.c",
       "original_sha256": "3956cd6e52069db0fb2b1cec72a1857e7e3c506b41d87b24dc6a211f7d0e33aa",
       "imported_sha256": "719210818bbf001dcbb35edc72e3c88b0a39d1832d6f603d520abb528d66bcfb",
-      "input_sha256": "719210818bbf001dcbb35edc72e3c88b0a39d1832d6f603d520abb528d66bcfb",
+      "input_sha256": "acd4d6518be5faf6fd4f47adcd4cef6a69f9be2a24bf11e09b20f78816d528c7",
       "sha256": "acd4d6518be5faf6fd4f47adcd4cef6a69f9be2a24bf11e09b20f78816d528c7",
       "bytes": 18965,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbrimdct.c",
@@ -1769,10 +1769,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbrimdct.c",
       "original_sha256": "28bd4df67f30f64f6cc742d0194569a2a2be15df6e0d911f43adc22f81e4c085",
       "imported_sha256": "2ebda826c7be44e97d8c9b83fd112d50edcc33934b2cb79fc60ac027221825df",
-      "input_sha256": "2ebda826c7be44e97d8c9b83fd112d50edcc33934b2cb79fc60ac027221825df",
+      "input_sha256": "560b5044b5c4cc385accd4ede304f9f28e962110606122ea728ae08c6bfaa876",
       "sha256": "560b5044b5c4cc385accd4ede304f9f28e962110606122ea728ae08c6bfaa876",
       "bytes": 14001,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbrmath.c",
@@ -1781,10 +1781,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbrmath.c",
       "original_sha256": "245c3ce91e6603919c1c6a78886e20b15cbe54e7f71e8491b0e4595ddbcf66d8",
       "imported_sha256": "753794bbb3d9e9739dc37cbe72583823480295f9e5125b089ca7b5388b010999",
-      "input_sha256": "753794bbb3d9e9739dc37cbe72583823480295f9e5125b089ca7b5388b010999",
+      "input_sha256": "cc0192953d33225be62ab2e0006cd5537421f58d7b567b72b3b73a174dd87f83",
       "sha256": "cc0192953d33225be62ab2e0006cd5537421f58d7b567b72b3b73a174dd87f83",
       "bytes": 6676,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbrqmf.c",
@@ -1793,10 +1793,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbrqmf.c",
       "original_sha256": "e3678e307358693e31b0e22b25ab8107b17a41d7b5cfa16c81bd81feac475fad",
       "imported_sha256": "8496b1056208705b9c134b75b7f5a7e3ccbbf88fa0a1fa0f3638fc40900919dd",
-      "input_sha256": "8496b1056208705b9c134b75b7f5a7e3ccbbf88fa0a1fa0f3638fc40900919dd",
+      "input_sha256": "5ea902633850a34eb6a1776b4facc3ffc2d7915fb76168928a1c6a97ab4169e3",
       "sha256": "5ea902633850a34eb6a1776b4facc3ffc2d7915fb76168928a1c6a97ab4169e3",
       "bytes": 19990,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbrside.c",
@@ -1805,10 +1805,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbrside.c",
       "original_sha256": "61d1e53367a28ca1b4c121901ed6ff566b3a39593d67b3d3d64a97ab821f78a5",
       "imported_sha256": "e016ebe23232e1215a4544af589e871aa3dcd078c7b23f4553f3b270e329d91e",
-      "input_sha256": "e016ebe23232e1215a4544af589e871aa3dcd078c7b23f4553f3b270e329d91e",
+      "input_sha256": "9708a87cf8b8d51bdaa3983d8f58b8312e7586080d471528f5bcd6d058a36fa9",
       "sha256": "9708a87cf8b8d51bdaa3983d8f58b8312e7586080d471528f5bcd6d058a36fa9",
       "bytes": 20993,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/sbrtabs.c",
@@ -1817,10 +1817,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/sbrtabs.c",
       "original_sha256": "e5051059c2eef08e342f4e27126099c3eecd594b3f4b7cc7b04bf674e47334ac",
       "imported_sha256": "57cc91ed4f452c28e3d83822c8478bb34e7d40c1e8caf0efdfc7062936e9d803",
-      "input_sha256": "57cc91ed4f452c28e3d83822c8478bb34e7d40c1e8caf0efdfc7062936e9d803",
+      "input_sha256": "0f09da3fba6d7eb5c865ca8a81fe19294850d1b03f02d71a8ceb7eeba6d32083",
       "sha256": "0f09da3fba6d7eb5c865ca8a81fe19294850d1b03f02d71a8ceb7eeba6d32083",
       "bytes": 34060,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/statname.h",
@@ -1829,10 +1829,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/statname.h",
       "original_sha256": "def4a014d104bca6be348a02a428b364ea3faa2aa1396a037cd68787c01a25ea",
       "imported_sha256": "51c29896b8bcb4aa12e97f9fd60ba98cf02983d432f23a427e1ecbcb18cf667c",
-      "input_sha256": "51c29896b8bcb4aa12e97f9fd60ba98cf02983d432f23a427e1ecbcb18cf667c",
+      "input_sha256": "89b1070f47d7055f37999d99119ba3e282f9436d23c8da9b43cd9cbe48dafa0f",
       "sha256": "89b1070f47d7055f37999d99119ba3e282f9436d23c8da9b43cd9cbe48dafa0f",
       "bytes": 5051,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/stproc.c",
@@ -1841,10 +1841,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/stproc.c",
       "original_sha256": "a06116a66606976633fcea8ce175899b33e360b60117c6699e4d2931b33246d8",
       "imported_sha256": "5b208cb81990879e6409f79c45ad041912201ab81826190228a8f0cdeed30463",
-      "input_sha256": "5b208cb81990879e6409f79c45ad041912201ab81826190228a8f0cdeed30463",
+      "input_sha256": "4c50c85f5d9cc6a963dbb4ca59200d26bd40d014a59bba3161ffb70727e7e3c7",
       "sha256": "4c50c85f5d9cc6a963dbb4ca59200d26bd40d014a59bba3161ffb70727e7e3c7",
       "bytes": 8611,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/tns.c",
@@ -1853,10 +1853,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/tns.c",
       "original_sha256": "a273d4b5aeb1fa04f2669bb503280df0fcee00a2c5c869288e9f0053bfc16e1f",
       "imported_sha256": "071f8614ec9cf66f17b6f790a042eb9485f3dd42a0af12c49ad6bf29270b3e54",
-      "input_sha256": "071f8614ec9cf66f17b6f790a042eb9485f3dd42a0af12c49ad6bf29270b3e54",
+      "input_sha256": "e2ecf040057b98621e0e4de00fbfe6694a90aad5eff0756baa53364c7332dd30",
       "sha256": "e2ecf040057b98621e0e4de00fbfe6694a90aad5eff0756baa53364c7332dd30",
       "bytes": 10794,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/trigtabs.c",
@@ -1865,10 +1865,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/trigtabs.c",
       "original_sha256": "d44041096463ddde539d958c4e0c1968433ce8627037abbdd81ff68279f0c109",
       "imported_sha256": "a1cc5f4ef675babd4c9ae25d861769856cc0222d53fe2f7d0e75b5b64993b4f5",
-      "input_sha256": "a1cc5f4ef675babd4c9ae25d861769856cc0222d53fe2f7d0e75b5b64993b4f5",
+      "input_sha256": "77a9ca25a3b84eb1e723a4dfc550fd62b29d09934d6e1b976fcc04fce265ea9d",
       "sha256": "77a9ca25a3b84eb1e723a4dfc550fd62b29d09934d6e1b976fcc04fce265ea9d",
       "bytes": 75816,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/utils/helix_memory.h",
@@ -1877,10 +1877,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/utils/helix_memory.h",
       "original_sha256": "db2f73c98ffba41fab186d2ad78111012372e36e47401f429f9673ef764e0b90",
       "imported_sha256": "a9e19378d12551882406a0d773f42489914698cfd4e077380e18fb73cb481dcd",
-      "input_sha256": "a9e19378d12551882406a0d773f42489914698cfd4e077380e18fb73cb481dcd",
+      "input_sha256": "eb68ffa143a9a6d35d2f90c9a04773036ec3e80e0f6264825562e604522fa28b",
       "sha256": "eb68ffa143a9a6d35d2f90c9a04773036ec3e80e0f6264825562e604522fa28b",
       "bytes": 385,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/utils/helix_pgm.h",
@@ -1889,10 +1889,10 @@
       "input_relative_path": "decoders/AAC-LC/libhelix_aac/utils/helix_pgm.h",
       "original_sha256": "7d0e5850254d5b1f4ecd773b0107468d6d7c953af64dce19216c7571969162d9",
       "imported_sha256": "150db13fa9dd716ad72b9c9338409066f01731b12d34f556f089f81e5c3ce45e",
-      "input_sha256": "150db13fa9dd716ad72b9c9338409066f01731b12d34f556f089f81e5c3ce45e",
+      "input_sha256": "d5c0233631f429268dcec6f5cfdf62ab382a791618dd507dc230aa4aceb93797",
       "sha256": "d5c0233631f429268dcec6f5cfdf62ab382a791618dd507dc230aa4aceb93797",
       "bytes": 607,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aptx-family/main/COPYING",
@@ -1913,10 +1913,10 @@
       "input_relative_path": "decoders/aptX-family/main/freeaptx.c",
       "original_sha256": "6ed248b420ea7fe38db7a0b0a2c63f20f64556aa46323be4561edf06a0223b7f",
       "imported_sha256": "b98f960f83232e8b9903cf0ce86a24354b900a9ea14166f62661f8da7baddd3c",
-      "input_sha256": "b98f960f83232e8b9903cf0ce86a24354b900a9ea14166f62661f8da7baddd3c",
+      "input_sha256": "c0bfe2ef2903b0ea2fea4b20607a5035bbffb23dad25591331e7f01b724eeac0",
       "sha256": "c0bfe2ef2903b0ea2fea4b20607a5035bbffb23dad25591331e7f01b724eeac0",
       "bytes": 56802,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aptx/freeaptx.h",
@@ -1925,10 +1925,10 @@
       "input_relative_path": "decoders/aptX-family/main/freeaptx.h",
       "original_sha256": "469fdce4ce03afb149f2be5496d75baa89e671d01dd6fcd5bdc2073013b2ad0e",
       "imported_sha256": "5b22d028d5e5de2224865b041e8108cafc684ab4118fdc0f65f2a4d5d5301796",
-      "input_sha256": "5b22d028d5e5de2224865b041e8108cafc684ab4118fdc0f65f2a4d5d5301796",
+      "input_sha256": "5c43005441560f5e838ff59125040aab59499ec0f5d4fbcf2d5ab8daa0a096ef",
       "sha256": "5c43005441560f5e838ff59125040aab59499ec0f5d4fbcf2d5ab8daa0a096ef",
       "bytes": 7269,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/inc/ldacBT.h",
@@ -1937,10 +1937,10 @@
       "input_relative_path": "decoders/LDAC/inc/ldacBT.h",
       "original_sha256": "1a54a559129dcd0a19a11158c1a9246d5be69a8686b261ba95a97e20a4c794ce",
       "imported_sha256": "9159623adcb61a6124868415e82c6b989f4833e5089d5767f796a713852b70e5",
-      "input_sha256": "9159623adcb61a6124868415e82c6b989f4833e5089d5767f796a713852b70e5",
+      "input_sha256": "14dd1ac4de456659cadba4c65c46c796caf782b050ecd461a057b7397e05a8a0",
       "sha256": "14dd1ac4de456659cadba4c65c46c796caf782b050ecd461a057b7397e05a8a0",
       "bytes": 29188,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/bitalloc_sub_ldac.inc",
@@ -1949,10 +1949,10 @@
       "input_relative_path": "decoders/LDAC/src/bitalloc_sub_ldac.o.c",
       "original_sha256": "2d3d8915a503d9f8a58f7b8b95ded9741ab53187cb40c214a95beaaaf86e6f29",
       "imported_sha256": "87ba55baa436c5c9f9bc217bfeb8fa556446b5c24eb7589b6028957302c221d2",
-      "input_sha256": "87ba55baa436c5c9f9bc217bfeb8fa556446b5c24eb7589b6028957302c221d2",
+      "input_sha256": "d46ec84020ef1aacbfcfcd7b4aedd2b2218bf1bb693900b77aefdbc63669daac",
       "sha256": "d46ec84020ef1aacbfcfcd7b4aedd2b2218bf1bb693900b77aefdbc63669daac",
       "bytes": 4491,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/decode_ldac.inc",
@@ -1961,10 +1961,10 @@
       "input_relative_path": "decoders/LDAC/src/decode_ldac.o.c",
       "original_sha256": "bd1ddb45493e9ebe54bf6ca76f28e34c47bfa15ab6851250e93db6c9e4a8d87f",
       "imported_sha256": "6b56f36ac04f61c58bd57120f9c18ac4b9d093c2c77a55487c4332446193548a",
-      "input_sha256": "6b56f36ac04f61c58bd57120f9c18ac4b9d093c2c77a55487c4332446193548a",
+      "input_sha256": "86212625ade834a7dfc1f87757a526f8725074f963379942c60b865de36cb003",
       "sha256": "86212625ade834a7dfc1f87757a526f8725074f963379942c60b865de36cb003",
       "bytes": 5390,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/dequant_ldac.inc",
@@ -1973,10 +1973,10 @@
       "input_relative_path": "decoders/LDAC/src/dequant_ldac.o.c",
       "original_sha256": "658aca349f986e95d22e208df19e9834033843bbd6310ee23e7743dcaf68ffde",
       "imported_sha256": "43a6c04f55404456ff3a2ba1eab382cb62f1ab1c8993c202bb4d501b170d0aa5",
-      "input_sha256": "43a6c04f55404456ff3a2ba1eab382cb62f1ab1c8993c202bb4d501b170d0aa5",
+      "input_sha256": "c15a23e06533c85cef31b3e60c51d637d803ced60e3e645ec049ea11f9a7ce8b",
       "sha256": "c15a23e06533c85cef31b3e60c51d637d803ced60e3e645ec049ea11f9a7ce8b",
       "bytes": 2806,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/imdct_ldac.inc",
@@ -1985,10 +1985,10 @@
       "input_relative_path": "decoders/LDAC/src/imdct_ldac.o.c",
       "original_sha256": "e44cbc1d5f8dae5098af7c32a7c0bacd8fe40fae66ba1d6c71cb413e22a6f245",
       "imported_sha256": "0b190ebfb3c796345a697638f757051afb3c1971dd803491b30894af9436fa00",
-      "input_sha256": "0b190ebfb3c796345a697638f757051afb3c1971dd803491b30894af9436fa00",
+      "input_sha256": "01fe2c4065290cbf35aff3c2387bd86e76671451440d2a4e3ab607ba326eaba4",
       "sha256": "01fe2c4065290cbf35aff3c2387bd86e76671451440d2a4e3ab607ba326eaba4",
       "bytes": 5745,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/ldac.h",
@@ -1997,10 +1997,10 @@
       "input_relative_path": "decoders/LDAC/src/ldac.h",
       "original_sha256": "4232cd7df133f5fe5be1dc3d45d940b563708e0f999fda9e90dd9647f999270c",
       "imported_sha256": "f5e6aa41d15f35e4e98a96c84e81ae5d12accdaa039fc068c5124c1f5d8f5ddc",
-      "input_sha256": "f5e6aa41d15f35e4e98a96c84e81ae5d12accdaa039fc068c5124c1f5d8f5ddc",
+      "input_sha256": "f0ee5d9106aaf34e7419a5cbdb9d35ec5fca94efd055c40e33a3bbdb186650a5",
       "sha256": "f0ee5d9106aaf34e7419a5cbdb9d35ec5fca94efd055c40e33a3bbdb186650a5",
       "bytes": 8609,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/ldacBT.c",
@@ -2009,10 +2009,10 @@
       "input_relative_path": "decoders/LDAC/src/ldacBT.c",
       "original_sha256": "6438bc998527b2cb9115506002fe6c09a75f2030209c63d968b5d701bd0b38ab",
       "imported_sha256": "1dc3eb654b78c53d528ba936b302953c3f605974fa603e87021294eaa85c8fa5",
-      "input_sha256": "1dc3eb654b78c53d528ba936b302953c3f605974fa603e87021294eaa85c8fa5",
+      "input_sha256": "67de59408a319873fcaf1bb0b78aef2404b1b00b1fb9297a6456b1a58091a420",
       "sha256": "67de59408a319873fcaf1bb0b78aef2404b1b00b1fb9297a6456b1a58091a420",
       "bytes": 531,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/ldacBT_api.inc",
@@ -2021,10 +2021,10 @@
       "input_relative_path": "decoders/LDAC/src/ldacBT_api.o.c",
       "original_sha256": "a58370b1a7a2390d9549f4fce79b8c59948a782a731b3244988091c97ad5f5d8",
       "imported_sha256": "c345d906d1be9f508b31356de9d9f8e7c0404eddc0c0134bf9d0011d6a552b66",
-      "input_sha256": "c345d906d1be9f508b31356de9d9f8e7c0404eddc0c0134bf9d0011d6a552b66",
+      "input_sha256": "759efdf5f0ed9548800b223a26422e69a9c3b94d81a912110e8325485b85801d",
       "sha256": "759efdf5f0ed9548800b223a26422e69a9c3b94d81a912110e8325485b85801d",
       "bytes": 9356,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/ldacBT_internal.h",
@@ -2033,10 +2033,10 @@
       "input_relative_path": "decoders/LDAC/src/ldacBT_internal.h",
       "original_sha256": "66724d8291b11bf0ab1e6748e8948ebd8827202023a4501e0ae6e984d0fdf623",
       "imported_sha256": "5c245fe8ff20c86b08123db23470dc63202f7840569a52bf47ef9fefa05480ec",
-      "input_sha256": "5c245fe8ff20c86b08123db23470dc63202f7840569a52bf47ef9fefa05480ec",
+      "input_sha256": "d8c5fa3a409595707fac8e0e7fe1c05d6cd9e454ecc7486d96d3c240c551bf93",
       "sha256": "d8c5fa3a409595707fac8e0e7fe1c05d6cd9e454ecc7486d96d3c240c551bf93",
       "bytes": 5422,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/ldacBT_internal.inc",
@@ -2045,10 +2045,10 @@
       "input_relative_path": "decoders/LDAC/src/ldacBT_internal.o.c",
       "original_sha256": "cfb78e11e14a61073f89b532fa4b570b7be855075e267393dfe1d1cc30980af7",
       "imported_sha256": "935ecaa670ed5bc820c8aaa20c4e41536565be7104f9237010daf3daebb7d7e3",
-      "input_sha256": "935ecaa670ed5bc820c8aaa20c4e41536565be7104f9237010daf3daebb7d7e3",
+      "input_sha256": "6d94a0a1310d1ea9a48b91760e285259fa680ee352178de7eef98a88a49cfdac",
       "sha256": "6d94a0a1310d1ea9a48b91760e285259fa680ee352178de7eef98a88a49cfdac",
       "bytes": 5633,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/ldaclib.c",
@@ -2057,10 +2057,10 @@
       "input_relative_path": "decoders/LDAC/src/ldaclib.c",
       "original_sha256": "c74dd85a389382fa93275561c9703a4fe14ac476e07dc3513472921f9cc3cb04",
       "imported_sha256": "de7531f6bcd598120b3309264704254778eea4bebd82b088618ae75a66b1962d",
-      "input_sha256": "de7531f6bcd598120b3309264704254778eea4bebd82b088618ae75a66b1962d",
+      "input_sha256": "b910576ebe2ef4deacf6d4acd33ef675dc09cdb867e65e2899bba748242765fb",
       "sha256": "b910576ebe2ef4deacf6d4acd33ef675dc09cdb867e65e2899bba748242765fb",
       "bytes": 895,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/ldaclib.h",
@@ -2069,10 +2069,10 @@
       "input_relative_path": "decoders/LDAC/src/ldaclib.h",
       "original_sha256": "dd8b544d83e66581effc0692c56f6a944eebe16a4a8ff9f3d00d23598b146f6f",
       "imported_sha256": "4077d5bfc2baae3a919b429b821da717cfdc7ecde6bff079564d8b2d12ac758b",
-      "input_sha256": "4077d5bfc2baae3a919b429b821da717cfdc7ecde6bff079564d8b2d12ac758b",
+      "input_sha256": "b27ba2d35b08ac53654cbca99b8a63e46ee6d11eb7504828f5557cca4854e1c7",
       "sha256": "b27ba2d35b08ac53654cbca99b8a63e46ee6d11eb7504828f5557cca4854e1c7",
       "bytes": 6835,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/ldaclib_api.inc",
@@ -2081,10 +2081,10 @@
       "input_relative_path": "decoders/LDAC/src/ldaclib_api.o.c",
       "original_sha256": "9378ba99813666980d2dd3aa235c8f87709b2855950bc166b63e87507ae31b07",
       "imported_sha256": "e3955e84ab0b3991772d6d7f208f258cabfb2dc595120d506ac6f57bda877910",
-      "input_sha256": "e3955e84ab0b3991772d6d7f208f258cabfb2dc595120d506ac6f57bda877910",
+      "input_sha256": "f14788234b24447dac71062e62698597f9024dc87336a4e2cfcb18e226a6ad03",
       "sha256": "f14788234b24447dac71062e62698597f9024dc87336a4e2cfcb18e226a6ad03",
       "bytes": 12763,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/memory_ldac.inc",
@@ -2093,10 +2093,10 @@
       "input_relative_path": "decoders/LDAC/src/memory_ldac.o.c",
       "original_sha256": "581b3e0bd760b81311ff2a76a5ae22a1f247ae07235e02e7f7c9951d0a96d0db",
       "imported_sha256": "98159bb132129c530e96bfa056583a49708d87944fd085acc7d98609a86d4443",
-      "input_sha256": "98159bb132129c530e96bfa056583a49708d87944fd085acc7d98609a86d4443",
+      "input_sha256": "6c459cc0acd6094632075e81b1af2076067a78e91a385902513e65f620055254",
       "sha256": "6c459cc0acd6094632075e81b1af2076067a78e91a385902513e65f620055254",
       "bytes": 1233,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/proto_ldac.h",
@@ -2105,10 +2105,10 @@
       "input_relative_path": "decoders/LDAC/src/proto_ldac.h",
       "original_sha256": "4a94e9f6b5f3f7e3417a39372ef64dca7d8f676d21ef6a93492566077f16d3b0",
       "imported_sha256": "e353ba7ef6dbbb6b323d21278c1ad1c353f5d0046aebf9f2c5b104d4ff527bcd",
-      "input_sha256": "e353ba7ef6dbbb6b323d21278c1ad1c353f5d0046aebf9f2c5b104d4ff527bcd",
+      "input_sha256": "1e6a29efdf34153f5b3956820661ca17ae5f39f667d5a71622a17b78883b88df",
       "sha256": "1e6a29efdf34153f5b3956820661ca17ae5f39f667d5a71622a17b78883b88df",
       "bytes": 1680,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/setpcm_ldac.inc",
@@ -2117,10 +2117,10 @@
       "input_relative_path": "decoders/LDAC/src/setpcm_ldac.o.c",
       "original_sha256": "fccd5128a0f122ae60fc2c4bec2f8be5f8075634f6886c7a267304429123f009",
       "imported_sha256": "0d6d2d5884bdeaec72bab20fd021e40295a9cc01952a75feff2461a821458ee4",
-      "input_sha256": "0d6d2d5884bdeaec72bab20fd021e40295a9cc01952a75feff2461a821458ee4",
+      "input_sha256": "a34b8c6ec5730f297f9be2757d851d8b5f8510da15b8d1405158f48a33e0e334",
       "sha256": "a34b8c6ec5730f297f9be2757d851d8b5f8510da15b8d1405158f48a33e0e334",
       "bytes": 5534,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/struct_ldac.h",
@@ -2129,10 +2129,10 @@
       "input_relative_path": "decoders/LDAC/src/struct_ldac.h",
       "original_sha256": "ab9c04c0d29508c350c2c46bac9cb634f519724ba0a68dcd2778e71ce2f998fb",
       "imported_sha256": "7d632cce49f1b84d776d68f6a4ae6622fe037fb240f3741ad181bb733d71114a",
-      "input_sha256": "7d632cce49f1b84d776d68f6a4ae6622fe037fb240f3741ad181bb733d71114a",
+      "input_sha256": "159897f5be9d338a2a3bf23140e910336e7afa1de335f03a06dc5b481303f0da",
       "sha256": "159897f5be9d338a2a3bf23140e910336e7afa1de335f03a06dc5b481303f0da",
       "bytes": 3479,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/tables_ldac.inc",
@@ -2141,10 +2141,10 @@
       "input_relative_path": "decoders/LDAC/src/tables_ldac.o.c",
       "original_sha256": "3f7a28bed3ce557de676cd5d1b573d7b4d4f8a1582ea53e11f56d22897a0eef9",
       "imported_sha256": "a2108c3aa6d02fe44e03ca422dbd6fd8d0bad5eac350b4d0e8c2e3fa8cbb86e6",
-      "input_sha256": "a2108c3aa6d02fe44e03ca422dbd6fd8d0bad5eac350b4d0e8c2e3fa8cbb86e6",
+      "input_sha256": "afa5de4efe1cd9f387b6b8b6d617a2b97811c17bc4f87a8a03f5593f7764f719",
       "sha256": "afa5de4efe1cd9f387b6b8b6d617a2b97811c17bc4f87a8a03f5593f7764f719",
       "bytes": 29091,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/tables_sigproc_ldac.inc",
@@ -2153,10 +2153,10 @@
       "input_relative_path": "decoders/LDAC/src/tables_sigproc_ldac.o.c",
       "original_sha256": "3bf2491f3798c0ba74d25d693b005cd7b093a5443c4c882888e20edc06b58d68",
       "imported_sha256": "da00a4d0386386e3e0dfa90640d8a2b30ff1bcfbebcdf1d39c0c62fa8a6f8699",
-      "input_sha256": "da00a4d0386386e3e0dfa90640d8a2b30ff1bcfbebcdf1d39c0c62fa8a6f8699",
+      "input_sha256": "8064f55917ce16810ab639299454331bb6af1ded1c65c92d4db5c90a8394b13d",
       "sha256": "8064f55917ce16810ab639299454331bb6af1ded1c65c92d4db5c90a8394b13d",
       "bytes": 37443,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/ldac/src/unpack_ldac.checked.inc",
@@ -2165,10 +2165,10 @@
       "input_relative_path": "decoders/LDAC/src/unpack_ldac.o.c",
       "original_sha256": "7f69ed70cbe4b51f4c92f5e6a0630d6b6afaf7be73be3b64b56c8008f8db2711",
       "imported_sha256": "555fede39d4d31a2cb647daf431ba1e2b4847f3de5f2a33700793fa4cb4c61c7",
-      "input_sha256": "555fede39d4d31a2cb647daf431ba1e2b4847f3de5f2a33700793fa4cb4c61c7",
+      "input_sha256": "6c250f2b6c00b85370244d29c9f6e7ded400a1b591b9c87b7035145f43b643f6",
       "sha256": "6c250f2b6c00b85370244d29c9f6e7ded400a1b591b9c87b7035145f43b643f6",
       "bytes": 13825,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/lhdc/imdct_const_tables.inc",
@@ -2177,10 +2177,10 @@
       "input_relative_path": "decoders/LHDC-V5/imdct_const_tables.inc",
       "original_sha256": "672434f79b9bec5a58b3c083f77a0af455b3082442937d03994126aa2c70a287",
       "imported_sha256": "57eb1daa4d752955630c832369c5309f021ce1dec86c033c81ba51b11daf066d",
-      "input_sha256": "57eb1daa4d752955630c832369c5309f021ce1dec86c033c81ba51b11daf066d",
+      "input_sha256": "01815efc84f8e93697e6c124acbbeaa50536f0bc6dd97235fab9c808a4e3055f",
       "sha256": "01815efc84f8e93697e6c124acbbeaa50536f0bc6dd97235fab9c808a4e3055f",
       "bytes": 14725,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/lhdc/lhdc_bit_reader.c",
@@ -2189,10 +2189,10 @@
       "input_relative_path": "decoders/LHDC-V5/lhdc_bit_reader.c",
       "original_sha256": "81eeba454ebb29aeef03184202b7aa2a84f8b94549475cfc96fef5eeb2dd3a77",
       "imported_sha256": "e6ff70564324f0a39df826959fbf71a35a7df0344b7ba3ec3858b96ea346faa5",
-      "input_sha256": "e6ff70564324f0a39df826959fbf71a35a7df0344b7ba3ec3858b96ea346faa5",
+      "input_sha256": "9a61fddc89e625be700728b8556207c18791f0782326b8be5df13b167e0fdedc",
       "sha256": "9a61fddc89e625be700728b8556207c18791f0782326b8be5df13b167e0fdedc",
       "bytes": 3220,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/lhdc/lhdc_bit_reader.h",
@@ -2213,10 +2213,10 @@
       "input_relative_path": "decoders/LHDC-V5/lhdc_dec.c",
       "original_sha256": "1e205342c05305eddbda9fcdc90f6513fd5949180c7fc786df7f829ec917b9e8",
       "imported_sha256": "67e90560a02c356db8390676fddb0d9851d640c60ececf20920b493b18190f7c",
-      "input_sha256": "67e90560a02c356db8390676fddb0d9851d640c60ececf20920b493b18190f7c",
+      "input_sha256": "66699122ee54820d594de1ddba4764ae9d6a43b555023175948d7c4b2d50c2c2",
       "sha256": "66699122ee54820d594de1ddba4764ae9d6a43b555023175948d7c4b2d50c2c2",
       "bytes": 94067,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/lhdc/lhdc_dec.h",
@@ -2225,10 +2225,10 @@
       "input_relative_path": "decoders/LHDC-V5/lhdc_dec.h",
       "original_sha256": "cd59bb9ba2a099a3d26cf526676b4513493fc68edd84609a3c4cd0d3128efaa6",
       "imported_sha256": "9b0dc4e53e2a9630a45069cdcddadc1ac83ba84bf4860fa5a9f7c0250c719635",
-      "input_sha256": "9b0dc4e53e2a9630a45069cdcddadc1ac83ba84bf4860fa5a9f7c0250c719635",
+      "input_sha256": "eb691d598e4ee87ef8b472c0501f678109d35b5dde625ae0fc38642c383f80a8",
       "sha256": "eb691d598e4ee87ef8b472c0501f678109d35b5dde625ae0fc38642c383f80a8",
       "bytes": 6647,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/lhdc/lhdc_dec_internal.h",
@@ -2237,10 +2237,10 @@
       "input_relative_path": "decoders/LHDC-V5/lhdc_dec_internal.h",
       "original_sha256": "b386cd09f4d2e547200fc93f3eae30f2d58eb4e240c1c2f0426b32e2c2e40069",
       "imported_sha256": "ada133fe1904e74658905c39dfc7ce7e8d874d841769317de8c0c2afd9b4af46",
-      "input_sha256": "ada133fe1904e74658905c39dfc7ce7e8d874d841769317de8c0c2afd9b4af46",
+      "input_sha256": "d18e22e9a330960313cb8c229ee8a5e945b8a1a24bf69e91eb33546345a286a2",
       "sha256": "d18e22e9a330960313cb8c229ee8a5e945b8a1a24bf69e91eb33546345a286a2",
       "bytes": 6433,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/lhdc/lhdc_dec_slot.h",
@@ -2261,10 +2261,10 @@
       "input_relative_path": "decoders/LHDC-V5/lhdc_diag_config.c",
       "original_sha256": "f3a27ed3a43cdaf5e468be6b77069986a5e782c4489e197af5e0c0a6502c8354",
       "imported_sha256": "c4bff002af78500374f7c679d71f2b3cd4e860d886e8f9551a77af3234eb627f",
-      "input_sha256": "c4bff002af78500374f7c679d71f2b3cd4e860d886e8f9551a77af3234eb627f",
+      "input_sha256": "1fb47da3c53d801fbb84b51746d4438caeaa9006c0b5f58fd436fbeeb591c454",
       "sha256": "1fb47da3c53d801fbb84b51746d4438caeaa9006c0b5f58fd436fbeeb591c454",
       "bytes": 2910,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/lhdc/lhdc_diag_config.h",
@@ -2285,10 +2285,10 @@
       "input_relative_path": "decoders/LHDC-V5/lhdc_entropy_dec.c",
       "original_sha256": "3f89300c0d9b57c145564ecad15bc2c80e911267e03d9d99bef0263aa4764fa2",
       "imported_sha256": "3ebfb1f895a8b270d55c713b3f90c7a9c3e7ef7d53e924bd79be12887ad9b27e",
-      "input_sha256": "3ebfb1f895a8b270d55c713b3f90c7a9c3e7ef7d53e924bd79be12887ad9b27e",
+      "input_sha256": "bbcaedcc69e1ec715ca921983238e46994cdf05bb6a7bc817c3be59dbc13bec8",
       "sha256": "bbcaedcc69e1ec715ca921983238e46994cdf05bb6a7bc817c3be59dbc13bec8",
       "bytes": 27328,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/lhdc/lhdc_entropy_dec.h",
@@ -2321,10 +2321,10 @@
       "input_relative_path": "decoders/LHDC-V5/lhdc_imdct.c",
       "original_sha256": "38409b5ada8182847ed460fdadd0d473ffde77ced8f770815193349d66e312aa",
       "imported_sha256": "cce9ea39da5a910a29aa7083364a50963907c7c14500f6b53b869af55f2ca6fc",
-      "input_sha256": "cce9ea39da5a910a29aa7083364a50963907c7c14500f6b53b869af55f2ca6fc",
+      "input_sha256": "6acbc799bc479881f8ca299fafa5765ca134615647beb2894eb5c284a8731e4c",
       "sha256": "6acbc799bc479881f8ca299fafa5765ca134615647beb2894eb5c284a8731e4c",
       "bytes": 48410,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/lhdc/lhdc_imdct.h",
@@ -2345,10 +2345,10 @@
       "input_relative_path": "decoders/LHDC-V5/lhdc_sns_synth.c",
       "original_sha256": "2a984540cb9efb171b8bd8b94b407666ba905b32e26092d2209ccfa51c50884e",
       "imported_sha256": "7d0dde0ac04946e9ddd8f1ede4615dd0d4ee6e94e5a2a0efdc760b3216886aa7",
-      "input_sha256": "7d0dde0ac04946e9ddd8f1ede4615dd0d4ee6e94e5a2a0efdc760b3216886aa7",
+      "input_sha256": "db430af945d3b2bf8f29c30a3eb7df55e2d706bf0cf513bfa21405889834211c",
       "sha256": "db430af945d3b2bf8f29c30a3eb7df55e2d706bf0cf513bfa21405889834211c",
       "bytes": 18382,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/lhdc/lhdc_sns_synth.h",
@@ -2369,10 +2369,10 @@
       "input_relative_path": "decoders/LHDC-V5/lhdc_tables.c",
       "original_sha256": "33023a4f9c663aa62c0d8166aa56c05e1a0acf02c0b52cd71edb9bc8161b9bd8",
       "imported_sha256": "0d3ed71d49759d38cdc305d0bf8cbae90f9bba73d500d09511b93cc78af15386",
-      "input_sha256": "0d3ed71d49759d38cdc305d0bf8cbae90f9bba73d500d09511b93cc78af15386",
+      "input_sha256": "37a957c9613518f1beb4b64d7e5e60678a9d566d57b8472302f8ef528c22e0f2",
       "sha256": "37a957c9613518f1beb4b64d7e5e60678a9d566d57b8472302f8ef528c22e0f2",
       "bytes": 63190,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/lhdc/lhdc_tables.h",
@@ -2381,10 +2381,10 @@
       "input_relative_path": "decoders/LHDC-V5/lhdc_tables.h",
       "original_sha256": "f3890bc2c0a8029acd5ced85a1a2d0911f41410c12913cf83b4cadea5d056807",
       "imported_sha256": "980d7442c3466ec44545a0be2bead28e74c4d584688dbb0129d7e980cf60ef62",
-      "input_sha256": "980d7442c3466ec44545a0be2bead28e74c4d584688dbb0129d7e980cf60ef62",
+      "input_sha256": "1ec2c02db69dfbb1af139ca9f1dd37357332f6cc5b89e484a6e672c244285fdc",
       "sha256": "1ec2c02db69dfbb1af139ca9f1dd37357332f6cc5b89e484a6e672c244285fdc",
       "bytes": 2877,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/COPYING",
@@ -2405,10 +2405,10 @@
       "input_relative_path": "decoders/Opus/celt/arch.h",
       "original_sha256": "a11cf08ecc620e8679ece2ae2c79d0f4ebf9710f67addde77d038c39141e1ac8",
       "imported_sha256": "2855e4b6e75298c323dddd7cd5dc254175ffa4901a6117d9e33ca14006ce5758",
-      "input_sha256": "2855e4b6e75298c323dddd7cd5dc254175ffa4901a6117d9e33ca14006ce5758",
+      "input_sha256": "b5fc3e600d2b9489bbc9b3c09f50ee2435a98f8d9408bad720c56498e027615f",
       "sha256": "b5fc3e600d2b9489bbc9b3c09f50ee2435a98f8d9408bad720c56498e027615f",
       "bytes": 8801,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/bands.c",
@@ -2417,10 +2417,10 @@
       "input_relative_path": "decoders/Opus/celt/bands.c",
       "original_sha256": "d041ec3f59d96320fe80b1ebcffc68d06190aa387f393c917ca6fbe646915fe7",
       "imported_sha256": "cfc170a4d7e42d76e4e5800e3a2b42e1b9ab76f588d4544d940fc22139fe9dee",
-      "input_sha256": "cfc170a4d7e42d76e4e5800e3a2b42e1b9ab76f588d4544d940fc22139fe9dee",
+      "input_sha256": "11382fef5ba5d1542a0b7319ac4125ee434e869e85c12957a6a71ede865bc457",
       "sha256": "11382fef5ba5d1542a0b7319ac4125ee434e869e85c12957a6a71ede865bc457",
       "bytes": 51784,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/bands.h",
@@ -2429,10 +2429,10 @@
       "input_relative_path": "decoders/Opus/celt/bands.h",
       "original_sha256": "cd4b7712fb20da89f286b9c639cf08ef75be32a3cad1e067fbada5fbccb90a91",
       "imported_sha256": "66148fa2b890edf76608a45f4ee92743be57078a6f1447528361699a7479c62c",
-      "input_sha256": "66148fa2b890edf76608a45f4ee92743be57078a6f1447528361699a7479c62c",
+      "input_sha256": "c0fa88fe0a8087e0eb4078ba4500cde62584df143928ba8035be0070bbe778c0",
       "sha256": "c0fa88fe0a8087e0eb4078ba4500cde62584df143928ba8035be0070bbe778c0",
       "bytes": 5722,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/celt.c",
@@ -2441,10 +2441,10 @@
       "input_relative_path": "decoders/Opus/celt/celt.c",
       "original_sha256": "92c6589111b53737de435fff0371db31cb63676294339b48f203eedfa405d5ff",
       "imported_sha256": "f8e9765829bd562f6ede5b500afb7bb8e9a5beb85c2c06d8ae5f66b65701ec8e",
-      "input_sha256": "f8e9765829bd562f6ede5b500afb7bb8e9a5beb85c2c06d8ae5f66b65701ec8e",
+      "input_sha256": "6633fac0528168f6a41412ae610ec09569695ec33cf06b3972bdb31248c1546c",
       "sha256": "6633fac0528168f6a41412ae610ec09569695ec33cf06b3972bdb31248c1546c",
       "bytes": 9552,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/celt.h",
@@ -2453,10 +2453,10 @@
       "input_relative_path": "decoders/Opus/celt/celt.h",
       "original_sha256": "e77e9a62dc4ac716d9eda5263ed1d2674429df5d82365ae8dd55f21aebc8c0b2",
       "imported_sha256": "fce5aa19bb919a5aa21bce8d8353bf9c50d78c41ee347d74680127503461df6f",
-      "input_sha256": "fce5aa19bb919a5aa21bce8d8353bf9c50d78c41ee347d74680127503461df6f",
+      "input_sha256": "795deaefc6276d09117217a6fbed13fcfca943009fdc2bb4d83bd897669f08b6",
       "sha256": "795deaefc6276d09117217a6fbed13fcfca943009fdc2bb4d83bd897669f08b6",
       "bytes": 8350,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/celt_decoder.c",
@@ -2465,10 +2465,10 @@
       "input_relative_path": "decoders/Opus/celt/celt_decoder.c",
       "original_sha256": "f99ea0a88f5107fb09fdce03e5529883df0792c7a78315378add761385eab7fc",
       "imported_sha256": "efcd3d109a8e6689a62c7453968c62485626dee7e62605711e6d4bdfd0db0777",
-      "input_sha256": "efcd3d109a8e6689a62c7453968c62485626dee7e62605711e6d4bdfd0db0777",
+      "input_sha256": "f0c63456b8636d2b016460b26f4039f20d1490bfc65724b7a6f5b1bdc47c73a3",
       "sha256": "f0c63456b8636d2b016460b26f4039f20d1490bfc65724b7a6f5b1bdc47c73a3",
       "bytes": 51432,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/celt_lpc.c",
@@ -2477,10 +2477,10 @@
       "input_relative_path": "decoders/Opus/celt/celt_lpc.c",
       "original_sha256": "9b307f6844b25c9bdf1781b6768d40704976bcc3373845f2471649ac910da2bd",
       "imported_sha256": "60aed5d0f0b6744401583c694fbc4860ff0937883282c93eafbaa1b455a72197",
-      "input_sha256": "60aed5d0f0b6744401583c694fbc4860ff0937883282c93eafbaa1b455a72197",
+      "input_sha256": "cd1d230dad3278fadb956b75c3dcfbdf5d23813df5afda60b12326f211027f20",
       "sha256": "cd1d230dad3278fadb956b75c3dcfbdf5d23813df5afda60b12326f211027f20",
       "bytes": 10758,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/celt_lpc.h",
@@ -2489,10 +2489,10 @@
       "input_relative_path": "decoders/Opus/celt/celt_lpc.h",
       "original_sha256": "d61b04516d71ca7841e1f87d4c496226d1327b3f73a16e657cab11904a2bb882",
       "imported_sha256": "02f9b93d364d80c0a2cf41593b0b249b5dd82eabe543cbf439dfeb5c7ceeb8fe",
-      "input_sha256": "02f9b93d364d80c0a2cf41593b0b249b5dd82eabe543cbf439dfeb5c7ceeb8fe",
+      "input_sha256": "0faafb93241a362595620c8fe64f7e2755e99dd6ae6e539594e537dbf9a1cf58",
       "sha256": "0faafb93241a362595620c8fe64f7e2755e99dd6ae6e539594e537dbf9a1cf58",
       "bytes": 2505,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/cpu_support.h",
@@ -2501,10 +2501,10 @@
       "input_relative_path": "decoders/Opus/celt/cpu_support.h",
       "original_sha256": "5b6c5765395ced79b94ba6714a14052e4fcc9a5ab2755a0c2f5d8f7ff50227f9",
       "imported_sha256": "f6985133acba2bdc859c55967a0ea4dcae42c847b76c2a171a93e57a1c71b90c",
-      "input_sha256": "f6985133acba2bdc859c55967a0ea4dcae42c847b76c2a171a93e57a1c71b90c",
+      "input_sha256": "3f86f85a6c1a6beee704eaffec2dc84ec834a398e79652228153f12ad34ea2e8",
       "sha256": "3f86f85a6c1a6beee704eaffec2dc84ec834a398e79652228153f12ad34ea2e8",
       "bytes": 2735,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/cwrs.c",
@@ -2513,10 +2513,10 @@
       "input_relative_path": "decoders/Opus/celt/cwrs.c",
       "original_sha256": "5aca0ddaad6a0d9ff70916f1e1b8592d33c431f05458592ccf7a22f378647647",
       "imported_sha256": "42a51bda4aecb31754b4ef7138d05992b73cddc6a6ae13741e88702e2c5133ce",
-      "input_sha256": "42a51bda4aecb31754b4ef7138d05992b73cddc6a6ae13741e88702e2c5133ce",
+      "input_sha256": "8c62cf4c27d5ab3505e16aeef4cbd904faf1057313958b0d85732370bf3139d7",
       "sha256": "8c62cf4c27d5ab3505e16aeef4cbd904faf1057313958b0d85732370bf3139d7",
       "bytes": 28706,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/cwrs.h",
@@ -2525,10 +2525,10 @@
       "input_relative_path": "decoders/Opus/celt/cwrs.h",
       "original_sha256": "477c3e2f39d442964b81f2a7472c446809484ff74214014eaf98da41fca35158",
       "imported_sha256": "7705be67d58e7fbdea384dde5f3c404ef814fbb8ecbfca61f731d11e8201bdc7",
-      "input_sha256": "7705be67d58e7fbdea384dde5f3c404ef814fbb8ecbfca61f731d11e8201bdc7",
+      "input_sha256": "6eac7a2053d9b5080c7e7210b69b620a49b49612c75be486061a1e3aadd9b0c3",
       "sha256": "6eac7a2053d9b5080c7e7210b69b620a49b49612c75be486061a1e3aadd9b0c3",
       "bytes": 2164,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/ecintrin.h",
@@ -2537,10 +2537,10 @@
       "input_relative_path": "decoders/Opus/celt/ecintrin.h",
       "original_sha256": "7d5993e268f74a9849951c40ce01daaa632a4f7ee9cb2dc2b186809accaac665",
       "imported_sha256": "d349526e7978c1a426a1e9558e545b120ccd8913a726281c3649680b790c0a66",
-      "input_sha256": "d349526e7978c1a426a1e9558e545b120ccd8913a726281c3649680b790c0a66",
+      "input_sha256": "ef2f8e5e99c0271c78d93e6b7e1905a84ea66aadeaac85b0fc49b94b36d3117f",
       "sha256": "ef2f8e5e99c0271c78d93e6b7e1905a84ea66aadeaac85b0fc49b94b36d3117f",
       "bytes": 3969,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/entcode.c",
@@ -2549,10 +2549,10 @@
       "input_relative_path": "decoders/Opus/celt/entcode.c",
       "original_sha256": "c2c92d3cf228b888b895b21c085497f3f1d6b91d6790046d1a5d322a897c2aa3",
       "imported_sha256": "a5dce6ef8fc630d963e41c5b3cf81eac53ad8ee163f898afe282c499c636158e",
-      "input_sha256": "a5dce6ef8fc630d963e41c5b3cf81eac53ad8ee163f898afe282c499c636158e",
+      "input_sha256": "5dc41441df752469275e675e535a7b168594c04abc7cc3b1dab045c109d2813e",
       "sha256": "5dc41441df752469275e675e535a7b168594c04abc7cc3b1dab045c109d2813e",
       "bytes": 6145,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/entcode.h",
@@ -2561,10 +2561,10 @@
       "input_relative_path": "decoders/Opus/celt/entcode.h",
       "original_sha256": "0ad44477c22348435a6848bd223862779768fec38dbd297b7bafa77a4514b97c",
       "imported_sha256": "d10def0fc7a6c77f33c5e40e18b4040ee1ef3ece8a3c0e7b78cbf0648cffc2bc",
-      "input_sha256": "d10def0fc7a6c77f33c5e40e18b4040ee1ef3ece8a3c0e7b78cbf0648cffc2bc",
+      "input_sha256": "63e0d78badcd2fbc4970913eb308744d6181560e939fba7fa6d1e8076aef9e83",
       "sha256": "63e0d78badcd2fbc4970913eb308744d6181560e939fba7fa6d1e8076aef9e83",
       "bytes": 5722,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/entdec.c",
@@ -2573,10 +2573,10 @@
       "input_relative_path": "decoders/Opus/celt/entdec.c",
       "original_sha256": "c6049ea7fcc7f6d04c64ce0acbd8e78fb1d462b03572d705b946db4e3a56b772",
       "imported_sha256": "b4f94e37cc50f406584968db50a64a59f4c6a296967a61c660299612b8b10305",
-      "input_sha256": "b4f94e37cc50f406584968db50a64a59f4c6a296967a61c660299612b8b10305",
+      "input_sha256": "02099009c8d2752e9b67299c568bd21eb0cd668b96d24301bb59f9793750724c",
       "sha256": "02099009c8d2752e9b67299c568bd21eb0cd668b96d24301bb59f9793750724c",
       "bytes": 8819,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/entdec.h",
@@ -2585,10 +2585,10 @@
       "input_relative_path": "decoders/Opus/celt/entdec.h",
       "original_sha256": "48f0699ff2a42e934209f2e6bcf9df34304c95cf4f5efebe1a46a219ae741bf2",
       "imported_sha256": "f8cad4f16bcc168e9f693c909cb09b978f2931f293f8001a003842d18533e53f",
-      "input_sha256": "f8cad4f16bcc168e9f693c909cb09b978f2931f293f8001a003842d18533e53f",
+      "input_sha256": "a7a70dcc1848c891aecf16fe499120a948559bb8c84eb263061ede26c84ee372",
       "sha256": "a7a70dcc1848c891aecf16fe499120a948559bb8c84eb263061ede26c84ee372",
       "bytes": 5626,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/entenc.c",
@@ -2597,10 +2597,10 @@
       "input_relative_path": "decoders/Opus/celt/entenc.c",
       "original_sha256": "630146af57a6eff610d1ad6288b7902e5ee07a714555635398bc93d755c5cc00",
       "imported_sha256": "9377403f3eacaeb7172d37be5b29777739556807c77c4350bd8787501eda3084",
-      "input_sha256": "9377403f3eacaeb7172d37be5b29777739556807c77c4350bd8787501eda3084",
+      "input_sha256": "baca1c0bab4f7c131240cbb3f2916ba41c69c898e08d6a8f509137d22ef96190",
       "sha256": "baca1c0bab4f7c131240cbb3f2916ba41c69c898e08d6a8f509137d22ef96190",
       "bytes": 10310,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/entenc.h",
@@ -2609,10 +2609,10 @@
       "input_relative_path": "decoders/Opus/celt/entenc.h",
       "original_sha256": "181b51b4f4fb117baadf8f07f1f3cb6ab5c33626bf014ae2a19430fc24410b25",
       "imported_sha256": "3c8a7aa72942b522c3bf30829025be85bcd6e122fb327a95344613c75db315e8",
-      "input_sha256": "3c8a7aa72942b522c3bf30829025be85bcd6e122fb327a95344613c75db315e8",
+      "input_sha256": "90f1bcc7b41c733400639eff6e104fafa7833e8eac292cb359988720a505f870",
       "sha256": "90f1bcc7b41c733400639eff6e104fafa7833e8eac292cb359988720a505f870",
       "bytes": 6183,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/fixed_c5x.h",
@@ -2621,10 +2621,10 @@
       "input_relative_path": "decoders/Opus/celt/fixed_c5x.h",
       "original_sha256": "d0b9ced74266dad91b15675e0c8c234c274009c514186eb63423a23d9f97eac0",
       "imported_sha256": "22b33645dcdbc52a949fdd39de23797cb4908f0ef6b231c5032979f490827bef",
-      "input_sha256": "22b33645dcdbc52a949fdd39de23797cb4908f0ef6b231c5032979f490827bef",
+      "input_sha256": "5a3ad6d7509e625f48ac36b17a8656986d529cf4efd98b50d9979183d429d964",
       "sha256": "5a3ad6d7509e625f48ac36b17a8656986d529cf4efd98b50d9979183d429d964",
       "bytes": 2804,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/fixed_c6x.h",
@@ -2633,10 +2633,10 @@
       "input_relative_path": "decoders/Opus/celt/fixed_c6x.h",
       "original_sha256": "0119a780dc966221562d53186855e7aa176e7b2f3284eed82b3055b157f7454d",
       "imported_sha256": "e78714ffbdf4a6e240fd8a3b79d0227193492276c0ad29c08f1b62947ef24720",
-      "input_sha256": "e78714ffbdf4a6e240fd8a3b79d0227193492276c0ad29c08f1b62947ef24720",
+      "input_sha256": "152f3d9af3056d226ef357bc43a4a7842e4bef1be26087f197438d7f1f76f97a",
       "sha256": "152f3d9af3056d226ef357bc43a4a7842e4bef1be26087f197438d7f1f76f97a",
       "bytes": 2468,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/fixed_debug.h",
@@ -2645,10 +2645,10 @@
       "input_relative_path": "decoders/Opus/celt/fixed_debug.h",
       "original_sha256": "3d2e8df803225fb4da2440ad4417f774f2fc66287112b30c71608d730de7deb5",
       "imported_sha256": "2ddafa842a4a946d0ecd154ce8bed01ed3b4786182501731f4f1652636902770",
-      "input_sha256": "2ddafa842a4a946d0ecd154ce8bed01ed3b4786182501731f4f1652636902770",
+      "input_sha256": "d2dd246faeeecd2f481d51b12aff16ecd05ff0e1f207ef4942d0a316019a5cfe",
       "sha256": "d2dd246faeeecd2f481d51b12aff16ecd05ff0e1f207ef4942d0a316019a5cfe",
       "bytes": 22944,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/fixed_generic.h",
@@ -2657,10 +2657,10 @@
       "input_relative_path": "decoders/Opus/celt/fixed_generic.h",
       "original_sha256": "bcc2c3cd0d8cd691a2b09af92756c3d8d845aa175ea7b6dca6c8ddc2b32b64e3",
       "imported_sha256": "0185be2436b154667da33fc7bd8af6c07290980681c767fb2d3c89985cf7d308",
-      "input_sha256": "0185be2436b154667da33fc7bd8af6c07290980681c767fb2d3c89985cf7d308",
+      "input_sha256": "7869f7bb9599fcf181f55df3b557dbaeec0b21a1b7c4d7487829901a2de8b131",
       "sha256": "7869f7bb9599fcf181f55df3b557dbaeec0b21a1b7c4d7487829901a2de8b131",
       "bytes": 8828,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/float_cast.h",
@@ -2669,10 +2669,10 @@
       "input_relative_path": "decoders/Opus/celt/float_cast.h",
       "original_sha256": "c9fc5637177cfa7cd2f886f3a8b4b6712256dec7f075115441ea425ee071c6ae",
       "imported_sha256": "eb057e62df3e9fb1d4d9bb4a25804e89886037a7c5465bc8f1069570e572b003",
-      "input_sha256": "eb057e62df3e9fb1d4d9bb4a25804e89886037a7c5465bc8f1069570e572b003",
+      "input_sha256": "bd63015d91c3ccfc099fe636d075f6ad9300d8afba3970e27018c41daf44edfe",
       "sha256": "bd63015d91c3ccfc099fe636d075f6ad9300d8afba3970e27018c41daf44edfe",
       "bytes": 5668,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/kiss_fft.c",
@@ -2681,10 +2681,10 @@
       "input_relative_path": "decoders/Opus/celt/kiss_fft.c",
       "original_sha256": "4bcff72f22faec6a39a980f0066dd4b865dc1e5f6f486816188d15fca5e9a7a8",
       "imported_sha256": "dff7f22120a3ccabe2a5d584193eebc575a33d0cc13cfd8aa8dfa63a9379b272",
-      "input_sha256": "dff7f22120a3ccabe2a5d584193eebc575a33d0cc13cfd8aa8dfa63a9379b272",
+      "input_sha256": "e47d1421a9604dce103cea3ed78784d042550ed6fbb3989df3abef7247302056",
       "sha256": "e47d1421a9604dce103cea3ed78784d042550ed6fbb3989df3abef7247302056",
       "bytes": 17452,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/kiss_fft.h",
@@ -2693,10 +2693,10 @@
       "input_relative_path": "decoders/Opus/celt/kiss_fft.h",
       "original_sha256": "f7a03ea6b505e319a6ba895b2c83cf62b51168a0a6d7ae7f5ebc2f3d2ce3d1c0",
       "imported_sha256": "903d12f927b11ba90be01b67ee2d15b7cb00cf18ea6844b017c59b6435a8e84d",
-      "input_sha256": "903d12f927b11ba90be01b67ee2d15b7cb00cf18ea6844b017c59b6435a8e84d",
+      "input_sha256": "91a3ba74af774f6add455620467be9a94ae35f7ddc75da2081ece55ea37f6a0f",
       "sha256": "91a3ba74af774f6add455620467be9a94ae35f7ddc75da2081ece55ea37f6a0f",
       "bytes": 6993,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/laplace.c",
@@ -2705,10 +2705,10 @@
       "input_relative_path": "decoders/Opus/celt/laplace.c",
       "original_sha256": "9289fcc05c5572c66d05f5cc63a894eff11fc5cb83a2f757f75496a5329bc306",
       "imported_sha256": "dfcc46097041efb56f5b33706da6b5763b60a771e10aeb2d3b007c0b83bda29d",
-      "input_sha256": "dfcc46097041efb56f5b33706da6b5763b60a771e10aeb2d3b007c0b83bda29d",
+      "input_sha256": "05378e533d9132d36e5f34f8fff56ddd2817c9b55156dfd304740fda65d9cacd",
       "sha256": "05378e533d9132d36e5f34f8fff56ddd2817c9b55156dfd304740fda65d9cacd",
       "bytes": 6706,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/laplace.h",
@@ -2717,10 +2717,10 @@
       "input_relative_path": "decoders/Opus/celt/laplace.h",
       "original_sha256": "272da1987c4ac956110089c5515c7de548aeb7115a1d3e623e17333b2a7465f7",
       "imported_sha256": "27102a1e7f24879c6871df971b7215b119d574bc25a3af9740c343d3b285ae82",
-      "input_sha256": "27102a1e7f24879c6871df971b7215b119d574bc25a3af9740c343d3b285ae82",
+      "input_sha256": "e22de4a8d7bc0df47c7bccae638954ea6e75edc56bd3f16ff083e1be1b85b27a",
       "sha256": "e22de4a8d7bc0df47c7bccae638954ea6e75edc56bd3f16ff083e1be1b85b27a",
       "bytes": 2628,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/mathops.c",
@@ -2729,10 +2729,10 @@
       "input_relative_path": "decoders/Opus/celt/mathops.c",
       "original_sha256": "c8657e7d58e042556700696ad39a1291577bd0cdee2bd7b3d52d48c5846abe88",
       "imported_sha256": "8489c4b36479a9388f44317674cf191b17f2e82484e1ec997530018bb13d2137",
-      "input_sha256": "8489c4b36479a9388f44317674cf191b17f2e82484e1ec997530018bb13d2137",
+      "input_sha256": "e028f5338f1f1815ff140f0b0b8a3d185458bf47dbbe263e87455890fd48c0fa",
       "sha256": "e028f5338f1f1815ff140f0b0b8a3d185458bf47dbbe263e87455890fd48c0fa",
       "bytes": 7273,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/mathops.h",
@@ -2741,10 +2741,10 @@
       "input_relative_path": "decoders/Opus/celt/mathops.h",
       "original_sha256": "6dc3bda5549025e31c20d3d767495c972157809a45a102ea8c05c1dc32c1f602",
       "imported_sha256": "18969073f5f53798a5e9f37d05fcf6a26ad4cc8c9ffb3e5d88d8bc0523c17960",
-      "input_sha256": "18969073f5f53798a5e9f37d05fcf6a26ad4cc8c9ffb3e5d88d8bc0523c17960",
+      "input_sha256": "3a7edf015d6fa1a49351bcfa488d3de88118ccebc0c08bd16154d014638aa173",
       "sha256": "3a7edf015d6fa1a49351bcfa488d3de88118ccebc0c08bd16154d014638aa173",
       "bytes": 8272,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/mdct.c",
@@ -2753,10 +2753,10 @@
       "input_relative_path": "decoders/Opus/celt/mdct.c",
       "original_sha256": "03d3b6dd212e08c9253206ec57b84d5ee19b6d15a4a51242e12a4ae1846e5776",
       "imported_sha256": "0b99b419ee58f776cf7932187e772493dd41f38cb7e1685aab038f993c18d23a",
-      "input_sha256": "0b99b419ee58f776cf7932187e772493dd41f38cb7e1685aab038f993c18d23a",
+      "input_sha256": "abed266c692eb3926260bdbe4194ad00730ca62db5cfe00cc853cb10fa61d976",
       "sha256": "abed266c692eb3926260bdbe4194ad00730ca62db5cfe00cc853cb10fa61d976",
       "bytes": 11343,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/mdct.h",
@@ -2765,10 +2765,10 @@
       "input_relative_path": "decoders/Opus/celt/mdct.h",
       "original_sha256": "271ee5a406965e5e59f1f1afcea8b49c0d43ddd1d06676ab70d41cc07c96631f",
       "imported_sha256": "117195c3e11a011b63674ff6285a03e136c22ba514b087587f9e69d56c3d6e3b",
-      "input_sha256": "117195c3e11a011b63674ff6285a03e136c22ba514b087587f9e69d56c3d6e3b",
+      "input_sha256": "1359ba70aa58aa8da46a72469d4b6044ddc352f9de54c224b0a092c997601ed2",
       "sha256": "1359ba70aa58aa8da46a72469d4b6044ddc352f9de54c224b0a092c997601ed2",
       "bytes": 5066,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/mfrngcod.h",
@@ -2777,10 +2777,10 @@
       "input_relative_path": "decoders/Opus/celt/mfrngcod.h",
       "original_sha256": "20825cc6a0827b3961ea23dbf252f8a8dac2122e3546492988175a5b36d84a7b",
       "imported_sha256": "9caf3955a58aacad80bc3c7caa5dca3e058e1ed97c5c517dafb5475b0ae339fb",
-      "input_sha256": "9caf3955a58aacad80bc3c7caa5dca3e058e1ed97c5c517dafb5475b0ae339fb",
+      "input_sha256": "006526bb7224bde4fb0c1d113c85af6750dff17446c96ca8ef756c09105f8b36",
       "sha256": "006526bb7224bde4fb0c1d113c85af6750dff17446c96ca8ef756c09105f8b36",
       "bytes": 2510,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/modes.c",
@@ -2789,10 +2789,10 @@
       "input_relative_path": "decoders/Opus/celt/modes.c",
       "original_sha256": "2412516bbf41622cf4008bd55a5b9230c0cbf25b1063c01fa7f0a9664335757f",
       "imported_sha256": "207554c5034bc572c5967c3be01a96b5bcd6635913aafd6fbe9ee0505753fb08",
-      "input_sha256": "207554c5034bc572c5967c3be01a96b5bcd6635913aafd6fbe9ee0505753fb08",
+      "input_sha256": "de961dfdc642fdf0419b2990d3ed0fb35db42e5df96b098c99a5c6a3a4e4590f",
       "sha256": "de961dfdc642fdf0419b2990d3ed0fb35db42e5df96b098c99a5c6a3a4e4590f",
       "bytes": 14439,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/modes.h",
@@ -2801,10 +2801,10 @@
       "input_relative_path": "decoders/Opus/celt/modes.h",
       "original_sha256": "0af901fc570ec207f5ceecd2b577fadecf1ffb71ce8455ef9055b5c6f2cfeb58",
       "imported_sha256": "79b03cb3d3403278983e3c0c29f1098a0b5f16929991b4a7c7d309dc585f3768",
-      "input_sha256": "79b03cb3d3403278983e3c0c29f1098a0b5f16929991b4a7c7d309dc585f3768",
+      "input_sha256": "782a458c5b2590e48379b1a56ff808bd938bff2a89e003f4893c631b3c7ed8e4",
       "sha256": "782a458c5b2590e48379b1a56ff808bd938bff2a89e003f4893c631b3c7ed8e4",
       "bytes": 2727,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/os_support.h",
@@ -2813,10 +2813,10 @@
       "input_relative_path": "decoders/Opus/celt/os_support.h",
       "original_sha256": "5500be27fef487b263e5e054c3ac4ad9c4538d96fc2620142daa21aeae7a4585",
       "imported_sha256": "a3b91d46beb2f56920380607868fe70d4ff828511b957e6ab366bdcb3aceff09",
-      "input_sha256": "a3b91d46beb2f56920380607868fe70d4ff828511b957e6ab366bdcb3aceff09",
+      "input_sha256": "43c4c6d31fb30c30147ed1b00b4990eef632b89ba3aec1a175825405d45a6587",
       "sha256": "43c4c6d31fb30c30147ed1b00b4990eef632b89ba3aec1a175825405d45a6587",
       "bytes": 3609,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/pitch.c",
@@ -2825,10 +2825,10 @@
       "input_relative_path": "decoders/Opus/celt/pitch.c",
       "original_sha256": "64c556922cb8aad358a9972887c805cd63172511ac713da206afbefbdc3e99ae",
       "imported_sha256": "9be1395e26ee786a9283e390be25c54680b1f8aaf071c13063043ffd9c0416b5",
-      "input_sha256": "9be1395e26ee786a9283e390be25c54680b1f8aaf071c13063043ffd9c0416b5",
+      "input_sha256": "c973bdf9d86ca6727a62e42a892af2b5457a27a576a0cb145cc87609677827ff",
       "sha256": "c973bdf9d86ca6727a62e42a892af2b5457a27a576a0cb145cc87609677827ff",
       "bytes": 15338,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/pitch.h",
@@ -2837,10 +2837,10 @@
       "input_relative_path": "decoders/Opus/celt/pitch.h",
       "original_sha256": "bb88e06f6768722add06bb44b4bf2211a0caaed1daf8060ecb1ddbe98d680984",
       "imported_sha256": "9104a47681a39cb58051869434af85557fe0d31aab16d73ddb4ca508b6cb5877",
-      "input_sha256": "9104a47681a39cb58051869434af85557fe0d31aab16d73ddb4ca508b6cb5877",
+      "input_sha256": "167997dc38c5683e7bd29ec9c82cb35afbca1f943c81a374de0989af4b28e396",
       "sha256": "167997dc38c5683e7bd29ec9c82cb35afbca1f943c81a374de0989af4b28e396",
       "bytes": 6531,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/quant_bands.c",
@@ -2849,10 +2849,10 @@
       "input_relative_path": "decoders/Opus/celt/quant_bands.c",
       "original_sha256": "3cbb76e4072da136d4ee96bc4cce8fa8f7dee706f6089062fbcab32f09ee7edd",
       "imported_sha256": "c545e9af885341971ec4bd753d07f9c5d64e7f9a121932668643bf7c918be1c6",
-      "input_sha256": "c545e9af885341971ec4bd753d07f9c5d64e7f9a121932668643bf7c918be1c6",
+      "input_sha256": "c60504a23237de1334df38ba3e19b5aa137abb4f3f4c1567cc9217f94bea58e5",
       "sha256": "c60504a23237de1334df38ba3e19b5aa137abb4f3f4c1567cc9217f94bea58e5",
       "bytes": 19163,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/quant_bands.h",
@@ -2861,10 +2861,10 @@
       "input_relative_path": "decoders/Opus/celt/quant_bands.h",
       "original_sha256": "2d6b46389486143ab1438ae8b7107610b4dd00c6b1a483ad43371f37eb7e3560",
       "imported_sha256": "fbe7d733d3dcfd7d2fd3436fb50a62c62a327997b479c9c72770900b7e6abfe0",
-      "input_sha256": "fbe7d733d3dcfd7d2fd3436fb50a62c62a327997b479c9c72770900b7e6abfe0",
+      "input_sha256": "4b96f2eaa428f2d40d459c847237db577209deadf6f6d357ccd2090292c3f279",
       "sha256": "4b96f2eaa428f2d40d459c847237db577209deadf6f6d357ccd2090292c3f279",
       "bytes": 3253,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/rate.c",
@@ -2873,10 +2873,10 @@
       "input_relative_path": "decoders/Opus/celt/rate.c",
       "original_sha256": "65f0993071aad6cf28a839167df39dc9e27c084e50a34dfed5d0402cc26134e1",
       "imported_sha256": "7703fa14dd20a654cbcaa088c88e16a214a3950a9ab2b02db6ad5a16eb6f6b38",
-      "input_sha256": "7703fa14dd20a654cbcaa088c88e16a214a3950a9ab2b02db6ad5a16eb6f6b38",
+      "input_sha256": "4b94b6f58ebc1f46b2fc2272e5e6e632194d2ecc3a6751ba8d7f66e3451533ee",
       "sha256": "4b94b6f58ebc1f46b2fc2272e5e6e632194d2ecc3a6751ba8d7f66e3451533ee",
       "bytes": 21947,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/rate.h",
@@ -2885,10 +2885,10 @@
       "input_relative_path": "decoders/Opus/celt/rate.h",
       "original_sha256": "4b2fc6e67e0d540924560e895c2d454da9cf26c9d142b80d51180d2c786c836c",
       "imported_sha256": "fd7d4e7263e57fe57f6d0e2d9c8bf0e59a98ade0d5af561ebbc2df40328a28a6",
-      "input_sha256": "fd7d4e7263e57fe57f6d0e2d9c8bf0e59a98ade0d5af561ebbc2df40328a28a6",
+      "input_sha256": "0070e9011f4162fa0dd35c71ffc8ff74da34ea5fa05c546e8529991ef223d530",
       "sha256": "0070e9011f4162fa0dd35c71ffc8ff74da34ea5fa05c546e8529991ef223d530",
       "bytes": 3563,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/stack_alloc.h",
@@ -2897,10 +2897,10 @@
       "input_relative_path": "decoders/Opus/celt/stack_alloc.h",
       "original_sha256": "8eb93c08fa7e8cbd3c97e3b63947e3c3500488194b491348e2f96aaecfc165c1",
       "imported_sha256": "2d974d91ffa1dc53aa6b4577359d29a70854184bd59f28cfa94d7b6fee1448b6",
-      "input_sha256": "2d974d91ffa1dc53aa6b4577359d29a70854184bd59f28cfa94d7b6fee1448b6",
+      "input_sha256": "36f4e2a6e425207528008a53adc8f13702d910f9cda2bc55d8cf96d57df0a119",
       "sha256": "36f4e2a6e425207528008a53adc8f13702d910f9cda2bc55d8cf96d57df0a119",
       "bytes": 6298,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/static_modes_fixed.h",
@@ -2909,10 +2909,10 @@
       "input_relative_path": "decoders/Opus/celt/static_modes_fixed.h",
       "original_sha256": "ae38e63dba3b33becb1e79b4102505be08e608563c06f9f3258d1a85a459053f",
       "imported_sha256": "fd5405b0b95073d6fa8810395a79a50e9457de20a4eb65e67421c01da01ce7c6",
-      "input_sha256": "fd5405b0b95073d6fa8810395a79a50e9457de20a4eb65e67421c01da01ce7c6",
+      "input_sha256": "daef6915f5a50a4641acdcd2615b8fb67ac78c4a321b4d0f1931e7341ccccac0",
       "sha256": "daef6915f5a50a4641acdcd2615b8fb67ac78c4a321b4d0f1931e7341ccccac0",
       "bytes": 33098,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/static_modes_fixed_arm_ne10.h",
@@ -2921,10 +2921,10 @@
       "input_relative_path": "decoders/Opus/celt/static_modes_fixed_arm_ne10.h",
       "original_sha256": "4ba43f28737071847854d6c3e259ece1a3b50c6a345264dee5a3321687140139",
       "imported_sha256": "9c49d71262dc31eecef4612291b98f9284bc702b8f1257dd549a2bc7ff6d1503",
-      "input_sha256": "9c49d71262dc31eecef4612291b98f9284bc702b8f1257dd549a2bc7ff6d1503",
+      "input_sha256": "c47c5de3b39b84a35cdbe488a0533a74aacffc320a448b6cc14c8dd1a0a9404b",
       "sha256": "c47c5de3b39b84a35cdbe488a0533a74aacffc320a448b6cc14c8dd1a0a9404b",
       "bytes": 25488,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/static_modes_float.h",
@@ -2933,10 +2933,10 @@
       "input_relative_path": "decoders/Opus/celt/static_modes_float.h",
       "original_sha256": "bb2a30bf9d78107ce13b3e573baec908bde6eca27cc2ba091dcc98e7a8182a17",
       "imported_sha256": "65fdb130c42cce36caa4bf29dd65ebebb65a6ba5c1325bcf3d67a548e876ed72",
-      "input_sha256": "65fdb130c42cce36caa4bf29dd65ebebb65a6ba5c1325bcf3d67a548e876ed72",
+      "input_sha256": "c4e6fc09463ab99125e4cc815ef61ed20e8203d55bdcb10c32e5b8be06fbe09f",
       "sha256": "c4e6fc09463ab99125e4cc815ef61ed20e8203d55bdcb10c32e5b8be06fbe09f",
       "bytes": 51198,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/static_modes_float_arm_ne10.h",
@@ -2945,10 +2945,10 @@
       "input_relative_path": "decoders/Opus/celt/static_modes_float_arm_ne10.h",
       "original_sha256": "13b49d287a3b581f7a3c6cef4c0f9c0e78bf3edb912dd4265b4b21a004ac95aa",
       "imported_sha256": "f17e57248f303d0fa87f099ebb8bb3d6361497c90b3fd614c17522be5c20135a",
-      "input_sha256": "f17e57248f303d0fa87f099ebb8bb3d6361497c90b3fd614c17522be5c20135a",
+      "input_sha256": "4469c34ae1f02bd41f19af976978b5ae0399c6318ab340545c575a66afee2f16",
       "sha256": "4469c34ae1f02bd41f19af976978b5ae0399c6318ab340545c575a66afee2f16",
       "bytes": 28892,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/vq.c",
@@ -2957,10 +2957,10 @@
       "input_relative_path": "decoders/Opus/celt/vq.c",
       "original_sha256": "f5bbe2da9a8764dacc3d03b619e66ec9781b0b4f85abfbfea22df186a710e00f",
       "imported_sha256": "b633445d918e7c4de182d86640c703a744f9ad3e761df2b7aae0433b4984a284",
-      "input_sha256": "b633445d918e7c4de182d86640c703a744f9ad3e761df2b7aae0433b4984a284",
+      "input_sha256": "666d58e1dbcd9847437ba95995040f24fe65ab74eb0070a773ad4d1487510b31",
       "sha256": "666d58e1dbcd9847437ba95995040f24fe65ab74eb0070a773ad4d1487510b31",
       "bytes": 13275,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/vq.h",
@@ -2969,10 +2969,10 @@
       "input_relative_path": "decoders/Opus/celt/vq.h",
       "original_sha256": "1270782318965660346ebafb6f5e9ef00291853bdfc5bb97173ba5325b91ef86",
       "imported_sha256": "7ae88b5432a9ddd666ab61c9a608107535a7ecc7126df5a42787147049abc1ae",
-      "input_sha256": "7ae88b5432a9ddd666ab61c9a608107535a7ecc7126df5a42787147049abc1ae",
+      "input_sha256": "ec6bb6ccbfc4b4f59537bb97d071557b058b6080bd789e3e719960a3aa01ced3",
       "sha256": "ec6bb6ccbfc4b4f59537bb97d071557b058b6080bd789e3e719960a3aa01ced3",
       "bytes": 3388,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/_kiss_fft_guts.h",
@@ -2981,10 +2981,10 @@
       "input_relative_path": "decoders/Opus/celt/_kiss_fft_guts.h",
       "original_sha256": "43578f37345e81b12b269865c83bde93b0b2a5bccb3a1e2acafb7542b9e0ed9a",
       "imported_sha256": "0214dfe2aabb3b81d88fe814b8253fc2ec6da12bbbc98e08c1011a5bd60e3b29",
-      "input_sha256": "0214dfe2aabb3b81d88fe814b8253fc2ec6da12bbbc98e08c1011a5bd60e3b29",
+      "input_sha256": "ac8c6e6584cc459ac23a785d328cef52d3e575421cb1db3fcd3fdea1280d92fe",
       "sha256": "ac8c6e6584cc459ac23a785d328cef52d3e575421cb1db3fcd3fdea1280d92fe",
       "bytes": 6289,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/include/opus.h",
@@ -2993,10 +2993,10 @@
       "input_relative_path": "decoders/Opus/include/opus.h",
       "original_sha256": "eaa5669afd474e6dba6917d52cdad32bea8653f31c94e187d2fc1c3c640610ca",
       "imported_sha256": "95d1bb222690f96426051652d1eb490b7fa92c4ae0a2e88d9bf305265bf220f6",
-      "input_sha256": "95d1bb222690f96426051652d1eb490b7fa92c4ae0a2e88d9bf305265bf220f6",
+      "input_sha256": "7b73dd9da955cb583c6ecb2dd94194561cfa09cc254e5748a617e7a67b0d06b2",
       "sha256": "7b73dd9da955cb583c6ecb2dd94194561cfa09cc254e5748a617e7a67b0d06b2",
       "bytes": 54922,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/include/opus_custom.h",
@@ -3005,10 +3005,10 @@
       "input_relative_path": "decoders/Opus/include/opus_custom.h",
       "original_sha256": "526bf7770dfd0c82cbbbc2b89b09758e5fe44567de3edad905e7f0f70e681b1c",
       "imported_sha256": "f80f26efecee7485faaf95735dbac148767af316d70a2c7bd1da666b71c6ce4f",
-      "input_sha256": "f80f26efecee7485faaf95735dbac148767af316d70a2c7bd1da666b71c6ce4f",
+      "input_sha256": "e3ea89c87de6dd380bc2e1425d1c63622b20a0546a80aa38798a21f55089892a",
       "sha256": "e3ea89c87de6dd380bc2e1425d1c63622b20a0546a80aa38798a21f55089892a",
       "bytes": 15126,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/include/opus_defines.h",
@@ -3017,10 +3017,10 @@
       "input_relative_path": "decoders/Opus/include/opus_defines.h",
       "original_sha256": "927373ef41502eda937e08fcabe17b92a7b1f5aca16f81cd5a03b017bcf69119",
       "imported_sha256": "8918f65309058be1921e59e9ef9cd4081497ce8a487e55cb45c5547046447d9b",
-      "input_sha256": "8918f65309058be1921e59e9ef9cd4081497ce8a487e55cb45c5547046447d9b",
+      "input_sha256": "1d435580f45e07e2951d284cedd132cadc7e5615fd024a7406d82d73211c2cb9",
       "sha256": "1d435580f45e07e2951d284cedd132cadc7e5615fd024a7406d82d73211c2cb9",
       "bytes": 36959,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/include/opus_multistream.h",
@@ -3029,10 +3029,10 @@
       "input_relative_path": "decoders/Opus/include/opus_multistream.h",
       "original_sha256": "a4f26ec0e8a52de9f63510929d0f13626b238921395bba6f5cc5dda1bea08ae5",
       "imported_sha256": "92a0f7dcb297bcf1671dfcd63897f5f9e30035b15acc54c3bcdb548b968a9fe9",
-      "input_sha256": "92a0f7dcb297bcf1671dfcd63897f5f9e30035b15acc54c3bcdb548b968a9fe9",
+      "input_sha256": "81794b9425c669d2f7761057d6033d2ff41a3e1c5a5a7f35fef7f8e1d77949b4",
       "sha256": "81794b9425c669d2f7761057d6033d2ff41a3e1c5a5a7f35fef7f8e1d77949b4",
       "bytes": 33820,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/include/opus_projection.h",
@@ -3041,10 +3041,10 @@
       "input_relative_path": "decoders/Opus/include/opus_projection.h",
       "original_sha256": "331f4d5c4e22c85d61eb9ad21fb317c56520b9244bf2d928c28d8c68b2e8db3f",
       "imported_sha256": "8a5308ba3d76b68d48a7a6125c9b9b8617fd2aeb72cea74724ae470bb7f6fe54",
-      "input_sha256": "8a5308ba3d76b68d48a7a6125c9b9b8617fd2aeb72cea74724ae470bb7f6fe54",
+      "input_sha256": "b7df8843500d04cab1170da7b17271770106afac4d9ec1b553719325a2a55e3e",
       "sha256": "b7df8843500d04cab1170da7b17271770106afac4d9ec1b553719325a2a55e3e",
       "bytes": 28520,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/include/opus_types.h",
@@ -3053,10 +3053,10 @@
       "input_relative_path": "decoders/Opus/include/opus_types.h",
       "original_sha256": "e7c71855cee349876cae8bc6c755542e90302614ebfc339f21f32beab07adb11",
       "imported_sha256": "19cb301ea1eedbcbdbb5049363de061893bf11c20e505a657b69ce6ffa5b11fa",
-      "input_sha256": "19cb301ea1eedbcbdbb5049363de061893bf11c20e505a657b69ce6ffa5b11fa",
+      "input_sha256": "d418fe31d26babdad9bfab2719730ab64787ecb2c1aaf105eb6c9d930f706214",
       "sha256": "d418fe31d26babdad9bfab2719730ab64787ecb2c1aaf105eb6c9d930f706214",
       "bytes": 5436,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/ana_filt_bank_1.c",
@@ -3065,10 +3065,10 @@
       "input_relative_path": "decoders/Opus/silk/ana_filt_bank_1.c",
       "original_sha256": "887f3e3df76ef1a195caeafaef10e6df1fd6f9fcd6c75cb8a3b38fdd27d2909d",
       "imported_sha256": "2136cd61a54634d6cc292d4b67f15ff47c6c3df280b3f28c3e00884ea1e5a0de",
-      "input_sha256": "2136cd61a54634d6cc292d4b67f15ff47c6c3df280b3f28c3e00884ea1e5a0de",
+      "input_sha256": "8a1cff98fd86caf95d2fad973e8f57b3bd537bc4735e1e74816cf3a4fafa17d9",
       "sha256": "8a1cff98fd86caf95d2fad973e8f57b3bd537bc4735e1e74816cf3a4fafa17d9",
       "bytes": 4215,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/API.h",
@@ -3077,10 +3077,10 @@
       "input_relative_path": "decoders/Opus/silk/API.h",
       "original_sha256": "b23f8305c7888b0ad4b0e5d6b0819d3732a89fac3eb88b989e0116c4112bc07d",
       "imported_sha256": "0399e8f59ffba93ad08f1e5ebd19fc4e2c84a79744479fcb71d2bd81d3996567",
-      "input_sha256": "0399e8f59ffba93ad08f1e5ebd19fc4e2c84a79744479fcb71d2bd81d3996567",
+      "input_sha256": "d341670843ce04286c57eb58f426ed924c7cf6fdc85af89607a6d818e5ebfd6e",
       "sha256": "d341670843ce04286c57eb58f426ed924c7cf6fdc85af89607a6d818e5ebfd6e",
       "bytes": 8486,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/biquad_alt.c",
@@ -3089,10 +3089,10 @@
       "input_relative_path": "decoders/Opus/silk/biquad_alt.c",
       "original_sha256": "7ecbc633c0b6011da057684e9062bb167fa79b2fe6a6343c81b44f5afe4b1aae",
       "imported_sha256": "fd11689be1e49353a1edfdba97a6df59908d030a050cac85a7eeea7a8bbc6fa4",
-      "input_sha256": "fd11689be1e49353a1edfdba97a6df59908d030a050cac85a7eeea7a8bbc6fa4",
+      "input_sha256": "d89088ff3913eb524f32f8dbded41c769535b2816dfbef731d58add937e64122",
       "sha256": "d89088ff3913eb524f32f8dbded41c769535b2816dfbef731d58add937e64122",
       "bytes": 7331,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/bwexpander.c",
@@ -3101,10 +3101,10 @@
       "input_relative_path": "decoders/Opus/silk/bwexpander.c",
       "original_sha256": "c09bc94a5add19b09e3550ac613262ce00a565b8dfda22f082e199be4a39fe09",
       "imported_sha256": "622cdb6426e7da5003b791afef014609378398295e63ca358707c86e946c8d04",
-      "input_sha256": "622cdb6426e7da5003b791afef014609378398295e63ca358707c86e946c8d04",
+      "input_sha256": "b94c6e213597d748e9ac55d0ce451d0be1e591a4ec7531bb7f180ebb53f0152a",
       "sha256": "b94c6e213597d748e9ac55d0ce451d0be1e591a4ec7531bb7f180ebb53f0152a",
       "bytes": 3205,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/bwexpander_32.c",
@@ -3113,10 +3113,10 @@
       "input_relative_path": "decoders/Opus/silk/bwexpander_32.c",
       "original_sha256": "a33a6e25a25ea6c7c32cc61893d53c5e9d2c2b8851dd59ec5ecd364798c7bbdb",
       "imported_sha256": "20dbe17ca5239acdfeff268f68c4dfb022ab4ccfabb6db7ec54b600ca03ac4f8",
-      "input_sha256": "20dbe17ca5239acdfeff268f68c4dfb022ab4ccfabb6db7ec54b600ca03ac4f8",
+      "input_sha256": "4282293bb67780327a4a48118a9204ca710d7425a73c719777a30eb8e30db492",
       "sha256": "4282293bb67780327a4a48118a9204ca710d7425a73c719777a30eb8e30db492",
       "bytes": 3020,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/CNG.c",
@@ -3125,10 +3125,10 @@
       "input_relative_path": "decoders/Opus/silk/CNG.c",
       "original_sha256": "a3938ba0cab4214fb6070f523fef048834ef77d87ca249af9b505178bef01793",
       "imported_sha256": "faf4b8c76eb417b90108526d8c64c7112782434aef02a46fb170b3a0f3f8e6ba",
-      "input_sha256": "faf4b8c76eb417b90108526d8c64c7112782434aef02a46fb170b3a0f3f8e6ba",
+      "input_sha256": "b2c1cdad7119540fef10a4bbbf23442238f2f19e68ca459a3f57e977cdc7ea3c",
       "sha256": "b2c1cdad7119540fef10a4bbbf23442238f2f19e68ca459a3f57e977cdc7ea3c",
       "bytes": 10908,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/code_signs.c",
@@ -3137,10 +3137,10 @@
       "input_relative_path": "decoders/Opus/silk/code_signs.c",
       "original_sha256": "e18d3e6439abe8061edae3cf586ab2f7c310616c6f661ac49eefdc229776b7c8",
       "imported_sha256": "210aa788068134446de75b8fe0405232f79005a601d8c15d483cd31a4e9705f4",
-      "input_sha256": "210aa788068134446de75b8fe0405232f79005a601d8c15d483cd31a4e9705f4",
+      "input_sha256": "a3f68a2772ff0cb20c35fd39423e36c7be70cd72e01fbda70bb0c3b48b4da363",
       "sha256": "a3f68a2772ff0cb20c35fd39423e36c7be70cd72e01fbda70bb0c3b48b4da363",
       "bytes": 5999,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/control.h",
@@ -3149,10 +3149,10 @@
       "input_relative_path": "decoders/Opus/silk/control.h",
       "original_sha256": "2e79e6cc80f1da5104888216b510b951f109b8e1c4891114b1e9ba7167d394b4",
       "imported_sha256": "19de9db5a13970beac7e403caae865779765941d5691624a0c65d414fd32fa0b",
-      "input_sha256": "19de9db5a13970beac7e403caae865779765941d5691624a0c65d414fd32fa0b",
+      "input_sha256": "2cf1be9607d47d09e00102d51b58fd5f51eb1604efa304699d775be1f04681dd",
       "sha256": "2cf1be9607d47d09e00102d51b58fd5f51eb1604efa304699d775be1f04681dd",
       "bytes": 6766,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/debug.c",
@@ -3161,10 +3161,10 @@
       "input_relative_path": "decoders/Opus/silk/debug.c",
       "original_sha256": "2f9b82c29df1332473643ccb0b8aca92004c40fdb126e1efc28a6a7e16e3348f",
       "imported_sha256": "e0e8ac562976ad2beeeb9f6bce1ce0ca8925573b60d671c6f4ad699d77f8d074",
-      "input_sha256": "e0e8ac562976ad2beeeb9f6bce1ce0ca8925573b60d671c6f4ad699d77f8d074",
+      "input_sha256": "584cdd5a7a76a811cf62752af8c0e8261a9f565e3ad766ed4f998ea79b5511fd",
       "sha256": "584cdd5a7a76a811cf62752af8c0e8261a9f565e3ad766ed4f998ea79b5511fd",
       "bytes": 7387,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/debug.h",
@@ -3173,10 +3173,10 @@
       "input_relative_path": "decoders/Opus/silk/debug.h",
       "original_sha256": "7fb52f625df3be031774e9c994770d28d139ba7d650fd8d24307b3b466b59fe5",
       "imported_sha256": "90ac71f372fb650f3918e0c9b4144a0bd2874d0df0b308426187a5fd236955fd",
-      "input_sha256": "90ac71f372fb650f3918e0c9b4144a0bd2874d0df0b308426187a5fd236955fd",
+      "input_sha256": "5c233de4f1446e34b6985a2a7f6f7b141fb4f9e041f1b34067c942b36db14de2",
       "sha256": "5c233de4f1446e34b6985a2a7f6f7b141fb4f9e041f1b34067c942b36db14de2",
       "bytes": 13273,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/decoder_set_fs.c",
@@ -3185,10 +3185,10 @@
       "input_relative_path": "decoders/Opus/silk/decoder_set_fs.c",
       "original_sha256": "4ccaac08cf1759a746e8f6c9eaac0fc9c505760b9cbcff182d1c7429d3a69b7f",
       "imported_sha256": "af7c1421ed84d0fc048daa51252c4a03e3b8a3940d7d6d1affefd975cf563e22",
-      "input_sha256": "af7c1421ed84d0fc048daa51252c4a03e3b8a3940d7d6d1affefd975cf563e22",
+      "input_sha256": "3af90b3ce3fbf2fa691082788c3dc10cf2b5ffaaba4c6b26ee8b571d0b39354e",
       "sha256": "3af90b3ce3fbf2fa691082788c3dc10cf2b5ffaaba4c6b26ee8b571d0b39354e",
       "bytes": 5413,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/decode_core.c",
@@ -3197,10 +3197,10 @@
       "input_relative_path": "decoders/Opus/silk/decode_core.c",
       "original_sha256": "4064b540139e80e9ac285d7a17bd2a963a5d520ed258fbb38bd346a91e1967e1",
       "imported_sha256": "fc5492d1ef8b3141cd5098fc327e4a7e40c95e516233a57387bda92da6385cec",
-      "input_sha256": "fc5492d1ef8b3141cd5098fc327e4a7e40c95e516233a57387bda92da6385cec",
+      "input_sha256": "3283e1d3b588cdfc46bed8eb480c3646e8db0495d4e853713d384498b19ad8e7",
       "sha256": "3283e1d3b588cdfc46bed8eb480c3646e8db0495d4e853713d384498b19ad8e7",
       "bytes": 12353,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/decode_frame.c",
@@ -3209,10 +3209,10 @@
       "input_relative_path": "decoders/Opus/silk/decode_frame.c",
       "original_sha256": "9dc784078088bfd6cf394134d8ee92bb33c9830d117410f1f699d8123831c123",
       "imported_sha256": "d673cb830b2a47a98f95078542e79954033d5f7605636eb67c1481e686e9d57a",
-      "input_sha256": "d673cb830b2a47a98f95078542e79954033d5f7605636eb67c1481e686e9d57a",
+      "input_sha256": "fe80f485a0ee4cbc674a9d2ec22dcec0287667be2424d80296ca76733987f918",
       "sha256": "fe80f485a0ee4cbc674a9d2ec22dcec0287667be2424d80296ca76733987f918",
       "bytes": 7841,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/decode_indices.c",
@@ -3221,10 +3221,10 @@
       "input_relative_path": "decoders/Opus/silk/decode_indices.c",
       "original_sha256": "81edb764d89d8f005477d0fef6cdb73a201dbd21f5678620851ed3286f5dee11",
       "imported_sha256": "cda9938916f6b55d7a7f2c2f92d53026948f9b6c1a1b3eb7872d80bf7237c004",
-      "input_sha256": "cda9938916f6b55d7a7f2c2f92d53026948f9b6c1a1b3eb7872d80bf7237c004",
+      "input_sha256": "c01c16be1d65701a40d085008dba84a06918dcf097e0bdf596a8637ed4847a1f",
       "sha256": "c01c16be1d65701a40d085008dba84a06918dcf097e0bdf596a8637ed4847a1f",
       "bytes": 7691,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/decode_parameters.c",
@@ -3233,10 +3233,10 @@
       "input_relative_path": "decoders/Opus/silk/decode_parameters.c",
       "original_sha256": "58d837b5ba57d907f430e4a99f4d76a159a75c84924ff2eaf5270c4019fe864f",
       "imported_sha256": "00e415f4a68b90da6069e0b88404a43467c98eb7984366a979a5071f49c55ed6",
-      "input_sha256": "00e415f4a68b90da6069e0b88404a43467c98eb7984366a979a5071f49c55ed6",
+      "input_sha256": "365c0a6218032caa16438463b7b183570951892636b7bc5222d5f815d755b64e",
       "sha256": "365c0a6218032caa16438463b7b183570951892636b7bc5222d5f815d755b64e",
       "bytes": 5972,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/decode_pitch.c",
@@ -3245,10 +3245,10 @@
       "input_relative_path": "decoders/Opus/silk/decode_pitch.c",
       "original_sha256": "bf0d66f0ea8ab2d272be9b6b6c21a92d4dcd30470b1d875d90da2a873a9f3ab6",
       "imported_sha256": "3c21389393d55d2bf9ab56fa14d309e0048628f87a16694a0241ddecb286160a",
-      "input_sha256": "3c21389393d55d2bf9ab56fa14d309e0048628f87a16694a0241ddecb286160a",
+      "input_sha256": "0bc5ac2697f8651e825aefae075b47002d600522ad8b17c3e84d4642900080f6",
       "sha256": "0bc5ac2697f8651e825aefae075b47002d600522ad8b17c3e84d4642900080f6",
       "bytes": 4162,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/decode_pulses.c",
@@ -3257,10 +3257,10 @@
       "input_relative_path": "decoders/Opus/silk/decode_pulses.c",
       "original_sha256": "ea9c762a68ddc6aae1395ec9961d360ae94347f1b30752edcf025cf2273b9918",
       "imported_sha256": "9e792e2173696cc5c909b158dc2aa8d61c5181fa9bc366728fa47f1d2a4d74a6",
-      "input_sha256": "9e792e2173696cc5c909b158dc2aa8d61c5181fa9bc366728fa47f1d2a4d74a6",
+      "input_sha256": "8a5a66aff1e149e72cd6785ed1fe04d165bf6c4f6ab02f3e5b7f7fc4813d1191",
       "sha256": "8a5a66aff1e149e72cd6785ed1fe04d165bf6c4f6ab02f3e5b7f7fc4813d1191",
       "bytes": 6043,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/dec_API.c",
@@ -3269,10 +3269,10 @@
       "input_relative_path": "decoders/Opus/silk/dec_API.c",
       "original_sha256": "fbb52ced535c492193942a2bc70276f1aa37e8af60d5bc27a814ad11ca29826a",
       "imported_sha256": "e7201077107875ca9c3d37370028b74667d962a9ae95baebcf12feb8e1d6157f",
-      "input_sha256": "e7201077107875ca9c3d37370028b74667d962a9ae95baebcf12feb8e1d6157f",
+      "input_sha256": "98c2531e019f280c16733416bf4dee18fa08a6031d3db3d7f4c8857d23e473ff",
       "sha256": "98c2531e019f280c16733416bf4dee18fa08a6031d3db3d7f4c8857d23e473ff",
       "bytes": 22207,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/define.h",
@@ -3281,10 +3281,10 @@
       "input_relative_path": "decoders/Opus/silk/define.h",
       "original_sha256": "fe9248abd9e24bcdd0c225631a8ea94bcad90fad0248385eb10941a0d642ccb3",
       "imported_sha256": "78cabc3f77cf94fec0aee9044c5f117b29896a84e9f26815daf6e82f02b726d3",
-      "input_sha256": "78cabc3f77cf94fec0aee9044c5f117b29896a84e9f26815daf6e82f02b726d3",
+      "input_sha256": "7f8b3d9f80fbe69f789cc6f1cfeb9877d4989017d86346ed24ba81d0257ffd50",
       "sha256": "7f8b3d9f80fbe69f789cc6f1cfeb9877d4989017d86346ed24ba81d0257ffd50",
       "bytes": 10205,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/errors.h",
@@ -3293,10 +3293,10 @@
       "input_relative_path": "decoders/Opus/silk/errors.h",
       "original_sha256": "c79a6c0f886588ecfd07cfa908a714b57e26848830ab2a368a539f043ffcc3b2",
       "imported_sha256": "3bbf21416af6475200e55cbfeacf8dccef88455e31352735e4d4fecdda84ddd6",
-      "input_sha256": "3bbf21416af6475200e55cbfeacf8dccef88455e31352735e4d4fecdda84ddd6",
+      "input_sha256": "8649c44074820b134b407d5d242d047b2961e522ae55561b9b1f080ae1719e40",
       "sha256": "8649c44074820b134b407d5d242d047b2961e522ae55561b9b1f080ae1719e40",
       "bytes": 3919,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/gain_quant.c",
@@ -3305,10 +3305,10 @@
       "input_relative_path": "decoders/Opus/silk/gain_quant.c",
       "original_sha256": "c15437b1969e2da57addd75e6a1d19c922d693a25b41e3f173bb2f5f92802303",
       "imported_sha256": "3ec9e437dc9dd513ccd5e1a6d7b6da9e1eec5268f38f431b41dd305bc97ffe0c",
-      "input_sha256": "3ec9e437dc9dd513ccd5e1a6d7b6da9e1eec5268f38f431b41dd305bc97ffe0c",
+      "input_sha256": "857cc9683fa1d66242f036a353c404f4dc79d2bfea1cb5253342193df36ba527",
       "sha256": "857cc9683fa1d66242f036a353c404f4dc79d2bfea1cb5253342193df36ba527",
       "bytes": 7373,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/init_decoder.c",
@@ -3317,10 +3317,10 @@
       "input_relative_path": "decoders/Opus/silk/init_decoder.c",
       "original_sha256": "09b0338bc8591e32e88bb36dd4a65173b833daa94769c5a81dc60e643144a7d2",
       "imported_sha256": "1d4b0221d96a34deeb603a5981e2f3aac9050f9e9122117ea184404a59cd71c0",
-      "input_sha256": "1d4b0221d96a34deeb603a5981e2f3aac9050f9e9122117ea184404a59cd71c0",
+      "input_sha256": "da2e0e4798487e87944859fd65e3874cc0ac5eeb167601171c8140cbfb247f44",
       "sha256": "da2e0e4798487e87944859fd65e3874cc0ac5eeb167601171c8140cbfb247f44",
       "bytes": 3503,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/Inlines.h",
@@ -3329,10 +3329,10 @@
       "input_relative_path": "decoders/Opus/silk/Inlines.h",
       "original_sha256": "4964bc1ec32e5b9a7ad36a02f592e81617e2459f5a553e9a1928acdf6b5c9c21",
       "imported_sha256": "d8d637375bd1e1525ba20dfb9103781becabd9aef9decd64cc3a5402cbc2e838",
-      "input_sha256": "d8d637375bd1e1525ba20dfb9103781becabd9aef9decd64cc3a5402cbc2e838",
+      "input_sha256": "11bcb366c4baa60c13993cddf5dae19a1a86f1da693bc064cdcaa66debad6fe5",
       "sha256": "11bcb366c4baa60c13993cddf5dae19a1a86f1da693bc064cdcaa66debad6fe5",
       "bytes": 7593,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/inner_prod_aligned.c",
@@ -3341,10 +3341,10 @@
       "input_relative_path": "decoders/Opus/silk/inner_prod_aligned.c",
       "original_sha256": "ab1cb47e1aaad3e5226a785edf00e91139f829af21a26af5c79aa351807a05a0",
       "imported_sha256": "faab99563390b392a5feac64d6621da96a8cdabb1771bcd608f9b27043b02528",
-      "input_sha256": "faab99563390b392a5feac64d6621da96a8cdabb1771bcd608f9b27043b02528",
+      "input_sha256": "d641691fb4d02ca2ff6615e15d8834225a1b6ad563074d440034929a06984e6a",
       "sha256": "d641691fb4d02ca2ff6615e15d8834225a1b6ad563074d440034929a06984e6a",
       "bytes": 2896,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/interpolate.c",
@@ -3353,10 +3353,10 @@
       "input_relative_path": "decoders/Opus/silk/interpolate.c",
       "original_sha256": "73938486cc2d80f7a0f977c385cbb77e543f6a53edcb515e67a44ee8f204a4e5",
       "imported_sha256": "a8312cdaca422165295abfa3aafa4cc5126cbc5d2be78c5a47f62fd8b753606b",
-      "input_sha256": "a8312cdaca422165295abfa3aafa4cc5126cbc5d2be78c5a47f62fd8b753606b",
+      "input_sha256": "0b3d087811cf8d1565918aa367c96f08075fc91532bb5f3615e7fd36313b364f",
       "sha256": "0b3d087811cf8d1565918aa367c96f08075fc91532bb5f3615e7fd36313b364f",
       "bytes": 3046,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/lin2log.c",
@@ -3365,10 +3365,10 @@
       "input_relative_path": "decoders/Opus/silk/lin2log.c",
       "original_sha256": "0c6258436a5189dc93adcb0ac2b44731b289e12d7117ba6ef4e921b03cf8edac",
       "imported_sha256": "df49c93b8cab52360e53315b88a235a3800855511e6930e3e0bcd54af22fed5f",
-      "input_sha256": "df49c93b8cab52360e53315b88a235a3800855511e6930e3e0bcd54af22fed5f",
+      "input_sha256": "e1ab93cd7c937a3b02faca7dff436ebe1fe3e5a5978e369c7657a212a7b94cb2",
       "sha256": "e1ab93cd7c937a3b02faca7dff436ebe1fe3e5a5978e369c7657a212a7b94cb2",
       "bytes": 2665,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/log2lin.c",
@@ -3377,10 +3377,10 @@
       "input_relative_path": "decoders/Opus/silk/log2lin.c",
       "original_sha256": "afabc664dc6a98f26bf2710a93c1e9762ad37f8636555239b4ef9404a23e9df4",
       "imported_sha256": "65d31cd292f9575fe577c5af86800d2de1505eced5db6da44995e55efb9ef422",
-      "input_sha256": "65d31cd292f9575fe577c5af86800d2de1505eced5db6da44995e55efb9ef422",
+      "input_sha256": "0e516a05f92f94fd741172a2e5dfbba7a495da299de64b9d095751e81817624f",
       "sha256": "0e516a05f92f94fd741172a2e5dfbba7a495da299de64b9d095751e81817624f",
       "bytes": 3081,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/LPC_analysis_filter.c",
@@ -3389,10 +3389,10 @@
       "input_relative_path": "decoders/Opus/silk/LPC_analysis_filter.c",
       "original_sha256": "31893cbdc4de017af52b00e5e5fb6bee4c71055b851cbde4edaab142fa99160f",
       "imported_sha256": "252dd48cf01ca36cb4876985d753d563a5908d3c201ee7fe04a921c5d8c72c8c",
-      "input_sha256": "252dd48cf01ca36cb4876985d753d563a5908d3c201ee7fe04a921c5d8c72c8c",
+      "input_sha256": "544652d13470a9e3c4b2294fb8367a8b6d036e92b36f96c0fc295e8264a29e46",
       "sha256": "544652d13470a9e3c4b2294fb8367a8b6d036e92b36f96c0fc295e8264a29e46",
       "bytes": 5468,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/LPC_fit.c",
@@ -3401,10 +3401,10 @@
       "input_relative_path": "decoders/Opus/silk/LPC_fit.c",
       "original_sha256": "c13a149e71063543743b5e7ad451566acbf2a7b67f9da75f363d9e1e07c8a6f7",
       "imported_sha256": "e090c2809926b2e72248d1a728cfca75b6cd35c0e310059e2f13ac19b999b52f",
-      "input_sha256": "e090c2809926b2e72248d1a728cfca75b6cd35c0e310059e2f13ac19b999b52f",
+      "input_sha256": "ef97c2c84783cde85312cfca97401e0a836ae221b18984513af066f2acff6db5",
       "sha256": "ef97c2c84783cde85312cfca97401e0a836ae221b18984513af066f2acff6db5",
       "bytes": 4487,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/LPC_inv_pred_gain.c",
@@ -3413,10 +3413,10 @@
       "input_relative_path": "decoders/Opus/silk/LPC_inv_pred_gain.c",
       "original_sha256": "16542b173377e6782ba63a29699f2a674ed191de1bcef0d00b94cf81772f120a",
       "imported_sha256": "4bed51d586eb06720acaeffb81f88593532f42e7289e842b48b934b16cbbfea0",
-      "input_sha256": "4bed51d586eb06720acaeffb81f88593532f42e7289e842b48b934b16cbbfea0",
+      "input_sha256": "12d6c24f33a1999abd5c300095c72636452c76672d06aee8a976ab674c75b850",
       "sha256": "12d6c24f33a1999abd5c300095c72636452c76672d06aee8a976ab674c75b850",
       "bytes": 6606,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/LP_variable_cutoff.c",
@@ -3425,10 +3425,10 @@
       "input_relative_path": "decoders/Opus/silk/LP_variable_cutoff.c",
       "original_sha256": "6ef8053a77422e23e2048959db7d02e14e64aa01fd72720275602a870cf3f015",
       "imported_sha256": "d867df9becf57f96f069dba4c4376c792c54e46821e2f09a2eaf353d9360301c",
-      "input_sha256": "d867df9becf57f96f069dba4c4376c792c54e46821e2f09a2eaf353d9360301c",
+      "input_sha256": "fb0518fcdb6f04854e2d4e4ab44c5d3219aa8025feefe23a4ba9f18d4f1d3303",
       "sha256": "fb0518fcdb6f04854e2d4e4ab44c5d3219aa8025feefe23a4ba9f18d4f1d3303",
       "bytes": 6997,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/MacroCount.h",
@@ -3437,10 +3437,10 @@
       "input_relative_path": "decoders/Opus/silk/MacroCount.h",
       "original_sha256": "bf3ccef3950e0834adabe56a90dd58f2ab4be0cd639009645a52e8ffb92eaf85",
       "imported_sha256": "d6cf28f491e4521002c2569e6a08a2edf07fa0e3e57b86aab4b9938bb5f06a9a",
-      "input_sha256": "d6cf28f491e4521002c2569e6a08a2edf07fa0e3e57b86aab4b9938bb5f06a9a",
+      "input_sha256": "7015f7cdae746d81d39955a7a4f99004713bb1003a5817cc698ce74ef2eed9fa",
       "sha256": "7015f7cdae746d81d39955a7a4f99004713bb1003a5817cc698ce74ef2eed9fa",
       "bytes": 21043,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/MacroDebug.h",
@@ -3449,10 +3449,10 @@
       "input_relative_path": "decoders/Opus/silk/MacroDebug.h",
       "original_sha256": "d9b2762ad8ac152438de41708f8736f7477936af0b2ee8a85ade968288eab744",
       "imported_sha256": "aefab84ea6848a81b1c48bbcf60935f70751ded68853d5c7d0ebb1249bd75773",
-      "input_sha256": "aefab84ea6848a81b1c48bbcf60935f70751ded68853d5c7d0ebb1249bd75773",
+      "input_sha256": "1578db64bf61c709587551ef3ba2be95b98be696206c04374da557c82f5ff26e",
       "sha256": "1578db64bf61c709587551ef3ba2be95b98be696206c04374da557c82f5ff26e",
       "bytes": 33860,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/macros.h",
@@ -3461,10 +3461,10 @@
       "input_relative_path": "decoders/Opus/silk/macros.h",
       "original_sha256": "710dccf87b3c22349f788e8224a4442c2878fe4bc2f8e2ce853d6ea51a6d83f9",
       "imported_sha256": "e31c803c53eb7fa88d58689400b12008f145a051539a0c9230835de7dd7c08f9",
-      "input_sha256": "e31c803c53eb7fa88d58689400b12008f145a051539a0c9230835de7dd7c08f9",
+      "input_sha256": "f7796685605d2bbad7593f54aea4c4849718ea3c7db5686995f50a7a7aa62470",
       "sha256": "f7796685605d2bbad7593f54aea4c4849718ea3c7db5686995f50a7a7aa62470",
       "bytes": 6737,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/main.h",
@@ -3473,10 +3473,10 @@
       "input_relative_path": "decoders/Opus/silk/main.h",
       "original_sha256": "553a24aa5eaee60550de62f3c69a595b5b50817f671fd4093f069570063f7bb0",
       "imported_sha256": "afdacb0599a78bf4d5444b2ea1943926ffe6806e9d2d97f5fa5baf757a9a0347",
-      "input_sha256": "afdacb0599a78bf4d5444b2ea1943926ffe6806e9d2d97f5fa5baf757a9a0347",
+      "input_sha256": "ce728cb4966a020a64a7cb5923fbfb351ab4bf2e8cf3a48b6f222db99f6f5d49",
       "sha256": "ce728cb4966a020a64a7cb5923fbfb351ab4bf2e8cf3a48b6f222db99f6f5d49",
       "bytes": 33329,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/NLSF2A.c",
@@ -3485,10 +3485,10 @@
       "input_relative_path": "decoders/Opus/silk/NLSF2A.c",
       "original_sha256": "4a3ace06b100ac0d4dd002340926adfdda05abd81c4854a89ff824a10cf3860f",
       "imported_sha256": "e50542b0a62ddce7325d3c419e00280bc6b6c976e65f24707f815996c0d1180b",
-      "input_sha256": "e50542b0a62ddce7325d3c419e00280bc6b6c976e65f24707f815996c0d1180b",
+      "input_sha256": "4ba3f8d725d76cbe121fce9ea74030479510ff176b8efa077934597b7d42815d",
       "sha256": "4ba3f8d725d76cbe121fce9ea74030479510ff176b8efa077934597b7d42815d",
       "bytes": 6807,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/NLSF_decode.c",
@@ -3497,10 +3497,10 @@
       "input_relative_path": "decoders/Opus/silk/NLSF_decode.c",
       "original_sha256": "62e6d72aee29ef45ef4f5b8b3e6cc17b5acc6dacefa1a95d947f6dae094707ab",
       "imported_sha256": "87226ab86378d05287b7db0d143248e2655a38f20e42ad90234ea726ca7d4189",
-      "input_sha256": "87226ab86378d05287b7db0d143248e2655a38f20e42ad90234ea726ca7d4189",
+      "input_sha256": "dc86b04e86bfbc1a3d5068436bb0900a56cee79835560c64fb8a9c4e984e9a9e",
       "sha256": "dc86b04e86bfbc1a3d5068436bb0900a56cee79835560c64fb8a9c4e984e9a9e",
       "bytes": 5211,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/NLSF_stabilize.c",
@@ -3509,10 +3509,10 @@
       "input_relative_path": "decoders/Opus/silk/NLSF_stabilize.c",
       "original_sha256": "3ebb5504e65f270383da12cd12a53e2245db5a0dc0d9bfdcf378fb4313344677",
       "imported_sha256": "e1a296586711857d091267a7058c84b499269a551e702cbf95b5a2a0853f2f25",
-      "input_sha256": "e1a296586711857d091267a7058c84b499269a551e702cbf95b5a2a0853f2f25",
+      "input_sha256": "94fa73207f11ef90a624a9f3005fad5a07b5326587948c2d5a2fa7ea8fb05872",
       "sha256": "94fa73207f11ef90a624a9f3005fad5a07b5326587948c2d5a2fa7ea8fb05872",
       "bytes": 6792,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/NLSF_unpack.c",
@@ -3521,10 +3521,10 @@
       "input_relative_path": "decoders/Opus/silk/NLSF_unpack.c",
       "original_sha256": "ed80108681928457393b34848b2946eeb3cb43b3b9d3560c5f934b183f81f5cb",
       "imported_sha256": "6532ce81fc564bca6ff86fc8f3fe025a064acd67a4f3bc32b0a33e643cd6c7df",
-      "input_sha256": "6532ce81fc564bca6ff86fc8f3fe025a064acd67a4f3bc32b0a33e643cd6c7df",
+      "input_sha256": "80983978c93f12f026d6447941e1c7e6fd66f86e32ab1840d4f1b9842693c9ef",
       "sha256": "80983978c93f12f026d6447941e1c7e6fd66f86e32ab1840d4f1b9842693c9ef",
       "bytes": 3394,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/NLSF_VQ_weights_laroia.c",
@@ -3533,10 +3533,10 @@
       "input_relative_path": "decoders/Opus/silk/NLSF_VQ_weights_laroia.c",
       "original_sha256": "52a9f4e650d0e53946bee4b4b2dde4172d64ef8ed39e36839b0071f2e8f44464",
       "imported_sha256": "e5ccf763bafdaf815435240b21495795ab83af74ece954ad6a165b6d79a4f611",
-      "input_sha256": "e5ccf763bafdaf815435240b21495795ab83af74ece954ad6a165b6d79a4f611",
+      "input_sha256": "eef44fe16976b6a4c15d997d62b9c41e9b4f76d1013accbf1035064b290f5cb6",
       "sha256": "eef44fe16976b6a4c15d997d62b9c41e9b4f76d1013accbf1035064b290f5cb6",
       "bytes": 4382,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/NSQ.h",
@@ -3545,10 +3545,10 @@
       "input_relative_path": "decoders/Opus/silk/NSQ.h",
       "original_sha256": "4232ebd8f493bc36b4e45a906f802326de0859092c58f689068b724cc3eeee08",
       "imported_sha256": "7ef6eec66064082bde0bb32873c826b695b88ed2f70b72a07e481d08517819b3",
-      "input_sha256": "7ef6eec66064082bde0bb32873c826b695b88ed2f70b72a07e481d08517819b3",
+      "input_sha256": "350b3781a40a6de58ef882539ad785de71c0de3536c7aed4cc346b3d87355161",
       "sha256": "350b3781a40a6de58ef882539ad785de71c0de3536c7aed4cc346b3d87355161",
       "bytes": 4567,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/pitch_est_defines.h",
@@ -3557,10 +3557,10 @@
       "input_relative_path": "decoders/Opus/silk/pitch_est_defines.h",
       "original_sha256": "64a134f64c4a40fdc2f4f669267731d193fd2daabb157062b5ac471ee0296cfb",
       "imported_sha256": "ed1230792944c3cdbf1762f5e8a612baaf7349d66d57ade4764f5f7a0961dc98",
-      "input_sha256": "ed1230792944c3cdbf1762f5e8a612baaf7349d66d57ade4764f5f7a0961dc98",
+      "input_sha256": "66060135dfb5ccf61f17be648b343fe231e265139d20c43344aa45bb28cb7ab7",
       "sha256": "66060135dfb5ccf61f17be648b343fe231e265139d20c43344aa45bb28cb7ab7",
       "bytes": 4340,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/pitch_est_tables.c",
@@ -3569,10 +3569,10 @@
       "input_relative_path": "decoders/Opus/silk/pitch_est_tables.c",
       "original_sha256": "710cdcdca44be5e5826d25463150a7ede89d23f9c9790cd8e9f3802a91c59f8d",
       "imported_sha256": "9edeba22c1a8ef4cd5231b55593201ddd657748c906e1b10b5ed7e51f9d480aa",
-      "input_sha256": "9edeba22c1a8ef4cd5231b55593201ddd657748c906e1b10b5ed7e51f9d480aa",
+      "input_sha256": "9ebc11d9d16a13e4a537778bdf7de30c9272585fba7939316ad834051a34aef3",
       "sha256": "9ebc11d9d16a13e4a537778bdf7de30c9272585fba7939316ad834051a34aef3",
       "bytes": 4034,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/PLC.c",
@@ -3581,10 +3581,10 @@
       "input_relative_path": "decoders/Opus/silk/PLC.c",
       "original_sha256": "a4a8d2b2256a9b1edcbb4c528af9ae3168425a12c166ae59ec23d7a323ceb5cb",
       "imported_sha256": "3b7f6f058a263b349901543b9ed0738342c3d6cff3ff1207556254f416c7e695",
-      "input_sha256": "3b7f6f058a263b349901543b9ed0738342c3d6cff3ff1207556254f416c7e695",
+      "input_sha256": "4343eabf275c53c8ffd6e4296567004ece3174d350650092dd056084b45c4936",
       "sha256": "4343eabf275c53c8ffd6e4296567004ece3174d350650092dd056084b45c4936",
       "bytes": 22437,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/PLC.h",
@@ -3593,10 +3593,10 @@
       "input_relative_path": "decoders/Opus/silk/PLC.h",
       "original_sha256": "6d1c1cf42ab7a1a704a10782163d2cfaf616a1cee1378605238c9fb4c4532c9c",
       "imported_sha256": "5b895f276954967fc43beec3a34395eee7c21f0b34e72278f12aeb02429fb3ec",
-      "input_sha256": "5b895f276954967fc43beec3a34395eee7c21f0b34e72278f12aeb02429fb3ec",
+      "input_sha256": "6c77462386c3429f35029620b9d11ad0c32ce8b3829fe622eef20419082aca6e",
       "sha256": "6c77462386c3429f35029620b9d11ad0c32ce8b3829fe622eef20419082aca6e",
       "bytes": 3619,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/resampler.c",
@@ -3605,10 +3605,10 @@
       "input_relative_path": "decoders/Opus/silk/resampler.c",
       "original_sha256": "302ee54195641399d5b5ebbe5eaf64bd0dad37299ba97925858d8e8f11604543",
       "imported_sha256": "a8e55faa26b59d0bb5f8e0837a88a79bcfdf27389231739bac5ed6d4bc5f1ae6",
-      "input_sha256": "a8e55faa26b59d0bb5f8e0837a88a79bcfdf27389231739bac5ed6d4bc5f1ae6",
+      "input_sha256": "68b0028169922b897cebc15df78b3fa2ed87998c6b596aa81bc64c928f2c5235",
       "sha256": "68b0028169922b897cebc15df78b3fa2ed87998c6b596aa81bc64c928f2c5235",
       "bytes": 10376,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/resampler_down2.c",
@@ -3617,10 +3617,10 @@
       "input_relative_path": "decoders/Opus/silk/resampler_down2.c",
       "original_sha256": "7dbaa6064bf6541be7d37223dca1de53dcbcd2e90bf9bc95d5169b62476242dd",
       "imported_sha256": "66519c4c800fed40921e4110e4fc6e585d410c462bb90c6be79432f83b1cb2d8",
-      "input_sha256": "66519c4c800fed40921e4110e4fc6e585d410c462bb90c6be79432f83b1cb2d8",
+      "input_sha256": "a5c2ac96d6f9a8527a7c0c8556c2ea62ccff313dea22e60532026169328bba7c",
       "sha256": "a5c2ac96d6f9a8527a7c0c8556c2ea62ccff313dea22e60532026169328bba7c",
       "bytes": 3920,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/resampler_down2_3.c",
@@ -3629,10 +3629,10 @@
       "input_relative_path": "decoders/Opus/silk/resampler_down2_3.c",
       "original_sha256": "c57944578a2b59f119c2a074b8c179c3e68e12e089552eefd63588116dfac12f",
       "imported_sha256": "5d96e7c6eca7aba49dffaf00a68e8f2c697006f3141bec4d04e4a119e3047b6e",
-      "input_sha256": "5d96e7c6eca7aba49dffaf00a68e8f2c697006f3141bec4d04e4a119e3047b6e",
+      "input_sha256": "47df1bc72d95e4de75b185ec243bd940a63d0637ca3870a63c5eaf9dac714412",
       "sha256": "47df1bc72d95e4de75b185ec243bd940a63d0637ca3870a63c5eaf9dac714412",
       "bytes": 5218,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/resampler_private.h",
@@ -3641,10 +3641,10 @@
       "input_relative_path": "decoders/Opus/silk/resampler_private.h",
       "original_sha256": "27636d5dc05d29d9b8d387dbd31589501408b945a9981367ae41da98ceafadb3",
       "imported_sha256": "b14e6d03394a911d15eb9860922b7ecdd346d07f728f262d22e42f7bfc17ea3c",
-      "input_sha256": "b14e6d03394a911d15eb9860922b7ecdd346d07f728f262d22e42f7bfc17ea3c",
+      "input_sha256": "4da955a57729f789d43d53d25a038921bb3dc5b9559219e1bb751e01c920d4b6",
       "sha256": "4da955a57729f789d43d53d25a038921bb3dc5b9559219e1bb751e01c920d4b6",
       "bytes": 4832,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/resampler_private_AR2.c",
@@ -3653,10 +3653,10 @@
       "input_relative_path": "decoders/Opus/silk/resampler_private_AR2.c",
       "original_sha256": "2a4465534a8a5b2abaa0560fb61df59c295d99361fdc6fb2020161e7c3283ff8",
       "imported_sha256": "5b1185987561b753be7bd2ec7d9ae4222d078ea13f5c4c721702f3a3efdd5539",
-      "input_sha256": "5b1185987561b753be7bd2ec7d9ae4222d078ea13f5c4c721702f3a3efdd5539",
+      "input_sha256": "3f4ed5728bdfc4fb35d0122a79188186eaa0bb80f8431b55b8303eb0f89c0293",
       "sha256": "3f4ed5728bdfc4fb35d0122a79188186eaa0bb80f8431b55b8303eb0f89c0293",
       "bytes": 3110,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/resampler_private_down_FIR.c",
@@ -3665,10 +3665,10 @@
       "input_relative_path": "decoders/Opus/silk/resampler_private_down_FIR.c",
       "original_sha256": "e8d6b559b0dc39163a6f2b88dcd6a4782bc9e52a55a353299017f271d0743375",
       "imported_sha256": "4b71047a51718a3cd0b93dc360ac99be7d4d0cdb4339388a734882b31d92e321",
-      "input_sha256": "4b71047a51718a3cd0b93dc360ac99be7d4d0cdb4339388a734882b31d92e321",
+      "input_sha256": "e8a69ac268525613aaa926be0d6a52ffec7df219d1d371514e36f1b3e9c84e9c",
       "sha256": "e8a69ac268525613aaa926be0d6a52ffec7df219d1d371514e36f1b3e9c84e9c",
       "bytes": 11350,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/resampler_private_IIR_FIR.c",
@@ -3677,10 +3677,10 @@
       "input_relative_path": "decoders/Opus/silk/resampler_private_IIR_FIR.c",
       "original_sha256": "27be28e23c2264fda4e485041505b40f0d25189070367ea0394769d59eff853a",
       "imported_sha256": "36115c4ade786d466b6aeeae02b6259b95caaab09faa50d5ea86eab5438c6833",
-      "input_sha256": "36115c4ade786d466b6aeeae02b6259b95caaab09faa50d5ea86eab5438c6833",
+      "input_sha256": "912b49095277ed6b9d41e586ad83fd07540843fb8752d1a7502d603bf969ea34",
       "sha256": "912b49095277ed6b9d41e586ad83fd07540843fb8752d1a7502d603bf969ea34",
       "bytes": 5684,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/resampler_private_up2_HQ.c",
@@ -3689,10 +3689,10 @@
       "input_relative_path": "decoders/Opus/silk/resampler_private_up2_HQ.c",
       "original_sha256": "38556a66173f593761e380ff4b60851142703cd64d02bac538392ecf499d00bb",
       "imported_sha256": "bfbff47c05815ff35bbc48fcc9a8064d4ab60db965357a61785fe4a6440bcb3c",
-      "input_sha256": "bfbff47c05815ff35bbc48fcc9a8064d4ab60db965357a61785fe4a6440bcb3c",
+      "input_sha256": "1ac4e57cb2bbdd86a147c2c79fca5849addeff0c36f0b3c32bc9c053fa1932ec",
       "sha256": "1ac4e57cb2bbdd86a147c2c79fca5849addeff0c36f0b3c32bc9c053fa1932ec",
       "bytes": 5812,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/resampler_rom.c",
@@ -3701,10 +3701,10 @@
       "input_relative_path": "decoders/Opus/silk/resampler_rom.c",
       "original_sha256": "ebf646c9687c9303c5ccae46a4832da9e6a965146b6c0c55376dfc8241dd7e16",
       "imported_sha256": "094a97db33c05b4b915f1ca4cf2e256eb6264660f23f0d4028007b94d4a843e7",
-      "input_sha256": "094a97db33c05b4b915f1ca4cf2e256eb6264660f23f0d4028007b94d4a843e7",
+      "input_sha256": "773f3086088f89651ac3103cf5491a937a201374fb838f1809b5c25ba99a7f6d",
       "sha256": "773f3086088f89651ac3103cf5491a937a201374fb838f1809b5c25ba99a7f6d",
       "bytes": 5192,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/resampler_rom.h",
@@ -3713,10 +3713,10 @@
       "input_relative_path": "decoders/Opus/silk/resampler_rom.h",
       "original_sha256": "3d0bd44de6f331f730d2cc72710edbe95d4dfeeec8c1e08aae85b9dd36b1d4b1",
       "imported_sha256": "68088e0750482fa05be18d571a02b791576376e3cdc48fd2cc127cf333599efc",
-      "input_sha256": "68088e0750482fa05be18d571a02b791576376e3cdc48fd2cc127cf333599efc",
+      "input_sha256": "7f0535d72fe349770c306211c9452498cc08021e25633c2f80dde97216b2be20",
       "sha256": "7f0535d72fe349770c306211c9452498cc08021e25633c2f80dde97216b2be20",
       "bytes": 3573,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/resampler_structs.h",
@@ -3725,10 +3725,10 @@
       "input_relative_path": "decoders/Opus/silk/resampler_structs.h",
       "original_sha256": "7fc59318d11891d6e3849c65d2df3481431f581242e675cbdf94a13a242ba540",
       "imported_sha256": "b038e84c7d79bcd31bbf524dba64103d17ab66c5006cd2b6ad7ba3289226cd18",
-      "input_sha256": "b038e84c7d79bcd31bbf524dba64103d17ab66c5006cd2b6ad7ba3289226cd18",
+      "input_sha256": "748cfc96bf0cd3d042897a4f11ad22cd7eb13d90528e597d3c79f1b4535684d3",
       "sha256": "748cfc96bf0cd3d042897a4f11ad22cd7eb13d90528e597d3c79f1b4535684d3",
       "bytes": 2894,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/shell_coder.c",
@@ -3737,10 +3737,10 @@
       "input_relative_path": "decoders/Opus/silk/shell_coder.c",
       "original_sha256": "7baf2a37108ebae7b308111576a52ccf616293110412058634a67c99f70e665c",
       "imported_sha256": "568510b6a1f0cb74e285b89dd694207136ff57573717b05d60eb5acdc759966c",
-      "input_sha256": "568510b6a1f0cb74e285b89dd694207136ff57573717b05d60eb5acdc759966c",
+      "input_sha256": "1e499e748f3181e6ebddf4e78007fd61f6e6f7a25916c05152b2b2db1c49789c",
       "sha256": "1e499e748f3181e6ebddf4e78007fd61f6e6f7a25916c05152b2b2db1c49789c",
       "bytes": 8163,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/sigm_Q15.c",
@@ -3749,10 +3749,10 @@
       "input_relative_path": "decoders/Opus/silk/sigm_Q15.c",
       "original_sha256": "bd9945e85c4cd07ffeab0550d6eae9660e35d26ea4fd886a6a57a96ab114b38c",
       "imported_sha256": "cbdfeb7412817b6434ad26a952e819e7a9b4f6ade8e2dd6425b29738c72e7b08",
-      "input_sha256": "cbdfeb7412817b6434ad26a952e819e7a9b4f6ade8e2dd6425b29738c72e7b08",
+      "input_sha256": "ddba94e9db3dc6819ab1a7061367f51be616d91df20cced8c431b3967fde5345",
       "sha256": "ddba94e9db3dc6819ab1a7061367f51be616d91df20cced8c431b3967fde5345",
       "bytes": 3609,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/SigProc_FIX.h",
@@ -3761,10 +3761,10 @@
       "input_relative_path": "decoders/Opus/silk/SigProc_FIX.h",
       "original_sha256": "09b00afb73e4ee7181601a1b5f5f549f17a2ccf333a5f14761e5a87d0c68efb7",
       "imported_sha256": "bd012b0a714c7be293ff61c87ca7ff944ae810058e86be51fc42bfaf52dc69ab",
-      "input_sha256": "bd012b0a714c7be293ff61c87ca7ff944ae810058e86be51fc42bfaf52dc69ab",
+      "input_sha256": "55b097a26fb49b8f5e779faeface7918b73d15c2ef74fd25afdfd57e34f9aee7",
       "sha256": "55b097a26fb49b8f5e779faeface7918b73d15c2ef74fd25afdfd57e34f9aee7",
       "bytes": 39546,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/sort.c",
@@ -3773,10 +3773,10 @@
       "input_relative_path": "decoders/Opus/silk/sort.c",
       "original_sha256": "7fb53b443676b4dc4751d33b0bdb43bc5a2b0bef59da16cd8496a361308074e8",
       "imported_sha256": "4a7172d7c4525739af5aab535314ce51c2d22de1ccd5ed51abbb50f80c122fbb",
-      "input_sha256": "4a7172d7c4525739af5aab535314ce51c2d22de1ccd5ed51abbb50f80c122fbb",
+      "input_sha256": "18ff53ed637bad875cf0e6b9e427c5759c57a90aaf588b0fdf94c1ef01f4f056",
       "sha256": "18ff53ed637bad875cf0e6b9e427c5759c57a90aaf588b0fdf94c1ef01f4f056",
       "bytes": 6710,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/stereo_decode_pred.c",
@@ -3785,10 +3785,10 @@
       "input_relative_path": "decoders/Opus/silk/stereo_decode_pred.c",
       "original_sha256": "245da9e8033ae8698558b64e9b6d55b816aeaa256cce6a437f501a365dec71ad",
       "imported_sha256": "dd514f8612d6e23cf5437e69d419c0321193f0715f6ed7324b1c2beffe50c109",
-      "input_sha256": "dd514f8612d6e23cf5437e69d419c0321193f0715f6ed7324b1c2beffe50c109",
+      "input_sha256": "a0d7d6bbef40186b2f290076a1a928d28815e1c822b9abc48c78c0288ff44a32",
       "sha256": "a0d7d6bbef40186b2f290076a1a928d28815e1c822b9abc48c78c0288ff44a32",
       "bytes": 3862,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/stereo_MS_to_LR.c",
@@ -3797,10 +3797,10 @@
       "input_relative_path": "decoders/Opus/silk/stereo_MS_to_LR.c",
       "original_sha256": "f6110cd38b67e7f584281b1692d99b70cc140fe1940d6397c7b5de35082dc6d6",
       "imported_sha256": "62d4ec96ece67bcb8efb59996a22120ec4388b5f70f62a89257f839848d6e4e7",
-      "input_sha256": "62d4ec96ece67bcb8efb59996a22120ec4388b5f70f62a89257f839848d6e4e7",
+      "input_sha256": "1b53a5164fc957bc647e922fbca3cda7308b28f658dbb56e06aeb17b45212d6a",
       "sha256": "1b53a5164fc957bc647e922fbca3cda7308b28f658dbb56e06aeb17b45212d6a",
       "bytes": 5344,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/structs.h",
@@ -3809,10 +3809,10 @@
       "input_relative_path": "decoders/Opus/silk/structs.h",
       "original_sha256": "7e8dec7b534f3c964bec957693e38d56331524960831ea266a7b7a47ca6c7bba",
       "imported_sha256": "03ef03a90ff75daf380f5bd495f9c3440c4362ef6b659758b1110a141534303a",
-      "input_sha256": "03ef03a90ff75daf380f5bd495f9c3440c4362ef6b659758b1110a141534303a",
+      "input_sha256": "9289d705825788f98b6e73e73d1d3bff2351f7b000c3e0e9cd00066097fc389f",
       "sha256": "9289d705825788f98b6e73e73d1d3bff2351f7b000c3e0e9cd00066097fc389f",
       "bytes": 21996,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/sum_sqr_shift.c",
@@ -3821,10 +3821,10 @@
       "input_relative_path": "decoders/Opus/silk/sum_sqr_shift.c",
       "original_sha256": "14a2e021ac35be7baf39161f26d268fbfa5bba9cfe0c17954acbb0df7b664716",
       "imported_sha256": "bdbade085ed00dca613b3e8c4d5347a10d588d8d4e219bab4b822a4395236991",
-      "input_sha256": "bdbade085ed00dca613b3e8c4d5347a10d588d8d4e219bab4b822a4395236991",
+      "input_sha256": "b9ab39df5c882d9e520d231fb6c0cbfee4bcd52500b0f84cce0532e8dc609b89",
       "sha256": "b9ab39df5c882d9e520d231fb6c0cbfee4bcd52500b0f84cce0532e8dc609b89",
       "bytes": 4235,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/tables.h",
@@ -3833,10 +3833,10 @@
       "input_relative_path": "decoders/Opus/silk/tables.h",
       "original_sha256": "d629fe3ed8aa2e3ac7615abf07c26fc9adf647c6fcdf57641e3068bb9a5dcc0a",
       "imported_sha256": "ec392c03ba77e7a049fab3c504463f2c6710c4d2c4a777897007a7b0a1b9f959",
-      "input_sha256": "ec392c03ba77e7a049fab3c504463f2c6710c4d2c4a777897007a7b0a1b9f959",
+      "input_sha256": "b3a2838f07b692f88c928ddc4ffb8bdcf35f8335a8297e33955a124f3cc6daee",
       "sha256": "b3a2838f07b692f88c928ddc4ffb8bdcf35f8335a8297e33955a124f3cc6daee",
       "bytes": 7457,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/tables_gain.c",
@@ -3845,10 +3845,10 @@
       "input_relative_path": "decoders/Opus/silk/tables_gain.c",
       "original_sha256": "698a4edadbe7119c1ae07108b75475eac7d2d077b18416959354aac3439d86e9",
       "imported_sha256": "ef2d14b1d481af54c2e06e440eb35c19e9907c21cb52c46c6fbdc57065b31bfa",
-      "input_sha256": "ef2d14b1d481af54c2e06e440eb35c19e9907c21cb52c46c6fbdc57065b31bfa",
+      "input_sha256": "6ca1af2a1d3a9fc422839e659a20a72a968aa041da1cec7b755774120e479a32",
       "sha256": "6ca1af2a1d3a9fc422839e659a20a72a968aa041da1cec7b755774120e479a32",
       "bytes": 2964,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/tables_LTP.c",
@@ -3857,10 +3857,10 @@
       "input_relative_path": "decoders/Opus/silk/tables_LTP.c",
       "original_sha256": "c2cc3f8e3801238fc557bc89cec29d11c315f4c03c67160797c8bcb361fdb147",
       "imported_sha256": "86fa975634bdd697aeddaf6149a0b9b38eabd8729237a059a60da8ba16850704",
-      "input_sha256": "86fa975634bdd697aeddaf6149a0b9b38eabd8729237a059a60da8ba16850704",
+      "input_sha256": "c502f95b2d013fe98a145a8ea115e36e6c85d691d062dfa2269a2478ff547c73",
       "sha256": "c502f95b2d013fe98a145a8ea115e36e6c85d691d062dfa2269a2478ff547c73",
       "bytes": 7877,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/tables_NLSF_CB_NB_MB.c",
@@ -3869,10 +3869,10 @@
       "input_relative_path": "decoders/Opus/silk/tables_NLSF_CB_NB_MB.c",
       "original_sha256": "376093f69361de3990caf98c574d93383ad222de201e631933cc03d5a678c52d",
       "imported_sha256": "c06ab9332555ec8dae9b1c13d2212af807277799d70ca8c99633bc0aa610b5c9",
-      "input_sha256": "c06ab9332555ec8dae9b1c13d2212af807277799d70ca8c99633bc0aa610b5c9",
+      "input_sha256": "eb78352168a95b1405fd694fae395d964aed4232bc18da4c8b321476b803ff45",
       "sha256": "eb78352168a95b1405fd694fae395d964aed4232bc18da4c8b321476b803ff45",
       "bytes": 11230,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/tables_NLSF_CB_WB.c",
@@ -3881,10 +3881,10 @@
       "input_relative_path": "decoders/Opus/silk/tables_NLSF_CB_WB.c",
       "original_sha256": "926786d6654063120b9e966589faf0f1fcd0c90006483b32ef5b91c8e09dbe3e",
       "imported_sha256": "a61898166e58141ed09d1294b096980593f57d810556660253773d9a267f10a1",
-      "input_sha256": "a61898166e58141ed09d1294b096980593f57d810556660253773d9a267f10a1",
+      "input_sha256": "4dd6859ff038640b7f442f1634f41562298bf0287f75d2e1ae0a28c40a7360de",
       "sha256": "4dd6859ff038640b7f442f1634f41562298bf0287f75d2e1ae0a28c40a7360de",
       "bytes": 14944,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/tables_other.c",
@@ -3893,10 +3893,10 @@
       "input_relative_path": "decoders/Opus/silk/tables_other.c",
       "original_sha256": "348b40fdd63a32616dea36e2c451f9b48cb7b7e3961ee63ee309f94e0d23b46d",
       "imported_sha256": "dc03dcfd6117b43f7e355f7583070b25ee9d00c1dcc3be1918d2162f322c6c8c",
-      "input_sha256": "dc03dcfd6117b43f7e355f7583070b25ee9d00c1dcc3be1918d2162f322c6c8c",
+      "input_sha256": "1c4471a19787a753c17c376d0b8f5f29d59e9d2643ec42073ac8280d41035515",
       "sha256": "1c4471a19787a753c17c376d0b8f5f29d59e9d2643ec42073ac8280d41035515",
       "bytes": 5228,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/tables_pitch_lag.c",
@@ -3905,10 +3905,10 @@
       "input_relative_path": "decoders/Opus/silk/tables_pitch_lag.c",
       "original_sha256": "ee09b6d8acc28fe4348386d6bf4bec88bdc5e776b8dba5ebd9659747fb71bdfe",
       "imported_sha256": "b82b6fec347b3ae7b4e2fc3df23cc6e39b4fa090c9b393fe130cf368fb1d0255",
-      "input_sha256": "b82b6fec347b3ae7b4e2fc3df23cc6e39b4fa090c9b393fe130cf368fb1d0255",
+      "input_sha256": "d2d882814d8cd36291da1b3db9feefb79ffd2ad166a347cffe15691587c8665d",
       "sha256": "d2d882814d8cd36291da1b3db9feefb79ffd2ad166a347cffe15691587c8665d",
       "bytes": 3513,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/tables_pulses_per_block.c",
@@ -3917,10 +3917,10 @@
       "input_relative_path": "decoders/Opus/silk/tables_pulses_per_block.c",
       "original_sha256": "337916e4f315f88db51724a7f604ad200f3981d79f9687e42f27f54a1a391ea0",
       "imported_sha256": "cee123ac717b036659e11b93b0a5571f24596c4160d47a022b0a13f7206d1792",
-      "input_sha256": "cee123ac717b036659e11b93b0a5571f24596c4160d47a022b0a13f7206d1792",
+      "input_sha256": "0b278efb2ca273de7f7b109c0eb6b85fb790f4945117555883a90c44a978de84",
       "sha256": "0b278efb2ca273de7f7b109c0eb6b85fb790f4945117555883a90c44a978de84",
       "bytes": 11868,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/table_LSF_cos.c",
@@ -3929,10 +3929,10 @@
       "input_relative_path": "decoders/Opus/silk/table_LSF_cos.c",
       "original_sha256": "7e72fc7ea26011c2075d446eec967b521b3161384a35b15a61e8204d894ae13a",
       "imported_sha256": "ff449f78845d8426b7fac86ae8dbe1b6b3c36c3a5995725c925faa188aebc590",
-      "input_sha256": "ff449f78845d8426b7fac86ae8dbe1b6b3c36c3a5995725c925faa188aebc590",
+      "input_sha256": "8f0d231ee33c9981b8f397f48f63132a9752a343de404c52b33105ecdf68b85d",
       "sha256": "8f0d231ee33c9981b8f397f48f63132a9752a343de404c52b33105ecdf68b85d",
       "bytes": 4636,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/tuning_parameters.h",
@@ -3941,10 +3941,10 @@
       "input_relative_path": "decoders/Opus/silk/tuning_parameters.h",
       "original_sha256": "63b526acfb8b539d9a8de13e8f0320cd07d5728501c8427baa59464bf4fb9046",
       "imported_sha256": "752c03100137fb26204db35af2d435912a80fefe848a6aac1f709757d53f204c",
-      "input_sha256": "752c03100137fb26204db35af2d435912a80fefe848a6aac1f709757d53f204c",
+      "input_sha256": "a6c382abc974b391eb97d0c3cdf1007d5257de7294caec22ac7b848f8db8f9d4",
       "sha256": "a6c382abc974b391eb97d0c3cdf1007d5257de7294caec22ac7b848f8db8f9d4",
       "bytes": 6470,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/typedef.h",
@@ -3953,10 +3953,10 @@
       "input_relative_path": "decoders/Opus/silk/typedef.h",
       "original_sha256": "13fb7eea10db08e1ea4c6e99d9396ba653346ce266836898ff4164c1d76e99c4",
       "imported_sha256": "3de621987726fe12f76d574c64d488a1adf9d55a8ba9f367fafa6b57906d1efc",
-      "input_sha256": "3de621987726fe12f76d574c64d488a1adf9d55a8ba9f367fafa6b57906d1efc",
+      "input_sha256": "4aa6dcd8699e98924dce9bce80f9c087bce490697e063f531a568a617f86513c",
       "sha256": "4aa6dcd8699e98924dce9bce80f9c087bce490697e063f531a568a617f86513c",
       "bytes": 3808,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/src/analysis.h",
@@ -3965,10 +3965,10 @@
       "input_relative_path": "decoders/Opus/src/analysis.h",
       "original_sha256": "8173b985c99ab4fbe51af8189f0a943ca36bf1635f22108d2efce7b7a57f5ecd",
       "imported_sha256": "8f24c0600211058fa339dc3848d0e7609a6aa8faccec1760c1dfec36286ca879",
-      "input_sha256": "8f24c0600211058fa339dc3848d0e7609a6aa8faccec1760c1dfec36286ca879",
+      "input_sha256": "1af270244820486c91b541ea0b1a87bb230ee83a9bcb5a8da80ccb81214f1d60",
       "sha256": "1af270244820486c91b541ea0b1a87bb230ee83a9bcb5a8da80ccb81214f1d60",
       "bytes": 3869,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/src/extensions.c",
@@ -3977,10 +3977,10 @@
       "input_relative_path": "decoders/Opus/src/extensions.c",
       "original_sha256": "dd09dd01e2187340dbef0840bbde182238c882bcd0dcdd69be2b54c916445fe2",
       "imported_sha256": "63cba9c24e274c21ea88a3af271ab0f69cfe7b43715cbd4064dc9a0e2be8b926",
-      "input_sha256": "63cba9c24e274c21ea88a3af271ab0f69cfe7b43715cbd4064dc9a0e2be8b926",
+      "input_sha256": "7dbfdac19516a4a958b0e07655b50f8c6736bfdb737a42c156e71aa5340bc4e2",
       "sha256": "7dbfdac19516a4a958b0e07655b50f8c6736bfdb737a42c156e71aa5340bc4e2",
       "bytes": 10616,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/src/mapping_matrix.h",
@@ -3989,10 +3989,10 @@
       "input_relative_path": "decoders/Opus/src/mapping_matrix.h",
       "original_sha256": "020628d898d59ca98eae494b6579359918b8efd867b05272f8ed7b30acda20ab",
       "imported_sha256": "c109891f4505f87426d42e9423507ebc67d8b475e9a5388e094e16705a23a228",
-      "input_sha256": "c109891f4505f87426d42e9423507ebc67d8b475e9a5388e094e16705a23a228",
+      "input_sha256": "9c72b6b791248a1ffc0235af84201f9f8e650c292cb2a8a06db4d27ae95f327a",
       "sha256": "9c72b6b791248a1ffc0235af84201f9f8e650c292cb2a8a06db4d27ae95f327a",
       "bytes": 4830,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/src/mlp.h",
@@ -4001,10 +4001,10 @@
       "input_relative_path": "decoders/Opus/src/mlp.h",
       "original_sha256": "644fe6b6079b597be0b3671c5826dc353a14258752e7a748294a16597c70f382",
       "imported_sha256": "573bb8e11c56358c35facac41c9883b1632c3d7b9757a6e6d4a32bc2a7475b45",
-      "input_sha256": "573bb8e11c56358c35facac41c9883b1632c3d7b9757a6e6d4a32bc2a7475b45",
+      "input_sha256": "af72d4a845986c5c518fefc8cb3f629df4339c4cf0d4f9f8abfd97e679314293",
       "sha256": "af72d4a845986c5c518fefc8cb3f629df4339c4cf0d4f9f8abfd97e679314293",
       "bytes": 2386,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/src/opus.c",
@@ -4013,10 +4013,10 @@
       "input_relative_path": "decoders/Opus/src/opus.c",
       "original_sha256": "dd16a615c6c27df4a58c007fbf3c04a219aac268d9051cd5e69ea1ed952ca4e5",
       "imported_sha256": "2c933e581261b3b3b646bb5d630c81b16892f858d422e31aabcb751aa2f32ff6",
-      "input_sha256": "2c933e581261b3b3b646bb5d630c81b16892f858d422e31aabcb751aa2f32ff6",
+      "input_sha256": "378d60cc369eaea8310cd1dba52ef2e1c4a882de61ce85b97c9c065a6caf8522",
       "sha256": "378d60cc369eaea8310cd1dba52ef2e1c4a882de61ce85b97c9c065a6caf8522",
       "bytes": 10507,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/src/opus_decoder.c",
@@ -4025,10 +4025,10 @@
       "input_relative_path": "decoders/Opus/src/opus_decoder.c",
       "original_sha256": "09ac2dd049406187a415289d9d5b350474601e67b14032b838d2fc7777f0d6a8",
       "imported_sha256": "5650a7c79c8152dccf8a2f3b142d7df5ab2e0bf04143cdd0a530d7f609d579fa",
-      "input_sha256": "5650a7c79c8152dccf8a2f3b142d7df5ab2e0bf04143cdd0a530d7f609d579fa",
+      "input_sha256": "7e7beef5a0f6ebdb6c444a5d6ff58a545aba80adc82ec72c8b76b332534e3d5d",
       "sha256": "7e7beef5a0f6ebdb6c444a5d6ff58a545aba80adc82ec72c8b76b332534e3d5d",
       "bytes": 44323,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/src/opus_private.h",
@@ -4037,10 +4037,10 @@
       "input_relative_path": "decoders/Opus/src/opus_private.h",
       "original_sha256": "891d46b3e4491704b175b1a3755830086097be06bb3d5f5533b4d35512025a10",
       "imported_sha256": "0eb2ebe3ac9ea11f1bc7de72e414bff415a63a78807cb7c50787261db596670c",
-      "input_sha256": "0eb2ebe3ac9ea11f1bc7de72e414bff415a63a78807cb7c50787261db596670c",
+      "input_sha256": "63df2a7e3fc588b6efc3466ff6b1d1aebdae739f874411ee8c58fe323c0be2ec",
       "sha256": "63df2a7e3fc588b6efc3466ff6b1d1aebdae739f874411ee8c58fe323c0be2ec",
       "bytes": 8521,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/src/tansig_table.h",
@@ -4049,10 +4049,10 @@
       "input_relative_path": "decoders/Opus/src/tansig_table.h",
       "original_sha256": "f469ef2388605ed0b687b1e69ec1b19a0ed59d3abd6e4c70612014ad78642873",
       "imported_sha256": "835fcdf08d5b92e249fbe9ba6cdd9758688a5fdf134efb9da0e42989e8c18b8a",
-      "input_sha256": "835fcdf08d5b92e249fbe9ba6cdd9758688a5fdf134efb9da0e42989e8c18b8a",
+      "input_sha256": "13908c5f4a4e504a895d973ad3a7b1cf97b7fda2d27701ef074e3925dfdcc84d",
       "sha256": "13908c5f4a4e504a895d973ad3a7b1cf97b7fda2d27701ef074e3925dfdcc84d",
       "bytes": 2583,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/celt/dump_modes/dump_modes_arch.h",
@@ -4061,10 +4061,10 @@
       "input_relative_path": "decoders/Opus/celt/dump_modes/dump_modes_arch.h",
       "original_sha256": "0c1eda5d1387700e9e3e6f51885ac24c9400e56f1b1014f1ff0442bd4aec1db8",
       "imported_sha256": "980144dabc228cd8b2b9532632fa8796a5d84c3661d5e05e56fc1ca262e568eb",
-      "input_sha256": "980144dabc228cd8b2b9532632fa8796a5d84c3661d5e05e56fc1ca262e568eb",
+      "input_sha256": "4ba014c969b6dc2cd48a97908806fcc1f803c0508c56e5150b779d84f53d7cb4",
       "sha256": "4ba014c969b6dc2cd48a97908806fcc1f803c0508c56e5150b779d84f53d7cb4",
       "bytes": 2044,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/fixed/main_FIX.h",
@@ -4073,10 +4073,10 @@
       "input_relative_path": "decoders/Opus/silk/fixed/main_FIX.h",
       "original_sha256": "7627d537f1a7df7b6312d2f6d29bd217f05a20f0d78618716a5ee59daf588826",
       "imported_sha256": "1d9ad07c45dde71a4041cc058bf94658e42caf31ed204d3f39d8f28e19805213",
-      "input_sha256": "1d9ad07c45dde71a4041cc058bf94658e42caf31ed204d3f39d8f28e19805213",
+      "input_sha256": "90ba8a1d26e68ad4c6a1a56c200a10710b31186598d031f91545164c984418f6",
       "sha256": "90ba8a1d26e68ad4c6a1a56c200a10710b31186598d031f91545164c984418f6",
       "bytes": 19520,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/fixed/structs_FIX.h",
@@ -4085,10 +4085,10 @@
       "input_relative_path": "decoders/Opus/silk/fixed/structs_FIX.h",
       "original_sha256": "4363c6f33bd8bc3b1a15a813e2df54de66e9a8f3edf92d8011ae6dca8f29ab84",
       "imported_sha256": "f8b1f2177e0e9abe6ff0028d6f98f3e9187b053cff636b21fc03bf487c9d23a2",
-      "input_sha256": "f8b1f2177e0e9abe6ff0028d6f98f3e9187b053cff636b21fc03bf487c9d23a2",
+      "input_sha256": "566694fca201eed6bac21e59bc8fdb21f80ac0f066e0bb12c80f433d0af9803d",
       "sha256": "566694fca201eed6bac21e59bc8fdb21f80ac0f066e0bb12c80f433d0af9803d",
       "bytes": 5440,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/float/main_FLP.h",
@@ -4097,10 +4097,10 @@
       "input_relative_path": "decoders/Opus/silk/float/main_FLP.h",
       "original_sha256": "9c84a88c502182ea6918d2b0ba002ffae7397820e1b883cdf7139e368cc02907",
       "imported_sha256": "fd646ffd2d40ad2dc8436be5c39cb19c6ed1e17f1d85366c8357ab4baeca748f",
-      "input_sha256": "fd646ffd2d40ad2dc8436be5c39cb19c6ed1e17f1d85366c8357ab4baeca748f",
+      "input_sha256": "06c3078e884ade26d8de7971b29e3404d0bef556d006660f48b66a29044df16e",
       "sha256": "06c3078e884ade26d8de7971b29e3404d0bef556d006660f48b66a29044df16e",
       "bytes": 19826,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/float/SigProc_FLP.h",
@@ -4109,10 +4109,10 @@
       "input_relative_path": "decoders/Opus/silk/float/SigProc_FLP.h",
       "original_sha256": "47ab492aec2ff2032daf8497a6f442678ed4c048bfa24f518f831dbba16b0a2b",
       "imported_sha256": "cf7ebeb9701fa65816ab1e575b320e4bcc0b169739688c1a2aab203956178b2e",
-      "input_sha256": "cf7ebeb9701fa65816ab1e575b320e4bcc0b169739688c1a2aab203956178b2e",
+      "input_sha256": "d38002572c0f0f18cb8fd5ec9c023c3865db1a2379cd99fe152b8da3b5951f81",
       "sha256": "d38002572c0f0f18cb8fd5ec9c023c3865db1a2379cd99fe152b8da3b5951f81",
       "bytes": 10121,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/opus/silk/float/structs_FLP.h",
@@ -4121,10 +4121,10 @@
       "input_relative_path": "decoders/Opus/silk/float/structs_FLP.h",
       "original_sha256": "46439d35d6dd12513828c71ec83147690f5c38ba3d9459bba7c56baf56993df8",
       "imported_sha256": "3a0d5edf872334145ae184fa2bf7b4207a9621d8c172e2ddadf0afae36ee2999",
-      "input_sha256": "3a0d5edf872334145ae184fa2bf7b4207a9621d8c172e2ddadf0afae36ee2999",
+      "input_sha256": "e5c741cfe16df8f37f0c290b4ab12c73c4d398b9e648e9e6abf19afb6d71980c",
       "sha256": "e5c741cfe16df8f37f0c290b4ab12c73c4d398b9e648e9e6abf19afb6d71980c",
       "bytes": 5094,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/latm_parser.c",
@@ -4133,10 +4133,10 @@
       "input_relative_path": "integration-reference/bluedroid/stack/a2dp/latm_parser.c",
       "original_sha256": "b9e9f1adf4adb76e87671b48b16db085cb86e965027faaeb52b2e2251e6f4d90",
       "imported_sha256": "235832a5e2643dffbf507a82dd7b16f1e70a4f33d31d2d0d68e69c74983d67cc",
-      "input_sha256": "235832a5e2643dffbf507a82dd7b16f1e70a4f33d31d2d0d68e69c74983d67cc",
+      "input_sha256": "7d0c7c67f5540e4eaea24f302012d10ff5fca9ba02b43fbd9f8d7ff6a762509c",
       "sha256": "7d0c7c67f5540e4eaea24f302012d10ff5fca9ba02b43fbd9f8d7ff6a762509c",
       "bytes": 13334,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/aac/latm_parser.h",
@@ -4145,10 +4145,10 @@
       "input_relative_path": "integration-reference/bluedroid/stack/a2dp/latm_parser.h",
       "original_sha256": "24e7b4cdb72f3fc6cc9fa658bb8d9eec98ce7993ab6e3c5160014b6f20fafd78",
       "imported_sha256": "b6936745c7a84e88fdde3dda9fcd164eaada6b242a00ab98292f8ef338bdc8fa",
-      "input_sha256": "b6936745c7a84e88fdde3dda9fcd164eaada6b242a00ab98292f8ef338bdc8fa",
+      "input_sha256": "20cefd4a6458fcfda1bb59a0e281fad246fdb67ee80f188bc181bcf84f59ab1c",
       "sha256": "20cefd4a6458fcfda1bb59a0e281fad246fdb67ee80f188bc181bcf84f59ab1c",
       "bytes": 4379,
-      "export_modified": true
+      "export_modified": false
     },
     {
       "source": "src/vendor/codecs/notices/ESP-IDF/LICENSE",
@@ -4196,9 +4196,9 @@
       "source": "src/vendor/codecs/manifest.json",
       "destination": "src/vendor/codecs/manifest.json",
       "license": "Apache-2.0 project port/metadata; underlying source retains its terms",
-      "input_sha256": "e053b2a8e0eed2815c39afd71301e374e1f53c352761891c60871a0acf3e480b",
-      "sha256": "e053b2a8e0eed2815c39afd71301e374e1f53c352761891c60871a0acf3e480b",
-      "bytes": 100617,
+      "input_sha256": "952bd23a23af8f0862d92949fed0d0c65e92d8e88f36d939d382920020e1562a",
+      "sha256": "952bd23a23af8f0862d92949fed0d0c65e92d8e88f36d939d382920020e1562a",
+      "bytes": 131576,
       "export_modified": false
     },
     {

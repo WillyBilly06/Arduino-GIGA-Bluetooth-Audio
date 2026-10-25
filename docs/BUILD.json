@@ -1,16 +1,16 @@
 {
   "schema": 2,
-  "qualification": "Developmental snapshot with a reviewed conditional correction and unresolved audio failures",
-  "version": "0.1.0-dev.7",
+  "qualification": "Measured selected AAC request reduction; general audio unqualified",
+  "version": "0.1.0-dev.8",
   "date": "2026-10-25",
-  "final_source_metadata_version": "0.1.0-dev.7",
-  "library_metadata_version_at_M7_build": "0.1.0-dev.7",
+  "final_source_metadata_version": "0.1.0-dev.8",
+  "library_metadata_version_at_M7_build": "0.1.0-dev.8",
   "profile": "Observer-free project-owned dual-mode host; H TX ordering and early1s eligibility plus J initial optional-notification gate; complete selected decoder set",
   "developmental_snapshot_with_known_issues": true,
   "source_fixed": false,
   "stable": false,
   "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
-  "compiler_input_set_sha256": "b74e96abddcd0a3e67fe9470b40b333d956aeba6af473433d34fa7799de0c6ec",
+  "compiler_input_set_sha256": "48a645fa8908d592b3ad1aca986d52e9ba37ca6b62195acb4e49116aaa26ed8a",
   "source_files": [
     {
       "path": "src/AudioDiagnostics.h",
@@ -94,7 +94,7 @@
     },
     {
       "path": "src/codecs/Codecs.cpp",
-      "sha256": "fe15c1763797400034505fe3cdd163d3da19fc0dc40804a5da1127308a0d1339"
+      "sha256": "a3448fcd0702fc905f7d7da0d27ea6d235487f4db624911d21f7bfb14f40f981"
     },
     {
       "path": "src/codecs/Codecs.h",
@@ -506,11 +506,11 @@
     },
     {
       "path": "src/vendor/codecs/aac/aacdec.c",
-      "sha256": "1170611e266b4e93026763d882c709263bd4700338effe36cddf4fba02369cec"
+      "sha256": "eeebcbb43244b5c70f91d5bb3c39dc8b5b231df768d4ccdbc592cea17af9477a"
     },
     {
       "path": "src/vendor/codecs/aac/aacdec.h",
-      "sha256": "789746172601b9a5930246f39644efaaf854ecdc4185846f631c590ce2e3772c"
+      "sha256": "f59ab58e762801603b36fc4e44bf7f262f3f174df8b5fd5c2af3f8db057d597e"
     },
     {
       "path": "src/vendor/codecs/aac/aactabs.c",
@@ -530,11 +530,11 @@
     },
     {
       "path": "src/vendor/codecs/aac/buffers.c",
-      "sha256": "be98ce613c2fe68a0ac240746ec92726ed8758dbf824fe89c685d23b71ac7d95"
+      "sha256": "1579c9fb6a66d8b0a026fb83c903e29a81f113ee49f8d28bc0157de740f61eb8"
     },
     {
       "path": "src/vendor/codecs/aac/coder.h",
-      "sha256": "e67d95c075fb108e6afe8b589abce0c567409ad3a20d3a968e2ae6fd6701a9e9"
+      "sha256": "e5461c94f3cced63e11ca4cf97c8e66e94b81cfbb336c23697d9bb1e5e8f0681"
     },
     {
       "path": "src/vendor/codecs/aac/ConfigHelix.h",
@@ -558,7 +558,7 @@
     },
     {
       "path": "src/vendor/codecs/aac/filefmt.c",
-      "sha256": "1003a4be8140f47481bb6f236a5e867f7fe018ca3d4633aeb963541aebfe29d7"
+      "sha256": "a816b801cb6095a55cf31b6ee0d4c8a03b5aa30c130b84cf5797de1f89a2026b"
     },
     {
       "path": "src/vendor/codecs/aac/huffman.c",
@@ -1422,7 +1422,7 @@
     },
     {
       "path": "src/vendor/codecs/manifest.json",
-      "sha256": "e053b2a8e0eed2815c39afd71301e374e1f53c352761891c60871a0acf3e480b"
+      "sha256": "952bd23a23af8f0862d92949fed0d0c65e92d8e88f36d939d382920020e1562a"
     },
     {
       "path": "src/platform/TxMailbox.h",
@@ -1478,15 +1478,15 @@
   ],
   "example": "examples/Receiver/Receiver.ino",
   "isolated_receiver_link": "PASS",
-  "binary_sha256": "d0a93d5896183a4cfa45aa6490e1d1725d7c13d756dedd19f50c8a326e1cd0ee",
-  "binary_bytes": 488068,
-  "elf_sha256": "863a2cbf1c08d7817f8acbf4ebe3c77bbbc0d961a0f79eca1ebf7532ccf7573b",
+  "binary_sha256": "8c47b9cc80ce27a8e07d6405ae53fe883e69af484f395c7e2448587baccf7777",
+  "binary_bytes": 487940,
+  "elf_sha256": "b2084512886824f754eb2325a09e4b81eb3ff7f0aeb095b7e08fd229a85333e0",
   "elf_sections": {
-    "text": 482724,
+    "text": 482596,
     "data": 5344,
     "bss": 327320
   },
-  "arduino_program_bytes": 483536,
+  "arduino_program_bytes": 483408,
   "arduino_global_bytes": 54136,
   "compile_commands": 200,
   "main_thread_stack_bytes": 32768,
@@ -1519,7 +1519,7 @@
   ],
   "decoder_build_defaults": "All seven source/build macros remain1; eight codec identities remain supplied. One A2DP codec is negotiated at a time.",
   "owned_host": {
-    "elf_sha256": "863a2cbf1c08d7817f8acbf4ebe3c77bbbc0d961a0f79eca1ebf7532ccf7573b",
+    "elf_sha256": "b2084512886824f754eb2325a09e4b81eb3ff7f0aeb095b7e08fd229a85333e0",
     "owned_host_components": 4,
     "forbidden_host_symbols": 0,
     "inert_arduino_sdk_globals": [
@@ -1544,41 +1544,42 @@
     "includes.txt": "ec05ed1ce9e095407409bd402e8317765729de71f14440d617b1f7c3bd35bfee",
     "cflags.txt": "00ec7abd811cc7a6d24b35f047c5f1f29e8d891fa62e80ca26079ba7c0d42350"
   },
-  "compile_database_sha256": "5fa46e1b8fe4f0835d8f61c8ba671e3abb34c5c8322fec2ab8f241c90ae7dfbd",
-  "evidence_receipt_sha256": "4dd0fffe4f00f6e8717afccb5035d7439d0e2be60a25a8eb3081e9964407dd1d",
+  "compile_database_sha256": "1a1546079c0f4b51b51da2f9cb5b8ddc446597c931f1d11d01ddeca904b3560d",
+  "evidence_receipt_sha256": "a3a91c23ac6cdf098c8966bb65739f619cbf102ab98a15efd207b7875432baec",
   "qualification_scopes": {
     "m7_static": "PASS_168_UNITS_SEVEN_DEFAULTS",
-    "selected_scalar_regression": "Historical selected checks only; not a new full native suite",
-    "normal_lhdc192_ble_gatt60": {
-      "status": "NOT_QUALIFIED",
-      "client_verified_exchanges": 98,
-      "client_active_ms": 60047,
-      "value_bytes": 512,
-      "mtu": 517,
-      "actual_interval_ms": 120,
-      "audio_output_epochs": [
+    "compact_AAC_target": {
+      "accounting": "Selected decoder requested payload, not system free heap",
+      "format": "AAC-LC44100/stereo16",
+      "compact_bytes": 25262,
+      "baseline_bytes": 26484,
+      "difference_bytes": 1222,
+      "ring_frames": 884,
+      "compact_source_seconds": 90,
+      "baseline_source_seconds": 45,
+      "source_natural_release": true,
+      "source_routes_exact": true,
+      "source_underruns": 0,
+      "gatt_verified512_exchanges": 118,
+      "gatt_mtu": 517,
+      "gatt_active_ms": 60246,
+      "actual_receiver_faults": [],
+      "missing_required_fields": [],
+      "original_verdict": "NOT_QUALIFIED",
+      "reason": "One initial Learning-clock row each",
+      "runtime_image_sha256": "8c47b9cc80ce27a8e07d6405ae53fe883e69af484f395c7e2448587baccf7777",
+      "runtime_image_matches_this_build": true,
+      "compact_epochs": [
         2,
         2
       ],
-      "short_refills": 1136,
-      "missing_real_pcm_frames": 218112,
-      "timestamp_steps": 8,
-      "inner_steps": 8,
-      "no_new_reported": [
-        "outer_RTP_sequence_gap",
-        "decoder_error",
-        "packet_drop",
-        "queue_full",
-        "DMA_error",
-        "transport_error"
+      "baseline_epochs": [
+        1,
+        1
       ],
-      "candidate_full_readback": true,
-      "previous_image_full_readback": true,
-      "previous_image_fresh_output": true,
-      "restored_image_audio_quality": "NOT_QUALIFIED",
-      "field_receipt_sha256": "641d9f69042d7ad5c6a99dc3a5ab1693e25f59a20bec1375dbcd0ed402596559"
+      "independent_report_sha256": "f582e0b1531bf840f714fe4e0ded57e8ca73eab32203a11f8f7210393d5532b7"
     },
-    "all_codec_runtime": "NOT_QUALIFIED",
+    "all_codec_fidelity_runtime": "NOT_QUALIFIED",
     "full_stability": "NOT_EVALUATED"
   },
   "serial_diagnostics": {
@@ -1595,7 +1596,7 @@
     "Rejected initial-age0 eligibility experiment; no0x3B experiment included",
     "Unqualified receive-clock candidate pending separate source decision",
     "Private decode-boundary observers",
-    "Private compact AAC RawChannels promotion"
+    "Private typed AVRCP controls and unfinished voice/input profiles"
   ],
   "license_clearance": "Not asserted. Original component notices and unresolved grants remain in THIRD_PARTY.md; project Apache-2.0 does not relicense bundled codec/table data.",
   "historical_dev5": {
@@ -1694,5 +1695,40 @@
     }
   },
   "conditional_security_readiness_correction": true,
-  "conditional_trigger_field_coverage": "NOT_OBSERVED"
+  "conditional_trigger_field_coverage": "NOT_OBSERVED",
+  "historical_dev7_qualification_scopes": {
+    "m7_static": "PASS_168_UNITS_SEVEN_DEFAULTS",
+    "selected_scalar_regression": "Historical selected checks only; not a new full native suite",
+    "normal_lhdc192_ble_gatt60": {
+      "status": "NOT_QUALIFIED",
+      "client_verified_exchanges": 98,
+      "client_active_ms": 60047,
+      "value_bytes": 512,
+      "mtu": 517,
+      "actual_interval_ms": 120,
+      "audio_output_epochs": [
+        2,
+        2
+      ],
+      "short_refills": 1136,
+      "missing_real_pcm_frames": 218112,
+      "timestamp_steps": 8,
+      "inner_steps": 8,
+      "no_new_reported": [
+        "outer_RTP_sequence_gap",
+        "decoder_error",
+        "packet_drop",
+        "queue_full",
+        "DMA_error",
+        "transport_error"
+      ],
+      "candidate_full_readback": true,
+      "previous_image_full_readback": true,
+      "previous_image_fresh_output": true,
+      "restored_image_audio_quality": "NOT_QUALIFIED",
+      "field_receipt_sha256": "641d9f69042d7ad5c6a99dc3a5ab1693e25f59a20bec1375dbcd0ed402596559"
+    },
+    "all_codec_runtime": "NOT_QUALIFIED",
+    "full_stability": "NOT_EVALUATED"
+  }
 }

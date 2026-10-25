@@ -155,6 +155,8 @@ typedef void *HAACDecoder;
 /* public C API */
 HAACDecoder AACInitDecoder(void);
 HAACDecoder AACInitDecoderChannels(int channels);
+/* Set raw block parameters before decode; generic APIs retain full ADIF capacity. */
+HAACDecoder AACInitDecoderRawChannels(int channels);
 int AACEnableSBR(HAACDecoder);
 HAACDecoder AACInitDecoderPre(void *ptr, int sz);
 void AACFreeDecoder(HAACDecoder hAACDecoder);

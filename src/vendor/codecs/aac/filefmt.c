@@ -349,6 +349,8 @@ int UnpackADIFHeader(AACDecInfo *aacDecInfo, unsigned char **buf, int *bitOffset
 	fhADIF->bsType =   GetBits(&bsi, 1);
 	fhADIF->bitRate =  GetBits(&bsi, 23);
 	fhADIF->numPCE =   GetBits(&bsi, 4) + 1;	/* add 1 (so range = [1, 16]) */
+	if (!pce || fhADIF->numPCE > psi->allocatedPces)
+		return ERR_AAC_INVALID_ADIF_HEADER;
 	if (fhADIF->bsType == 0)
 		fhADIF->bufferFull = GetBits(&bsi, 20);
 

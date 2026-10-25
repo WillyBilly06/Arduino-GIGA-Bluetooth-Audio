@@ -106,19 +106,23 @@
  * Notes:       if one or more mallocs fail, function frees any buffers already
  *                allocated before returning
  **************************************************************************************/
-AACDecInfo *AllocateBuffersChannels(int channels) {
-    if(channels<1 || channels>2) return 0;
+AACDecInfo *AllocateBuffersChannelsPrograms(int channels, int programs) {
+    if(channels<1 || channels>2 || programs<1 || programs>MAX_NUM_PCE_ADIF) return 0;
     AACDecInfo *info=(AACDecInfo*)gbr_calloc(1,sizeof(AACDecInfo));
     if(!info) return 0;
-    PSInfoBase *psi=(PSInfoBase*)gbr_calloc(1,sizeof(PSInfoBase));
+    /* Keep selected program records in this same owned allocation. */
+    PSInfoBase *psi=(PSInfoBase*)gbr_calloc(1,sizeof(PSInfoBase)+(size_t)programs*sizeof(ProgConfigElement));
     info->psInfoBase=psi;
     if(!psi) { FreeBuffers(info); return 0; }
+    psi->pce=(ProgConfigElement*)(psi+1);
+    psi->allocatedPces=programs;
     psi->allocatedChannels=channels;
     psi->coef=(int(*)[AAC_MAX_NSAMPS])gbr_calloc(channels,sizeof(*psi->coef));
     psi->overlap=(int(*)[AAC_MAX_NSAMPS])gbr_calloc(channels,sizeof(*psi->overlap));
     if(!psi->coef || !psi->overlap) { FreeBuffers(info); return 0; }
     return info;
 }
+AACDecInfo *AllocateBuffersChannels(int channels) { return AllocateBuffersChannelsPrograms(channels,MAX_NUM_PCE_ADIF); }
 AACDecInfo *AllocateBuffers(void) { return AllocateBuffersChannels(2); }
 AACDecInfo *AllocateBuffersPre(void **ptr,int *sz) { (void)ptr;(void)sz;return 0; }
 #ifndef SAFE_FREE

@@ -73,6 +73,7 @@
  * Return:      handle to AAC decoder instance, 0 if malloc fails
  **************************************************************************************/
 extern AACDecInfo *AllocateBuffersChannels(int channels);
+extern AACDecInfo *AllocateBuffersChannelsPrograms(int channels, int programs);
 HAACDecoder AACInitDecoder(void) { return AACInitDecoderChannels(2); }
 HAACDecoder AACInitDecoderChannels(int channels)
 {
@@ -85,6 +86,12 @@ HAACDecoder AACInitDecoderChannels(int channels)
 /* SBR is enabled explicitly by the negotiated HE profile. */
 
 	return (HAACDecoder)aacDecInfo;
+}
+
+/* Compact path for callers that explicitly configure raw data blocks. */
+HAACDecoder AACInitDecoderRawChannels(int channels)
+{
+    return (HAACDecoder)AllocateBuffersChannelsPrograms(channels,1);
 }
 
 HAACDecoder AACInitDecoderPre(void *ptr, int sz)

@@ -95,7 +95,7 @@ static Status aacOpen(void** p,const CodecConfig& c) {
     auto s=(AacState*)gbr_calloc(1,sizeof(AacState));if(!s)return Status::OutOfMemory;s->config=c;s->he=c.codec==Codec::AacHe;s->frames=s->he?2048:1024;s->coreRate=s->he?c.sample_rate/2:c.sample_rate;
     // A2DP uses LATM. Raw and ADTS are explicit diagnostic modes.
     s->framing=static_cast<uint8_t>(c.aac_transport);if(s->framing>2){aacClose(s);return Status::Unsupported;}
-    s->decoder=AACInitDecoderChannels(c.channels);
+    s->decoder=AACInitDecoderRawChannels(c.channels);
     if(s->he && s->decoder && AACEnableSBR(s->decoder)){aacClose(s);return Status::OutOfMemory;}
     s->frame=(uint8_t*)gbr_malloc(768*c.channels+16);
     s->pcm=(int16_t*)gbr_malloc(s->frames*c.channels*2);

@@ -1,73 +1,40 @@
-# GigaBredr develop: 0.1.0-dev.7
+# GigaBredr develop: 0.1.0-dev.8
 
-Developmental Arduino GIGA R1 WiFi Cortex-M7 source snapshot with a
-project-owned Classic A2DP sink, existing AVRCP volume/metadata path, public BLE GATT
-server, configuration-sized decoder storage and PCM5102A I2S output.
-**Known audio/coexistence failures remain. This is not a stable release.**
+Experimental Arduino GIGA R1 Cortex-M7 A2DP receiver with a project-owned
+Classic/BLE host, the complete supplied decoder set and configurable I2S.
+**LHDC/BLE supply gaps remain unresolved. This is not a stable release.**
 
-## Current source and results
+## Current change and evidence
 
-This update separates verified Classic security from readiness behind a retained
-event. Unrelated deferred BLE work can no longer manufacture a Classic security
-loss, stop output and rebuild the decoder. Actual security loss still stops
-audio; ordered receive, credit, owner and new-profile-work barriers remain.
-Only `OwnedHost.cpp` changes in the receiver/compiler source set.
+Raw-AAC program storage is now sized for one selected program instead of the
+generic sixteen-program array. Generic decoder entrypoints retain sixteen.
+Arithmetic, SBR, other codecs, radio, clock and buffer policies are unchanged;
+the dev.7 Classic security/readiness correction remains included.
 
-The actual dev.7 M7 build compiled all 168 library units with all seven decoder
-defaults. Its image is
-`d0a93d5896183a4cfa45aa6490e1d1725d7c13d756dedd19f50c8a326e1cd0ee`
-(488068 bytes), byte-identical to the reviewed correction built with dev.6
-metadata and exercised on the board. No diagnostic probe, private compact AAC,
-worker-stack telemetry or unfinished AVRCP facade is included.
+At actual AAC-LC44100/stereo/16, selected-decoder requested payload measured
+25262 bytes versus26484 baseline: **1222 bytes less**. This is not system free
+heap, allocator overhead/rounding, fragmentation, SDRAM or CPU improvement.
+Compact90s and baseline45s sources completed naturally with exact routes and
+zero source underruns; the compact window completed118 verified512-byte GATT
+exchanges at MTU517 over60.246s, with source live before and after the client.
 
-The normal LHDC V5 192 kHz/24-bit test completed 98 verified 512-byte GATT
-exchanges over 60.047 seconds, MTU 517 and actual 120 ms. Audio still failed:
-1136 short refills, 218112 missing-real PCM frames and eight timestamp/inner
-sequence steps, with unchanged audio/output epochs. No new outer RTP sequence,
-decoder, queue-full, DMA or transport error was reported. The conditional
-retained-event trigger was not observed; this is not hardware path coverage or
-a cure for the separate supply gaps. The previous image was restored with full
-readback and fresh output, independently from its also-failed audio quality.
+Both receiver actual-fault/missing inventories are empty. Their original broader
+NOT_QUALIFIED verdicts remain because each includes an initial Learning-clock
+row before Tracking. No row or gate was discarded. This is not all-codec,
+Apple/HE, low-bit fidelity, acoustic or long-soak qualification, and does not
+resolve the separate LHDC192/1000kbps coexistence failures.
 
-For installation, use Sketch > Include Library > Add .ZIP Library in Arduino
-IDE. GitHub commit-specific source ZIPs (`archive/<commit-sha>.zip`) preserve
-the exact versioned source; the final package is checked against the compiled
-source manifest. A successful build does not establish smooth audio.
+The fresh actual-dev.8 M7 build/audit covers all168 units/seven decoder defaults.
+Its487940-byte image is identical to the exercised compact image:
+`8c47b9cc80ce27a8e07d6405ae53fe883e69af484f395c7e2448587baccf7777`.
+Vendor exported hashes now identify all257 distributed codec sources; original
+upstream/portable-input hashes and notices remain, with scopes in THIRD_PARTY.
 
-Typed AVRCP control/status APIs and HFP/HSP call audio remain unfinished.
-There is no implemented microphone path yet; the requested pluggable input API
-remains required work. See [current status](docs/STATUS.md).
-
-### Historical parent results (dev.6 image)
-
-The ordinary six-mode45-second matrix did **not qualify**:
-
-| Mode | Rate | Finite result |
-|---|---:|---|
-|SBC/SBC-XQ|44100Hz|45s software gate PASS|
-|AAC-LC|44100Hz|45s software gate PASS|
-|aptX|48000Hz|45s software gate PASS|
-|aptX HD|48000Hz|45s software gate PASS|
-|LDAC|96000Hz|45s software gate PASS|
-|LHDC V5,24-bit/nominal1000kbps selection|192000Hz|NOT_QUALIFIED|
-
-LHDC reached a late GATT connection, MTU517 and subscription, then the
-existing22s helper deadline expired before a completed ten-write/ten-echo
-exchange. Receiver diagnostics retained actual120ms BLE parameters together
-with PCM starvation/recovery shortages and one RTP timestamp/LHDC-inner step.
-Missing-input totals grew from12096 to19392 frames across the failure tail;
-these include deliberately held recovery output and are not acoustic-loss
-measurements. RTP packet sequence gaps stayed zero, which does not prove
-continuous encoded-frame coverage. The source was cancelled rather than
-naturally completing its45 seconds. Five passing cases do not create a
-six-case PASS or establish a causal fix.
-
-A separate600s playback attempt used a diagnostic observer image, not this
-production image. Its fourth LDAC reconnect failed with callback status133;
-no qualified600s completion followed, and the intended LHDC600s case did not
-run. That independent NOT_QUALIFIED result is retained without transferring
-it into production qualification. No phone, controller, RF or host cause is
-assigned by these observations. See [current status](docs/STATUS.md).
+Install the versioned tag ZIP through Arduino IDE's Sketch > Include Library >
+Add .ZIP Library. Commit-specific archives also preserve an immutable revision.
+The private typed AVRCP prototype is excluded. Full AVRCP/HFP/HSP/RFCOMM/SCO and
+pluggable microphone input remain unfinished. See STATUS and BUILD for scopes
+and unchanged historical failures.
 
 ## Codec, allocation and fidelity scope
 
@@ -80,10 +47,11 @@ selection retain their separate decoder/interoperability limitations.
 
 Immutable tables stay in flash. Decoder workspaces, packet/access-unit queues
 and PCM buffers are allocated for the selected configuration and released on
-stop/reconfiguration. The supplied ARM path, mono/stereo geometry, lazy HE/SBR
-selection and existing memory-provider API remain intact. This snapshot does
-not include the separate private compact AAC RawChannels change or claim its
-memory saving. It does not establish SDRAM placement, worker-stack high-water,
+stop/reconfiguration. The ARM path, mono/stereo geometry, lazy HE/SBR and memory-provider API remain.
+Selected raw-AAC storage now reserves one program record; generic entrypoints
+retain sixteen-program capacity. One record is allocated at open, not deferred
+until the first PCE. The measured saving covers the configuration below only.
+It does not establish SDRAM placement, worker-stack high-water,
 independent LHDC PCM fidelity, all low24-bit fidelity, alternate-device
 interoperability, electrical I2S accuracy or acoustic quality.
 

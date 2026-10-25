@@ -273,7 +273,8 @@ typedef struct _PSInfoBase {
     /* header information */
     ADTSHeader            fhADTS;
     ADIFHeader            fhADIF;
-    ProgConfigElement     pce[MAX_NUM_PCE_ADIF];
+    ProgConfigElement    *pce;
+    int                   allocatedPces;
     int                   dataCount;
     unsigned char         dataBuf[DATA_BUF_SIZE];
     int                   fillCount;

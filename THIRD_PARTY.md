@@ -41,3 +41,13 @@ readbacks are included. Codec patent rights, Bluetooth qualification and
 trademark permissions are separate from this source inventory. Free public or
 noncommercial use by itself does not remove upstream obligations or grant
 third-party patents.
+
+
+## Vendor manifest hash scopes
+
+In src/vendor/codecs/manifest.json, source_sha256 identifies the original
+selected upstream input. patched_sha256 retains the historical portable-input
+hash before final source export; it is not an assertion of current distributed
+bytes. exported_sha256 and exported_bytes identify each actual file in this
+distribution. Original notices, source provenance and unresolved grants are
+unchanged; these hash fields do not grant additional rights.

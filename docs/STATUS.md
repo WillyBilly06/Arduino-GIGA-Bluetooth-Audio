@@ -1,3 +1,26 @@
+# Develop status: 0.1.0-dev.8
+
+Measured selected raw-AAC storage reduction; general audio remains unqualified.
+All supplied decoders/seven defaults and original component notices remain.
+
+At AAC-LC44100/stereo16, compact requested decoder bytes25262 versus26484,
+delta1222. Both use ring884 and unchanged buffer code. Compact90s and baseline45s
+sources completed naturally; compact GATT118/512bytes/MTU517/60.246s completed.
+No actual receiver fault or missing counter was reported. Original broad verdicts
+remain NOT_QUALIFIED due initial Learning-clock acquisition. Epochs2/2 and1/1
+are independently constant across separate boots. No stable/all-codec claim.
+
+Fresh dev.8 M7 build/audit passes168 library units/seven defaults and produces
+the identical exercised8c47 image. No decoder arithmetic/SBR/radio/clock/buffer
+change. One PCE is allocated at open; generic APIs retain16program capacity.
+The result is not free-system heap, SDRAM, stack, CPU, Apple/HE or full fidelity.
+
+LHDC192/1000BLE supply failures remain unresolved. Typed controls, full AVRCP,
+HFP/HSP/RFCOMM/SCO/pluggable input, other configurations and physical/long-soak
+qualification remain required. No old failure is rescored. Main is unchanged.
+
+## Historical dev.7 record (retained verbatim)
+
 # Develop status: 0.1.0-dev.7
 
 Experimental development snapshot, 2026-10-25. Stable=false; the general audio
