@@ -1,16 +1,16 @@
 {
   "schema": 2,
-  "qualification": "developmental source snapshot; hardware qualification pending",
-  "version": "0.1.0-dev.6",
-  "date": "2026-10-24",
-  "final_source_metadata_version": "0.1.0-dev.6",
-  "library_metadata_version_at_M7_build": "0.1.0-dev.5",
+  "qualification": "Developmental snapshot with a reviewed conditional correction and unresolved audio failures",
+  "version": "0.1.0-dev.7",
+  "date": "2026-10-25",
+  "final_source_metadata_version": "0.1.0-dev.7",
+  "library_metadata_version_at_M7_build": "0.1.0-dev.7",
   "profile": "Observer-free project-owned dual-mode host; H TX ordering and early1s eligibility plus J initial optional-notification gate; complete selected decoder set",
   "developmental_snapshot_with_known_issues": true,
   "source_fixed": false,
   "stable": false,
   "compiler_input_set_hash_definition": "SHA256 of compact sorted-key JSON array of {path,sha256}, exact allowlist order, src/ and examples/Receiver/ exported bytes",
-  "compiler_input_set_sha256": "fa55d143f18cba48d490161485b567e6d15190a80b8d3b7d0e11b13970c9a9ad",
+  "compiler_input_set_sha256": "b74e96abddcd0a3e67fe9470b40b333d956aeba6af473433d34fa7799de0c6ec",
   "source_files": [
     {
       "path": "src/AudioDiagnostics.h",
@@ -334,7 +334,7 @@
     },
     {
       "path": "src/owned/OwnedHost.cpp",
-      "sha256": "ea52f534f038177d19c7c926204728036315384f482a3832f7e5c4be40ecd793"
+      "sha256": "24021654608797d57f23440052e130b99b52183de8dcafc00bc2125cd12ff941"
     },
     {
       "path": "src/owned/OwnedHost.h",
@@ -1478,15 +1478,15 @@
   ],
   "example": "examples/Receiver/Receiver.ino",
   "isolated_receiver_link": "PASS",
-  "binary_sha256": "1b080275e7dd79b335dbc489b9f924092dfc82780e455789a526233085e49601",
-  "binary_bytes": 488004,
-  "elf_sha256": "775fb51bd8fa092e1a61489a64506a82d6e0565046b64bba3255b7752b31df50",
+  "binary_sha256": "d0a93d5896183a4cfa45aa6490e1d1725d7c13d756dedd19f50c8a326e1cd0ee",
+  "binary_bytes": 488068,
+  "elf_sha256": "863a2cbf1c08d7817f8acbf4ebe3c77bbbc0d961a0f79eca1ebf7532ccf7573b",
   "elf_sections": {
-    "text": 482660,
+    "text": 482724,
     "data": 5344,
     "bss": 327320
   },
-  "arduino_program_bytes": 483472,
+  "arduino_program_bytes": 483536,
   "arduino_global_bytes": 54136,
   "compile_commands": 200,
   "main_thread_stack_bytes": 32768,
@@ -1519,7 +1519,7 @@
   ],
   "decoder_build_defaults": "All seven source/build macros remain1; eight codec identities remain supplied. One A2DP codec is negotiated at a time.",
   "owned_host": {
-    "elf_sha256": "775fb51bd8fa092e1a61489a64506a82d6e0565046b64bba3255b7752b31df50",
+    "elf_sha256": "863a2cbf1c08d7817f8acbf4ebe3c77bbbc0d961a0f79eca1ebf7532ccf7573b",
     "owned_host_components": 4,
     "forbidden_host_symbols": 0,
     "inert_arduino_sdk_globals": [
@@ -1544,13 +1544,70 @@
     "includes.txt": "ec05ed1ce9e095407409bd402e8317765729de71f14440d617b1f7c3bd35bfee",
     "cflags.txt": "00ec7abd811cc7a6d24b35f047c5f1f29e8d891fa62e80ca26079ba7c0d42350"
   },
-  "compile_database_sha256": "27f0b906fe731719a4ededcfc3943fd55e6fd2c2045de4cba5a1a7f3c0c39664",
-  "evidence_receipt_sha256": {
-    "production_M7_command": "756f88742b40a3d9bec878b709ae8d885975b6d78dfe441c9da23951fb8540ad",
-    "production_M7_static_audit": "72780f3c6abf57b80622347268ec287a3be2eabd6be7d9c149eb2e8ea4849ab2",
-    "production_field_not_qualified": "fc4b02da45e9d1ad2bb95c264824bd2f53456f3078ee0f936987e345045b50b8"
-  },
+  "compile_database_sha256": "5fa46e1b8fe4f0835d8f61c8ba671e3abb34c5c8322fec2ab8f241c90ae7dfbd",
+  "evidence_receipt_sha256": "4dd0fffe4f00f6e8717afccb5035d7439d0e2be60a25a8eb3081e9964407dd1d",
   "qualification_scopes": {
+    "m7_static": "PASS_168_UNITS_SEVEN_DEFAULTS",
+    "selected_scalar_regression": "Historical selected checks only; not a new full native suite",
+    "normal_lhdc192_ble_gatt60": {
+      "status": "NOT_QUALIFIED",
+      "client_verified_exchanges": 98,
+      "client_active_ms": 60047,
+      "value_bytes": 512,
+      "mtu": 517,
+      "actual_interval_ms": 120,
+      "audio_output_epochs": [
+        2,
+        2
+      ],
+      "short_refills": 1136,
+      "missing_real_pcm_frames": 218112,
+      "timestamp_steps": 8,
+      "inner_steps": 8,
+      "no_new_reported": [
+        "outer_RTP_sequence_gap",
+        "decoder_error",
+        "packet_drop",
+        "queue_full",
+        "DMA_error",
+        "transport_error"
+      ],
+      "candidate_full_readback": true,
+      "previous_image_full_readback": true,
+      "previous_image_fresh_output": true,
+      "restored_image_audio_quality": "NOT_QUALIFIED",
+      "field_receipt_sha256": "641d9f69042d7ad5c6a99dc3a5ab1693e25f59a20bec1375dbcd0ed402596559"
+    },
+    "all_codec_runtime": "NOT_QUALIFIED",
+    "full_stability": "NOT_EVALUATED"
+  },
+  "serial_diagnostics": {
+    "example_queue_bytes": 4096,
+    "maximum_nonblocking_USB_pump_bytes": 64,
+    "USB_API": "send_nb",
+    "formatting_and_USB_pump_context": "main thread",
+    "host_worker_diagnostic_mailbox_records": 8,
+    "drops_reported": true,
+    "source_behavior": "Disconnected monitor skips USB transmission; full queues drop diagnostic records instead of waiting. Setup monitor wait is bounded and separate from streaming.",
+    "claim": "Existing bounded/nonblocking diagnostic source path; no new serial scheduling fix or latency guarantee is asserted."
+  },
+  "excluded_changes": [
+    "Rejected initial-age0 eligibility experiment; no0x3B experiment included",
+    "Unqualified receive-clock candidate pending separate source decision",
+    "Private decode-boundary observers",
+    "Private compact AAC RawChannels promotion"
+  ],
+  "license_clearance": "Not asserted. Original component notices and unresolved grants remain in THIRD_PARTY.md; project Apache-2.0 does not relicense bundled codec/table data.",
+  "historical_dev5": {
+    "status": "HISTORICAL_NOT_CURRENT_QUALIFICATION",
+    "version": "0.1.0-dev.5",
+    "image_sha256": "210791643c83b4de1f79ae45c55e741511d392cfd311ad74304956d161b0cf10",
+    "application_bytes": 487944,
+    "finite_six_mode_source_seconds": 30,
+    "LHDC_passive_BLE_receiver_seconds": 1802.52,
+    "scope": "Retained dated dev.5 evidence; not transferred to this code/image or promoted into a new stable result."
+  },
+  "historical_dev6_qualification_scopes": {
     "M7_static_build": {
       "status": "PASS_OBSERVER_FREE_PRODUCTION_ALL_CODEC_M7_STATIC_AUDIT",
       "metadata_version_at_build": "0.1.0-dev.5",
@@ -1636,30 +1693,6 @@
       "status": "UNQUALIFIED"
     }
   },
-  "serial_diagnostics": {
-    "example_queue_bytes": 4096,
-    "maximum_nonblocking_USB_pump_bytes": 64,
-    "USB_API": "send_nb",
-    "formatting_and_USB_pump_context": "main thread",
-    "host_worker_diagnostic_mailbox_records": 8,
-    "drops_reported": true,
-    "source_behavior": "Disconnected monitor skips USB transmission; full queues drop diagnostic records instead of waiting. Setup monitor wait is bounded and separate from streaming.",
-    "claim": "Existing bounded/nonblocking diagnostic source path; no new serial scheduling fix or latency guarantee is asserted."
-  },
-  "excluded_changes": [
-    "Rejected initial-age0 eligibility experiment; no0x3B experiment included",
-    "Unqualified receive-clock candidate pending separate source decision",
-    "Private decode-boundary observers",
-    "Private compact AAC RawChannels promotion"
-  ],
-  "license_clearance": "Not asserted. Original component notices and unresolved grants remain in THIRD_PARTY.md; project Apache-2.0 does not relicense bundled codec/table data.",
-  "historical_dev5": {
-    "status": "HISTORICAL_NOT_CURRENT_QUALIFICATION",
-    "version": "0.1.0-dev.5",
-    "image_sha256": "210791643c83b4de1f79ae45c55e741511d392cfd311ad74304956d161b0cf10",
-    "application_bytes": 487944,
-    "finite_six_mode_source_seconds": 30,
-    "LHDC_passive_BLE_receiver_seconds": 1802.52,
-    "scope": "Retained dated dev.5 evidence; not transferred to this code/image or promoted into a new stable result."
-  }
+  "conditional_security_readiness_correction": true,
+  "conditional_trigger_field_coverage": "NOT_OBSERVED"
 }

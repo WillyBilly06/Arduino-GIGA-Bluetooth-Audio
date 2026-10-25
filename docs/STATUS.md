@@ -1,3 +1,49 @@
+# Develop status: 0.1.0-dev.7
+
+Experimental development snapshot, 2026-10-25. Stable=false; the general audio
+supply problem remains unresolved. Original component notices and grants remain
+unchanged. All supplied decoder sources and all seven build defaults remain.
+
+## Current correction and validation
+
+Only receiver/compiler source `src/owned/OwnedHost.cpp` changes from develop
+03931ab. The actual applied Classic security predicate is now separate from
+the empty-deferred-queue readiness predicate. Actual loss still stops audio;
+new profile preparation, Classic poll and AVRCP remain readiness-gated. No
+receive/FIFO/credit/owner/codec/buffer/radio policy is relaxed.
+
+Earlier selected typed scalar checks recorded 20 checks per mode, parent five
+expected failures and candidate zero failures across C++11/14 plain and
+ASan/UBSan. Those selected checks do not exercise the full transport or all
+profile branches and were not rerun as a new full native suite. A fresh dev.7
+M7 build and static audit cover all 168 library units and seven decoder
+defaults. Its binary matches the exercised reviewed image exactly.
+
+One bounded normal BLE detach/attach and GATT60 completed 98 requests, acks and
+512-byte echoes, MTU 517, actual 120 ms and 60.047 seconds of client activity.
+Audio/output epochs stayed 2/2, but actual audio failed: 1136 short refills,
+218112 missing-real PCM frames and eight timestamp/inner-sequence steps. No new
+outer RTP sequence gap, decoder, drop, full queue, DMA or transport error was
+reported. Missing-real output includes recovery withholding and is not a
+literal zero-sample or acoustic-loss duration. Barrier activation was not
+observed, so the field case cannot prove that the conditional branch executed.
+
+Candidate and restoration full readbacks passed; ordinary output resumed.
+Restored-image audio quality also failed and remains separately recorded.
+No case is relabeled a stable or all-codec pass. See BUILD.json for source,
+artifact and qualification scopes. Main is outside this development update.
+
+## Remaining requirements
+
+Resolve unchanged-epoch supply gaps and BLE coexistence; verify codec/fidelity,
+ARM efficiency, lazy allocation/SDRAM and longer normal playback. HE/Opus and
+distinct SBC-XQ sender interoperability remain unqualified. Full typed AVRCP,
+RFCOMM/SCO HFP/HSP and a pluggable microphone API remain unfinished. The PCM5102A
+has playback output only. Alternate I2S/MCLK electrical output, low-24-bit PCM
+fidelity, RF delivery and acoustics are not established by software counters.
+
+## Historical dev.6 record (retained verbatim below)
+
 # Develop status: known issues retained
 
 0.1.0-dev.6 developmental snapshot metadata,2026-10-24. Source fixed=false;

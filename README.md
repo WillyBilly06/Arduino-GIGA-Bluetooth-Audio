@@ -1,24 +1,44 @@
-# GigaBredr develop: 0.1.0-dev.6
+# GigaBredr develop: 0.1.0-dev.7
 
 Developmental Arduino GIGA R1 WiFi Cortex-M7 source snapshot with a
-project-owned Classic A2DP sink, AVRCP controls, concurrent public BLE GATT
+project-owned Classic A2DP sink, existing AVRCP volume/metadata path, public BLE GATT
 server, configuration-sized decoder storage and PCM5102A I2S output.
 **Known audio/coexistence failures remain. This is not a stable release.**
 
 ## Current source and results
 
-This snapshot keeps the tested observer-free production code whose M7 image
-is `1b080275e7dd79b335dbc489b9f924092dfc82780e455789a526233085e49601`
-(488004 application bytes). The code includes TX admission ordering, the
-one-second initial BLE-preference eligibility policy and the bounded initial
-optional-notification gate. It excludes private decoder observers and the
-rejected initial-age0 experiment. No receive-clock experiment or unqualified
-private AAC allocation promotion is silently included.
+This update separates verified Classic security from readiness behind a retained
+event. Unrelated deferred BLE work can no longer manufacture a Classic security
+loss, stop output and rebuild the decoder. Actual security loss still stops
+audio; ordered receive, credit, owner and new-profile-work barriers remain.
+Only `OwnedHost.cpp` changes in the receiver/compiler source set.
 
-The actual production M7 build used library metadata version0.1.0-dev.5.
-These final source metadata identify dev.6; a fresh extracted dev.6 ZIP build
-is still required. The build and field scopes remain separate in
-[BUILD.json](docs/BUILD.json).
+The actual dev.7 M7 build compiled all 168 library units with all seven decoder
+defaults. Its image is
+`d0a93d5896183a4cfa45aa6490e1d1725d7c13d756dedd19f50c8a326e1cd0ee`
+(488068 bytes), byte-identical to the reviewed correction built with dev.6
+metadata and exercised on the board. No diagnostic probe, private compact AAC,
+worker-stack telemetry or unfinished AVRCP facade is included.
+
+The normal LHDC V5 192 kHz/24-bit test completed 98 verified 512-byte GATT
+exchanges over 60.047 seconds, MTU 517 and actual 120 ms. Audio still failed:
+1136 short refills, 218112 missing-real PCM frames and eight timestamp/inner
+sequence steps, with unchanged audio/output epochs. No new outer RTP sequence,
+decoder, queue-full, DMA or transport error was reported. The conditional
+retained-event trigger was not observed; this is not hardware path coverage or
+a cure for the separate supply gaps. The previous image was restored with full
+readback and fresh output, independently from its also-failed audio quality.
+
+For installation, use Sketch > Include Library > Add .ZIP Library in Arduino
+IDE. GitHub commit-specific source ZIPs (`archive/<commit-sha>.zip`) preserve
+the exact versioned source; the final package is checked against the compiled
+source manifest. A successful build does not establish smooth audio.
+
+Typed AVRCP control/status APIs and HFP/HSP call audio remain unfinished.
+There is no implemented microphone path yet; the requested pluggable input API
+remains required work. See [current status](docs/STATUS.md).
+
+### Historical parent results (dev.6 image)
 
 The ordinary six-mode45-second matrix did **not qualify**:
 

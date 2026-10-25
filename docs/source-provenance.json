@@ -1,5 +1,5 @@
 {
-  "qualification": "developmental source snapshot; hardware qualification pending",
+  "qualification": "dev.7 development snapshot; conditional correction retained, general audio not qualified",
   "profile": "Project-owned host and complete selected supplied decoder set; original notices retained, unresolved grants identified separately.",
   "source_selection": "Exact per-file audited allowlist; no local source roots or history.",
   "files": [
@@ -25,8 +25,8 @@
       "source": "library.properties",
       "destination": "library.properties",
       "license": "Apache-2.0",
-      "input_sha256": "a3f9c8a05e36aab7be1302b9ce136fca2e076ce4b99809759e6622ec2b11a6cd",
-      "sha256": "1e075b32d8d4169932770cab6bf54a3695e8b17a684d8ba124988277d0eb602f",
+      "input_sha256": "1e075b32d8d4169932770cab6bf54a3695e8b17a684d8ba124988277d0eb602f",
+      "sha256": "58cbae0aa1a96b0ec5b688b148e2c91f13b85f0f0f2a2528a6e6f574205ccfed",
       "bytes": 430,
       "export_modified": true
     },
@@ -35,9 +35,9 @@
       "destination": "README.md",
       "license": "Apache-2.0",
       "input_sha256": "ec1d61e3e9140389460b1d4d4d1906d3dd642e86409be20874e3af660de3461c",
-      "sha256": "ec1d61e3e9140389460b1d4d4d1906d3dd642e86409be20874e3af660de3461c",
-      "bytes": 8243,
-      "export_modified": false
+      "sha256": "089c56b069bd12fbd599c35e8bbe6e23fcf56aeb7cf16c847ee2b0466fac93c2",
+      "bytes": 9452,
+      "export_modified": true
     },
     {
       "source": "docs/github/develop/THIRD_PARTY.md",
@@ -53,9 +53,9 @@
       "destination": "docs/STATUS.md",
       "license": "Apache-2.0",
       "input_sha256": "4826ba1f20cbb3a9e85dff576ef77f21bdf1c5e4411efeac7e06636d8b4cff4b",
-      "sha256": "4826ba1f20cbb3a9e85dff576ef77f21bdf1c5e4411efeac7e06636d8b4cff4b",
-      "bytes": 5232,
-      "export_modified": false
+      "sha256": "abb8a5c479d3a3544cbb77fde7f305efe6be25d78ba25e2f5baf35acf1cd7dca",
+      "bytes": 7831,
+      "export_modified": true
     },
     {
       "source": "docs/github/develop/EXPORT.md",
@@ -905,9 +905,9 @@
       "source": "src/owned/OwnedHost.cpp",
       "destination": "src/owned/OwnedHost.cpp",
       "license": "Apache-2.0",
-      "input_sha256": "ea52f534f038177d19c7c926204728036315384f482a3832f7e5c4be40ecd793",
-      "sha256": "ea52f534f038177d19c7c926204728036315384f482a3832f7e5c4be40ecd793",
-      "bytes": 48334,
+      "input_sha256": "24021654608797d57f23440052e130b99b52183de8dcafc00bc2125cd12ff941",
+      "sha256": "24021654608797d57f23440052e130b99b52183de8dcafc00bc2125cd12ff941",
+      "bytes": 48464,
       "export_modified": false
     },
     {
@@ -1086,9 +1086,9 @@
       "destination": "docs/BUILD.json",
       "license": "Apache-2.0",
       "input_sha256": "9b17b13524159c4a4f2a87bd4a80f7f34a5282d41f7e68eba5c289cef176bb1a",
-      "sha256": "9b17b13524159c4a4f2a87bd4a80f7f34a5282d41f7e68eba5c289cef176bb1a",
-      "bytes": 62922,
-      "export_modified": false
+      "sha256": "a809b9fd1ed97a002edafcad5bba7a75ee453df364ed4db921f23e2ce070dc8f",
+      "bytes": 63967,
+      "export_modified": true
     },
     {
       "source": "src/vendor/codecs/sbc/include/oi_assert.h",

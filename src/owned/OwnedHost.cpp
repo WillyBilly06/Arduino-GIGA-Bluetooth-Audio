@@ -499,17 +499,19 @@ void OwnedHost::runtimePoll(){
   if(bth_h4_decode(wire,d.length+1,&event)!=BTH_OK){fail("Owned retained event corrupt");return;}if(!dispatch(event))break;if(!active_)return;retired_event_=d.serial;chargeWaiting(retired_event_);if(!active_)return;deferred_read_=(deferred_read_+1)%8;--deferred_count_;
  }
  if(!active_)return;if(due(now_,accept_deadline_)){fail("Owned accepted connection timeout");return;}if(gap_.pending&&due(now_,deadline_)){fail("Owned scan command ACK timeout");return;}for(unsigned k=0;k<commands_.sent_count;++k)if(uint32_t(now_-sent_at_[k])>=5000){fail("Owned peer command completion timeout");return;}if(bth_cmdq_available(&commands_)>=2)bth_links_security_tick(&links_,now_);
-  const bool secure=!deferred_count_&&peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle);
+  // Ordered events gate new profile work, not verified Classic security.
+ const bool secure=peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle);
+ const bool classic_ready=!deferred_count_&&secure;
  if(peers_[0].attached){
   if(!secure&&was_secure_){peers_[0].security_deadline=now_+35000;if(config_.callbacks.stream)config_.callbacks.stream(false,config_.callbacks.user);was_secure_=false;}
-  if(secure&&!was_secure_){bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)==BTH_OK){size_t n=0;const auto result=bth_l2cap_sig_security_ready(&signaling_,slot.data,slot.capacity,&n);
+  if(classic_ready&&!was_secure_){bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)==BTH_OK){size_t n=0;const auto result=bth_l2cap_sig_security_ready(&signaling_,slot.data,slot.capacity,&n);
     if(result==BTH_OK&&n)bth_control_tx_commit(&control_,slot.token,1,n,BTH_SIGNAL_MTU);else bth_control_tx_cancel(&control_,slot.token);if(result!=BTH_ERR_CAPACITY){
      if(classic_.streaming()&&classic_.configured()){Status prepared=config_.callbacks.configure(classic_.acceptedConfiguration(),config_.callbacks.user);if(prepared==Status::Ok){if(config_.callbacks.stream)config_.callbacks.stream(true,config_.callbacks.user);}else{closePeer(0,5);return;}}
      was_secure_=true;
     }}}
   if(!secure&&due(now_,peers_[0].security_deadline))closePeer(0,5);
   const bool input_waiting=classic_deferred_count_||peers_[0].has_pending;
-  if(secure)classic_.poll(true,now_,!input_waiting);synchronizeChannels();avrcpPoll(secure,!classic_deferred_count_&&!peers_[0].has_pending);
+  if(classic_ready)classic_.poll(true,now_,!input_waiting);synchronizeChannels();avrcpPoll(classic_ready,!classic_deferred_count_&&!peers_[0].has_pending);
   if(classic_.takeCloseMedia())close_media_=classic_.mediaCid();if(classic_.takeCloseAvrcp())close_avrcp_=classic_.avrcpCid();
   if(close_media_&&disconnectChannel(close_media_))close_media_=0;if(close_avrcp_&&disconnectChannel(close_avrcp_))close_avrcp_=0;
  }
