@@ -6,10 +6,12 @@
 #include "detail/PacketQueue.h"
 #include "detail/Volume.h"
 #include "detail/AudioClockControl.h"
+#include "detail/AudioClockMailbox.h"
 #include "codecs/Codecs.h"
 #include "platform/GigaRadio.h"
 #include "platform/GigaI2s.h"
 #include "platform/I2sPins.h"
+#include "platform/SchedulerWitness.h"
 #include <atomic>
 #include <new>
 #include <string.h>
@@ -145,8 +147,10 @@ struct GigaBredr::Impl {
     rtos::Semaphore wake{0, 1};
     rtos::EventFlags host_events;
 #endif
-    // All mutable control/bookkeeping belongs to codec_mutex's decoder worker.
+    // codec_mutex serializes worker control, host actuation and lifecycle resets.
     detail::AudioClockControl clock_control;
+    detail::AudioClockMailbox clock_mailbox; // Per-Impl accounting survives controller epochs.
+    std::atomic<bool> clock_pending_hint{false};
     AudioClockStats clock_published; // Public row; live bookkeeping stays worker-private.
     uint32_t clock_output_epoch = 0, clock_last_us = 0;
     uint32_t clock_whole_units = 0, clock_remaining_units = 0;
@@ -156,12 +160,14 @@ struct GigaBredr::Impl {
     bool clock_eligible = false; // Epoch geometry only; never changes requested enable.
     bool clockEnabled() const { return options.clock.enabled && options.enable_i2s; }
     void clockBegin() {
+        clockRetireMailbox(detail::ClockMailReason::LifecycleReset);
         clock_control = {}; clock_output_epoch = 0; clock_have_time = clock_packet_active = clock_input_fault = false; clock_eligible = false;
-        clock_whole_units = clock_remaining_units = 0; clock_packet_start = 0; clock_local_backend_fault = false;
+        clock_whole_units = clock_remaining_units = 0; clock_packet_start = 0; clock_local_backend_fault = clock_mailbox.counts().unknown;
         clock_previous_decode_errors = counters.decode_errors; clock_previous_dropped = dropped.load(); clock_previous_discarded = 0;
         memset(clock_rtp_errors, 0, sizeof clock_rtp_errors);
         counters.clock = {}; counters.clock.enabled = clockEnabled();
-        counters.clock.state = clockEnabled() ? AudioClockState::Inactive : AudioClockState::Disabled;
+        counters.clock.backend_fault = clock_local_backend_fault;
+        counters.clock.state = clock_local_backend_fault ? AudioClockState::BackendFault : clockEnabled() ? AudioClockState::Inactive : AudioClockState::Disabled;
         counters.clock.observation_us = clockUs(); clock_published = counters.clock;
         if (!clockEnabled()) return;
         auto& stats = counters.clock; stats.stream_epoch = stream_epoch; stats.sample_rate = format.sample_rate;
@@ -183,6 +189,7 @@ struct GigaBredr::Impl {
         stats.observation_us = clockUs(); clock_published = stats;
     }
     void clockStop() {
+        clockRetireMailbox(detail::ClockMailReason::LifecycleReset);
         if (clockEnabled() && clock_output_epoch) {
             const auto source = detail::i2sSourceSnapshot(); auto& stats = counters.clock;
             stats.output_epoch = source.output_epoch; stats.prepared_frames = source.prepared; stats.missing_frames = source.missing;
@@ -193,7 +200,13 @@ struct GigaBredr::Impl {
         }
         clock_control = {}; clock_output_epoch = 0; clock_have_time = clock_packet_active = false; clock_eligible = false;
         clock_whole_units = clock_remaining_units = 0; counters.clock.retained_units_q16 = counters.clock.compressed_units_q16 = 0;
+#if defined(ARDUINO)
+        counters.clock.applied_valid = false;
+        counters.clock.backend_fault = counters.clock.backend_fault || clock_local_backend_fault || clock_mailbox.counts().unknown;
+        counters.clock.state = counters.clock.backend_fault ? AudioClockState::BackendFault : clockEnabled() ? AudioClockState::Inactive : AudioClockState::Disabled;
+#else
         counters.clock.state = clockEnabled() ? AudioClockState::Inactive : AudioClockState::Disabled;
+#endif
         counters.clock.observation_us = clockUs(); clock_published = counters.clock;
     }
     void clockStartPacket(detail::MediaRetainedState before, detail::MediaRetainedState after) {
@@ -279,7 +292,163 @@ struct GigaBredr::Impl {
             worst.restore_seen = result.restore_seen; worst.restore_flags = result.restore_flags; worst.restore_pending = result.restore_pending;
         }
     }
+    void clockPublishControlSnapshot() {
+        auto& stats = counters.clock;
+        stats.backend_fault = stats.backend_fault || clock_local_backend_fault || clock_mailbox.counts().unknown;
+        if (stats.backend_fault) stats.applied_valid = false;
+        const auto control = clock_control.snapshot();
+        stats.applied_ppm_q16 = control.applied_q16; stats.decisions = control.decisions; stats.accepted = control.accepted; stats.refused = control.refused;
+        stats.invalid_samples = control.invalid_samples; stats.estimated_inventory_frames = control.inventory_frames;
+        stats.target_frames = control.target_frames; stats.frames_per_packet_q16 = control.frames_per_packet_q16;
+        stats.state = stats.backend_fault ? AudioClockState::BackendFault : control.tracking ? AudioClockState::Tracking :
+                      control.learning ? AudioClockState::Learning : control.suspended ? AudioClockState::Suspended : AudioClockState::Inactive;
+        clock_published = stats;
+    }
+    void clockRetireMailbox(detail::ClockMailReason reason) {
+        const auto code = clock_mailbox.retire(reason);
+        clock_pending_hint.store(false, std::memory_order_release);
+        if ((code != detail::ClockMailCode::Ok && code != detail::ClockMailCode::Empty) || clock_mailbox.counts().unknown) {
+            clock_local_backend_fault = true;
+            clockPublishControlSnapshot();
+        }
+    }
+    bool clockDrainMailbox(bool finalizing) {
+        using State = detail::ClockMailState;
+        using Code = detail::ClockMailCode;
+        using Terminal = detail::ClockMailTerminal;
+        if (clock_mailbox.counts().unknown) clock_local_backend_fault = true;
+        auto state = clock_mailbox.state();
+        if (state == State::Queued && (finalizing || clock_local_backend_fault)) {
+            if (clock_mailbox.cancel(clock_mailbox.key(), finalizing ? detail::ClockMailReason::Shutdown : detail::ClockMailReason::Ineligible) != Code::Ok)
+                clock_local_backend_fault = true;
+            clock_pending_hint.store(false, std::memory_order_release);
+            state = clock_mailbox.state();
+        }
+        if (state == State::Done || state == State::Canceled) {
+            const auto key = clock_mailbox.key();
+            const auto decision = clock_mailbox.request().decision;
+            const bool current = !clock_mailbox.completion().retired && decision.stream_epoch == stream_epoch &&
+                                 decision.output_epoch == clock_output_epoch;
+            Terminal terminal = Terminal::CanceledBeforeExec;
+            if (!current) {
+                // A reset controller must never receive the previous epoch's ACK.
+                if (clock_mailbox.retire(detail::ClockMailReason::EpochRetired) != Code::Ok)
+                    clock_local_backend_fault = true;
+                if (state == State::Done) terminal = Terminal::RetiredExecuted;
+            } else if (state == State::Done) {
+                const auto& completion = clock_mailbox.completion();
+                const auto& result = completion.raw;
+                const bool correct_epoch = result.output_epoch == decision.output_epoch;
+                bool accepted = result.accepted && correct_epoch;
+                const bool acknowledged = completion.executed && completion.witnessed &&
+                    clock_control.acknowledge(decision, accepted, result.applied_q16);
+                if (!acknowledged) { clock_control.acknowledge(decision, false, 0); clock_local_backend_fault = true; accepted = false; }
+                if (result.accepted && !correct_epoch) clock_local_backend_fault = true;
+                if (result.partial && !accepted) clock_local_backend_fault = true;
+                auto& stats = counters.clock;
+                stats.backend_status = !acknowledged ? AudioClockBackendStatus::ReadbackFault :
+                                       result.accepted && !correct_epoch ? AudioClockBackendStatus::StaleEpoch : clockBackendStatus(result.status);
+                stats.backend_fault = detail::i2sClockTrimStats().faulted || clock_local_backend_fault;
+                const auto source = detail::i2sSourceSnapshot();
+                stats.applied_valid = accepted && !stats.backend_fault && source.output_epoch == clock_output_epoch;
+                terminal = acknowledged ? Terminal::AckedResult : Terminal::AckFault;
+            } else {
+                if (!clock_control.acknowledge(decision, false, 0)) {
+                    clock_local_backend_fault = true;
+                    counters.clock.backend_status = AudioClockBackendStatus::ReadbackFault;
+                    terminal = Terminal::AckFault;
+                }
+            }
+            if (clock_mailbox.finish(key, terminal) != Code::Ok) clock_local_backend_fault = true;
+            clock_pending_hint.store(false, std::memory_order_release);
+            clockPublishControlSnapshot();
+        } else if (state == State::Executing) {
+            // The host owns codec_mutex for the entire call; no serialized caller
+            // can ordinarily see Executing. Preserve the slot on a protocol fault.
+            clock_local_backend_fault = true;
+        }
+        if (clock_local_backend_fault || clock_mailbox.counts().unknown) clockPublishControlSnapshot();
+        return clock_mailbox.state() == State::Empty;
+    }
+    void notifyClockHostAfterWorker() {
+#if defined(ARDUINO)
+        if (clock_pending_hint.load(std::memory_order_acquire)) host_events.set(1);
+#endif
+    }
+    void serviceClockMailbox() {
+#if defined(ARDUINO)
+        if (!clock_pending_hint.load(std::memory_order_acquire)) return;
+        bool wake_decoder = false;
+        {
+            TryLock lock(codec_mutex); // One attempt, outside radio ownership.
+            if (!lock) return;
+            using Code = detail::ClockMailCode;
+            if (clock_mailbox.counts().unknown) {
+                clock_local_backend_fault = true;
+                clockPublishControlSnapshot();
+            }
+            if (clock_mailbox.state() != detail::ClockMailState::Queued) {
+                clock_pending_hint.store(false, std::memory_order_release);
+                if (clock_mailbox.state() == detail::ClockMailState::Executing) {
+                    clock_local_backend_fault = true;
+                    clockPublishControlSnapshot();
+                }
+                return;
+            }
+            const auto key = clock_mailbox.key();
+            const auto& request = clock_mailbox.request();
+            const auto& decision = request.decision;
+            const auto source = detail::i2sSourceSnapshot();
+            const auto backend = detail::i2sClockTrimStats();
+            const bool eligible = running.load() && playing.load() && configured && output_owned && clockEnabled() && clock_eligible &&
+                decision.stream_epoch == stream_epoch && decision.output_epoch == clock_output_epoch &&
+                source.initialized && source.running && !source.recovering && source.sample_rate == format.sample_rate &&
+                source.output_epoch == decision.output_epoch && !backend.faulted && !clock_local_backend_fault && !clock_input_fault &&
+                request.context.decode_errors == counters.decode_errors && request.context.dropped == dropped.load() &&
+                request.context.discarded == counters.clock.discarded_frames && request.context.missing == source.missing;
+            if (!eligible) {
+                if (clock_mailbox.cancel(key, detail::ClockMailReason::Ineligible) != Code::Ok) {
+                    clock_local_backend_fault = true;
+                    clockPublishControlSnapshot();
+                }
+            } else {
+                const auto claimed = clock_mailbox.claim(key, clockUs());
+                if (claimed == Code::Ok) {
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+                    detail::schedulerPrepare(decision.stream_epoch, decision.output_epoch, decision.serial);
+#endif
+                    const auto result = detail::i2sClockTrim(decision.output_epoch, decision.requested_q16, decision.lower_q16, decision.upper_q16);
+                    auto& stats = counters.clock;
+                    clockWitness(stats, decision, result);
+                    if (clock_mailbox.complete(key, result, true) != Code::Ok) clock_local_backend_fault = true;
+                    stats.backend_status = clockBackendStatus(result.status);
+                    stats.backend_fault = detail::i2sClockTrimStats().faulted || clock_local_backend_fault;
+                    stats.duration_cycles = result.duration_cycles; stats.wait_cycles[0] = result.wait_cycles[0]; stats.wait_cycles[1] = result.wait_cycles[1];
+                    if (result.max_critical_cycles > stats.maximum_critical_cycles) stats.maximum_critical_cycles = result.max_critical_cycles;
+                    stats.duration_valid = result.duration_valid; stats.wall_overruns = result.wall_overruns;
+                    stats.fraction = result.fraction; stats.readback_fraction = result.readback_fraction;
+                    stats.applied_valid = false; // Only the worker reconciles the controller.
+                    clockPublishControlSnapshot();
+                } else if (claimed != Code::Expired) {
+                    clock_local_backend_fault = true;
+                    // Saturation rejects before execution and leaves Queued.
+                    if (clock_mailbox.state() == detail::ClockMailState::Queued)
+                        clock_mailbox.cancel(key, detail::ClockMailReason::Ineligible);
+                    clockPublishControlSnapshot();
+                }
+            }
+            clock_pending_hint.store(false, std::memory_order_release);
+            wake_decoder = true;
+        }
+        // A full semaphore already carries a pending decoder wake.
+        if (wake_decoder) wake.release();
+#endif
+    }
     void clockFeedback() {
+#if defined(ARDUINO)
+        if (!clockDrainMailbox(false)) return;
+        if (clock_local_backend_fault || clock_mailbox.counts().unknown) { clockPublishControlSnapshot(); return; }
+#endif
         if (!clockEnabled() || !clock_eligible || !running.load() || !configured || !playing.load() || !clock_output_epoch) return;
         const uint32_t now = clockUs();
         // Gate BEFORE backend IRQ exclusion, queue lock and occupancy arithmetic.
@@ -315,6 +484,23 @@ struct GigaBredr::Impl {
         const auto decision = clock_control.observe(sample);
         if (decision.update) {
             stats.requested_ppm_q16 = decision.requested_q16;
+#if defined(ARDUINO)
+            detail::ClockMailRequest request; request.decision = decision; request.queued_us = now;
+            request.context.decode_errors = counters.decode_errors; request.context.dropped = dropped_now;
+            request.context.discarded = stats.discarded_frames; request.context.missing = source.missing;
+            if (clock_mailbox.offer(request) == detail::ClockMailCode::Ok) {
+                clock_pending_hint.store(true, std::memory_order_release);
+            } else {
+                // Rejection issued no slot and must not leave controller pending.
+                clock_control.acknowledge(decision, false, 0);
+                clock_local_backend_fault = true;
+                stats.backend_status = AudioClockBackendStatus::ReadbackFault;
+                stats.backend_fault = true; stats.applied_valid = false;
+            }
+#else
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+            detail::schedulerPrepare(decision.stream_epoch, decision.output_epoch, decision.serial);
+#endif
             const auto result = detail::i2sClockTrim(decision.output_epoch, decision.requested_q16, decision.lower_q16, decision.upper_q16);
             clockWitness(stats, decision, result);
             const bool correct_epoch = result.output_epoch == decision.output_epoch;
@@ -331,15 +517,10 @@ struct GigaBredr::Impl {
             stats.duration_valid = result.duration_valid; stats.wall_overruns = result.wall_overruns;
             stats.fraction = result.fraction; stats.readback_fraction = result.readback_fraction;
             if (accepted) stats.applied_valid = true;
+#endif
         } else stats.backend_fault = backend.faulted || clock_local_backend_fault;
         if (stats.backend_fault || source.output_epoch != clock_output_epoch) stats.applied_valid = false;
-        const auto control = clock_control.snapshot();
-        stats.applied_ppm_q16 = control.applied_q16; stats.decisions = control.decisions; stats.accepted = control.accepted; stats.refused = control.refused;
-        stats.invalid_samples = control.invalid_samples; stats.estimated_inventory_frames = control.inventory_frames;
-        stats.target_frames = control.target_frames; stats.frames_per_packet_q16 = control.frames_per_packet_q16;
-        stats.state = stats.backend_fault ? AudioClockState::BackendFault : control.tracking ? AudioClockState::Tracking :
-                      control.learning ? AudioClockState::Learning : control.suspended ? AudioClockState::Suspended : AudioClockState::Inactive;
-        clock_published = stats;
+        clockPublishControlSnapshot();
     }
 
     explicit Impl(const ReceiverConfig& config): options(config) {
@@ -371,6 +552,7 @@ struct GigaBredr::Impl {
         Lock lock(event_mutex); volume.store(value); volume_event = true;
     }
     void releaseCodec() { // caller owns codec_mutex; queued packets cannot refer to freed storage
+        clockRetireMailbox(detail::ClockMailReason::LifecycleReset);
         clockStop();
         playing.store(false);
         { Lock lock(queue_mutex);
@@ -566,8 +748,12 @@ struct GigaBredr::Impl {
     static void onOwnerWake(void* p) { static_cast<Impl*>(p)->host_events.set(1); }
     void hostMain() {
         while (running.load()) {
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+            detail::schedulerHostLoopProgress();
+#endif
             { Lock lock(radio_mutex); detail::radioPoll(); }
             if (!running.load()) break;
+            serviceClockMailbox();
             // Atomic wait-and-clear preserves signals before/during the wait.
             // Timers and RX retain their existing one millisecond fallback.
             const uint32_t event = host_events.wait_any(1, 1, true);
@@ -578,8 +764,13 @@ struct GigaBredr::Impl {
     void decoderMain() {
         while (running.load()) {
             wake.try_acquire_for(10);
-            for (unsigned i = 0; i < 64 && running.load(); ++i) processOne();
+            for (unsigned i = 0; i < 64 && running.load(); ++i) {
+                processOne();
+                notifyClockHostAfterWorker(); // processOne has released codec_mutex on every exit.
+            }
         }
+        Lock lock(codec_mutex);
+        clockDrainMailbox(true);
     }
 #endif
     static Status onConfigure(const CodecConfig& c, void* p) { return static_cast<Impl*>(p)->configure(c); }
@@ -626,6 +817,12 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     if (!impl_->host_thread || !impl_->decoder_thread) { end(); return Status::OutOfMemory; }
     if (impl_->decoder_thread->start(mbed::callback(impl_, &Impl::decoderMain)) != osOK ||
         impl_->host_thread->start(mbed::callback(impl_, &Impl::hostMain)) != osOK) { end(); return Status::OutOfMemory; }
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+    { Lock role_lock(impl_->codec_mutex);
+      detail::schedulerRegisterRoles(reinterpret_cast<uintptr_t>(rtos::ThisThread::get_id()),
+          reinterpret_cast<uintptr_t>(impl_->host_thread->get_id()),
+          reinterpret_cast<uintptr_t>(impl_->decoder_thread->get_id())); }
+#endif
 #endif
     return Status::Ok;
 }
@@ -653,9 +850,20 @@ void GigaBredr::poll() {
     if (changed && impl_->options.configuration_changed) impl_->options.configuration_changed(selected, impl_->options.user);
     if (lifetime_ != lifetime || !impl_) return;
     if (volume_changed && impl_->options.volume_changed) impl_->options.volume_changed(selected_volume, impl_->options.user);
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+    if (lifetime_ != lifetime || !impl_) return;
+    char scheduler_row[76]; uint32_t scheduler_ordinal=0;
+    if (detail::schedulerNextRow(scheduler_row, sizeof scheduler_row, scheduler_ordinal)) {
+        if (impl_->options.diagnostic) impl_->options.diagnostic(scheduler_row, impl_->options.user);
+        detail::schedulerRowFinished(scheduler_ordinal);
+    }
+#endif
 }
 void GigaBredr::end() {
     if (!impl_) return;
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+    detail::schedulerShutdown();
+#endif
     ++lifetime_; // Invalidate an active poll before destroying its Impl.
     impl_->running.store(false);
 #if defined(ARDUINO)
@@ -664,8 +872,11 @@ void GigaBredr::end() {
     impl_->wake.release();
     if (impl_->decoder_thread) { impl_->decoder_thread->join(); delete impl_->decoder_thread; }
 #endif
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+    detail::schedulerShutdown(); // Reclaim any report completed while end() waited for workers.
+#endif
     if (impl_->radio_owned) detail::radioEnd();
-    impl_->releaseCodec();
+    { Lock lock(impl_->codec_mutex); impl_->releaseCodec(); }
     impl_->~Impl(); detail::release(impl_); impl_ = nullptr;
     receiver_owner.store(nullptr);
 }
