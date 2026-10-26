@@ -39,7 +39,13 @@ class I2sRing {
     const uint32_t r=__atomic_load_n(&read_,__ATOMIC_RELAXED);
     const uint32_t w=__atomic_load_n(&write_,__ATOMIC_ACQUIRE);
     const uint32_t n=frames>w-r?w-r:frames;
-    for(uint32_t i=0;i<n;++i) { const uint32_t pos=(readPos_+i)%capacity_; dma[2*i]=data_[2*pos]; dma[2*i+1]=data_[2*pos+1]; }
+    // The backend keeps ring and DMA storage disjoint. Copy each contiguous
+    // span before publishing the consumed frames; zero input needs no copy.
+    if(n) {
+      const uint32_t first=n<capacity_-readPos_?n:capacity_-readPos_;
+      memcpy(dma,data_+2*readPos_,size_t(first)*8);
+      if(n>first) memcpy(dma+2*first,data_,size_t(n-first)*8);
+    }
     memset(dma+2*n,0,size_t(frames-n)*8);
     readPos_=(readPos_+n)%capacity_;
     __atomic_store_n(&read_,r+n,__ATOMIC_RELEASE); return n;
