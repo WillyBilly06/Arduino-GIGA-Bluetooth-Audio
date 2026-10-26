@@ -28,6 +28,8 @@ The defaults are `GIGA_BREDR_USE_BTSTACK=0` (project-owned host), `GIGA_BREDR_UA
 
 Use the breakout's required supply and 3.3V logic. Output uses Philips I2S, stereo 32-bit slots with samples left-aligned; slot width is not a numerical precision measurement. **MCLK defaults to `-1` (disabled)**; PCM5102A can use its BCLK PLL. Set `ReceiverConfig.i2s` before `begin()` for a compatible route. Alternate pads and optional 256Fs MCLK remain electrically unqualified. See [pin routing](docs/runtime-i2s-pins.md).
 
+The PCM5102A analog L/R outputs are line outputs specified for loads of at least 1 kOhm. For lower-impedance headphones, connect the DAC to a headphone amplifier's line input, then connect the headphones to the amplifier. See the [TI PCM510xA datasheet](https://www.ti.com/lit/ds/symlink/pcm5102a.pdf). Direct headphone loading can distort the analog output even when the receiver reports no digital audio faults.
+
 Call `receiver.poll()` from `loop()` to deliver bounded diagnostic/configuration/volume/metadata callbacks; radio and decoder workers run independently. Check `begin()` and status results, keep callbacks bounded, and serialize `begin/end/poll`. `availableCodecs()` reports compiled decoders; `ReceiverConfig.codecs` limits negotiation. `end()` releases receiver-owned resources.
 
 ## Codecs, memory and unfinished features
