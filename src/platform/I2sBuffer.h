@@ -2,7 +2,19 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include "../detail/BufferSizing.h"
 namespace giga_bredr { namespace detail {
+// P is total real PCM before prime; 2H subsequently moves to DMA. A nonzero
+// requested threshold never silently clamps to an undersized ring.
+constexpr uint32_t i2sPrimeFrames(uint32_t capacity,uint32_t half,uint32_t requested=0) {
+  if(!capacity || !half || half>capacity/2) return 0;
+  if(requested) {
+    if(requested>capacity) return 0;
+    return requested<half*2u?half*2u:requested;
+  }
+  const uint64_t legacy=uint64_t(capacity)/2u+uint64_t(half)*2u;
+  return uint32_t(legacy>capacity?capacity:legacy);
+}
 // One serialized producer and one IRQ consumer. PCM words are native H7 TXDR
 // words: left channel first, MSB first on the wire; never swap halfwords.
 class I2sRing {
@@ -24,13 +36,12 @@ class I2sRing {
     __atomic_store_n(&write_,w+n,__ATOMIC_RELEASE); return n;
   }
   // Only the producer calls prime, before any DMA IRQ consumer starts. Leave
-  // both output and queue untouched until real PCM can fill both DMA halves
-  // and retain half-ring jitter reserve (clamped for deliberate tiny rings).
-  bool prime(int32_t* dma, uint32_t halfFrames) {
+  // output and queue untouched until the real-PCM threshold is met. With no
+  // explicit threshold, retain the legacy half-ring reserve (tiny rings clamp).
+  bool prime(int32_t* dma, uint32_t halfFrames, uint32_t requestedFrames=0) {
     const size_t dmaFrames=size_t(halfFrames)*2;
-    if(!dma || !halfFrames || dmaFrames>capacity_) return false;
-    size_t threshold=capacity_/2+dmaFrames;
-    if(threshold>capacity_) threshold=capacity_;
+    const uint32_t threshold=i2sPrimeFrames(capacity_,halfFrames,requestedFrames);
+    if(!dma || !threshold) return false;
     if(queued()<threshold) return false;
     return fill(dma,static_cast<uint32_t>(dmaFrames))==dmaFrames;
   }
@@ -58,10 +69,10 @@ inline bool i2sDmaAddress(uintptr_t a,size_t size) {
          (a>=0x30000000u && a<0x30048000u && size<=0x30048000u-a));
 }
 struct I2sClock { uint32_t kernel_hz=0,divider=0,pll_n=0,pll_frac=0; };
-inline bool i2sClock(uint32_t rate, I2sClock& c) {
+constexpr bool i2sClock(uint32_t rate, I2sClock& c) {
   switch(rate) {
     case 11025: case 22050: case 44100: case 88200: case 176400: c.kernel_hz=45158400; break;
-    case 8000: case 16000: case 24000: case 32000: case 48000: case 96000: case 192000: c.kernel_hz=49152000; break;
+    case 8000: case 12000: case 16000: case 24000: case 32000: case 48000: case 96000: case 192000: c.kernel_hz=49152000; break;
     default:return false;
   }
   c.divider=c.kernel_hz/(64*rate);
@@ -81,10 +92,10 @@ inline bool i2sPrescaler(uint32_t rate,bool mclk,uint32_t& div,uint32_t& odd) {
  if(!ratio || ratio==3 || ratio>511)return false;
  div=ratio/2;odd=ratio&1u;return true;
 }
-inline bool i2sBufferGeometry(uint32_t rate, uint16_t buffer_ms, I2sBufferGeometry& out) {
+constexpr bool i2sBufferGeometry(uint32_t rate, uint16_t buffer_ms, I2sBufferGeometry& out) {
   out = {};
   I2sClock clock;
-  if (buffer_ms < 2 || buffer_ms > 100 || !i2sClock(rate, clock)) return false;
+  if (buffer_ms < 2 || buffer_ms > MaximumPcmBufferMs || !i2sClock(rate, clock)) return false;
   out.half_frames = ((rate + 999) / 1000 + 3) & ~3u;
   out.ring_frames = ((rate * buffer_ms + 999) / 1000 + 3) & ~3u;
   if (out.ring_frames < out.half_frames * 2) out.ring_frames = out.half_frames * 2;

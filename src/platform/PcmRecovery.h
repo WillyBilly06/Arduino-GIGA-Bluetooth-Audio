@@ -24,14 +24,14 @@ struct PcmRecoverySnapshot {
 };
 class PcmRecovery {
 public:
-    bool begin(uint32_t epoch,uint32_t capacity,uint32_t half_frames) {
+    constexpr bool begin(uint32_t epoch,uint32_t capacity,uint32_t half_frames,uint32_t requested_frames=0) {
         stats_={};
         seeded_=missing_=false; progress_=0;
         last_[0]=last_[1]=anchor_[0]=anchor_[1]=0;
-        if(!epoch || !half_frames || half_frames>capacity/2) return false;
-        uint64_t threshold=uint64_t(capacity)/2+uint64_t(half_frames)*2;
+        const uint32_t threshold=i2sPrimeFrames(capacity,half_frames,requested_frames);
+        if(!epoch || !threshold) return false;
         stats_.epoch=epoch; stats_.half_frames=half_frames;
-        stats_.threshold=uint32_t(threshold>capacity?capacity:threshold);
+        stats_.threshold=threshold;
         // The actual DMA geometry rounds ~1 ms to four frames. Use its nearest
         // power of two (ties up), bounded to 2..256 frames, for shift-only gain.
         shift_=1;
@@ -81,7 +81,7 @@ public:
         }
         return real;
     }
-    PcmRecoverySnapshot snapshot() const { return stats_; }
+    constexpr PcmRecoverySnapshot snapshot() const { return stats_; }
 private:
     // Symmetric truncation toward zero; all arithmetic stays within int64_t
     // even for INT32_MIN -> INT32_MAX. No signed negative shift or division.
