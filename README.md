@@ -9,7 +9,7 @@ Bluetooth Classic A2DP music receiver and public BLE GATT server for the Arduino
 1. Download the [v0.1.0-dev.9 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.9.zip).
 2. In Arduino IDE, use **Sketch > Include Library > Add .ZIP Library** and select the ZIP. Keep one active GigaBredr installation.
 3. Install **Arduino Mbed OS GIGA Boards 4.6.0**, then select **Arduino GIGA R1 / Cortex-M7**.
-4. Open **File > Examples > GigaBredr > Receiver**, wire the output below, and upload the sketch. The example contains the codec-specific buffer settings used in the finite traffic checks.
+4. Open **File > Examples > GigaBredr > Receiver**, wire the output below, and upload the sketch. Published dev.9 uses explicit buffer profiles; the working branch example uses the new automatic PCM-reserve policy awaiting hardware validation.
 
 For a local source install, place the folder containing `library.properties`, `src` and `examples` at `<sketchbook>/libraries/GigaBredr`. To compile the Receiver example with Arduino CLI:
 
@@ -40,7 +40,7 @@ The six ECA4 phone-family windows exercised SBC44.1, AAC-LC44.1, aptX48, aptX HD
 
 Immutable tables stay in flash. The selected decoder workspace, packet/access-unit queues and PCM storage allocate for its configuration and release on stop/reconfiguration; inactive codec overrides are data only. `setExternalAllocator()` provides an allocation hook; the application must initialize/supply external memory. This does not prove SDRAM placement, heap fragmentation, allocator overhead or stack high-water. Historical AAC-LC stereo selected payload saving was 1222 bytes (25262 vs26484), not system free-memory or CPU improvement.
 
-Receiver buffer profiles (queue/start packets): LHDC48/26, LDAC40/16, SBC12/4, AAC/HE16/6, aptX24/10, aptX HD32/15, Opus16/7. LHDC/AAC/HE/aptX/HD/Opus select a 2048-byte packet limit; default access-unit capacity is 8192 and PCM buffer 20 ms. Zero overrides inherit global settings. These reserves are not end-to-end latency bounds. At 44.1 kHz, six 1024-frame AAC-LC AUs represent about 139 ms, while six 2048-frame HE-AAC output AUs represent about 279 ms, **conditionally assuming one AU per queued packet**. No profile/buffer is changed here to hide that risk.
+This working development branch uses zero-to-auto buffer settings and a configuration-sized **real decoded PCM watermark before DMA starts**. Explicit nonzero settings remain available; `startup_packets` selects the legacy compressed-startup path. The published dev.9 tag retains its previous explicit example profiles. See [configured buffering](docs/audio-buffering.md) for startup/recovery rules, selected-codec memory formulas, overrides and validation limits. Buffer capacity is not an end-to-end latency measurement.
 
 AVRCP volume and bounded metadata/status handling are present, including callbacks. Full typed transport controls and complete AVRCP coverage remain unfinished. Full HFP/HSP call/profile operation, RFCOMM/SCO integration and a public pluggable microphone-input API remain unfinished. PCM5102A is playback output; no microphone/call runtime capability is claimed.
 

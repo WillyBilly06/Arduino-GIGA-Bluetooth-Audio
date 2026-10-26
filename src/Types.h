@@ -42,6 +42,8 @@ struct OutputStats {
     uint64_t frames_transmitted = 0;
     size_t queued_frames = 0;
     bool running = false, initialized = false, priming = false;
+    uint32_t dma_half_frames = 0, buffer_capacity_frames = 0, startup_frames = 0;
+    uint32_t initial_queued_frames = 0; // Actual real PCM remaining in ring at DMA start.
 };
 struct RadioStats {
     uint32_t received_packets = 0, received_bytes = 0, dropped_packets = 0;

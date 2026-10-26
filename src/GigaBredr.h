@@ -6,27 +6,28 @@
 #include "I2sConfig.h"
 
 namespace giga_bredr {
-// Zero fields inherit ReceiverConfig's global settings. Stats report the
-// nonzero resolved profile while configured, and all zeros after release.
+// Zero fields inherit globals, then negotiated-codec defaults. A resolved
+// startup_packets=0 uses the real-PCM startup_buffer_ms watermark instead.
 struct AudioBufferConfig {
     size_t maximum_packet_bytes = 0; // Nonzero: 64..65535.
     size_t maximum_access_unit_bytes = 0; // Nonzero: 64..65535.
     uint8_t queue_packets = 0; // Nonzero: 1..64.
     uint8_t startup_packets = 0; // Nonzero: 1..64, then clamped to selected queue.
-    uint16_t pcm_buffer_ms = 0; // Nonzero: 2..100; DMA ring uses the selected sample rate.
+    uint16_t pcm_buffer_ms = 0; // Nonzero: 2..320; frames scale with selected output rate.
+    uint16_t startup_buffer_ms = 0; // Real PCM watermark; exclusive with startup_packets in this layer.
 };
 using CodecBufferConfig = AudioBufferConfig;
 struct ReceiverConfig {
     const char* name = "GIGA Audio";
     uint32_t codecs = 0; // zero selects the compiled codec set
-    size_t maximum_packet_bytes = 4096;
-    size_t maximum_access_unit_bytes = 8192;
-    uint8_t queue_packets = 8;
-    uint8_t startup_packets = 2; // compressed startup reserve, clamped to queue capacity
+    size_t maximum_packet_bytes = 0; // Zero selects the advertised 2048-byte SDU ceiling.
+    size_t maximum_access_unit_bytes = 0; // Zero selects 8192 bytes; allocated only when needed.
+    uint8_t queue_packets = 0; // Zero selects a bounded codec/configuration capacity.
+    uint8_t startup_packets = 0; // Nonzero selects the explicit legacy packet-startup path.
 #if defined(GIGA_BREDR_I2S_BUFFER_MS)
     uint16_t pcm_buffer_ms = GIGA_BREDR_I2S_BUFFER_MS;
 #else
-    uint16_t pcm_buffer_ms = 20;
+    uint16_t pcm_buffer_ms = 0; // Zero sizes the ring for its real PCM startup reserve.
 #endif
     CodecBufferConfig codec_buffers[static_cast<size_t>(Codec::Count)] = {}; // Index by Codec; data only until configured.
     bool external_buffers = false; // caller supplies/initializes external memory
@@ -42,6 +43,7 @@ struct ReceiverConfig {
     void (*metadata_changed)(uint8_t attribute_id, const char* text, size_t bytes, void* user) = nullptr;
     void* user = nullptr;
     I2sPins i2s; // Hardware-compatible output route; optional MCLK=-1.
+    uint16_t startup_buffer_ms = 0; // Zero selects the negotiated-codec real-PCM reserve.
 };
 struct ReceiverStats {
     AudioClockStats clock;

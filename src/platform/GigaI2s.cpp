@@ -11,7 +11,7 @@
 #ifndef GIGA_BREDR_I2S_BUFFER_MS
 #define GIGA_BREDR_I2S_BUFFER_MS 20
 #endif
-static_assert(GIGA_BREDR_I2S_BUFFER_MS >= 2 && GIGA_BREDR_I2S_BUFFER_MS <= 100,"I2S ring latency must be 2..100 ms");
+static_assert(GIGA_BREDR_I2S_BUFFER_MS >= 2 && GIGA_BREDR_I2S_BUFFER_MS <= 320,"I2S ring capacity must be 2..320 ms");
 
 namespace giga_bredr { namespace detail {
 namespace {
@@ -26,6 +26,7 @@ void* arena=nullptr;
 int32_t* dmaWords=nullptr;
 uint32_t halfFrames=0;
 uint32_t ringCapacity=0;
+uint32_t primeFrames=0;
 uint64_t sourcePrepared=0,sourceMissing=0;
 I2sClockTrimState clockTrim;
 ClockTrimResult clockTrimLast;
@@ -238,12 +239,18 @@ Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs) {
   return i2sBegin(sampleRate,bufferMs,I2sPins());
 }
 Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs,const I2sPins& pins) {
+  return i2sBegin(sampleRate,bufferMs,pins,0);
+}
+Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs,const I2sPins& pins,uint16_t startupMs) {
   if(owned) return Status::Busy;
-  if(bufferMs<2 || bufferMs>100) return Status::InvalidArgument;
+  if(bufferMs<2 || bufferMs>MaximumPcmBufferMs || startupMs>bufferMs) return Status::InvalidArgument;
   I2sRoutePlan selected;if(!i2sRoutePlan(pins,selected))return Status::InvalidArgument;
   I2sClock clock; if(!i2sClock(sampleRate,clock)) return Status::Unsupported;
   uint32_t div=0,odd=0;if(!i2sPrescaler(sampleRate,pins.mclk!=-1,div,odd))return Status::Unsupported;
   I2sBufferGeometry geometry; if(!i2sBufferGeometry(sampleRate,bufferMs,geometry)) return Status::InvalidArgument;
+  const uint32_t requested=startupMs?uint32_t(((uint64_t(sampleRate)*startupMs+999u)/1000u+3u)&~uint64_t(3u)):0;
+  const uint32_t threshold=i2sPrimeFrames(geometry.ring_frames,geometry.half_frames,requested);
+  if(!threshold) return Status::InvalidArgument;
   // SPI123 shares its kernel mux. Reject even clock-enabled idle SPI users.
   if(RCC->APB1LENR&(RCC_APB1LENR_SPI2EN|RCC_APB1LENR_SPI3EN)) return Status::Busy;
   if(RCC->APB2ENR&RCC_APB2ENR_SPI1EN) return Status::Busy;
@@ -251,6 +258,7 @@ Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs,const I2sPins& pins) {
   for(uint8_t i=0;i<selected.count;++i)if(i2sPinsBusy(gpioRegisters(gpioPort(selected.pins[i].port)),I2sPortPins(1u<<selected.pins[i].pin)))return Status::Busy;
   __HAL_RCC_DMA1_CLK_ENABLE();
   halfFrames=geometry.half_frames; // ~1 ms, each DMA half is cache-line isolated.
+  primeFrames=threshold;
   const uint32_t ringFrames=geometry.ring_frames;
   const size_t dmaBytes=geometry.dma_bytes, ringOffset=geometry.ring_offset, bytes=geometry.total_bytes;
   arena=allocate(bytes,MemoryKind::Dma,32);
@@ -263,10 +271,11 @@ Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs,const I2sPins& pins) {
   if(result!=Status::Ok) { ring->~I2sRing(); ring=nullptr; release(arena); arena=nullptr; return result; }
   pinPlan=selected;oldVector=NVIC_GetVector(DMA1_Stream7_IRQn);oldPriority=NVIC_GetPriority(DMA1_Stream7_IRQn);
   owned=true; stats=OutputStats(); stats.sample_rate=sampleRate;
+  stats.dma_half_frames=halfFrames;stats.buffer_capacity_frames=ringFrames;stats.startup_frames=primeFrames;
   ringCapacity=ringFrames;sourcePrepared=sourceMissing=0;
   if(!++timingEpoch) ++timingEpoch;
   timing.beginEpoch(timingEpoch);
-  recovery.begin(timingEpoch,ringFrames,halfFrames);
+  recovery.begin(timingEpoch,ringFrames,halfFrames,primeFrames);
   for(uint8_t i=0;i<pinPlan.count;++i) {
     const auto& pin=pinPlan.pins[i];gpioClock(pin.port);
     oldPins[i]=i2sCapturePins(gpioRegisters(gpioPort(pin.port)),I2sPortPins(1u<<pin.pin));
@@ -307,13 +316,14 @@ size_t i2sWrite(const int32_t* pcm,size_t frames) {
   const uint32_t phase=__atomic_load_n(&outputPhase,__ATOMIC_ACQUIRE);
   if((phase!=Priming && phase!=Running) || !ring) return 0;
   size_t accepted=ring->push(pcm,frames);
-  if(phase==Priming && ring->prime(dmaWords,halfFrames)) {
+  if(phase==Priming && ring->prime(dmaWords,halfFrames,primeFrames)) {
     // Priming freed both DMA halves before any IRQ consumer can run. Refill
     // that room from this caller before starting a deliberately small ring.
     if(pcm && accepted<frames) accepted+=ring->push(pcm+accepted*2,frames-accepted);
     sourcePrepared+=uint64_t(halfFrames)*2;
     recovery.seedPrimed(dmaWords,halfFrames*2);
     clean(dmaWords,halfFrames*2);
+    stats.initial_queued_frames=uint32_t(ring->queued());
     // H747 HAL passes Size unchanged to HAL_DMA_Start_IT, in transfer elements.
     // Both halves contain real PCM; the queue retains its startup jitter reserve.
     if(HAL_I2S_Transmit_DMA(&i2s,reinterpret_cast<uint16_t*>(dmaWords),halfFrames*4)!=HAL_OK) {
@@ -348,13 +358,15 @@ void i2sEnd() {
   restoreClock();
   clockTrim.invalidate();
   if(ring) { ring->~I2sRing(); ring=nullptr; }
-  release(arena); arena=nullptr; dmaWords=nullptr; stats.queued_frames=0;ringCapacity=0;owned=false;
+  release(arena); arena=nullptr; dmaWords=nullptr; stats.queued_frames=0;halfFrames=ringCapacity=primeFrames=0;owned=false;
+  stats.dma_half_frames=stats.buffer_capacity_frames=stats.startup_frames=stats.initial_queued_frames=0;
 }
 OutputStats i2sStats() { Critical guard; OutputStats copy=stats; copy.queued_frames=ring?ring->queued():0; return copy; }
 OutputTimingSnapshot i2sTiming() { Critical guard; return timing.snapshot(); }
 PcmRecoverySnapshot i2sRecovery() { Critical guard; return recovery.snapshot(); }
 OutputSourceSnapshot i2sSourceSnapshot(){Critical guard;OutputSourceSnapshot out;
  out.output_epoch=timingEpoch;out.sample_rate=stats.sample_rate;out.ring_capacity=ringCapacity;
+ out.half_frames=stats.initialized?halfFrames:0;
  out.prepared=sourcePrepared;out.missing=sourceMissing;out.initialized=stats.initialized;out.running=stats.running;
  out.recovering=recovery.snapshot().recovering;return out;
 }
@@ -390,8 +402,9 @@ I2sClockTrimSnapshot i2sClockTrimStats(){Critical guard;auto out=clockTrim.snaps
 #else
 namespace giga_bredr { namespace detail {
 Status i2sBegin(uint32_t) { return Status::Unsupported; }
-Status i2sBegin(uint32_t, uint16_t bufferMs) { return bufferMs<2 || bufferMs>100 ? Status::InvalidArgument : Status::Unsupported; }
-Status i2sBegin(uint32_t,uint16_t bufferMs,const I2sPins& pins) {I2sRoutePlan plan;return bufferMs<2 || bufferMs>100 || !i2sRoutePlan(pins,plan)?Status::InvalidArgument:Status::Unsupported;}
+Status i2sBegin(uint32_t, uint16_t bufferMs) { return bufferMs<2 || bufferMs>MaximumPcmBufferMs ? Status::InvalidArgument : Status::Unsupported; }
+Status i2sBegin(uint32_t rate,uint16_t bufferMs,const I2sPins& pins) {return i2sBegin(rate,bufferMs,pins,0);}
+Status i2sBegin(uint32_t,uint16_t bufferMs,const I2sPins& pins,uint16_t startupMs) {I2sRoutePlan plan;return bufferMs<2 || bufferMs>MaximumPcmBufferMs || startupMs>bufferMs || !i2sRoutePlan(pins,plan)?Status::InvalidArgument:Status::Unsupported;}
 size_t i2sWrite(const int32_t*,size_t) { return 0; }
 void i2sEnd() {}
 OutputStats i2sStats() { return OutputStats(); }

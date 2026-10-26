@@ -7,6 +7,7 @@
 #include "detail/Volume.h"
 #include "detail/AudioClockControl.h"
 #include "detail/AudioClockMailbox.h"
+#include "detail/ResolveBuffers.h"
 #include "codecs/Codecs.h"
 #include "platform/GigaRadio.h"
 #include "platform/GigaI2s.h"
@@ -72,22 +73,7 @@ bool sameConfiguration(const CodecConfig& a, const CodecConfig& b) {
         memcmp(a.codec_info, b.codec_info, a.codec_info_size) == 0;
 }
 bool validBufferOverride(const AudioBufferConfig& b) {
-    return (!b.maximum_packet_bytes || (b.maximum_packet_bytes >= 64 && b.maximum_packet_bytes <= 65535)) &&
-        (!b.maximum_access_unit_bytes || (b.maximum_access_unit_bytes >= 64 && b.maximum_access_unit_bytes <= 65535)) &&
-        b.queue_packets <= 64 && b.startup_packets <= 64 &&
-        (!b.pcm_buffer_ms || (b.pcm_buffer_ms >= 2 && b.pcm_buffer_ms <= 100));
-}
-AudioBufferConfig resolveBuffers(const ReceiverConfig& options, Codec codec) {
-    const auto& override = options.codec_buffers[static_cast<size_t>(codec)];
-    AudioBufferConfig out;
-    out.maximum_packet_bytes = override.maximum_packet_bytes ? override.maximum_packet_bytes : options.maximum_packet_bytes;
-    out.maximum_access_unit_bytes = override.maximum_access_unit_bytes ? override.maximum_access_unit_bytes : options.maximum_access_unit_bytes;
-    out.queue_packets = override.queue_packets ? override.queue_packets : options.queue_packets;
-    out.startup_packets = override.startup_packets ? override.startup_packets : options.startup_packets;
-    if (out.startup_packets > out.queue_packets) out.startup_packets = out.queue_packets;
-    if (!options.enable_i2s) out.startup_packets = 1;
-    out.pcm_buffer_ms = override.pcm_buffer_ms ? override.pcm_buffer_ms : options.pcm_buffer_ms;
-    return out;
+    return detail::validBufferSettings(b);
 }
 size_t frameCapacity(const CodecConfig& c) {
     switch (c.codec) {
@@ -173,12 +159,9 @@ struct GigaBredr::Impl {
         auto& stats = counters.clock; stats.stream_epoch = stream_epoch; stats.sample_rate = format.sample_rate;
         const auto source = detail::i2sSourceSnapshot();
         stats.ring_capacity = source.ring_capacity;
-        // Match the actual I2S geometry: ceil(rate/1000), rounded to four frames.
-        // A nominal millisecond threshold is wrong at44.1/88.2/176.4kHz.
-        const uint32_t half = uint32_t(((uint64_t(format.sample_rate) + 999u) / 1000u + 3u) & ~uint64_t(3u));
-        stats.required_ring_frames = half * 4u;
+        stats.required_ring_frames = source.half_frames * 4u;
         stats.observation_us = clockUs(); clock_published = stats;
-        if (!source.initialized || !source.output_epoch || source.sample_rate != format.sample_rate || !source.ring_capacity) return;
+        if (!source.initialized || !source.output_epoch || source.sample_rate != format.sample_rate || !source.ring_capacity || !source.half_frames) return;
         clock_output_epoch = source.output_epoch; stats.output_epoch = stats.expected_output_epoch = source.output_epoch;
         stats.prepared_frames = source.prepared; stats.missing_frames = source.missing;
         stats.inventory_valid = source.prepared == 0;
@@ -574,10 +557,12 @@ struct GigaBredr::Impl {
         if (configured && decoder.active() && sameConfiguration(format, c)) return Status::Ok;
         releaseCodec();
         if (!(options.codecs & codecBit(c.codec))) return counters.last_error = Status::Unsupported;
-        const AudioBufferConfig selected_buffers = resolveBuffers(options, c.codec);
         size_t capacity = frameCapacity(c);
         if (!capacity || capacity > 23040 || !c.sample_rate || (c.channels != 1 && c.channels != 2))
             return counters.last_error = Status::Unsupported;
+        AudioBufferConfig selected_buffers;
+        if (!detail::resolveAudioBuffers(options,c,uint32_t(capacity),selected_buffers))
+            return counters.last_error = Status::InvalidArgument;
         auto kind = options.external_buffers ? MemoryKind::External : MemoryKind::Fast;
         size_t before = detail::memoryStats().current_bytes;
         Status status = decoder.open(c);
@@ -593,7 +578,7 @@ struct GigaBredr::Impl {
             if (!packet || !pcm) status = Status::OutOfMemory;
         }
         if (status == Status::Ok && options.enable_i2s) {
-            status = detail::i2sBegin(c.sample_rate, selected_buffers.pcm_buffer_ms, options.i2s); output_owned = status == Status::Ok;
+            status = detail::i2sBegin(c.sample_rate, selected_buffers.pcm_buffer_ms, options.i2s,selected_buffers.startup_buffer_ms); output_owned = status == Status::Ok;
         }
         if (status != Status::Ok) { releaseCodec(); counters.last_error = status; return status; }
         format = c; pcm_frames = capacity; configured = true; counters.last_error = Status::Ok;
@@ -645,15 +630,15 @@ struct GigaBredr::Impl {
         wake.release();
 #endif
     }
-    void processOne() {
+    bool processOne() {
         Lock codec_lock(codec_mutex);
         clockFeedback();
-        if (!playing.load() || !configured || !packet || !pcm) return;
+        if (!playing.load() || !configured || !packet || !pcm) return false;
         size_t n;
         { Lock queue_lock(queue_mutex);
           if (!startup_buffered) {
               size_t reserve = active_buffers.startup_packets;
-              if (queue.count() < reserve) return;
+              if (!queue.count() || queue.count() < reserve) return false;
               startup_buffered = true;
           }
           n = queue.take(packet, active_buffers.maximum_packet_bytes);
@@ -662,7 +647,7 @@ struct GigaBredr::Impl {
               token_read = (token_read + 1) % active_buffers.queue_packets;
           }
         }
-        if (!n) return;
+        if (!n) return false;
         const uint32_t packet_epoch = stream_epoch;
         detail::PacketWorkSample work;
         const uint32_t packet_began = clockUs();
@@ -671,8 +656,8 @@ struct GigaBredr::Impl {
         const auto retained_before = media.retainedState();
         Status status = media.feed(packet, n, view);
         clockStartPacket(retained_before, media.retainedState());
-        if (status == Status::NeedMoreData) { clockFinishPacket(true, true); clockFeedback(); record_work(); return; }
-        if (status != Status::Ok) { ++counters.decode_errors; counters.last_error = status; clockFinishPacket(false, false); clockFeedback(); record_work(); return; }
+        if (status == Status::NeedMoreData) { clockFinishPacket(true, true); clockFeedback(); record_work(); return true; }
+        if (status != Status::Ok) { ++counters.decode_errors; counters.last_error = status; clockFinishPacket(false, false); clockFeedback(); record_work(); return true; }
         size_t offset = 0; bool need_more = false, valid_packet = true;
         while (offset < view.bytes) {
             size_t input = view.bytes - offset;
@@ -719,7 +704,7 @@ struct GigaBredr::Impl {
                         counters.output_dropped_frames += uint32_t(result.frames - sent); clockDiscard(result.frames - sent);
                         counters.last_error = Status::HardwareError;
                         note("I2S stopped; output and decoder released");
-                        record_work(); releaseCodec(); return;
+                        record_work(); releaseCodec(); return true;
                     }
                     if (sent == result.frames) break;
                     if (!running.load() || clockUs() - began > write_limit_us) { counters.output_dropped_frames += uint32_t(result.frames - sent); clockDiscard(result.frames - sent); break; }
@@ -729,11 +714,11 @@ struct GigaBredr::Impl {
                     work.write_wait_us += clockUs() - waiting;
                     // Stop/reconfigure can release every saved packet/PCM view
                     // during the wait. Validate before any pointer is reused.
-                    if (packet_epoch != stream_epoch || !configured || !playing.load()) return;
+                    if (packet_epoch != stream_epoch || !configured || !playing.load()) return true;
                     clockFeedback();
                     if (!running.load()) {
                         counters.output_dropped_frames += uint32_t(result.frames - sent); clockDiscard(result.frames - sent);
-                        record_work(); return;
+                        record_work(); return true;
                     }
                 }
             }
@@ -743,6 +728,7 @@ struct GigaBredr::Impl {
         if (offset == view.bytes) ++counters.decoded_packets;
         clockFinishPacket(valid_packet, need_more); clockFeedback();
         record_work();
+        return true;
     }
 #if defined(ARDUINO)
     static void onOwnerWake(void* p) { static_cast<Impl*>(p)->host_events.set(1); }
@@ -765,8 +751,9 @@ struct GigaBredr::Impl {
         while (running.load()) {
             wake.try_acquire_for(10);
             for (unsigned i = 0; i < 64 && running.load(); ++i) {
-                processOne();
+                const bool worked=processOne();
                 notifyClockHostAfterWorker(); // processOne has released codec_mutex on every exit.
+                if(!worked) break;
             }
         }
         Lock lock(codec_mutex);
@@ -787,10 +774,8 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     if (input.clock.limit_ppm > 500 || input.clock.slew_ppm_per_second > 10) return Status::InvalidArgument;
     detail::I2sRoutePlan route;
     if (input.enable_i2s && !detail::i2sRoutePlan(input.i2s, route)) return Status::InvalidArgument;
-    if (!input.name || !*input.name || input.maximum_packet_bytes < 64 || input.maximum_packet_bytes > 65535 ||
-        input.maximum_access_unit_bytes < 64 || input.maximum_access_unit_bytes > 65535 ||
-        !input.queue_packets || input.queue_packets > 64 || !input.startup_packets || input.startup_packets > 64 ||
-        input.pcm_buffer_ms < 2 || input.pcm_buffer_ms > 100 || input.host_stack_bytes < 4096 || input.decoder_stack_bytes < 8192)
+    if (!input.name || !*input.name || !detail::validBufferSettings(detail::globalBufferSettings(input)) ||
+        input.host_stack_bytes < 4096 || input.decoder_stack_bytes < 8192)
         return Status::InvalidArgument;
     for (const auto& profile : input.codec_buffers) if (!validBufferOverride(profile)) return Status::InvalidArgument;
     ReceiverConfig config = input;

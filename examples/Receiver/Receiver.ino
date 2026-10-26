@@ -25,27 +25,9 @@ void setup() {
   Serial.begin(115200);
   uint32_t start=millis(); while (!Serial && millis()-start<3000) delay(10);
   ReceiverConfig config; config.name="GIGA Audio";
-  // Codec-local buffering; other codecs inherit ReceiverConfig globals.
-  auto& lhdc=config.codec_buffers[static_cast<size_t>(Codec::LhdcV5)];
-  lhdc.queue_packets=48; lhdc.startup_packets=26;
-  lhdc.maximum_packet_bytes=2048; lhdc.pcm_buffer_ms=20;
-  auto& ldac=config.codec_buffers[static_cast<size_t>(Codec::Ldac)];
-  ldac.queue_packets=40; ldac.startup_packets=16;
-  auto& sbc=config.codec_buffers[static_cast<size_t>(Codec::Sbc)];
-  sbc.queue_packets=12; sbc.startup_packets=4;
-  // About 100..130ms compressed startup reserve for the tested phone modes.
-  // Only the selected codec profile allocates storage. The board advertises
-  // a 2048-byte A2DP receive MTU; access-unit assembly remains independent.
-  auto& aac=config.codec_buffers[static_cast<size_t>(Codec::Aac)];
-  aac.queue_packets=16; aac.startup_packets=6; aac.maximum_packet_bytes=2048;
-  auto& he=config.codec_buffers[static_cast<size_t>(Codec::AacHe)];
-  he.queue_packets=16; he.startup_packets=6; he.maximum_packet_bytes=2048;
-  auto& aptx=config.codec_buffers[static_cast<size_t>(Codec::Aptx)];
-  aptx.queue_packets=24; aptx.startup_packets=10; aptx.maximum_packet_bytes=2048;
-  auto& aptxHd=config.codec_buffers[static_cast<size_t>(Codec::AptxHd)];
-  aptxHd.queue_packets=32; aptxHd.startup_packets=15; aptxHd.maximum_packet_bytes=2048;
-  auto& opus=config.codec_buffers[static_cast<size_t>(Codec::Opus)];
-  opus.queue_packets=16; opus.startup_packets=7; opus.maximum_packet_bytes=2048;
+  // Zero buffer settings select the negotiated codec's real-PCM reserve.
+  // Only the selected configuration allocates; DMA waits for its watermark.
+  // Nonzero config.codec_buffers[Codec] fields provide explicit overrides.
   config.ble.enabled=true; config.ble.maximum_mtu=517;
   config.ble.audio_connection_preference.interval_min=96;
   config.ble.audio_connection_preference.interval_max=96; // 120ms; peer acceptance is reported.
@@ -90,6 +72,13 @@ void loop() {
   static uint32_t last=0;
   if (millis()-last>=2000) {
     last=millis(); auto s=receiver.stats();
+    const auto& buffers=s.buffers;const auto& output=s.output;
+    console.print("GBR_BUFFERS codec=%s rate=%lu packet_bytes=%u au_bytes=%u queue_slots=%u startup_packets=%u startup_ms=%u pcm_ms=%u ring_frames=%lu dma_half_frames=%lu startup_frames=%lu initial_queued_frames=%lu queued_frames=%lu\n",
+      codecName(s.configuration.codec),(unsigned long)s.configuration.sample_rate,unsigned(buffers.maximum_packet_bytes),
+      unsigned(buffers.maximum_access_unit_bytes),unsigned(buffers.queue_packets),unsigned(buffers.startup_packets),
+      unsigned(buffers.startup_buffer_ms),unsigned(buffers.pcm_buffer_ms),(unsigned long)output.buffer_capacity_frames,
+      (unsigned long)output.dma_half_frames,(unsigned long)output.startup_frames,
+      (unsigned long)output.initial_queued_frames,(unsigned long)output.queued_frames);
     const auto& clock=s.clock;
     console.print("GBR_CLOCK ms=%lu observed_us=%lu stream=%lu output=%lu expected_output=%lu enabled=%u eligible=%u ring_capacity=%lu required_ring=%lu state=%u backend=%u fault=%u applied_valid=%u inventory_valid=%u requested_q16=%ld applied_q16=%ld fraction=%u readback=%u\n",
       (unsigned long)millis(),(unsigned long)clock.observation_us,(unsigned long)clock.stream_epoch,
