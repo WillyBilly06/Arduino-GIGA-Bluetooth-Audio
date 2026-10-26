@@ -31,10 +31,10 @@ int main() {
  assert(!i2sDmaAddress(0x20000000u,32)); assert(!i2sDmaAddress(0xc0000000u,32));
  assert(!i2sDmaAddress(0xffffffe0u,64));
  I2sBufferGeometry geometry;
- assert(!i2sBufferGeometry(48000,1,geometry)); assert(!i2sBufferGeometry(48000,101,geometry));
+ assert(!i2sBufferGeometry(48000,1,geometry)); assert(!i2sBufferGeometry(48000,321,geometry));
  assert(!i2sBufferGeometry(12345,20,geometry));
  for(uint32_t rate : {16000u,44100u,48000u,96000u,192000u}) {
-   for(uint16_t ms : {uint16_t(2),uint16_t(20),uint16_t(100)}) {
+   for(uint16_t ms : {uint16_t(2),uint16_t(20),uint16_t(100),uint16_t(150),uint16_t(320)}) {
      assert(i2sBufferGeometry(rate,ms,geometry));
      assert(geometry.half_frames==(((rate+999)/1000+3)&~3u));
      uint32_t wanted=((rate*ms+999)/1000+3)&~3u;

@@ -27,6 +27,7 @@ Status radioBleResumeAdvertising(){++resumeCalls;return actor?actor->host.bleRes
 Status i2sBegin(uint32_t){return Status::Unsupported;}
 Status i2sBegin(uint32_t,uint16_t){return Status::Unsupported;}
 Status i2sBegin(uint32_t,uint16_t,const I2sPins&){return Status::Unsupported;}
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins& pins,uint16_t){return i2sBegin(rate,ms,pins);}
 size_t i2sWrite(const int32_t*,size_t){return 0;}
 void i2sEnd(){}
 OutputStats i2sStats(){return{};}

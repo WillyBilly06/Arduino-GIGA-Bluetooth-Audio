@@ -11,6 +11,7 @@ struct DMA_HandleTypeDef{void(*XferHalfCpltCallback)(DMA_HandleTypeDef*)=nullptr
 struct I2S_HandleTypeDef{};enum:uint32_t{Stopped,Running,Priming};enum{HAL_OK,HAL_ERROR,DMA1_Stream7_IRQn=7};
 static I2S_HandleTypeDef i2s;static DMA_HandleTypeDef dma;static I2sRing*ring=nullptr;static int32_t*dmaWords=nullptr;
 static uint32_t halfFrames=0,outputPhase=Stopped,ringCapacity=0,timingEpoch=0,tick=0;static uint64_t sourcePrepared=0,sourceMissing=0;
+static uint32_t primeFrames=0; // Legacy-zero watermark for the verbatim i2sWrite mock.
 static OutputStats stats;static OutputTiming timing;static PcmRecovery recovery;static bool masked=false,fail=false;
 struct Critical{bool prior;Critical():prior(masked){masked=true;}~Critical(){masked=prior;}};
 static uint32_t micros(){return tick+=1000;}
@@ -24,7 +25,7 @@ static void dmaError(DMA_HandleTypeDef*){outputPhase=Stopped;stats.running=stats
 using namespace giga_bredr;using namespace giga_bredr::detail;
 struct Fixture{
  std::vector<int32_t> memory,output;std::unique_ptr<I2sRing> queue;
- Fixture(uint32_t rate,uint16_t ms){I2sBufferGeometry g;CHECK(i2sBufferGeometry(rate,ms,g));halfFrames=g.half_frames;ringCapacity=g.ring_frames;
+ Fixture(uint32_t rate,uint16_t ms){I2sBufferGeometry g;CHECK(i2sBufferGeometry(rate,ms,g));halfFrames=g.half_frames;primeFrames=0;ringCapacity=g.ring_frames;
   memory.assign(ringCapacity*2,0);output.assign(halfFrames*4,0);queue.reset(new I2sRing(memory.data(),ringCapacity));ring=queue.get();dmaWords=output.data();
   ++timingEpoch;stats={};stats.sample_rate=rate;stats.initialized=stats.priming=true;sourcePrepared=sourceMissing=0;fail=false;outputPhase=Priming;timing.beginEpoch(timingEpoch);CHECK(recovery.begin(timingEpoch,ringCapacity,halfFrames));}
  ~Fixture(){ring=nullptr;dmaWords=nullptr;outputPhase=Stopped;}
@@ -35,7 +36,7 @@ int main(){
   Fixture f(rate,ms);auto input=pcm(ringCapacity+halfFrames*2+7);auto epoch=timingEpoch;
   CHECK(i2sSourceSnapshot().prepared==0&&i2sSourceSnapshot().missing==0);
   CHECK(i2sWrite(input.data(),input.size()/2)==ringCapacity+halfFrames*2);
-  auto s=i2sSourceSnapshot();CHECK(s.prepared==halfFrames*2&&s.missing==0&&s.output_epoch==epoch&&s.sample_rate==rate&&s.ring_capacity==ringCapacity&&s.running&&s.initialized&&!s.recovering&&!masked);
+  auto s=i2sSourceSnapshot();CHECK(s.prepared==halfFrames*2&&s.missing==0&&s.output_epoch==epoch&&s.sample_rate==rate&&s.ring_capacity==ringCapacity&&s.half_frames==halfFrames&&s.running&&s.initialized&&!s.recovering&&!masked);
   uint32_t remaining=ringCapacity;while(remaining){auto real=remaining<halfFrames?remaining:halfFrames;refill(0);remaining-=real;}
   s=i2sSourceSnapshot();CHECK(s.prepared==uint64_t(halfFrames)*2+ringCapacity);auto p=s.prepared,z=s.missing;
   refill(1);s=i2sSourceSnapshot();CHECK(s.prepared==p&&s.missing==z+halfFrames&&s.recovering);

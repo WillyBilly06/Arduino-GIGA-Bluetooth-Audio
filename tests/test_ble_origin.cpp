@@ -106,6 +106,7 @@ int main(int argc,char** argv){
 
 namespace giga_bredr { namespace detail {
 Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins&){return i2sBegin(rate,ms);}
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins& pins,uint16_t){return i2sBegin(rate,ms,pins);}
 }}
 
 // Link boundary for lifecycle APIs unused by this existing regression.

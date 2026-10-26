@@ -27,12 +27,14 @@ Status radioBegin(const char*,uint32_t,const RadioCallbacks&c,const BleConfig&){
 struct DMA_HandleTypeDef {void(*XferHalfCpltCallback)(DMA_HandleTypeDef*)=nullptr;void(*XferCpltCallback)(DMA_HandleTypeDef*)=nullptr;void(*XferErrorCallback)(DMA_HandleTypeDef*)=nullptr;};
 struct I2S_HandleTypeDef {};enum:uint32_t{Stopped=0,Running=1,Priming=2};enum{HAL_OK=0,DMA1_Stream7_IRQn=7};
 static I2S_HandleTypeDef i2s;static DMA_HandleTypeDef dma;static uint32_t outputPhase=Stopped,halfFrames=0;static int32_t* dmaWords=nullptr;static OutputStats stats;static PcmRecovery recovery;
+static uint32_t primeFrames=0; // Legacy-zero watermark for the verbatim i2sWrite mock.
 static void clean(int32_t* p,uint32_t n){if(p!=dmaWords||n!=halfFrames*2)std::abort();}
 static int HAL_I2S_Transmit_DMA(I2S_HandleTypeDef* p,uint16_t* data,uint32_t words){if(p!=&i2s||data!=reinterpret_cast<uint16_t*>(dmaWords)||words!=halfFrames*4||outputPhase!=Priming)std::abort();return HAL_OK;}
 static void NVIC_ClearPendingIRQ(unsigned){}static void NVIC_EnableIRQ(unsigned){if(outputPhase!=Running)std::abort();::running=true;::priming=false;}
 static void halfDone(DMA_HandleTypeDef*){}static void fullDone(DMA_HandleTypeDef*){}static void dmaError(DMA_HandleTypeDef*){stats.running=stats.priming=false;outputPhase=Stopped;::running=::priming=false;recovery.end(tick,ring?uint32_t(ring->queued()):0);}
-Status i2sBegin(uint32_t rate,uint16_t ms){if(!i2sBufferGeometry(rate,ms,geometry))return Status::InvalidArgument;memory.assign(geometry.ring_frames*2,0);dma_storage.assign(geometry.half_frames*4,0);ring.reset(new I2sRing(memory.data(),geometry.ring_frames));halfFrames=geometry.half_frames;dmaWords=dma_storage.data();outputPhase=Priming;stats={};stats.initialized=stats.priming=true;stats.sample_rate=rate;recovery.begin(1,geometry.ring_frames,halfFrames);priming=true;running=false;return Status::Ok;}
+Status i2sBegin(uint32_t rate,uint16_t ms){if(!i2sBufferGeometry(rate,ms,geometry))return Status::InvalidArgument;memory.assign(geometry.ring_frames*2,0);dma_storage.assign(geometry.half_frames*4,0);ring.reset(new I2sRing(memory.data(),geometry.ring_frames));halfFrames=geometry.half_frames;primeFrames=0;dmaWords=dma_storage.data();outputPhase=Priming;stats={};stats.initialized=stats.priming=true;stats.sample_rate=rate;recovery.begin(1,geometry.ring_frames,halfFrames);priming=true;running=false;return Status::Ok;}
 Status i2sBegin(uint32_t rate){return i2sBegin(rate,20);}Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins&){return i2sBegin(rate,ms);}
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins& pins,uint16_t){return i2sBegin(rate,ms,pins);}
 // Only rename the symbol; the included platform function body is verbatim.
 #define i2sWrite verbatimPlatformWrite
 static uint64_t sourcePrepared=0; // Mock storage for verbatim production prime credit.

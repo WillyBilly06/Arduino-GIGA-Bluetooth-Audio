@@ -7,6 +7,7 @@
 #include <string.h>
 #include <thread>
 #include <atomic>
+#include <initializer_list>
 using namespace giga_bredr;
 static uint8_t observedVolume = 0, observedAttribute = 0;
 static size_t observedTextBytes = 0;
@@ -46,8 +47,13 @@ OutputStats i2sStats() { OutputStats s; s.initialized = true; s.running = !outpu
 OutputTimingSnapshot i2sTiming() { return {}; }
 }}
 int main() {
+    ReceiverConfig defaults;
+    assert(defaults.maximum_packet_bytes==0 && defaults.maximum_access_unit_bytes==0 && defaults.queue_packets==0 && defaults.startup_packets==0 && defaults.startup_buffer_ms==0);
+#if !defined(GIGA_BREDR_I2S_BUFFER_MS)
+    assert(defaults.pcm_buffer_ms==0);
+#endif
     GigaBredr receiver;
-    ReceiverConfig config; config.maximum_packet_bytes = 128; config.maximum_access_unit_bytes = 128; config.queue_packets = 2;
+    ReceiverConfig config; config.maximum_packet_bytes = 128; config.maximum_access_unit_bytes = 128; config.queue_packets = 2; config.startup_packets = 2; // Explicit legacy packet-reserve scenarios below.
     config.i2s=I2sPins{91,47,84,15};
     {ReceiverConfig bad=config;bad.i2s.mclk=-2;assert(receiver.begin(bad)==Status::InvalidArgument && detail::memoryStats().current_bytes==0);}
     uint8_t notification[] = {1,2,3}; BleWrite bleWrite;
@@ -152,7 +158,7 @@ int main() {
     assert(detail::memoryStats().current_bytes == 0);
     // Per-codec overrides inherit each zero field and allocate only on selection.
     config = ReceiverConfig(); config.maximum_packet_bytes = 128;
-    config.maximum_access_unit_bytes = 256; config.queue_packets = 2;
+    config.maximum_access_unit_bytes = 256; config.queue_packets = 2; config.startup_packets = 2;
     config.pcm_buffer_ms = 12;
     config.user = &receiver;
     config.configuration_changed = [](const CodecConfig&, void* user) {
@@ -224,12 +230,18 @@ int main() {
     }
     assert(failurePositions>=4 && receiver.stats().memory.current_bytes==idleBytes);
     receiver.end(); assert(detail::memoryStats().current_bytes==0);
+    // The intentional extended capacity range is accepted before codec selection.
+    for(uint16_t ms : {uint16_t(150),uint16_t(320)}) {
+        lhdc.pcm_buffer_ms=ms; assert(receiver.begin(config)==Status::Ok);
+        receiver.end(); assert(detail::memoryStats().current_bytes==0);
+    }
+    lhdc.pcm_buffer_ms=40;
     // Invalid inactive overrides fail before any receiver/codec allocation.
     lhdc.queue_packets=65; assert(receiver.begin(config)==Status::InvalidArgument); lhdc.queue_packets=6;
     lhdc.startup_packets=65; assert(receiver.begin(config)==Status::InvalidArgument); lhdc.startup_packets=7;
     lhdc.maximum_packet_bytes=63; assert(receiver.begin(config)==Status::InvalidArgument); lhdc.maximum_packet_bytes=512;
     lhdc.maximum_access_unit_bytes=65536; assert(receiver.begin(config)==Status::InvalidArgument); lhdc.maximum_access_unit_bytes=1024;
-    lhdc.pcm_buffer_ms=101; assert(receiver.begin(config)==Status::InvalidArgument); lhdc.pcm_buffer_ms=40;
+    lhdc.pcm_buffer_ms=321; assert(receiver.begin(config)==Status::InvalidArgument); lhdc.pcm_buffer_ms=40;
     config.pcm_buffer_ms=1; assert(receiver.begin(config)==Status::InvalidArgument);
     assert(detail::memoryStats().current_bytes==0);
     config.pcm_buffer_ms=20; config.enable_i2s=false;
@@ -266,6 +278,7 @@ int main() {
 
 namespace giga_bredr { namespace detail {
 Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins& pins){selectedPins=pins;return i2sBegin(rate,ms);}
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins& pins,uint16_t){return i2sBegin(rate,ms,pins);}
 }}
 
 // Link boundary for lifecycle APIs unused by this existing regression.

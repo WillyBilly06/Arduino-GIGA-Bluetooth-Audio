@@ -28,6 +28,7 @@ Status radioBegin(const char*n,uint32_t m,const RadioCallbacks&c){return radioBe
 void radioPoll(){if(!current||current->radioOnce.exchange(true))return; if(current->replace){CHECK(callbacks.configure(format(96000),callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);}else if(current->same||current->shutdown||current->stall){CHECK(callbacks.configure(format(192000),callbacks.user)==Status::Ok);if(current->shutdown)current->receiver->impl_->running.store(false);}else callbacks.stream(false,callbacks.user);current->controlDone.set_value();}
 void radioEnd(){callbacks={};}RadioStats radioStats(){return{};}BleStats radioBleStats(){return{};}Status radioBleNotify(const uint8_t*,size_t){return Status::Unsupported;}bool radioBleReadWrite(BleWrite&){return false;}
 Status i2sBegin(uint32_t){return Status::Ok;}Status i2sBegin(uint32_t,uint16_t){return Status::Ok;}Status i2sBegin(uint32_t,uint16_t,const I2sPins&){return Status::Ok;}
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins& pins,uint16_t){return i2sBegin(rate,ms,pins);}
 size_t i2sWrite(const int32_t* p,size_t n){unsigned count=++current->writes;if(count==1||current->stall)return 0;volatile int32_t sum=0;for(size_t i=0;i<n*2;++i)sum^=p[i];(void)sum;return n;}
 void i2sEnd(){}OutputStats i2sStats(){OutputStats s;s.initialized=s.running=true;return s;}OutputTimingSnapshot i2sTiming(){return{};}PcmRecoverySnapshot i2sRecovery(){return{};}
 }}

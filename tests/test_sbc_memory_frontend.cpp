@@ -12,6 +12,7 @@ BleStats radioBleStats(){return {};}Status radioBleNotify(const uint8_t*,size_t)
 bool radioBleReadWrite(BleWrite&){return false;}
 Status i2sBegin(uint32_t){return Status::Ok;}Status i2sBegin(uint32_t,uint16_t){return Status::Ok;}
 Status i2sBegin(uint32_t,uint16_t,const I2sPins&){return Status::Ok;}
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins& pins,uint16_t){return i2sBegin(rate,ms,pins);}
 size_t i2sWrite(const int32_t* pcm,size_t n){
     for(size_t i=0;i<n;++i)if(pcm[2*i]!=pcm[2*i+1]){fputs("FAIL mono stereo expansion\n",stderr);abort();}
     writtenFrames+=n;return n;
