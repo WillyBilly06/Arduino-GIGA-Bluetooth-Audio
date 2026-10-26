@@ -5,18 +5,41 @@
 #include <functional>
 #include <vector>
 using namespace giga_bredr::detail;
+// Independent masks from the H747 consumer map. Check every input bit and all
+// own-SPI policies at compile time, including invalid IDs retaining every gate.
+constexpr bool fingerprint_constexpr_proof(){
+ const unsigned owners[]={0u,1u,2u,3u,4u,0xffffffffu};
+ for(unsigned own:owners)for(unsigned sample=0;sample<34;++sample){
+  const uint32_t value=sample<32?(uint32_t(1u)<<sample):sample==32?0u:0xffffffffu;
+  I2sClockConsumerRegisters registers{};
+  for(unsigned i=0;i<4;++i)registers.mux[i]=value;
+  for(unsigned i=0;i<9;++i)registers.enable[i]=value;
+  uint32_t expected[]={0x00010133u,0x303701c7u,0x7000003fu,0x77e3fc07u,
+   0x00000020u,0x00000200u,0x00015000u,0x01000000u,0xc01fc200u,
+   0x00000100u,0x01d03030u,0x00000010u,0x00201e28u};
+  if(own==1)expected[10]=0x01d02030u;
+  if(own==2)expected[8]=0xc01f8200u;
+  if(own==3)expected[8]=0xc01f4200u;
+  uint32_t actual[13]={};
+  i2sClockConsumerFingerprint(registers,own,actual);
+  for(unsigned i=0;i<13;++i)if(actual[i]!=(value&expected[i]))return false;
+ }
+ return true;
+}
+static_assert(fingerprint_constexpr_proof(),"All H747 fingerprint bits and own-SPI policies must remain exact");
 static unsigned checks=0;
 #define CHECK(x) do{++checks;if(!(x)){std::fprintf(stderr,"FAIL line%d %s\n",__LINE__,#x);std::abort();}}while(0)
 struct Trace {char kind;uint32_t cycles;bool masked;};
 struct Model {
- I2sClockRegisters r;uint32_t tick=0x12345678,step=8,reads=0,basepri_value=0;bool masked=false,counter=true;
+ I2sClockRegisters r;uint32_t tick=0x12345678,step=8,reads=0,basepri_value=0,primask=0,faultmask=0,ipsr=0;bool masked=false,counter=true;
  bool fail_counter=false,stall_after_clear=false,ignore_clear=false,ignore_fraction=false,ignore_set=false,priority_supported=true;
- unsigned unmasked=0;std::function<void(Model&)> after_clear,after_set;std::vector<Trace> trace;
+ unsigned unmasked=0;std::function<void(Model&)> after_clear,after_set,after_restore;std::vector<Trace> trace;
  Model(){r.output_epoch=7;r.owned=r.running=r.interrupts_enabled=r.spi_clock_enabled=true;r.core_hz=480000000;r.reference_hz=4000000;
   r.cr=I2sClockMasks::RequiredCr;r.pllckselr=2u|(4u<<12);r.pllcfgr=0x80000000u|I2sClockMasks::FracEnable|0x80u|I2sClockMasks::PEnable;
   r.pll2divr=97u|(7u<<9)|(7u<<16)|(7u<<24);r.pll2fracr=0xa5000001u|(2490u<<3);r.spi_mux=0x1000;r.instance=2;r.spi_i2scfgr=0x12345678;r.foreign[0]=0x76543210;}
- I2sClockRegisters snapshot(){auto v=r;v.interrupts_enabled=!masked;return v;}
- bool interruptsEnabled(){return !masked;}
+ I2sClockRegisters snapshot(){auto v=r;v.interrupts_enabled=interruptsEnabled();return v;}
+ bool interruptsEnabled(){return !masked&&!basepri_value&&!primask&&!faultmask&&!ipsr;}
+ bool clockGuardContextValid(){return masked&&basepri_value==I2sClockBasepri&&!primask&&!faultmask&&!ipsr&&criticalSupported();}
  bool criticalSupported(){return priority_supported;}
  bool counterEnabled(){return counter;}
  void enableCounter(){trace.push_back({'E',tick,masked});if(!fail_counter)counter=true;}
@@ -27,10 +50,10 @@ struct Model {
  void syncMask(){}
  uint32_t enterCritical(){const uint32_t old=i2sClockEnterCritical(*this);trace.push_back({'K',tick,masked});return old;}
  void exitCritical(uint32_t old){i2sClockExitCritical(*this,old);trace.push_back({'U',tick,masked});++unmasked;
-  if(unmasked==1&&after_clear)after_clear(*this);if(unmasked==2&&after_set)after_set(*this);}
+  if(after_restore)after_restore(*this);}
  void setFractionEnabled(bool enabled){trace.push_back({enabled?'S':'C',tick,masked});
-  if(enabled){if(!ignore_set)r.pllcfgr|=I2sClockMasks::FracEnable;}
-  else{if(!ignore_clear)r.pllcfgr&=~I2sClockMasks::FracEnable;if(stall_after_clear)step=0;}}
+  if(enabled){if(!ignore_set)r.pllcfgr|=I2sClockMasks::FracEnable;if(after_set)after_set(*this);}
+  else{if(!ignore_clear)r.pllcfgr&=~I2sClockMasks::FracEnable;if(stall_after_clear)step=0;if(after_clear)after_clear(*this);}}
  void writeFraction(uint16_t value){trace.push_back({'W',tick,masked});if(!ignore_fraction)r.pll2fracr=(r.pll2fracr&~I2sClockMasks::Fraction)|(uint32_t(value)<<3);}
 };
 static unsigned count(const Model&m,char c){unsigned n=0;for(auto t:m.trace)n+=t.kind==c;return n;}
@@ -59,6 +82,7 @@ static void sequence(){
  for(auto t:m.trace){if(t.kind=='C'){CHECK(order==0&&t.masked);clear=t.cycles;order=1;}if(t.kind=='W'){CHECK(order==1&&t.masked);write=t.cycles;order=2;}if(t.kind=='S'){CHECK(order==2&&t.masked);set=t.cycles;order=3;}}
  CHECK(order==3&&uint32_t(write-clear)>=360&&uint32_t(m.tick-set)>=360&&!m.masked);
  CHECK(result.wait_cycles[0]>=360&&result.wait_cycles[1]>=360&&result.max_critical_cycles>0);
+ CHECK(count(m,'K')==1&&count(m,'U')==1&&m.unmasked==1&&m.basepri_value==0);
  CHECK(result.duration_valid&&result.duration_cycles>=720&&result.duration_cycles<=uint32_t(m.tick-start));
  CHECK(s.releaseAllowed(m.snapshot()));auto oldWrites=count(m,'W');auto nochange=apply(s,m,result.applied_q16,result.applied_q16,result.applied_q16);
  CHECK(nochange.accepted&&nochange.status==ClockTrimCode::Unchanged&&count(m,'W')==oldWrites);
@@ -95,7 +119,33 @@ static void stop_races(){
  Model after;I2sClockTrimState as;CHECK(as.capture(7,after.snapshot()));after.after_set=[](Model&m){m.r.running=false;};auto b=apply(as,after);
  CHECK(!b.accepted&&b.partial&&b.applied_q16==0&&count(after,'W')==1&&!as.releaseAllowed(after.snapshot()));
  Model stopped;I2sClockTrimState ss;CHECK(ss.capture(7,stopped.snapshot()));stopped.r.running=false;CHECK(ss.releaseAllowed(stopped.snapshot()));
- puts("STOP_DURING_UNMASKED_WAITS_REFUSES_COMMIT_SAFE_OWNED_STOP_DISTINCT_PASS");
+ puts("ALLOWED_CONTEXT_STOP_REFUSES_COMMIT_SAFE_OWNED_STOP_DISTINCT_PASS");
+}
+// Source-only expectations for Root's future CLOCK-only execution.
+static void continuous_transition(){
+ for(uint32_t core:{64000000u,480000000u}){Model m;m.r.core_hz=core;I2sClockTrimState s;CHECK(s.capture(7,m.snapshot()));
+  auto r=apply(s,m);CHECK(r.accepted&&r.wait_cycles[0]>=360&&r.wait_cycles[1]>=360&&count(m,'K')==1&&count(m,'U')==1&&!m.masked&&m.basepri_value==0);}
+ for(unsigned which=0;which<5;++which){Model m;I2sClockTrimState s;CHECK(s.capture(7,m.snapshot()));
+  m.after_restore=[which](Model&v){switch(which){case 0:v.r.running=false;break;case 1:++v.r.output_epoch;break;case 2:v.r.foreign[0]^=1;break;case 3:v.r.spi_i2scfgr^=1;break;case 4:v.r.spi_clock_enabled=false;break;}};
+  auto r=apply(s,m);CHECK(!r.accepted&&r.partial&&r.status==ClockTrimCode::ForeignClock&&s.faulted());
+  CHECK(count(m,'C')==1&&count(m,'W')==1&&count(m,'S')==1&&count(m,'K')==1&&count(m,'U')==1&&!m.masked&&m.basepri_value==0&&!s.releaseAllowed(m.snapshot()));}
+ Model released;I2sClockTrimState rs;CHECK(rs.capture(7,released.snapshot()));released.after_restore=[](Model&v){v.tick+=20000;};
+ auto rr=apply(rs,released);CHECK(rr.accepted&&rr.wait_cycles[1]>9600&&rr.wall_overruns==1&&rr.duration_cycles>=rr.wait_cycles[1]&&rr.max_critical_cycles>=20000);
+ Model both;I2sClockTrimState bs;CHECK(bs.capture(7,both.snapshot()));both.after_set=[](Model&v){v.step=20000;};
+ auto br=apply(bs,both);CHECK(br.accepted&&br.wait_cycles[1]>9600&&br.wall_overruns==1&&!both.masked);
+ Model failed;I2sClockTrimState fs;CHECK(fs.capture(7,failed.snapshot()));failed.after_restore=[](Model&v){v.tick+=20000;v.r.running=false;};
+ auto fr=apply(fs,failed);CHECK(!fr.accepted&&fr.partial&&fr.wait_cycles[1]>9600&&fr.wall_overruns==1&&!failed.masked);
+ Model lost;I2sClockTrimState ls;CHECK(ls.capture(7,lost.snapshot()));lost.after_restore=[](Model&v){v.counter=false;};
+ auto lr=apply(ls,lost);CHECK(!lr.accepted&&lr.partial&&lr.status==ClockTrimCode::TimerUnavailable&&!lr.duration_valid&&ls.faulted()&&count(lost,'U')==1&&lost.basepri_value==0);
+ for(unsigned which=0;which<4;++which){Model m;I2sClockTrimState s;CHECK(s.capture(7,m.snapshot()));
+  m.after_restore=[which](Model&v){switch(which){case 0:v.primask=1;break;case 1:v.faultmask=1;break;case 2:v.ipsr=16;break;case 3:v.basepri_value=0x20;v.masked=true;break;}};
+  auto r=apply(s,m);CHECK(!r.accepted&&r.partial&&r.status==ClockTrimCode::InvalidContext&&s.faulted()&&count(m,'U')==1);
+  if(which==3){CHECK(m.basepri_value==0x20);}else{CHECK(m.basepri_value==0);}}
+ for(unsigned which=0;which<4;++which){Model m;I2sClockTrimState s;CHECK(s.capture(7,m.snapshot()));
+  m.after_clear=[which](Model&v){switch(which){case 0:v.primask=1;break;case 1:v.faultmask=1;break;case 2:v.ipsr=16;break;case 3:v.basepri_value=0x20;break;}};
+  auto r=apply(s,m);CHECK(!r.accepted&&r.partial&&r.status==ClockTrimCode::TimerUnavailable&&count(m,'U')==1&&m.basepri_value==0&&!m.masked);
+  if(which==0){CHECK(m.primask==1);}if(which==1){CHECK(m.faultmask==1);}if(which==2){CHECK(m.ipsr==16);}}
+ puts("CONTINUOUS_SCOPE_POST_RESTORE_CONTEXT_FINGERPRINT_AND_SINGLE_OVERRUN_EXPECTATIONS_PASS");
 }
 static void consumers_and_release(){
  I2sClockConsumerRegisters registers;registers.mux[1]=1u<<12;registers.enable[4]=1u<<14;
@@ -116,5 +166,5 @@ int main(int argc,char**argv){
  if(argc==2&&!std::strcmp(argv[1],"stop")){stop_races();return 0;}
  if(argc==2&&!std::strcmp(argv[1],"irq")){Model m;I2sClockTrimState s;CHECK(s.capture(7,m.snapshot()));m.after_clear=[](Model&v){v.step=20000;};auto r=apply(s,m);CHECK(r.accepted&&r.wall_overruns>0&&s.releaseAllowed(m.snapshot()));return 0;}
  if(argc==2&&!std::strcmp(argv[1],"prewrite")){Model m;I2sClockTrimState s;CHECK(s.capture(7,m.snapshot()));m.counter=false;m.fail_counter=true;CHECK(!apply(s,m).accepted&&s.releaseAllowed(m.snapshot()));return 0;}
- quantizer();sequence();reject_before_write();failures();stop_races();consumers_and_release();std::printf("CLOCK_TRIM_MODEL_PASS checks=%u\n",checks);return 0;
+ quantizer();sequence();reject_before_write();failures();stop_races();continuous_transition();consumers_and_release();std::printf("CLOCK_TRIM_MODEL_PASS checks=%u\n",checks);return 0;
 }

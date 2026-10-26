@@ -14,6 +14,24 @@ enum class AudioClockBackendStatus : uint8_t {
     Unrepresentable, Unsupported, ForeignClock, TimerUnavailable, TimerStalled,
     ReadbackFault, InvalidContext
 };
+// Private source-epoch witness, reset by the existing clockBegin stats reset.
+// Counters saturate; flags:1=saturation,2=unknown timing,4=epoch mismatch,
+// 8=non-increasing serial,16=wait0 max valid,32=wait1 max/worst valid.
+struct AudioClockWorstWait1 {
+    uint32_t serial=0, ordinal=0, stream_epoch=0, output_epoch=0, configured_core_hz=0;
+    uint32_t wait0_cycles=0, wait1_cycles=0, parts[4]={}, overrun_total=0;
+    AudioClockBackendStatus status=AudioClockBackendStatus::Unavailable;
+    uint8_t mask=0;
+    bool partial=false; // Hardware touched, including successful updates.
+    uint32_t restore_split[2]={}, restore_icsr=0, restore_basepri=0;
+    uint8_t restore_seen=0, restore_flags=8u, restore_pending=0;
+};
+struct AudioClockWitnessStats {
+    uint32_t results=0, overrun_updates=0, overrun_total=0, timing_unknown=0;
+    uint32_t wait1_started=0, wait1_complete=0, maximum_wait0=0, maximum_wait1=0, last_serial=0;
+    uint8_t flags=0;
+    AudioClockWorstWait1 worst;
+};
 // One coherent last worker observation at observation_us, or an explicit
 // begin/stop publication. Live counters between observations remain private.
 // This is not a current wire-rate measurement or an IRQ snapshot API.
@@ -38,5 +56,6 @@ struct AudioClockStats {
     uint32_t duration_cycles = 0, wait_cycles[2] = {}, maximum_critical_cycles = 0;
     uint8_t wall_overruns = 0;
     bool duration_valid = false;
+    AudioClockWitnessStats witness;
 };
 }

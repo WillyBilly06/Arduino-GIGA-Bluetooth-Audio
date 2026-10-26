@@ -1,3 +1,17 @@
+R3 code-input parity: Root verified/extracted the475-file R2 ZIP and built the official all-codec M7 source in106.797s (exit0/quiescent). The corrected static audit passed; its first failed attempt is retained. The binary is byte-identical to the field-tested f42 image, so that finite clock-failed observation applies by exact binary parity, not a new hardware test. R3 changes only noncompiler documentation; all365 ordered input hashes/projection remain2cb3a3a2.... The final archive self-hash belongs only in the external sidecar. No clock/stability/fidelity/E2E pass is created.
+
+# Current clock qualification scope - experimental dev.9
+
+The corrected f42 source retains the existing clock feedback/ownership/guard/restore behavior and20us whole-wait1 bound. Bounded SUM/WORST/RESTORE metadata witnesses are included; instrumentation can perturb timing. Original full/active fault maxima and cumulative over_n/over_total remain independent gates. A nonzero cumulative count fails even if the most recent or final WORK row is zero. Unknown/missing/saturated coverage is not zero or an all-results maximum.
+
+ECA4's six finite normal windows retain cumulative overruns9/1/1/0/4/5 (LHDC/SBC/AAC/aptX/HD/LDAC). The corrected f42 LHDC window retains4/91 with unknown0 and90started/full; worst retained wait1 is528.4354 configured microseconds. Inclusive pre-restore-to-post-exit span2 includes bookkeeping/restoration and immediately released work. It identifies no preemptor or causal source of the original RTP/supply issue. A change from9 to4 is not a matched timing improvement experiment.
+
+All codec total200ms phone-to-DAC latency remains UNKNOWN. Queue reserve, compressed residence, I2S buffer and local AudioTrack capacity/head lag are separate, unaligned metrics. In the existing AAC profile, six1024-frame LC AUs at44.1k represent139.32ms; six2048-frame HE output AUs represent278.64ms, conditionally if one AU maps to each queued packet. This is a concrete startup-content risk, not measured E2E latency or a new buffer policy. No microphone/capture/analog measurement is claimed.
+
+The following design/API notes and prior test descriptions retain their historical scopes. They are not newly executed tests or stability/electrical qualification of this export. Current finite evidence is in validation/dev9-2026-10-26.md.
+
+---
+
 # Audio clock compensation and LE control
 
 `ReceiverConfig::clock` enables worker-side clock feedback by default when I2S is enabled. All codec identities use the common decoded-frame/output path; this is not a codec-specific resampler. The controller preserves decoded PCM values and order. It changes only the exclusively owned PLL2 fractional numerator after checking the output epoch, clock consumers and register readback.

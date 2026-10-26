@@ -104,6 +104,7 @@ void ClassicProfiles::channelClosed(uint16_t cid){
 }
 void ClassicProfiles::stop(bool invalidate){
  playing_=false;if(invalidate)valid_=false;
+ if(stream_policy_)stream_policy_(false,stream_policy_user_);
  if(callbacks_.stream)callbacks_.stream(false,callbacks_.user);
 }
 void ClassicProfiles::diagnose(const char* text){if(callbacks_.diagnostic)callbacks_.diagnostic(text,callbacks_.user);}
@@ -128,8 +129,16 @@ bool ClassicProfiles::signaling(Channel& c,const uint8_t* p,size_t n,bool secure
     return finish(c,r,status,written);
    }
    accepted_=proposed;valid_=true;playing_=false;
+   if(stream_policy_)stream_policy_(false,stream_policy_user_);
   }
   if(actions&BTH_AVDTP_START_AUDIO){
+   if(valid_&&stream_policy_&&!stream_policy_(true,stream_policy_user_)){
+    bth_control_tx_cancel(replies_,r.token);
+    // A complete valid START now waits under the actor's bounded pending-SDU
+    // deadline, not an incomplete-fragment deadline. Retry keeps kernel state
+    // and the retained input; shared assembly repeats the identical suffix.
+    avdtp_deadline_=0;return false;
+   }
    Status prepared=valid_?callbacks_.configure(accepted_,callbacks_.user):Status::Unsupported;
    if(prepared!=Status::Ok){
     stop(false);r.data[0]=uint8_t((r.data[0]&0xfc)|3);r.data[2]=uint8_t(next.local_seid<<2);r.data[3]=BadState;written=4;

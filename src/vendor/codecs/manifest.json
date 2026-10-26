@@ -1120,8 +1120,8 @@
       "explicit-build-selection",
       "per-call-concealment-flags"
     ],
-    "exported_sha256": "66699122ee54820d594de1ddba4764ae9d6a43b555023175948d7c4b2d50c2c2",
-    "exported_bytes": 94067
+    "exported_sha256": "80d3672c5d367ae422d224b2a4358365e3a55158dd7334378b429df416966255",
+    "exported_bytes": 94400
   },
   {
     "source": "decoders/LHDC-V5/lhdc_dec.h",

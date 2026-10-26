@@ -240,6 +240,45 @@ struct GigaBredr::Impl {
         }
         return AudioClockBackendStatus::Unsupported;
     }
+    static void clockWitnessAdd(uint32_t& value, uint32_t add, uint8_t& flags) {
+        if (add > UINT32_MAX - value) { value = UINT32_MAX; flags |= 1u; }
+        else value += add;
+    }
+    static void clockWitness(AudioClockStats& stats, const detail::AudioClockDecision& decision, const detail::ClockTrimResult& result) {
+        auto& w = stats.witness;
+        clockWitnessAdd(w.results, 1u, w.flags);
+        if (result.wall_overruns) clockWitnessAdd(w.overrun_updates, 1u, w.flags);
+        clockWitnessAdd(w.overrun_total, result.wall_overruns, w.flags);
+        if (w.last_serial && decision.serial <= w.last_serial) w.flags |= 8u;
+        w.last_serial = decision.serial;
+        const bool epoch = decision.stream_epoch == stats.stream_epoch && decision.output_epoch == stats.expected_output_epoch && result.output_epoch == decision.output_epoch;
+        if (!epoch) w.flags |= 4u;
+        const bool started = (result.witness_mask & 0x40u) != 0;
+        const bool complete = epoch && result.duration_valid && (result.witness_mask & 0x9fu) == 0x1fu;
+        if (started) clockWitnessAdd(w.wait1_started, 1u, w.flags);
+        if (complete) clockWitnessAdd(w.wait1_complete, 1u, w.flags);
+        if (!epoch || !result.duration_valid || !result.configured_core_hz || (result.witness_mask & 0x80u) || (started && !complete) || result.status == detail::ClockTrimCode::TimerUnavailable || result.status == detail::ClockTrimCode::TimerStalled) {
+            w.flags |= 2u; clockWitnessAdd(w.timing_unknown, 1u, w.flags);
+        }
+        if (epoch && (result.witness_mask & 0x20u)) {
+            if (!(w.flags & 16u) || result.wait_cycles[0] > w.maximum_wait0) w.maximum_wait0 = result.wait_cycles[0];
+            w.flags |= 16u;
+        }
+        if (complete && (!(w.flags & 32u) || result.wait_cycles[1] > w.maximum_wait1)) {
+            w.maximum_wait1 = result.wait_cycles[1]; w.flags |= 32u;
+            auto& worst = w.worst;
+            worst.serial = decision.serial; worst.ordinal = w.results;
+            worst.stream_epoch = decision.stream_epoch; worst.output_epoch = decision.output_epoch;
+            worst.configured_core_hz = result.configured_core_hz;
+            worst.wait0_cycles = result.wait_cycles[0]; worst.wait1_cycles = result.wait_cycles[1];
+            for (unsigned i = 0; i < 4; ++i) worst.parts[i] = result.wait1_parts[i];
+            worst.overrun_total = w.overrun_total; worst.status = clockBackendStatus(result.status);
+            worst.mask = result.witness_mask; worst.partial = result.partial;
+            worst.restore_split[0] = result.restore_split[0]; worst.restore_split[1] = result.restore_split[1];
+            worst.restore_icsr = result.restore_icsr; worst.restore_basepri = result.restore_basepri;
+            worst.restore_seen = result.restore_seen; worst.restore_flags = result.restore_flags; worst.restore_pending = result.restore_pending;
+        }
+    }
     void clockFeedback() {
         if (!clockEnabled() || !clock_eligible || !running.load() || !configured || !playing.load() || !clock_output_epoch) return;
         const uint32_t now = clockUs();
@@ -277,6 +316,7 @@ struct GigaBredr::Impl {
         if (decision.update) {
             stats.requested_ppm_q16 = decision.requested_q16;
             const auto result = detail::i2sClockTrim(decision.output_epoch, decision.requested_q16, decision.lower_q16, decision.upper_q16);
+            clockWitness(stats, decision, result);
             const bool correct_epoch = result.output_epoch == decision.output_epoch;
             bool accepted = result.accepted && correct_epoch;
             const bool acknowledged = clock_control.acknowledge(decision, accepted, result.applied_q16);

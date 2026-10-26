@@ -1,3 +1,21 @@
+R3 code-input parity: Root verified/extracted the475-file R2 ZIP and built the official all-codec M7 source in106.797s (exit0/quiescent). The corrected static audit passed; its first failed attempt is retained. The binary is byte-identical to the field-tested f42 image, so that finite clock-failed observation applies by exact binary parity, not a new hardware test. R3 changes only noncompiler documentation; all365 ordered input hashes/projection remain2cb3a3a2.... The final archive self-hash belongs only in the external sidecar. No clock/stability/fidelity/E2E pass is created.
+
+# Experimental develop status: 0.1.0-dev.9
+
+NOT PUBLISHED / NOT STABLE. R2 preserves f42 production code, corrects the distributed vendor manifest, repairs two nonproduction fixtures and updates release documentation/metadata. The actual verified R2 ZIP build/static audit and new-ELF instruction review are now complete. R3 retains all compiler input bytes and updates documentation only.
+
+ECA4 completed six finite phone-family normal windows (LHDC192,SBC44.1,AAC-LC44.1,aptX48,aptXHD48,LDAC96). All43 non-clock gates were zero, but cumulative clock overruns9/1/1/0/4/5 remain. Sampled/final zero does not clear cumulative failures. No matched before/after experiment or general stability is claimed.
+
+The corrected f42 LHDC192 run completed source90.066154810s,GATT43 over61.118s at512B/MTU517,and three physical controls.43 non-clock gates were zero; clock wall-bound FAILED with4/91 cumulative overruns,unknown0,90started/full. Worst retained wait1 was528.4354 configured microseconds, dominated by inclusive pre-restore-to-post-exit span2; it does not identify an IRQ/thread/bus cause. Full8c readback/exact saved LHDC48 IDLE restoration and all releases completed. This traffic check does not prove a clipped sample occurred, bit-exact24-bit output, pop cure, timing improvement, acoustic continuity or stability. ECA4's earlier failures remain.
+
+The one-leaf finite LHDC float-to-S32 correction is included. Clock phase/restoration diagnostics remain linked, with every original20us/44/CUM gate unchanged. Legacy lifecycle/control/service/acquisition/RX-age observers remain absent. No controller patch replacement, buffer/profile change or codec capability exclusion is introduced by this export.
+
+Opus/HE/distinctXQ/Apple sender coverage, independent low24-bit fidelity, electrical/acoustic proof, longer qualification and200ms total phone-to-DAC latency remain unproved. Full HFP/HSP/RFCOMM/SCO, complete typed AVRCP and a public pluggable microphone-input API remain unfinished. All original project/vendor license and notice bytes are retained; no new grant is asserted.
+
+See validation/dev9-2026-10-26.md/.json and BUILD.json for exact artifact/evidence scopes. Main/develop, remote tags and ZIP publication were not changed by this preparation. Historical records below retain their original verdicts and do not qualify f42.
+
+## Historical dev.8 and earlier records (retained)
+
 # Develop status: 0.1.0-dev.8
 
 Measured selected raw-AAC storage reduction; general audio remains unqualified.
@@ -159,3 +177,5 @@ LICENSE, NOTICE, THIRD_PARTY and vendor/original/imported source identities
 are unchanged. No new redistribution, patent or table-data grant is claimed.
 The development snapshot may document these known failures without declaring
 a six-case PASS. Main and stable-release decisions remain separate.
+
+Fixture repair scope: tools/test_audio_clock.py now extracts the production observer field block/counterEnabled into its model; tests/test_clock_priority.cpp adds read-only register/pending stubs and the seventh observe selector while retaining the original six checks/native flags. Root reproduced the stale parent missing-member compile failure and compiled the patched model to an official ARM object with exit0/quiescent. That smoke compile suppressed only the preexisting GCC7 misleading-indentation warning at unchanged I2sClockTrim.h211. It executed no native/runtime assertions; this is not an all-tests-pass result. The production source and ordered365 input set are unaffected by those two fixture leaves.

@@ -91,15 +91,29 @@ bool clockPrioritySupported(bool stopped=false){
    NVIC_GetPriority(PendSV_IRQn),stopped&&!NVIC_GetEnableIRQ(DMA1_Stream7_IRQn));
 }
 struct ClockTrimIo {
+ // Disabled for ClockSelectiveGuard and every Io except this apply call.
+ bool restore_trace=false,restore_counter_valid=false;
+ uint8_t restore_seen=0,restore_pending=0;
+ uint32_t restore_mark=0,restore_icsr=0,restore_basepri=0;
  I2sClockRegisters snapshot(){return clockRegisters();}
  bool interruptsEnabled(){return !__get_PRIMASK()&&!__get_BASEPRI()&&!__get_FAULTMASK()&&!__get_IPSR();}
+ bool clockGuardContextValid(){return !__get_PRIMASK()&&__get_BASEPRI()==I2sClockBasepri&&!__get_FAULTMASK()&&!__get_IPSR()&&clockPrioritySupported();}
  bool counterEnabled(){return (CoreDebug->DEMCR&CoreDebug_DEMCR_TRCENA_Msk)&&(DWT->CTRL&DWT_CTRL_CYCCNTENA_Msk);}
  void enableCounter(){CoreDebug->DEMCR|=CoreDebug_DEMCR_TRCENA_Msk;DWT->CTRL|=DWT_CTRL_CYCCNTENA_Msk;__DSB();__ISB();}
  uint32_t cycles(){return DWT->CYCCNT;}
  bool criticalSupported(){return clockPrioritySupported();}
  uint32_t basepri(){return __get_BASEPRI();}
  void raiseBasepri(uint32_t value){__set_BASEPRI_MAX(value);}
- void restoreBasepri(uint32_t value){__set_BASEPRI(value);}
+ void restoreBasepri(uint32_t value){
+  if(restore_trace){
+   if(restore_seen!=255u)++restore_seen;
+   restore_icsr=SCB->ICSR;
+   restore_pending=uint8_t((NVIC_GetPendingIRQ(UART7_IRQn)?1u:0u)|(NVIC_GetPendingIRQ(DMA1_Stream7_IRQn)?2u:0u));
+   restore_basepri=__get_BASEPRI();restore_counter_valid=counterEnabled();
+   restore_mark=DWT->CYCCNT; // After first sync; snapshot/observer cost precedes this mark.
+  }
+  __set_BASEPRI(value);
+ }
  void syncMask(){__DSB();__ISB();}
  uint32_t enterCritical(){return i2sClockEnterCritical(*this);}
  void exitCritical(uint32_t prior){i2sClockExitCritical(*this,prior);}
@@ -343,7 +357,18 @@ ClockTrimResult i2sClockTrim(uint32_t expected,int32_t requested,int32_t lower,i
  if(!owned||!stats.initialized||!stats.running){result.status=ClockTrimCode::Inactive;return result;}
  trimRequested=true;
  if(!trimCaptured){result.status=ClockTrimCode::Unsupported;clockTrimLast=result;return result;}
- ClockTrimIo io;result=clockTrim.apply(io,expected,requested,lower,upper);clockTrimLast=result;return result;
+ ClockTrimIo io;io.restore_trace=true;result=clockTrim.apply(io,expected,requested,lower,upper);
+ // Derive after the original apply endpoint; no new end read or gate change.
+ result.restore_seen=io.restore_seen;result.restore_pending=io.restore_pending;
+ result.restore_icsr=io.restore_icsr;result.restore_basepri=io.restore_basepri;
+ result.restore_flags=uint8_t((io.restore_seen?1u:0u)|(io.restore_counter_valid?2u:0u)|8u);
+ if(io.restore_seen==1u&&io.restore_counter_valid&&result.duration_valid&&(result.witness_mask&0x9fu)==0x1fu){
+  const uint32_t before=uint32_t(io.restore_mark-result.restore_t2),after=uint32_t(result.restore_t3-io.restore_mark);
+  if(uint64_t(before)+uint64_t(after)==uint64_t(result.wait1_parts[2])){
+   result.restore_split[0]=before;result.restore_split[1]=after;result.restore_flags=7u;
+  }
+ }
+ clockTrimLast=result;return result;
 }
 I2sClockTrimSnapshot i2sClockTrimStats(){Critical guard;auto out=clockTrim.snapshot();out.last=clockTrimLast;
  out.requested=out.requested||trimRequested;out.relinquished=out.relinquished||trimRelinquished;return out;

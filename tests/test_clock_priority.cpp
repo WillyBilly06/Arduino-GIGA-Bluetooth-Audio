@@ -11,6 +11,21 @@ enum { DMA1_Stream7_IRQn=1,UART7_IRQn=2,PendSV_IRQn=3,SysTick_IRQn=4 };
 static uint32_t NVIC_GetPriorityGrouping(){return mask_group;}
 static uint32_t NVIC_GetPriority(int irq){return irq==DMA1_Stream7_IRQn?mask_dma:irq==UART7_IRQn?mask_uart:irq==PendSV_IRQn?mask_pendsv:mask_systick;}
 static uint32_t NVIC_GetEnableIRQ(int){return mask_dma_enabled;}
+// Portable read-only register values consumed by the verbatim observer.
+struct PriorityScbModel { uint32_t ICSR=0; };
+struct PriorityDwtModel { uint32_t CTRL=0,CYCCNT=0; };
+struct PriorityCoreDebugModel { uint32_t DEMCR=0; };
+static PriorityScbModel priority_scb;
+static PriorityDwtModel priority_dwt;
+static PriorityCoreDebugModel priority_core_debug;
+static PriorityScbModel* const SCB=&priority_scb;
+static PriorityDwtModel* const DWT=&priority_dwt;
+static PriorityCoreDebugModel* const CoreDebug=&priority_core_debug;
+#define CoreDebug_DEMCR_TRCENA_Msk (1u<<24)
+#define DWT_CTRL_CYCCNTENA_Msk 1u
+static bool mask_pending_uart=false,mask_pending_dma=false;
+static uint32_t NVIC_GetPendingIRQ(int irq){return irq==UART7_IRQn?uint32_t(mask_pending_uart):irq==DMA1_Stream7_IRQn?uint32_t(mask_pending_dma):0u;}
+
 static uint32_t __get_PRIMASK(){return mask_primask;}
 static void __disable_irq(){mask_primask=1;}
 static void __set_PRIMASK(uint32_t v){mask_primask=v;}
@@ -46,6 +61,12 @@ static void conservative_duration(){struct DelayedExit:Model{void exitCritical(u
  I2sClockTrimState state;CHECK(state.capture(7,m.snapshot()));auto r=state.apply(m,7,10*65536,-500*65536,500*65536);
  CHECK(r.accepted&&r.max_critical_cycles>=1000);CHECK(!m.masked);
 }
+static void owned_wait_context(){ClockTrimIo io;mask_primask=mask_fault=mask_ipsr=0;mask_group=3;mask_dma=6;mask_uart=0;mask_pendsv=15;
+ mask_basepri=0;CHECK(!io.clockGuardContextValid());mask_basepri=I2sClockBasepri;CHECK(io.clockGuardContextValid()&&serviceable(0)&&!serviceable(6));
+ for(unsigned which=0;which<6;++which){mask_primask=mask_fault=mask_ipsr=0;mask_basepri=I2sClockBasepri;mask_group=3;mask_uart=0;
+  switch(which){case 0:mask_primask=1;break;case 1:mask_fault=1;break;case 2:mask_ipsr=16;break;case 3:mask_basepri=0x20;break;case 4:mask_group=4;break;case 5:mask_uart=1;break;}CHECK(!io.clockGuardContextValid());}
+ mask_primask=mask_fault=mask_ipsr=mask_basepri=0;mask_group=3;mask_uart=0;
+}
 static void actual_restore_guard(){
  mask_primask=mask_basepri=mask_fault=mask_ipsr=0;mask_group=3;mask_dma=6;mask_uart=0;mask_pendsv=15;mask_dma_enabled=true;
  {ClockSelectiveGuard guard;CHECK(bool(guard)&&serviceable(0)&&!serviceable(6)&&!mask_primask);}CHECK(!mask_basepri&&!mask_primask);
@@ -58,6 +79,31 @@ static void actual_restore_guard(){
  for(uint32_t previous:{0x20u,0xa0u}){mask_basepri=previous;{ClockSelectiveGuard guard(true);CHECK(bool(guard)&&serviceable(0)&&!serviceable(6));}CHECK(mask_basepri==previous);}
  mask_basepri=0;mask_mutate_on_sync=true;{ClockSelectiveGuard guard(true);CHECK(!guard&&!mask_basepri&&!mask_primask);}mask_group=3;
 }
-int main(int argc,char**argv){if(argc==2){if(!std::strcmp(argv[1],"uart"))uart_service();else if(!std::strcmp(argv[1],"nested"))nested_masks();else if(!std::strcmp(argv[1],"contract"))priority_contract();else if(!std::strcmp(argv[1],"duration"))conservative_duration();else if(!std::strcmp(argv[1],"guard"))actual_restore_guard();else return 2;}
- else{uart_service();nested_masks();priority_contract();conservative_duration();actual_restore_guard();}
+static void restore_observation(){
+ mask_primask=mask_fault=mask_ipsr=0;mask_pending_uart=mask_pending_dma=true;
+ SCB->ICSR=0x14000000u;CoreDebug->DEMCR=CoreDebug_DEMCR_TRCENA_Msk;DWT->CTRL=DWT_CTRL_CYCCNTENA_Msk;DWT->CYCCNT=0x12345678u;
+ ClockTrimIo disabled;mask_basepri=I2sClockBasepri;disabled.restoreBasepri(0);
+ CHECK(!mask_basepri&&!disabled.restore_trace&&!disabled.restore_seen&&!disabled.restore_counter_valid);
+ CHECK(!disabled.restore_mark&&!disabled.restore_pending&&!disabled.restore_icsr&&!disabled.restore_basepri);
+ for(unsigned pending=0;pending<4;++pending){ClockTrimIo io;io.restore_trace=true;
+  mask_pending_uart=(pending&1u)!=0;mask_pending_dma=(pending&2u)!=0;mask_basepri=I2sClockBasepri;
+  SCB->ICSR=0x14000000u|pending;DWT->CYCCNT=0x12345678u+pending;
+  io.restoreBasepri(0xa0u);
+  CHECK(mask_basepri==0xa0u&&io.restore_seen==1&&io.restore_counter_valid);
+  CHECK(io.restore_basepri==I2sClockBasepri&&io.restore_pending==pending&&io.restore_icsr==SCB->ICSR&&io.restore_mark==DWT->CYCCNT);
+  CHECK(SCB->ICSR==(0x14000000u|pending)&&DWT->CYCCNT==0x12345678u+pending);
+  CHECK(mask_pending_uart==bool(pending&1u)&&mask_pending_dma==bool(pending&2u));
+ }
+ ClockTrimIo saturated;saturated.restore_trace=true;saturated.restore_seen=254;
+ mask_basepri=I2sClockBasepri;saturated.restoreBasepri(0);CHECK(saturated.restore_seen==255&&!mask_basepri);
+ DWT->CYCCNT=0x87654321u;saturated.restoreBasepri(0);CHECK(saturated.restore_seen==255&&saturated.restore_mark==DWT->CYCCNT);
+ for(unsigned missing=0;missing<2;++missing){ClockTrimIo io;io.restore_trace=true;mask_basepri=I2sClockBasepri;
+  CoreDebug->DEMCR=missing?CoreDebug_DEMCR_TRCENA_Msk:0u;DWT->CTRL=missing?0u:DWT_CTRL_CYCCNTENA_Msk;
+  io.restoreBasepri(0);CHECK(!mask_basepri&&io.restore_seen==1&&!io.restore_counter_valid);
+ }
+ CoreDebug->DEMCR=CoreDebug_DEMCR_TRCENA_Msk;DWT->CTRL=DWT_CTRL_CYCCNTENA_Msk;
+ mask_pending_uart=mask_pending_dma=false;mask_basepri=0;
+}
+int main(int argc,char**argv){if(argc==2){if(!std::strcmp(argv[1],"uart"))uart_service();else if(!std::strcmp(argv[1],"nested"))nested_masks();else if(!std::strcmp(argv[1],"contract"))priority_contract();else if(!std::strcmp(argv[1],"duration"))conservative_duration();else if(!std::strcmp(argv[1],"guard"))actual_restore_guard();else if(!std::strcmp(argv[1],"owned"))owned_wait_context();else if(!std::strcmp(argv[1],"observe"))restore_observation();else return 2;}
+ else{uart_service();nested_masks();priority_contract();conservative_duration();actual_restore_guard();owned_wait_context();restore_observation();}
  std::printf("SELECTIVE_BASEPRI_VERBATIM_ADAPTER_AND_POST_EXIT_DURATION_PASS checks=%u\n",checks);}

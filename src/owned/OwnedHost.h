@@ -1,6 +1,7 @@
 #pragma once
 #include "ClassicProfiles.h"
 #include "LeProfiles.h"
+#include "ControllerAudioPriority.h"
 extern "C" {
 #include "core/bth_gap.h"
 #include "core/bth_avrcp_link.h"
@@ -70,8 +71,11 @@ private:
  void synchronizeChannels();bool disconnectChannel(uint16_t);void chargeWaiting(uint32_t);void closePeer(unsigned,uint8_t);
  void avrcpPoll(bool secure,bool allow_open=true);void runtimePoll();void refreshStats();bool admission(unsigned,uint32_t);void cancelAdmission(unsigned);
  bool updateAudioPriority();
+ static bool streamPolicy(bool,void*);
+ bool requestControllerPriority(bool);void serviceControllerPriority(bool secure);
+ bool controllerPriorityCommandPresent(uint32_t owner) const;
  OwnedHostConfig config_;OwnedHostHooks hooks_;RadioStats stats_;
- ClassicProfiles classic_;LeProfiles le_;bth_hci_flow_t flow_={};bth_cmdq_t commands_={};bth_links_t links_={};
+ ClassicProfiles classic_;LeProfiles le_;ControllerAudioPriority controller_priority_;bth_hci_flow_t flow_={};bth_cmdq_t commands_={};bth_links_t links_={};
  bth_control_tx_t control_={};bth_rx_flow_t rx_={};bth_gap_t gap_={};bth_l2cap_sig_t signaling_={};
  Packet packets_[RxSlots];Peer peers_[2];Bond bonds_[4];bth_rx_admission_t admissions_[2]={};bool reserved_[2]={};
  uint8_t expanded_control_budget_=0;
@@ -86,6 +90,7 @@ private:
  uint32_t hnc_commands_=0,hnc_packets_=0,hnc_last_ms_=0;uint16_t hnc_handles_[2]={},hnc_counts_[2]={};
  uint32_t avrcp_at_=0;unsigned avrcp_attempts_=0;bool avrcp_recovering_=false;
  unsigned next_peer_=0,bond_cursor_=0,le_trace_=0;Boot boot_=Boot::Failed;
+ uint8_t le_reply_observe_trace_=0; // Shared peer-reply CC/update quota, separate from GAP.
  uint32_t qos_last_data_ms_=0,qos_classic_owner_=0,qos_le_owner_=0;
  uint32_t qos_data_fragments_=0,qos_data_bytes_=0,qos_paced_deferrals_=0,qos_urgent_bypasses_=0;
  uint8_t qos_classic_burst_=0;bool qos_have_data_=false,qos_audio_active_=false;

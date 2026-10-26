@@ -1,36 +1,18 @@
-# Audited source export policy
+# Experimental dev.9 source and packaging boundary
 
-The public develop export is a new file tree created from an explicit per-file
-allowlist. It includes all 257 selected supplied decoder files, project-owned
-port/runtime helpers and the original import manifest. It does not copy
-repository history or recursively mirror folders.
-Vendor files are pinned by SHA-256 and retain relative input mappings; a changed
-vendor input requires another audit. Project-owned paths are explicitly listed
-and their actual bytes are hashed in each receipt. No inferred glob additions
-are allowed. Export has no publishing, Git, archive or hardware operation.
+The475-file R2 source ZIP was verified, extracted and actually compiled/audited. R3 starts from that frozen export and changes only existing noncompiler documentation; all365 ordered input hashes and all other files are identical to R2. All production src/example C/C++/headers/INO and the seven identified root/component license-notice files remain byte-identical to that prior compiled input. The distributed vendor manifest has one record corrected in two exported hash/size fields; two nonproduction fixture leaves have Root compile-only verification. Those metadata/fixture differences and listed documentation/library description changes are explicit; R2 added CHANGELOG.md and the dated validation MD/JSON; R3 keeps those same paths. The final external delta/manifest records every entry. No maintained root, old export, SDK, public clone or branch is modified.
 
-Export-copy changes are restricted to rejecting the unavailable historical
-host, removing its guarded bridge from
-the project-owned radio parser, narrowing library metadata, and adding dated
-modification notices to previously modified vendor files. Local sources stay
-unchanged. All other selected bytes, including LICENSE and Opus COPYING, are
-copied exactly. `CodecBuildConfig.h` is copied unchanged with all local decoder
-defaults enabled. The previous automatic licensing-HOLD feature exclusions do
-not apply to this full supplied-source development profile. Unresolved grants
-are documented in THIRD_PARTY rather than portrayed as license clearance.
-No codec fixtures/media are included in this snapshot.
-The pinned SBC utilities header retains its original escaped illustrative
-filename in an API documentation example. That exact upstream
-literal is the only file-specific path-scanner exception; no workstation path
-is exported, and other absolute paths in that same header are rejected.
-The supplied LGPL COPYING text also keeps its original form-feed page breaks;
-the control-byte exception is restricted to that pinned license file.
-The exporter also refuses compilation-source drift against the isolated build
-receipt. Changed source needs a new build and reviewed evidence before export.
+The export includes the bounded clock phase/restoration diagnostic source actually linked in f42, not an observer-free artifact. All original gates and failures remain documented. Exact compiler-row bytes/projection, original component mappings/notices, actual compiled artifacts and finite field evidence have separate provenance. An identical compiler input set is not a fresh build of an extracted final ZIP.
 
-Every written file is reread and checked against its expected byte length and
-SHA-256, and the full entry set must match exactly. Symlinks/reparse points,
-unsafe paths, binary content, private workstation paths, credentials and
-unlisted output entries fail verification. The external receipt records the
-snapshot as developmental source with target qualification pending. Build
-outputs and private machine build logs remain outside the exported library.
+Root created the R2 build-basis archive, verified475 members, extracted it and completed the official M7 build/static audit. This documentation-only R3 preparation creates no new archive or build. Root will verify final R3 members and the identical365 code-input hashes again. The final R3 ZIP self-hash stays in an external sidecar rather than its own payload; the R2 build-basis ZIP hash is a separate historical artifact identity.
+
+The first R2 audit failed the expected serialized guard-JSON hash. Root confirmed CRLF/LF-only byte normalization, identical maps and all469 actual file hashes, then corrected one expected serialized hash in audit_m7_r2.py. root-audit-run.json remains a failed receipt. The authoritative root-audit-run-r2.json is exit0/quiescent, with no source/build/hardware rerun. Both identities and the correction are recorded in BUILD.json. The package ELF has its own passed linked mark-before-BASEPRI instruction review; the original build-facts PENDING label is preserved as a snapshot field with separate companion proof.
+
+
+Before publication, Root verifies the actual remote branch and parent revision; experimental develop-only publication must not update main or imply a stable release. Final R3 packaging/member-and-input verification and develop-only publishing are separate Root work; R2 ZIP verification/extracted compilation are already recorded actual evidence. No tag/URL/version publication is invented by these documents. Existing Apache-2.0/NOTICE/THIRD_PARTY and all supplied vendor terms are exact; no new grant/relicense or licensing clearance follows from this source copy.
+
+Public export metadata excludes workstation paths, device identifiers and private raw captures. External local preparation receipts retain their own source/evidence hashes without becoming library archive members. The pinned upstream SBC illustrative path and existing license form-feed bytes remain source/licensing text, not binary artifacts or new path-scanner exceptions.
+
+The corrected257-row vendor manifest changes only the LHDC lhdc_dec.c exported_sha256/exported_bytes fields. Original/upstream hashes, grants, patch descriptions and the other256 records remain exact. It is one ordered compiler-input row, so current projection differs from prior f42 even though production code does not. The actual R2 ZIP build result is now recorded independently and is byte-identical to prior f42; R3 relies on explicit365-input parity rather than inventing another build.
+
+Final user-documentation snapshot (R4): the475 paths and all365 compiler-input hashes/projection2cb3a3a2... remain exact to the recorded build basis. Only README readability, this snapshot note and current provenance hashes change from the prior documentation seal. The versioned source-ZIP link targets tagv0.1.0-dev.9; tag publication and final archive/member-parity checks are separate distribution actions. Final ZIP self-hash stays outside its own payload.

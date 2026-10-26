@@ -49,6 +49,8 @@ struct BleConnectionStats {
     // reset for each connection generation, including same-handle reconnects.
     uint32_t feature_submissions = 0, update_submissions = 0, reply_submissions = 0;
     uint32_t signaling_requests_queued = 0, command_status_reports = 0;
+    // Per connection generation; reset on attach/detach, saturates at UINT32_MAX.
+    uint32_t audio_policy_rejections = 0;
 };
 struct BleStats {
     uint32_t generation = 0;

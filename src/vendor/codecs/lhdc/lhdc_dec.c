@@ -18,6 +18,17 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>   /* snprintf used in g_lhdc_trace diagnostics */
+
+/* Binary32 rounds 2147483647.0f to 2^31. Saturate before converting so a
+ * positive clipped sample never reaches an out-of-range float-to-int cast.
+ * Preserve truncation toward zero for the finite interior. */
+static inline int32_t lhdc_pcm_s32(float sample)
+{
+    if (sample >= 2147483648.0f) return INT32_MAX;
+    if (sample <= -2147483648.0f) return INT32_MIN;
+    return (int32_t)sample;
+}
+
 #if defined(LHDC_HOST_BUILD)
   #define ESP_LOGI(tag, ...) do {} while (0)
   #define ESP_LOGW(tag, ...) do {} while (0)
@@ -1873,8 +1884,8 @@ lhdc_dec_ret_t lhdc_dec_decode_frame(
             if (channels >= 2) o[n * channels + 1] = (int32_t)(rv << 8);
 #endif
         } else if (bytes_per_sample == 4) {
-            LHDC_OUT_SAMPLE(lv, l, -2147483648.0f, 2147483647.0f);
-            LHDC_OUT_SAMPLE(rv, r, -2147483648.0f, 2147483647.0f);
+            lv = lhdc_pcm_s32(l);
+            rv = lhdc_pcm_s32(r);
             int32_t *o = (int32_t *)out_pcm;
             o[n * channels + 0] = lv;
             if (channels >= 2) o[n * channels + 1] = rv;

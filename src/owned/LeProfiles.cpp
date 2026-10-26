@@ -288,8 +288,19 @@ void LeProfiles::poll(uint32_t now,bool mayAdvertise,bool audioActive) {
             if (!i) result=bth_le_gap_peer_event(&gap_,stats_.generation,stats_.connection_handle,&peerEvent);
             else {
                 uint8_t reply[14];size_t written=0;uint16_t opcode=0;
+                // Echo protocol-valid peer parameters for the mandatory peer procedure.
+                // Keep its CC/update wait; optional local preference (120ms in Receiver)
+                // remains separate. Invalid peer tuples retain the existing negative reply.
                 result=bth_le_transport_peer_reply(&transport_,stats_.generation,&peerEvent,
-                    audioActive && config_.audio_connection_preference.enabled,reply,sizeof reply,&written,&opcode);
+                    false,reply,sizeof reply,&written,&opcode);
+                // Strict host audio policy: accepted peer tuples remain exact echoes.
+                // A rejected request does not prevent a later central connection update.
+                if (result==BTH_OK && opcode==0x2020 && prefer &&
+                    (bth_read_le16(reply+2)<config_.audio_connection_preference.interval_min ||
+                     bth_read_le16(reply+4)>config_.audio_connection_preference.interval_max)) {
+                    reply[2]=0x3b; written=3; opcode=0x2021;
+                    if (stats_.connection.audio_policy_rejections!=UINT32_MAX) ++stats_.connection.audio_policy_rejections;
+                }
                 if (result==BTH_OK) result=bth_cmdq_push_owned(commands_,opcode,reply,written,true,stats_.generation);
                 if (result==BTH_OK) {parameter_reply_seen_=true;parameter_reply_at_=now;peer_update_waiting_=opcode==0x2020;}
             }

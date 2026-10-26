@@ -1,4 +1,5 @@
 #include "OwnedHost.h"
+#include "LifecycleCommandBudget.h"
 #include <new>
 #include <stdio.h>
 #include <string.h>
@@ -64,12 +65,14 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  for(size_t p=0;p<config.firmwareSize;){if(config.firmwareSize-p<3||size_t(config.firmware[p+2])+3>config.firmwareSize-p)return Status::FirmwareMismatch;p+=size_t(config.firmware[p+2])+3;}
  config_=config;hooks_=hooks;memcpy(name_,config.name,name+1);config_.name=name_;stats_=RadioStats{};stats_.baud_rate=115200;
  classic_.~ClassicProfiles();new(&classic_)ClassicProfiles();le_.~LeProfiles();new(&le_)LeProfiles();
+ controller_priority_.reset(config.ble.audio_priority);
  bth_hci_flow_init(&flow_);bth_cmdq_init(&commands_);bth_control_tx_init(&control_);
  if(!bth_rx_flow_init(&rx_,RxSlots,RxWindow))return Status::HardwareError;
  const bth_security_policy_t policy={3,4,16,4,{'0','0','0','0'}};
  const bth_security_callbacks_t callbacks={loadBond,saveBond,removeBond,confirm};
  if(!bth_links_init(&links_,&flow_,&commands_,&policy,&callbacks,this))return Status::HardwareError;
  Status result=classic_.begin(config.codecMask,config.callbacks,control_);if(result!=Status::Ok)return result;
+ classic_.setStreamPolicy(streamPolicy,this);
  result=le_.begin(config.ble,name_,commands_,control_);if(result!=Status::Ok)return result;
  const bth_gap_config_t gapConfig={{reinterpret_cast<const uint8_t*>(name_),name},uuids_,0x240414,AclBytes,RxWindow,uint8_t(config.callbacks.volume?3:1),false};
  if(!bth_gap_start(&gap_,&gapConfig))return Status::HardwareError;
@@ -82,7 +85,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  qos_last_data_ms_=qos_classic_owner_=qos_le_owner_=0;qos_data_fragments_=qos_data_bytes_=qos_paced_deferrals_=qos_urgent_bypasses_=0;qos_classic_burst_=0;qos_have_data_=qos_audio_active_=false;
  memset(le_features_,0,sizeof le_features_);le_features_known_=false;
  le_disconnect_owner_=0;le_advertising_held_=false;le_disconnect_advertise_after_=true;
- memset(sent_at_,0,sizeof sent_at_);accept_deadline_=0;next_peer_=le_trace_=0;clock_started_=pending_=tx_turn_=last_ack_=was_secure_=false;boot_=Boot::PatchReset;active_=true;return Status::Ok;
+ memset(sent_at_,0,sizeof sent_at_);accept_deadline_=0;next_peer_=le_trace_=0;le_reply_observe_trace_=0;clock_started_=pending_=tx_turn_=last_ack_=was_secure_=false;boot_=Boot::PatchReset;active_=true;return Status::Ok;
 }
 void OwnedHost::end(){
  le_disconnect_owner_=0;le_advertising_held_=false;le_disconnect_advertise_after_=true;
@@ -183,7 +186,7 @@ bool OwnedHost::attach(unsigned i,const bth_peer_link_t& link){
  peer.security_deadline=now_+35000;peer.disconnect_deadline=peer.assembly_deadline=peer.pending_deadline=0;memset(peer.opened,0,sizeof peer.opened);memset(peer.channel_deadlines,0,sizeof peer.channel_deadlines);
  if(!bth_l2cap_rx_init(&peer.assembly,link.handle,peer.bytes,i==0?ClassicAssemblyBytes:sizeof peer.bytes))return false;
  if(i==0){clearClassicControls();const bth_l2cap_service_t services[]={{1,672,false},{0x19,ClassicMtu,true},{0x17,672,true}};
-  if(!bth_l2cap_sig_init(&signaling_,link.handle,services,3))return false;classic_.reset(link.owner);close_media_=close_avrcp_=0;was_secure_=false;avrcp_at_=0;avrcp_attempts_=0;avrcp_recovering_=false;
+  if(!bth_l2cap_sig_init(&signaling_,link.handle,services,3))return false;classic_.reset(link.owner);close_media_=close_avrcp_=0;was_secure_=false;avrcp_at_=0;avrcp_attempts_=0;avrcp_recovering_=false;controller_priority_.attach(link.owner,link.handle);
  }else if(!le_.attach(link.owner,link.handle,link.role,le_features_known_?le_features_:nullptr,now_))return false;
  return true;
 }
@@ -192,7 +195,7 @@ void OwnedHost::detach(unsigned i){
  bth_rx_flow_detach(&rx_,peer.handle,peer.owner);
  for(auto& packet:packets_)if(packet.used&&packet.charged&&rx_.slots[packet.lease.slot].owner==peer.owner){bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}
  bth_control_tx_detach(&control_,uint8_t(i),peer.owner);
- if(i==0){clearClassicControls();classic_.reset(0);memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
+ if(i==0){controller_priority_.detach(peer.owner);clearClassicControls();classic_.reset(0);memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
  peer.attached=peer.has_pending=false;peer.owner=0;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
  if(i==1){le_disconnect_owner_=0;le_disconnect_advertise_after_=true;}
 }
@@ -231,10 +234,22 @@ bool OwnedHost::defer(const uint8_t* packet,size_t n){if(deferred_count_==8||n>s
  auto& d=deferred_[(deferred_read_+deferred_count_)%8];memcpy(d.bytes,packet,n);d.length=uint16_t(n);d.serial=++event_serial_;if(!d.serial)d.serial=++event_serial_;++deferred_count_;return true;
 }
 bool OwnedHost::dispatch(const bth_h4_frame_t& event){
- // Two command slots cover the largest security transition without mutating a
- // link and then discovering that its required command has no storage.
- if(bth_cmdq_available(&commands_)<completionSlots(event))return false;
  const auto p=event.event.params;
+ // Normal LE attach/detach does not enqueue commands synchronously. Do not
+ // wait for slots that a matching disconnect can itself release. Keep the
+ // conservative security budget for every other class and all older events.
+ using private_lifecycle::ValidatedLifecycle;
+ auto lifecycleBudgetClass=ValidatedLifecycle::Other;
+ const bool le_success=event.event.code==0x3e&&
+  ((p.len==19&&p.data[0]==1)||(p.len==31&&p.data[0]==0x0a))&&
+  !p.data[1]&&bth_read_le16(p.data+2)<=0x0eff&&p.data[4]<=1&&p.data[5]<=(p.data[0]==0x0a?3:1);
+ if(le_success)lifecycleBudgetClass=(config_.ble.enabled&&reserved_[1])?
+  ValidatedLifecycle::AdmittedLeSuccess:ValidatedLifecycle::RejectedLeSuccess;
+ else if(event.event.code==5&&p.len==4&&!p.data[0]&&peers_[1].attached&&
+  links_.le.state==BTH_PEER_CONNECTED&&links_.le.owner==peers_[1].owner&&
+  links_.le.handle==peers_[1].handle&&bth_read_le16(p.data+1)==peers_[1].handle)
+  lifecycleBudgetClass=ValidatedLifecycle::MatchingLiveLeDisconnectSuccess;
+ if(bth_cmdq_available(&commands_)<private_lifecycle::commandBudget(completionSlots(event),lifecycleBudgetClass))return false;
  const uint32_t previous_le_owner=peers_[1].attached?peers_[1].owner:0;
  const uint16_t previous_le_handle=peers_[1].handle;
  if(event.event.code==4&&p.len==10&&links_.classic.state==BTH_PEER_EMPTY&&!reserved_[0]){
@@ -245,8 +260,8 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
  }
  // The link kernel consumes the command ownership record exactly once. It
  // deliberately does not update global command/ACL credits.
- unsigned previous_sent=commands_.sent_count,completed_index=BTH_CMD_QUEUE_LIMIT;uint32_t command_owner=0;
- if((event.event.code==0x0e&&p.len>=3)||(event.event.code==0x0f&&p.len==4)){const uint16_t op=bth_read_le16(p.data+(event.event.code==0x0e?1:2));for(unsigned k=0;k<previous_sent;++k)if(commands_.sent[k].opcode==op){completed_index=k;command_owner=commands_.sent[k].owner;break;}}
+ unsigned previous_sent=commands_.sent_count,completed_index=BTH_CMD_QUEUE_LIMIT;uint32_t command_owner=0;uint16_t completed_opcode=0,completed_handle=0xffff;
+ if((event.event.code==0x0e&&p.len>=3)||(event.event.code==0x0f&&p.len==4)){const uint16_t op=bth_read_le16(p.data+(event.event.code==0x0e?1:2));completed_opcode=op;for(unsigned k=0;k<previous_sent;++k)if(commands_.sent[k].opcode==op){completed_index=k;command_owner=commands_.sent[k].owner;completed_handle=commands_.sent[k].handle;break;}}
  links_.security_now_ms=now_;
  bth_status_t result=bth_links_on_event(&links_,&event);
  if(commands_.sent_count<previous_sent&&completed_index<previous_sent){for(unsigned k=completed_index+1;k<previous_sent;++k)sent_at_[k-1]=sent_at_[k];sent_at_[commands_.sent_count]=0;}
@@ -264,6 +279,40 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
   snprintf(line,sizeof line,"Owned LE HCI event=%02x op=%04x status=%02x n=%u stage=%u credit=%u",event.event.code,leControl.opcode,status,unsigned(p.len),leControl.stage,flow_.command_credits);diagnose(line);++le_trace_;
  }
  le_.event(event,command_owner);
+ // CC receipts require the existing preflight and actual owner consumption.
+ // Update03 has no sent-owner attribution: local owner/handle is context only.
+ const bool reply_cc=event.event.code==0x0e&&(completed_opcode==0x2020||completed_opcode==0x2021)&&
+  command_owner&&completed_index<previous_sent&&commands_.sent_count<previous_sent&&p.len>=4;
+ const bool update_rx=event.event.code==0x3e&&p.len==10&&p.data[0]==3;
+ if((reply_cc||update_rx)&&le_reply_observe_trace_<16){
+  const uint32_t le_owner=peers_[1].attached?peers_[1].owner:0;
+  char receipt[96];
+  if(reply_cc){
+   const uint8_t status=p.data[3];const bool present=p.len==6,defined=present&&!status;
+   const uint16_t handle=present?bth_read_le16(p.data+4):0xffff;
+   const bool current=le_owner&&le_owner==command_owner&&links_.le.state==BTH_PEER_CONNECTED&&
+    links_.le.owner==le_owner&&links_.le.handle==peers_[1].handle;
+   snprintf(receipt,sizeof receipt,"Owned LE PEER_CC o=%lu op=%04x s=%02x e=%04x h=%04x hp=%u hv=%u le=%lu cur=%u",
+    (unsigned long)command_owner,unsigned(completed_opcode),unsigned(status),unsigned(completed_handle),unsigned(handle),unsigned(present),unsigned(defined),(unsigned long)le_owner,unsigned(current));
+  }else{
+   const uint8_t status=p.data[1];const uint16_t local_handle=peers_[1].attached?peers_[1].handle:0xffff;
+   snprintf(receipt,sizeof receipt,"Owned LE UPDATE_RX s=%02x h=%04x i=%04x l=%04x t=%04x tp=1 tv=%u le=%lu lh=%04x",
+    unsigned(status),unsigned(bth_read_le16(p.data+2)),unsigned(bth_read_le16(p.data+4)),unsigned(bth_read_le16(p.data+6)),unsigned(bth_read_le16(p.data+8)),unsigned(status==0),(unsigned long)le_owner,unsigned(local_handle));
+  }
+  diagnose(receipt);++le_reply_observe_trace_;
+  if(le_reply_observe_trace_==16)diagnose("Owned LE REPLY_LIMIT budget=16 further=unobserved");
+ }
+ if(completed_opcode==0xfd1a&&command_owner&&commands_.sent_count<previous_sent){
+  const uint8_t status=event.event.code==0x0e?(p.len>=4?p.data[3]:0xff):p.data[0];
+  if(controller_priority_.owner()==command_owner&&controller_priority_.pending()){
+   const bool high=controller_priority_.pendingHigh();
+   const auto outcome=controller_priority_.completed(command_owner,event.event.code==0x0e,status);
+   char receipt[128];snprintf(receipt,sizeof receipt,"PRIO_ACK owner=%lu value=%u event=%02x status=%02x outcome=%u",(unsigned long)command_owner,unsigned(high),event.event.code,status,unsigned(outcome));diagnose(receipt);
+   if(outcome==ControllerAudioPriority::Response::Unsupported)diagnose("PRIO_UNSUPPORTED normal host policy retained");
+   if(outcome==ControllerAudioPriority::Response::Fault){fail("Owned controller audio-priority command failed");return true;}
+  }else{char receipt[96];snprintf(receipt,sizeof receipt,"PRIO_OLD owner=%lu event=%02x status=%02x",(unsigned long)command_owner,event.event.code,status);diagnose(receipt);}
+ }
+
  // Bounded actor records are copied through the existing diagnostic mailbox;
  // user printing occurs only from foreground poll, never UART/DMA IRQ.
  char lifecycle[96];
@@ -493,6 +542,38 @@ bool OwnedHost::updateAudioPriority(){
  }
  qos_audio_active_=enabled;qos_classic_owner_=peers_[0].owner;qos_le_owner_=peers_[1].owner;return enabled;
 }
+bool OwnedHost::requestControllerPriority(bool high){
+ if(!peers_[0].attached||controller_priority_.owner()!=peers_[0].owner)return false;
+ controller_priority_.request(high);return !high||controller_priority_.readyHigh();
+}
+bool OwnedHost::streamPolicy(bool high,void* user){
+ auto& h=*static_cast<OwnedHost*>(user);const bool ready=h.requestControllerPriority(high);
+ if(high&&ready){char receipt[96];const bool ack=h.controller_priority_.appliedKnown()&&h.controller_priority_.appliedHigh()&&!h.controller_priority_.pending();
+  snprintf(receipt,sizeof receipt,"PRIO_START owner=%lu high_ack=%u fallback=%u",(unsigned long)h.controller_priority_.owner(),unsigned(ack),unsigned(!ack));h.diagnose(receipt);}
+ else if(!high){char receipt[96];
+  snprintf(receipt,sizeof receipt,"PRIO_NORMAL_REQUEST owner=%lu accepted=%u",(unsigned long)h.controller_priority_.owner(),unsigned(ready));h.diagnose(receipt);}
+ return ready;
+}
+bool OwnedHost::controllerPriorityCommandPresent(uint32_t owner)const{
+ for(unsigned k=0;k<BTH_CMD_QUEUE_LIMIT;++k)if(!(commands_.free_mask&(1u<<k))&&commands_.slots[k].owner==owner&&commands_.slots[k].opcode==0xfd1a)return true;
+ for(unsigned k=0;k<commands_.sent_count;++k)if(commands_.sent[k].owner==owner&&commands_.sent[k].opcode==0xfd1a)return true;
+ return false;
+}
+void OwnedHost::serviceControllerPriority(bool secure){
+ if(deferred_count_||!peers_[0].attached||peers_[0].disconnect_deadline)return;
+ const auto* link=bth_links_find(&links_,peers_[0].handle);if(!link||link->disconnecting)return;
+ const uint32_t owner=controller_priority_.owner();
+ if(controller_priority_.pending()&&!controllerPriorityCommandPresent(owner))controller_priority_.cancelled(owner);
+ ControllerPriorityRequest request;
+ if(bth_cmdq_available(&commands_)<3||!controller_priority_.next(request))return;
+ if(request.high&&!secure)return; // Security gates new high admission; copied requests keep their serialized value.
+ const uint8_t params[]={uint8_t(request.handle),uint8_t(request.handle>>8),uint8_t(request.high),1};
+ const auto result=bth_cmdq_push_owned(&commands_,0xfd1a,params,sizeof params,false,request.owner);
+ if(result==BTH_OK){
+  if(!controller_priority_.queued(request)){fail("Owned controller-priority admission invariant");return;}
+  char receipt[96];snprintf(receipt,sizeof receipt,"PRIO_QUEUE owner=%lu handle=%04x value=%u dir=1",(unsigned long)request.owner,request.handle,unsigned(request.high));diagnose(receipt);
+ }else if(result<0&&result!=BTH_ERR_CAPACITY)fail("Owned controller-priority queue failed");
+}
 void OwnedHost::runtimePoll(){
  expanded_control_budget_=BTH_CONTROL_PEER_LIMIT; // At most three split replies per owner pass.
  while(deferred_count_&&active_){auto& d=deferred_[deferred_read_];bth_h4_frame_t event={};uint8_t wire[258];wire[0]=4;memcpy(wire+1,d.bytes,d.length);
@@ -503,8 +584,8 @@ void OwnedHost::runtimePoll(){
  const bool secure=peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle);
  const bool classic_ready=!deferred_count_&&secure;
  if(peers_[0].attached){
-  if(!secure&&was_secure_){peers_[0].security_deadline=now_+35000;if(config_.callbacks.stream)config_.callbacks.stream(false,config_.callbacks.user);was_secure_=false;}
-  if(classic_ready&&!was_secure_){bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)==BTH_OK){size_t n=0;const auto result=bth_l2cap_sig_security_ready(&signaling_,slot.data,slot.capacity,&n);
+  if(!secure&&was_secure_){controller_priority_.request(false);peers_[0].security_deadline=now_+35000;if(config_.callbacks.stream)config_.callbacks.stream(false,config_.callbacks.user);was_secure_=false;}
+  if(classic_ready&&!was_secure_&&(!classic_.streaming()||requestControllerPriority(true))){bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)==BTH_OK){size_t n=0;const auto result=bth_l2cap_sig_security_ready(&signaling_,slot.data,slot.capacity,&n);
     if(result==BTH_OK&&n)bth_control_tx_commit(&control_,slot.token,1,n,BTH_SIGNAL_MTU);else bth_control_tx_cancel(&control_,slot.token);if(result!=BTH_ERR_CAPACITY){
      if(classic_.streaming()&&classic_.configured()){Status prepared=config_.callbacks.configure(classic_.acceptedConfiguration(),config_.callbacks.user);if(prepared==Status::Ok){if(config_.callbacks.stream)config_.callbacks.stream(true,config_.callbacks.user);}else{closePeer(0,5);return;}}
      was_secure_=true;
@@ -532,6 +613,7 @@ void OwnedHost::runtimePoll(){
   le_.poll(now_,reserved_[1]&&!le_advertising_held_,updateAudioPriority());
   if(le_.closeRequested())closePeer(1,0x13);
  if(le_.stats().status==Status::HardwareError){const auto state=le_.controlState();char line[128];snprintf(line,sizeof line,"Owned LE failure op=%04x stage=%u error=%02x pending=%u now=%lu deadline=%lu",state.opcode,state.stage,state.error,state.pending,(unsigned long)now_,(unsigned long)state.deadline);diagnose(line);fail("Owned LE profile control failure");return;}
+ serviceControllerPriority(secure);if(!active_)return;
  if(!hooks_.txReady(hooks_.user))return;
  size_t n=0;
  if((!last_ack_||rx_.outstanding>=RxWindow-1)&&bth_rx_flow_next_completed(&rx_,output_,sizeof output_,&n)==BTH_OK){last_ack_=true;submit(n);return;}

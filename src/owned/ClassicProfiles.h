@@ -14,12 +14,15 @@ class ClassicProfiles {
 public:
  Status begin(uint32_t codec_mask,const RadioCallbacks& callbacks,bth_control_tx_t& replies,uint8_t peer_index=0);
  void reset(uint32_t generation);
+ // Internal actor gate. False START retains the exact SDU without preparing
+ // output or accepting START. Stop notifications request normal asynchronously.
+ void setStreamPolicy(bool(*policy)(bool,void*),void* user){stream_policy_=policy;stream_policy_user_=user;}
  bool channelOpened(uint16_t psm,uint16_t local_cid,uint16_t remote_cid,uint16_t remote_mtu);
  // Refresh from the actor's canonical accepted OPEN channel, without reopening
  // a profile or changing its generation, role, security, or protocol state.
  bool channelMtuUpdated(uint32_t generation,uint16_t psm,uint16_t local_cid,uint16_t remote_cid,uint16_t remote_mtu);
  void channelClosed(uint16_t local_cid);
- // FALSE only when reply capacity is exhausted: retain and retry this exact SDU.
+ // FALSE when reply capacity or the asynchronous START policy is pending: retain this exact SDU.
  // Application callbacks run synchronously and must not reenter the host actor.
  bool receive(uint16_t local_cid,const uint8_t* bytes,size_t length,bool secure,uint32_t now_ms);
  // Expiration always runs; older retained input can suppress optional requests.
@@ -53,6 +56,7 @@ private:
  bool customRequest(uint8_t,uint8_t,uint32_t,bth_control_reservation_t&,size_t,size_t&);
  bool emitMetadata(const uint8_t*,size_t);
  RadioCallbacks callbacks_;
+ bool(*stream_policy_)(bool,void*)=nullptr;void* stream_policy_user_=nullptr;
  bth_control_tx_t* replies_=nullptr;
  uint32_t generation_=0,mask_=0,received_=0,bytes_=0,dropped_=0;
  uint8_t peer_=0;

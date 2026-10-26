@@ -99,6 +99,20 @@ void loop() {
       (unsigned long)clock.refused,(unsigned long)clock.invalid_samples,(unsigned long)clock.duration_cycles,
       (unsigned long)clock.wait_cycles[0],(unsigned long)clock.wait_cycles[1],(unsigned long)clock.maximum_critical_cycles,
       clock.duration_valid,unsigned(clock.wall_overruns));
+    const auto& cw=clock.witness;const auto& worst=cw.worst;
+    console.print("GBR_CLOCK_SUM stream=%lu output=%lu n=%08lx over_n=%08lx over_total=%08lx unknown=%08lx coverage=%08lx/%08lx max=%08lx/%08lx flags=%02x\n",
+      (unsigned long)clock.stream_epoch,(unsigned long)clock.expected_output_epoch,(unsigned long)cw.results,
+      (unsigned long)cw.overrun_updates,(unsigned long)cw.overrun_total,(unsigned long)cw.timing_unknown,
+      (unsigned long)cw.wait1_started,(unsigned long)cw.wait1_complete,(unsigned long)cw.maximum_wait0,(unsigned long)cw.maximum_wait1,unsigned(cw.flags));
+    console.print("GBR_CLOCK_WORST stream=%lu output=%lu serial=%08lx ordinal=%08lx configured_hz=%lu status=%u mask=%02x partial=%u waits=%08lx/%08lx parts=%08lx/%08lx/%08lx/%08lx over_total=%08lx\n",
+      (unsigned long)worst.stream_epoch,(unsigned long)worst.output_epoch,(unsigned long)worst.serial,(unsigned long)worst.ordinal,
+      (unsigned long)worst.configured_core_hz,unsigned(worst.status),unsigned(worst.mask),worst.partial,
+      (unsigned long)worst.wait0_cycles,(unsigned long)worst.wait1_cycles,(unsigned long)worst.parts[0],(unsigned long)worst.parts[1],
+      (unsigned long)worst.parts[2],(unsigned long)worst.parts[3],(unsigned long)worst.overrun_total);
+    console.print("GBR_CLOCK_RESTORE stream=%lu output=%lu serial=%08lx ordinal=%08lx seen=%u flags=%02x split=%08lx/%08lx icsr=%08lx pending=%02x basepri=%08lx\n",
+      (unsigned long)worst.stream_epoch,(unsigned long)worst.output_epoch,(unsigned long)worst.serial,(unsigned long)worst.ordinal,
+      unsigned(worst.restore_seen),unsigned(worst.restore_flags),(unsigned long)worst.restore_split[0],(unsigned long)worst.restore_split[1],
+      (unsigned long)worst.restore_icsr,unsigned(worst.restore_pending),(unsigned long)worst.restore_basepri);
     console.print("GBR_STATUS ms=%lu ready=%u bredr=%u address=%02X:%02X:%02X:%02X:%02X:%02X connected=%u streaming=%u codec=%s rate=%lu rx_packets=%lu rx_bytes=%lu hci_packets=%lu hci_bytes=%lu decoded_packets=%lu frames=%llu errors=%lu dropped=%lu decode_max_us=%lu underruns=%lu dma_errors=%lu output_frames=%llu queued=%u output_running=%u priming=%u output_dropped=%lu transport_errors=%lu volume=%u memory=%u peak=%u codec_bytes=%u diagnostic_drops=%lu console_drops=%u last=%s\n",
       (unsigned long)millis(), s.radio.controller_ready, s.radio.bredr_supported,
       s.radio.address[0], s.radio.address[1], s.radio.address[2], s.radio.address[3], s.radio.address[4], s.radio.address[5],
@@ -115,9 +129,9 @@ void loop() {
       (unsigned long long)s.lhdc_right_concealed_frames, (unsigned long long)s.lhdc_frame_muted_blocks,
       (unsigned long long)s.lhdc_frame_muted_frames);
     auto b=receiver.bleStats(); auto t=receiver.audioDiagnostics();
-    console.print("GBR_BLE_QOS ms=%lu generation=%lu data_fragments=%lu data_bytes=%lu paced_deferrals=%lu urgent_bypasses=%lu\n",
+    console.print("GBR_BLE_QOS ms=%lu generation=%lu data_fragments=%lu data_bytes=%lu paced_deferrals=%lu urgent_bypasses=%lu policy_rejections=%lu\n",
       (unsigned long)millis(),(unsigned long)b.generation,(unsigned long)b.qos_data_fragments,(unsigned long)b.qos_data_bytes,
-      (unsigned long)b.qos_paced_deferrals,(unsigned long)b.qos_urgent_bypasses);
+      (unsigned long)b.qos_paced_deferrals,(unsigned long)b.qos_urgent_bypasses,(unsigned long)b.connection.audio_policy_rejections);
     const auto& c=b.connection;const auto& requested=requestedConnectionPreference;
     console.print("GBR_BLE_CONN ms=%lu gen=%lu requested=%u/%u/%u/%u enabled=%u started=%u stage=%u error=%u submitted=%u/%u/%u/%u feature_sub=%lu update_sub=%lu reply_sub=%lu signal_queued=%lu status_reports=%lu command_status=%u actual_known=%u actual_source=%u actual=%u/%u/%u update_seen=%u update_status=%u match=%u\n",
       (unsigned long)millis(),(unsigned long)b.generation,unsigned(requested.interval_min),unsigned(requested.interval_max),unsigned(requested.latency),unsigned(requested.timeout),
