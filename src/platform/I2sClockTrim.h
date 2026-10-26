@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
+#include "SchedulerWitness.h"
 namespace giga_bredr { namespace detail {
 // CMSIS raw grouping3 gives four preemption bits on this H747. BASEPRI masks
 // DMA6 and the lower-priority RTOS exceptions while UART0 remains serviceable.
@@ -89,6 +90,9 @@ struct ClockTrimResult {
  uint8_t restore_seen=0,restore_flags=8u,restore_pending=0;
  uint8_t wall_overruns=0;
  bool accepted=false,partial=false,duration_valid=false;
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+ uint32_t scheduler_wait1_start=0,scheduler_wait1_end=0,scheduler_host_after=0;
+#endif
 };
 struct ClockTrimQuantized {uint16_t fraction=0;int32_t applied_q16=0;bool representable=false;};
 constexpr int32_t I2sClockLimitQ16=500*65536;
@@ -175,6 +179,9 @@ class I2sClockTrimState {
    if(wait1_span){restore_at=io.cycles();witnessPart(1,restore_at,helper_at);}
    io.exitCritical(prior);guard_held=false;
    // Includes release and any work immediately unmasked by restoration.
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+   result.scheduler_host_after=schedulerHostProgress(); // Immediately before OLD T3; no DWT read.
+#endif
    released_at=io.cycles();const uint32_t span=uint32_t(released_at-critical_start);
    if(span>result.max_critical_cycles)result.max_critical_cycles=span;
    if(wait1_span)witnessPart(2,released_at,restore_at);
@@ -185,6 +192,10 @@ class I2sClockTrimState {
    wait1_finalized=true;
    if(!io.counterEnabled()){result.witness_mask|=0x80u;result.duration_valid=false;return;}
    const uint32_t endpoint=io.cycles();const uint32_t span=uint32_t(endpoint-wait1_start);
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+   result.scheduler_wait1_end=endpoint;
+   schedulerWait1Phase(2u);
+#endif
    if(span>result.wait_cycles[1])result.wait_cycles[1]=span;
    if(result.wait_cycles[1]>baseline_.core_hz/50000u&&!wait1_counted){++result.wall_overruns;wait1_counted=true;}
    if(span>=0x80000000u||result.wait_cycles[1]!=span)result.witness_mask|=0x80u;
@@ -244,6 +255,10 @@ class I2sClockTrimState {
   }
   if(error!=ClockTrimCode::Applied)return finish(error,true);
   wait1_start=io.cycles();wait1_span=true;const uint8_t before_wait1=result.wall_overruns;
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+  result.scheduler_wait1_start=wait1_start;
+  schedulerWait1Phase(1u);
+#endif
   result.witness_mask|=0x40u;if(!io.counterEnabled())result.witness_mask|=0x80u;
   error=wait(io,minimum,result.wait_cycles[1],result.wall_overruns,true);
   helper_at=io.cycles();

@@ -1,6 +1,7 @@
 #include "GigaI2s.h"
 #include "I2sBuffer.h"
 #include "I2sPins.h"
+#include "SchedulerWitness.h"
 #include "../detail/Memory.h"
 #if defined(ARDUINO_GIGA) && defined(CORE_CM7)
 #include <Arduino.h>
@@ -95,6 +96,9 @@ struct ClockTrimIo {
  bool restore_trace=false,restore_counter_valid=false;
  uint8_t restore_seen=0,restore_pending=0;
  uint32_t restore_mark=0,restore_icsr=0,restore_basepri=0;
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+ uint32_t scheduler_host_before=0;
+#endif
  I2sClockRegisters snapshot(){return clockRegisters();}
  bool interruptsEnabled(){return !__get_PRIMASK()&&!__get_BASEPRI()&&!__get_FAULTMASK()&&!__get_IPSR();}
  bool clockGuardContextValid(){return !__get_PRIMASK()&&__get_BASEPRI()==I2sClockBasepri&&!__get_FAULTMASK()&&!__get_IPSR()&&clockPrioritySupported();}
@@ -110,6 +114,9 @@ struct ClockTrimIo {
    restore_icsr=SCB->ICSR;
    restore_pending=uint8_t((NVIC_GetPendingIRQ(UART7_IRQn)?1u:0u)|(NVIC_GetPendingIRQ(DMA1_Stream7_IRQn)?2u:0u));
    restore_basepri=__get_BASEPRI();restore_counter_valid=counterEnabled();
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+   scheduler_host_before=schedulerHostProgress(); // No DWT read; before the OLD mark.
+#endif
    restore_mark=DWT->CYCCNT; // After first sync; snapshot/observer cost precedes this mark.
   }
   __set_BASEPRI(value);
@@ -357,6 +364,9 @@ ClockTrimResult i2sClockTrim(uint32_t expected,int32_t requested,int32_t lower,i
  if(!owned||!stats.initialized||!stats.running){result.status=ClockTrimCode::Inactive;return result;}
  trimRequested=true;
  if(!trimCaptured){result.status=ClockTrimCode::Unsupported;clockTrimLast=result;return result;}
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+ schedulerBegin(expected);
+#endif
  ClockTrimIo io;io.restore_trace=true;result=clockTrim.apply(io,expected,requested,lower,upper);
  // Derive after the original apply endpoint; no new end read or gate change.
  result.restore_seen=io.restore_seen;result.restore_pending=io.restore_pending;
@@ -368,6 +378,9 @@ ClockTrimResult i2sClockTrim(uint32_t expected,int32_t requested,int32_t lower,i
    result.restore_split[0]=before;result.restore_split[1]=after;result.restore_flags=7u;
   }
  }
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+ schedulerEnd(result,io.restore_mark,io.scheduler_host_before);
+#endif
  clockTrimLast=result;return result;
 }
 I2sClockTrimSnapshot i2sClockTrimStats(){Critical guard;auto out=clockTrim.snapshot();out.last=clockTrimLast;

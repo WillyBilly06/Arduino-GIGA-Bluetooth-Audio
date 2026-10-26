@@ -2,11 +2,20 @@
 #include <platform/I2sPins.h>
 #include <platform/GigaI2s.h>
 #include "Console.h"
+#include <platform/SchedulerWitness.h>
 using namespace giga_bredr;
 GigaBredr receiver;
 ReceiverConsole console;
 BleConnectionPreference requestedConnectionPreference;
-void diagnostic(const char* message, void*) { console.print("GBR_EVENT ms=%lu %s\n", (unsigned long)millis(), message); }
+void diagnostic(const char* message, void*) {
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+  const unsigned before=console.dropped;
+#endif
+  console.print("GBR_EVENT ms=%lu %s\n", (unsigned long)millis(), message);
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+  giga_bredr::detail::schedulerConsoleReceipt(console.dropped==before); // Queue admission only; no USB receipt.
+#endif
+}
 void configured(const CodecConfig& c, void*) {
   console.print("GBR_CONFIG codec=%s rate=%lu channels=%u bits=%u bitrate=%lu duration_us=%lu\n", codecName(c.codec), (unsigned long)c.sample_rate, c.channels, c.bits_per_sample, (unsigned long)c.bitrate, (unsigned long)c.frame_duration_us);
 }
