@@ -9,6 +9,19 @@ static inline int fast_round_to_int(SCALAR x) {
     return (int)(x + (x >= 0 ? _scalar(0.5) : _scalar(-0.5)));
 }
 
+/* S32 nearest rounding, with exact half ties away from zero. Bound the
+ * finite input before converting, and compare the fractional part instead
+ * of adding a half in SCALAR (which can change large exact integers). */
+static inline long long fast_round_s32_wide(SCALAR x) {
+    if (x >= _scalar(2147483648.0)) return 0x7fffffffLL;
+    if (x <= _scalar(-2147483648.0)) return -0x80000000LL;
+    /* The guards make int32 truncation safe; widen before the rounding add. */
+    int whole = (int)x;
+    SCALAR fraction = x - (SCALAR)whole;
+    return (long long)whole + (fraction >= _scalar(0.5) ? 1 :
+                    fraction <= _scalar(-0.5) ? -1 : 0);
+}
+
 /* Fast clamp to 16-bit range */
 static inline short fast_clamp16(int x) {
     if (__builtin_expect(x < -0x8000, 0)) return -0x8000;
@@ -81,10 +94,10 @@ DECLFUNC void set_output_pcm_ldac(
         const int nsmpl4 = nsmpl & ~3;
         int isp;
         for (isp = 0; isp < nsmpl4; isp += 4) {
-          long long t0 = (long long)(p_time[isp + 0] * _scalar(65536.0) + _scalar(0.5));
-          long long t1 = (long long)(p_time[isp + 1] * _scalar(65536.0) + _scalar(0.5));
-          long long t2 = (long long)(p_time[isp + 2] * _scalar(65536.0) + _scalar(0.5));
-          long long t3 = (long long)(p_time[isp + 3] * _scalar(65536.0) + _scalar(0.5));
+          long long t0 = fast_round_s32_wide(p_time[isp + 0] * _scalar(65536.0));
+          long long t1 = fast_round_s32_wide(p_time[isp + 1] * _scalar(65536.0));
+          long long t2 = fast_round_s32_wide(p_time[isp + 2] * _scalar(65536.0));
+          long long t3 = fast_round_s32_wide(p_time[isp + 3] * _scalar(65536.0));
           if (t0 < -0x80000000LL) t0 = -0x80000000LL;
           if (t0 >= 0x7FFFFFFFLL) t0 = 0x7FFFFFFFLL;
           if (t1 < -0x80000000LL) t1 = -0x80000000LL;
@@ -99,7 +112,7 @@ DECLFUNC void set_output_pcm_ldac(
           p_pcm[isp + 3] = (int)t3;
         }
         for (; isp < nsmpl; isp++) {
-          long long temp = (long long)(p_time[isp] * _scalar(65536.0) + _scalar(0.5));
+          long long temp = fast_round_s32_wide(p_time[isp] * _scalar(65536.0));
           if (temp < -0x80000000LL) temp = -0x80000000LL;
           if (temp >= 0x7FFFFFFFLL) temp = 0x7FFFFFFFLL;
           p_pcm[isp] = (int)temp;

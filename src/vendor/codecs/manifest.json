@@ -1026,8 +1026,8 @@
     "patches": [
       "giga-portable-reviewed-patch-v1"
     ],
-    "exported_sha256": "a34b8c6ec5730f297f9be2757d851d8b5f8510da15b8d1405158f48a33e0e334",
-    "exported_bytes": 5534
+    "exported_sha256": "22cf34b38b32521150520dc2c6c6e3fc17517aa25fdd788d76693d8b863b23fe",
+    "exported_bytes": 6159
   },
   {
     "source": "decoders/LDAC/src/struct_ldac.h",
