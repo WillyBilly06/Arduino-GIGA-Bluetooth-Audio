@@ -64,3 +64,11 @@ int main(){
  CHECK(detail::memoryStats().current_blocks==0&&detail::memoryStats().current_bytes==0);
  printf("PUBLIC_LIFECYCLE_FACADE_REAL_ACTOR_TRYLOCK_STOPPED_DISABLED_STALE_PASS checks=%u\n",checks);
 }
+
+// New AVRCP facade boundary is unavailable in this pre-existing hardware stub.
+namespace giga_bredr { namespace detail {
+AvrcpStatus radioAvrcpStatus(){return{};}
+AvrcpMetadata radioAvrcpMetadata(){return{};}
+Status radioAvrcpCommand(AvrcpCommand,uint32_t,uint32_t&){return Status::Unsupported;}
+Status radioAvrcpCancel(uint32_t,uint32_t){return Status::Unsupported;}
+}}

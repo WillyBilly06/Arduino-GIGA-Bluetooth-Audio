@@ -43,6 +43,14 @@ public:
  bool bleReadWrite(BleWrite& value) {return active_&&le_.readWrite(value);}
  Status setVolume(uint8_t v) {return active_&&config_.callbacks.enable_a2dp?classic_.setVolume(v):Status::Unsupported;}
  AvrcpStatus avrcpStatus() const {return classic_.avrcpStatus();}
+ AvrcpMetadata avrcpMetadata() const {return classic_.avrcpMetadata();}
+ Status avrcpCommand(AvrcpCommand command,uint32_t expected,uint32_t& id){
+  if(!active_||!config_.callbacks.enable_a2dp)return Status::Unsupported;
+  if(avrcp_retiring_)return Status::Busy;
+  const bool secure=!deferred_count_&&was_secure_&&peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle);
+  return classic_.avrcpCommand(command,expected,secure,now_,id);
+ }
+ Status avrcpCancel(uint32_t expected,uint32_t id){return active_&&config_.callbacks.enable_a2dp?classic_.avrcpCancel(expected,id):Status::Unsupported;}
  static constexpr unsigned AclBytes=1021,RxSlots=8,RxWindow=4,SduBytes=4096;
 private:
  void receiveImpl(uint8_t,const uint8_t*,size_t,uint32_t);
@@ -84,6 +92,9 @@ private:
  bool deliver(unsigned,const bth_l2cap_pdu_t&,uint16_t* signal_cursor=nullptr);void processRx(unsigned);
  bool expandedClassicControl(const bth_l2cap_pdu_t&) const;
  bool safeClassicControl(const bth_l2cap_pdu_t&) const;
+ bool gateAvrcpRetirement(const bth_l2cap_pdu_t&);
+ bool copiedAvrcpRetirement(const bth_l2cap_pdu_t&) const;
+ bool avrcpRetirementReady() const;void clearAvrcpRetirement();
  bool deferClassicControl(const bth_l2cap_pdu_t&,uint32_t,uint16_t signal_cursor=0);bool retryClassicControls();void clearClassicControls(uint16_t cid=0);
  void synchronizeChannels();bool disconnectChannel(uint16_t);void chargeWaiting(uint32_t);void closePeer(unsigned,uint8_t);
  void avrcpPoll(bool secure,bool allow_open=true);void runtimePoll();void refreshStats();bool admission(unsigned,uint32_t);void cancelAdmission(unsigned);
@@ -106,6 +117,8 @@ private:
  uint32_t event_serial_=0,retired_event_=0;uint16_t close_media_=0,close_avrcp_=0;
  uint32_t hnc_commands_=0,hnc_packets_=0,hnc_last_ms_=0;uint16_t hnc_handles_[2]={},hnc_counts_[2]={};
  uint32_t avrcp_at_=0;unsigned avrcp_attempts_=0;bool avrcp_recovering_=false;
+ uint32_t avrcp_retire_owner_=0,avrcp_retire_deadline_=0;
+ uint16_t avrcp_retire_local_=0,avrcp_retire_remote_=0;bool avrcp_retiring_=false;
  unsigned next_peer_=0,bond_cursor_=0,le_trace_=0;Boot boot_=Boot::Failed;
  uint8_t le_reply_observe_trace_=0; // Shared peer-reply CC/update quota, separate from GAP.
  uint32_t qos_last_data_ms_=0,qos_classic_owner_=0,qos_le_owner_=0;

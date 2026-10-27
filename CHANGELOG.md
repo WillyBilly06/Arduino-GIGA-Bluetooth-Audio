@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-dev.13 - experimental development source, 2026-10-27
+
+- Add public typed AVRCP transport taps, copied metadata/status snapshots, owner-bound cancellation and separate response outcomes.
+- Preserve ordered AVRCP press/release and add scoped queue/mailbox retirement before channel reuse; expired or stale replies cannot complete a fresh request.
+- Add standalone owned RFCOMM/HFP/HSP protocol modules and an internal None/Provider microphone PCM contract. They are unadvertised; RFCOMM host ownership, SCO/duplex voice and a public microphone registration API remain unfinished.
+- Record 28 passing portable Android ARM64 CPU cases and the separate CM7 package build. No phone interoperability or dev.13 firmware deployment is claimed.
+- Retain all existing codecs, lazy selected-codec buffers, LHDC80/90 defaults, I2S, stock HCD and BLE policy. Brief long-playback PCM shortages remain unresolved; this update is not an audio continuity repair.
+- Main stays on its separately maintained reviewed snapshot; this is development source.
+
 ## 0.1.0-dev.12 - experimental development source, 2026-10-27
 
 - Raise only the LHDC automatic base startup reserve from60 to80ms; its default ring becomes90ms. At192kHz this selects a141344-byte DMA/ring arena (+30720bytes), rather than allocating other codec arenas. Keep DMA halves, radio commands/HCD, other codec bases and clock algorithm unchanged.

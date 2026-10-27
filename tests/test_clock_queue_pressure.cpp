@@ -102,3 +102,11 @@ int main(int argc,char** argv){batchUs=argc>1?unsigned(std::atoi(argv[1])):35000
  CHECK(!missing&&!recovery.entries&&!recovery.resumes&&!identityBad&&!i.counters.decode_errors&&!i.counters.output_dropped_frames&&!detail::memoryStats().failures);
  CHECK(calls<=batches*64&&actuatorCalls<=121);if(!enabled)CHECK(!actuatorCalls&&!i.counters.clock.observations);receiver.end();return 0;
 }
+
+// New AVRCP facade boundary is unavailable in this pre-existing hardware stub.
+namespace giga_bredr { namespace detail {
+AvrcpStatus radioAvrcpStatus(){return{};}
+AvrcpMetadata radioAvrcpMetadata(){return{};}
+Status radioAvrcpCommand(AvrcpCommand,uint32_t,uint32_t&){return Status::Unsupported;}
+Status radioAvrcpCancel(uint32_t,uint32_t){return Status::Unsupported;}
+}}

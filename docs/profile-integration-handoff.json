@@ -1,0 +1,269 @@
+{
+  "scope": "Reviewed dev13 profile source; not phone interoperability or full voice audio",
+  "basis_commit": "161e283eac626e69a8d335cc7e11878baa681b45",
+  "reviewed_source_manifest_sha256": "82c04c9d5127cbbaf3e9073148969eeaa7ec52a294efe6b8eafba959b49dcc2b",
+  "source_files": [
+    {
+      "path": "src/GigaAvrcp.h",
+      "sha256": "c4855d42541d8119cf0b0902c6793ea72a4364ec5f08400f3e4c61593525dea9",
+      "bytes": 1832,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/GigaBredr.cpp",
+      "sha256": "83dab283def35be368d70f8529ea0c7fca87ad111f58f5ddc5023423ac82c378",
+      "bytes": 61156,
+      "baseline_sha256": "451de1dd3a8f9297e291f3f8dab76456b5598ca1282d4238eac4f7a616f5faae"
+    },
+    {
+      "path": "src/GigaBredr.h",
+      "sha256": "6beddeb2bf7ed216fc62071ed95f307097681676569a0982fb6b9db82c8d669b",
+      "bytes": 7328,
+      "baseline_sha256": "5fcf820e889cc042d8796f6a4f50b2dfa92dcb0626b832594ec6bcefadf0c182"
+    },
+    {
+      "path": "src/owned/ClassicProfiles.cpp",
+      "sha256": "8a9c24e7385f5adbebab912510616e71b1da8afbf05563aa027baff123f77ad9",
+      "bytes": 29588,
+      "baseline_sha256": "83ec971bc589eb1e4c71f24c6ba5ac832f15679a3d2f44d0dc9a61d1eed6bbe8"
+    },
+    {
+      "path": "src/owned/ClassicProfiles.h",
+      "sha256": "595065f7f4b75f3a9ff490063a37ae5f269297cd2c6393fa756fe8b895356022",
+      "bytes": 4998,
+      "baseline_sha256": "d54dfcec977b409a146769394d69a1314836fc7393c01f80fdd997dc897aee42"
+    },
+    {
+      "path": "src/owned/HfpAt.h",
+      "sha256": "3f7e085d0857d30e319e742e0846a1a714a194c83974e1b50c26d860dc4eee2f",
+      "bytes": 1659,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/HfpAudio.h",
+      "sha256": "b83b652de2cb2a8cf1791cedba2adee859709759b63eaaaab180aae6af9a3db2",
+      "bytes": 4538,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/HfpControl.cpp",
+      "sha256": "79787e9322c1f0bb5bbe5412739f80d6fdeaecc2f8667277747714dc89cda091",
+      "bytes": 10411,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/HfpControl.h",
+      "sha256": "fde5c3e7b0cbfeba98489a97334df909f441e3e737d2d2a77607d7985a379922",
+      "bytes": 2175,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/HspControl.cpp",
+      "sha256": "63a5ccde7933445ad8d1dc7d6b31af3fa931f694ce82b4127cda8d7963bb2465",
+      "bytes": 2728,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/HspControl.h",
+      "sha256": "f599669f2811de7cd478a55c6abe7cd2af2198f8dd9bcf7795bec7f5f360a885",
+      "bytes": 1212,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/OwnedHost.cpp",
+      "sha256": "920c2db1ab809b6bf88c6579947f53e800573677c8ec251fe2d8f8e6dd8d9ced",
+      "bytes": 65129,
+      "baseline_sha256": "65cc81b9c2f2272c2fb8db2fe96124c7cfbafb3f03dc68aea7ad704fea3b230a"
+    },
+    {
+      "path": "src/owned/OwnedHost.h",
+      "sha256": "a3c21194bb8bb16297d252261604a2b44a7c0f2f2ccb86db9ce98f4b58835f95",
+      "bytes": 8716,
+      "baseline_sha256": "88290574f8f40421a5c484ea498ffa452c54491f118a5c4c8e23a36d3d59c465"
+    },
+    {
+      "path": "src/owned/core/bth_control_tx.c",
+      "sha256": "0c6ea37f27322aab6229248e83cf76d5f5fb0e9c2ce5d7905b299a41dc2d4ba1",
+      "bytes": 9088,
+      "baseline_sha256": "bac07aa06fa58816c94c369487adffa6e6564a92fa94d5f10fc05cbcf0f41495"
+    },
+    {
+      "path": "src/owned/core/bth_control_tx.h",
+      "sha256": "fea00722d1712fab44c1e4e9b76ef3bcb7ce34f490b86534bde1cb312fcf82ca",
+      "bytes": 3615,
+      "baseline_sha256": "9f489cb2cc09ec9b77e525cd5d5339c020caa3363f0774336b4c98e830c93c62"
+    },
+    {
+      "path": "src/owned/core/bth_rfcomm.c",
+      "sha256": "fdccf262304c6035fc4dc98b99f907c9742434998873e982bcfaab9bc71d96b9",
+      "bytes": 18236,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/core/bth_rfcomm.h",
+      "sha256": "43247c8581958494cc073e67e5bd20e7d8eca74b6a7003be333ae1b2facd3218",
+      "bytes": 3497,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/platform/GigaAvrcp.h",
+      "sha256": "2a0e0c9288b62e8f8537da00d009edee2e715e551d7d03d5b8248aaddc4f056f",
+      "bytes": 1228,
+      "baseline_sha256": "5cc156fdb761120bc4f831c8e9adca4eeec330905cde07587d3654a05d04777a"
+    },
+    {
+      "path": "src/platform/OwnedRadio.cpp",
+      "sha256": "90c726994746e6ec3d2b31b4bb78fdaa7dd8269f78226e4e54420c1b53cc0cd3",
+      "bytes": 14130,
+      "baseline_sha256": "0a0dc04edacc717734175cacc8430e07ff3626527122fcc3f58788f282f276fb"
+    },
+    {
+      "path": "tests/test_avrcp_channel_retirement.cpp",
+      "sha256": "5231549f07f2513198b9696f77c0b7ca766564ccc0b51892eed182f010b60bc4",
+      "bytes": 4293,
+      "baseline_sha256": null
+    },
+    {
+      "path": "tests/test_avrcp_controls.cpp",
+      "sha256": "9c42ae6400fef1310eaed75ece939bc7c6aa354009c768262fdf7041e043a9d5",
+      "bytes": 11299,
+      "baseline_sha256": null
+    },
+    {
+      "path": "tests/test_avrcp_facade.cpp",
+      "sha256": "bac1f65784f28df11ddebda24a52526a1c6a6a0700315962b53a614b58265bcf",
+      "bytes": 3662,
+      "baseline_sha256": null
+    },
+    {
+      "path": "tests/test_avrcp_owner_retirement.cpp",
+      "sha256": "94feda93908d4a4a4f31ca0d4be5ea7844452d3ac2c3131e1c5e5cc04920c639",
+      "bytes": 5114,
+      "baseline_sha256": null
+    },
+    {
+      "path": "tests/test_avrcp_stale_disconnect.cpp",
+      "sha256": "bac2ac32cc95fad61858df46b01495c677c073dac1f179465872ab2ab11fab88",
+      "bytes": 2199,
+      "baseline_sha256": null
+    },
+    {
+      "path": "tests/test_ble_lifecycle_facade.cpp",
+      "sha256": "b38a99e75f6e63ee9755e84de557c5f1ba7fab9141d392f776e4eb24e7ce4b2c",
+      "bytes": 4912,
+      "baseline_sha256": "cf707265306b82ada91c8256e7005d1066836d261868d4b1d7257e83c08e020f"
+    },
+    {
+      "path": "tests/test_ble_nonblocking.cpp",
+      "sha256": "b456bfa633ba89fdbbccd159c82379517c8c27fbc0cc518e5c919095ff9e2bed",
+      "bytes": 4936,
+      "baseline_sha256": "d54a5199fc69af01c9c736709744e4e8674abe61f34a93a759536e4c67ba0982"
+    },
+    {
+      "path": "tests/test_ble_origin.cpp",
+      "sha256": "5803dc775bf9bd2e97016ce87c6670efbc2fa93b98e3717d58af903726984161",
+      "bytes": 10607,
+      "baseline_sha256": "0e9793df78ef1fd2e918d583928ecc1c49e5e6ee7ccf343fe7c7f8f4c50a330f"
+    },
+    {
+      "path": "tests/test_clock_frontend.cpp",
+      "sha256": "3b40fb4d0ac1a0cc3cb8557f3a5db9db5438322e29e5a0f93d575971f135ed40",
+      "bytes": 11688,
+      "baseline_sha256": "965a54884a07e0aa8f3df52594233861eee36bd47d714555837a58a3d8725aab"
+    },
+    {
+      "path": "tests/test_clock_queue_pressure.cpp",
+      "sha256": "baa9179bc0bc7b8d634f6846df67cee9b7551b857105e993800797847b3e43d7",
+      "bytes": 11461,
+      "baseline_sha256": "af547e263cb458d072e7c7c933c91a81d1f9789d1ab0665fc8f0b2d32c26892c"
+    },
+    {
+      "path": "tests/test_hfp_control.cpp",
+      "sha256": "8d7b9e494ab2aebc6fdb6552717535dcc7f5653e5ec5ac0177047398573d20e9",
+      "bytes": 6863,
+      "baseline_sha256": null
+    },
+    {
+      "path": "tests/test_lhdc_concealment.cpp",
+      "sha256": "c8e30333ecfa28d648a9cbbec2e796549709e6b7113b55c23bf47450d4d014d4",
+      "bytes": 8531,
+      "baseline_sha256": "1b378dc732858cc0f42c09c7bb6884b15c055ee34af5b6a1d3d133754f173f64"
+    },
+    {
+      "path": "tests/test_output_pipeline.cpp",
+      "sha256": "3f527e1368c57ca1b9a20057719514d47fe41b71faeb7be448dad7e8c1a5dd77",
+      "bytes": 7154,
+      "baseline_sha256": "3fddec60ccb9a72776419807e5c4b2940505d676dec7ceaec9f980c9fdab6eb6"
+    },
+    {
+      "path": "tests/test_output_wait_lifecycle.cpp",
+      "sha256": "84a45a1a7244f2464eaea0f55ec47a781c02937d1a6b159a08ed63b86e422232",
+      "bytes": 7587,
+      "baseline_sha256": "190d311f5a2b822d379ae123d2421ed1fe7c6e0cd5e07ba7b0b2af32298cba3c"
+    },
+    {
+      "path": "tests/test_owned_classic.cpp",
+      "sha256": "429e4ce460785da07c3e3f5b330548176169ee12f43cd9b336b9be399f7ab642",
+      "bytes": 17859,
+      "baseline_sha256": "db8cdb50de073d7bce36b1c67c91b377c95c19a2a7b15abec6540a158035ae67"
+    },
+    {
+      "path": "tests/test_profile_expiry.cpp",
+      "sha256": "bc62401221b134dc52354d7df0fa022b8cb1a1dcc49d4f4b51f1368d7df68ce3",
+      "bytes": 3596,
+      "baseline_sha256": null
+    },
+    {
+      "path": "tests/test_receiver.cpp",
+      "sha256": "ed6d06045f71d877e7edd2604945262132dc19772a7e4a8d73629704bcee366c",
+      "bytes": 19716,
+      "baseline_sha256": "5e32edcfee22a1c721da45bd00ab6cd9421094b66b9b5a2d6be52da7b904b7e8"
+    },
+    {
+      "path": "tests/test_receiver_lifetime.cpp",
+      "sha256": "b31384678196accbbcb8b4d6afb67be7386ea2324d06685450ea1e5a55e66fc7",
+      "bytes": 10204,
+      "baseline_sha256": "7ce1cd1690f9b5f33419be1c4d678de466ce989303d48e1f59be31855b71f64d"
+    },
+    {
+      "path": "tests/test_receiver_wake_lifetime.cpp",
+      "sha256": "9b7889cb849ebf63e2953f04e3c627d7d070f6e2acd4c91d23e994bf9e89c3ff",
+      "bytes": 3492,
+      "baseline_sha256": "f10557fa20757fddc43707732213019f150c6c315102269e16fd898c1dceca9b"
+    },
+    {
+      "path": "tests/test_rfcomm.cpp",
+      "sha256": "961ae9184f1924f507f1c1ecab82d8002c09e4256a98830101c3cf9c65a076db",
+      "bytes": 5635,
+      "baseline_sha256": null
+    },
+    {
+      "path": "tests/test_sbc_memory_frontend.cpp",
+      "sha256": "9f11f6b310db35c4b803a03f68ba123c0a91f5562b4a4b1a1b930b89f29d4a6f",
+      "bytes": 5407,
+      "baseline_sha256": "70b28b500a882ee9f2afc93e4108bd9c9d59012624f6ab572376e0e91afcb17d"
+    },
+    {
+      "path": "tools/run_owned_tests.py",
+      "sha256": "8e92a0c3b693d49e8a876094fd48d579bc58e9ab2a08343d76a91a060c197333",
+      "bytes": 6731,
+      "baseline_sha256": "8c157145cce5b8b69f6fb12ddcf45ada5237f7cea3944b0ff4dd7070b121a34e"
+    }
+  ],
+  "original_unchanged_source_files": 365,
+  "portable_CPU": {
+    "architecture": "Android ARM64",
+    "cases": 28,
+    "all_return0": true,
+    "receipt_sha256": "505f50bedb5798006a65f677bbe0a12456253942dab00f6d97fd24ec1f18d631",
+    "M7_runtime": false,
+    "phone_interoperability": false
+  },
+  "independent_review_sha256": "a0e9a91939369b06bf6078a7b065b47af81697d6fe615a97866d768202e75000",
+  "current_package_validation": "validation/dev13-2026-10-27.json",
+  "limits": [
+    "No dev13 deployment or audio continuity repair",
+    "HFP/HSP unadvertised; no integrated RFCOMM owner or SCO/duplex audio",
+    "Public microphone registration API unfinished"
+  ]
+}

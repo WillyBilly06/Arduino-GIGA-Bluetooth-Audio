@@ -61,11 +61,12 @@ Status ClassicProfiles::begin(uint32_t mask,const RadioCallbacks& cb,bth_control
 void ClassicProfiles::reset(uint32_t generation) {
  if(!active_)return;
  stop(true);generation_=generation;signal_=media_=avrcp_=0;close_media_=close_avrcp_=false;
+ retired_avrcp_local_=retired_avrcp_remote_=0;retired_avrcp_owner_=0;
  for(auto& c:channels_)c=Channel();
  bth_avdtp_init(&avdtp_,endpoints_,endpoint_count_,avdtp_assembly_,sizeof avdtp_assembly_);
  bth_sdp_init(&sdp_,records_,record_count_,generation);
  bth_avrcp_init(&target_,control_status_.volume);bth_avrcp_ct_init(&controller_);
- control_status_.connected=false;control_status_.playback_status=0xff;control_status_.song_length_ms=control_status_.song_position_ms=0xffffffffu;
+ disconnectControl();
  avdtp_deadline_=target_deadline_=controller_deadline_=custom_deadline_=metadata_deadline_=0;
  work_=0;capabilities_sent_=metadata_active_=metadata_continue_=metadata_abort_=custom_active_=false;
  metadata_used_=custom_used_=0;metadata_fragments_=custom_remaining_=0;
@@ -78,13 +79,15 @@ bool ClassicProfiles::channelOpened(uint16_t psm,uint16_t local,uint16_t remote,
  if(!validOwner()||local<0x40||remote<0x40||mtu<48||channel(local))return false;
  if(psm!=1&&psm!=0x19&&psm!=0x17)return false;
  if(psm==0x19&&!signal_&&abortTransportPending())return false;
- if(psm==0x17&&avrcp_)return false;
+ if(psm==0x17&&(avrcp_||control_generation_==UINT32_MAX))return false;
+ if(psm==0x17&&retiringAvrcpRemote()){if(avrcpRetirementPending())return false;retired_avrcp_local_=retired_avrcp_remote_=0;retired_avrcp_owner_=0;}
  if(psm==0x19&&signal_&&!wantsMediaChannel())return false;
  Channel* empty=nullptr;for(auto& c:channels_)if(!c.local){empty=&c;break;}if(!empty)return false;
  *empty={psm,local,remote,mtu,{}};
  if(psm==0x19){if(!signal_)signal_=local;else {media_=local;bth_avdtp_media_connected(&avdtp_);}}
  if(psm==0x17){
-  avrcp_=local;control_status_.connected=true;bth_avrcp_ct_init(&controller_);bth_avrcp_init(&target_,control_status_.volume);
+  disconnectControl();avrcp_=local;control_status_.connected=true;control_status_.generation=++control_generation_;metadata_.generation=control_status_.generation;
+  bth_avrcp_ct_init(&controller_);bth_avrcp_init(&target_,control_status_.volume);
   work_=WorkStatus|(callbacks_.metadata?WorkMetadata:0);capabilities_sent_=false;
   metadata_active_=metadata_continue_=metadata_abort_=custom_active_=false;metadata_used_=custom_used_=0;
  }
@@ -99,7 +102,7 @@ void ClassicProfiles::channelClosed(uint16_t cid){
  auto* c=channel(cid);if(!c)return;
  if(cid==signal_){signal_=0;stop(true);if(avdtp_.state!=BTH_AVDTP_ABORTING)bth_avdtp_transport_closed(&avdtp_);if(media_)close_media_=true;}
  if(cid==media_){media_=0;stop(true);if(avdtp_.state!=BTH_AVDTP_ABORTING)bth_avdtp_transport_closed(&avdtp_);close_media_=false;}
- if(cid==avrcp_){avrcp_=0;control_status_.connected=false;work_=0;bth_avrcp_ct_init(&controller_);bth_avrcp_init(&target_,control_status_.volume);metadata_active_=metadata_continue_=metadata_abort_=custom_active_=false;close_avrcp_=false;}
+ if(cid==avrcp_){retired_avrcp_local_=cid;retired_avrcp_remote_=c->remote;retired_avrcp_owner_=generation_;avrcp_=0;disconnectControl();work_=0;bth_avrcp_ct_init(&controller_);bth_avrcp_init(&target_,control_status_.volume);metadata_active_=metadata_continue_=metadata_abort_=custom_active_=false;close_avrcp_=false;}
  *c=Channel();
 }
 void ClassicProfiles::stop(bool invalidate){
@@ -203,12 +206,81 @@ bool ClassicProfiles::takeCloseAvrcp(){bool value=close_avrcp_;close_avrcp_=fals
 uint16_t ClassicProfiles::signalCid()const{return signal_;}
 uint16_t ClassicProfiles::mediaCid()const{return media_;}
 uint16_t ClassicProfiles::avrcpCid()const{return avrcp_;}
+uint16_t ClassicProfiles::avrcpRemoteCid()const{for(const auto& c:channels_)if(c.local==avrcp_&&avrcp_)return c.remote;return 0;}
+bool ClassicProfiles::avrcpRetirementPending()const{
+ if(!retiringAvrcpRemote())return false;
+ bool pending=true;return !validOwner()||bth_control_tx_channel_pending(replies_,peer_,generation_,retired_avrcp_remote_,&pending)!=BTH_OK||pending;
+}
 bool ClassicProfiles::configured()const{return valid_;}
 bool ClassicProfiles::streaming()const{return playing_;}
 bool ClassicProfiles::abortTransportPending()const{return validOwner()&&avdtp_.state==BTH_AVDTP_ABORTING;}
 void ClassicProfiles::abortTransportRetired(){if(abortTransportPending()&&!media_)bth_avdtp_transport_closed(&avdtp_);}
 const CodecConfig& ClassicProfiles::acceptedConfiguration()const{return accepted_;}
 AvrcpStatus ClassicProfiles::avrcpStatus()const{return control_status_;}
+AvrcpMetadata ClassicProfiles::avrcpMetadata()const{return metadata_;}
+bool ClassicProfiles::commandActive()const{
+ return control_status_.command_state==AvrcpCommandState::Queued||control_status_.command_state==AvrcpCommandState::Pending;
+}
+void ClassicProfiles::disconnectControl(){
+ if(commandActive())control_status_.command_state=AvrcpCommandState::Disconnected;
+ control_status_.connected=false;control_status_.generation=0;control_status_.playback_status=0xff;
+ control_status_.song_length_ms=control_status_.song_position_ms=0xffffffffu;
+ metadata_={};metadata_obsolete_=status_obsolete_=false;
+}
+Status ClassicProfiles::avrcpCommand(AvrcpCommand command,uint32_t expected,bool secure,uint32_t now,uint32_t& id){
+ const uint8_t operation=static_cast<uint8_t>(command);
+ if(operation!=0x44&&operation!=0x45&&operation!=0x46&&operation!=0x4b&&operation!=0x4c)return Status::InvalidArgument;
+ if(!expected||expected!=control_status_.generation)return Status::InvalidArgument;
+ if(!validOwner()||!avrcp_||!control_status_.connected||!secure||close_avrcp_)return Status::Busy;
+ if(commandActive()||command_serial_==UINT32_MAX)return Status::Busy;
+ control_status_.command=command;control_status_.command_generation=expected;control_status_.command_id=++command_serial_;
+ control_status_.command_state=AvrcpCommandState::Queued;control_status_.cancel_requested=false;
+ control_status_.press_response=control_status_.release_response=0xff;
+ press_done_=release_done_=tap_timed_out_=false;tap_deadline_=now+3000;id=command_serial_;return Status::Ok;
+}
+Status ClassicProfiles::avrcpCancel(uint32_t expected,uint32_t id){
+ if(!validOwner()||!expected||expected!=control_status_.generation||expected!=control_status_.command_generation||!id||id!=control_status_.command_id)return Status::InvalidArgument;
+ if(control_status_.cancel_requested)return Status::Ok;
+ if(!commandActive())return Status::InvalidArgument;
+ control_status_.cancel_requested=true;
+ if(control_status_.command_state==AvrcpCommandState::Queued)control_status_.command_state=AvrcpCommandState::Cancelled;
+ return Status::Ok;
+}
+void ClassicProfiles::completeTap(){
+ if(control_status_.command_state!=AvrcpCommandState::Pending||!press_done_||!release_done_)return;
+ control_status_.command_state=tap_timed_out_?AvrcpCommandState::TimedOut:
+  control_status_.press_response!=9||control_status_.release_response!=9?AvrcpCommandState::Rejected:
+  control_status_.cancel_requested?AvrcpCommandState::Cancelled:AvrcpCommandState::Completed;
+}
+bool ClassicProfiles::transmitTap(Channel& c,uint32_t now){
+ // Reserve BOTH transport slots and labels before committing either edge.
+ // A capacity wait emits no press; cancellation must never strand a held key.
+ if(bth_control_tx_available(replies_,peer_)<2)return false;
+ unsigned labels=0;for(unsigned i=0;i<16;++i)if(!controller_.pending[i].kind&&!(controller_.retired_labels&(1u<<i)))++labels;
+ if(labels<2)return false;
+ bth_control_reservation_t down,up;
+ if(bth_control_tx_reserve(replies_,peer_,&down)!=BTH_OK)return false;
+ if(bth_control_tx_reserve(replies_,peer_,&up)!=BTH_OK){bth_control_tx_cancel(replies_,down.token);return false;}
+ const uint8_t previous=controller_.next_label;size_t dn=0,un=0;
+ auto ds=bth_avrcp_ct_passthrough(&controller_,true,static_cast<uint8_t>(control_status_.command),false,now,down.data,minimum(down.capacity,c.mtu),&dn);
+ auto us=ds==BTH_OK?bth_avrcp_ct_passthrough(&controller_,true,static_cast<uint8_t>(control_status_.command),true,now,up.data,minimum(up.capacity,c.mtu),&un):ds;
+ if(ds!=BTH_OK||us!=BTH_OK){
+  if(ds==BTH_OK)controller_.pending[down.data[0]>>4]={};
+  controller_.next_label=previous;bth_control_tx_cancel(replies_,down.token);bth_control_tx_cancel(replies_,up.token);return false;
+ }
+ press_label_=down.data[0]>>4;release_label_=up.data[0]>>4;
+ const auto dc=bth_control_tx_commit(replies_,down.token,c.remote,dn,c.mtu);
+ const auto uc=dc==BTH_OK?bth_control_tx_commit(replies_,up.token,c.remote,un,c.mtu):dc;
+ if(dc!=BTH_OK||uc!=BTH_OK){
+  // Only an internal queue invariant failure can occur after the reservations.
+  // Never retry an uncertain edge or stop the independent A2DP stream.
+  bth_control_tx_cancel(replies_,down.token);bth_control_tx_cancel(replies_,up.token);
+  controller_.pending[press_label_]={};controller_.pending[release_label_]={};
+  controller_.retired_labels|=uint16_t((1u<<press_label_)|(1u<<release_label_));
+  control_status_.command_state=AvrcpCommandState::TransportError;close_avrcp_=true;return true;
+ }
+ control_status_.command_state=AvrcpCommandState::Pending;tap_deadline_=now+3000;return true;
+}
 uint32_t ClassicProfiles::receivedPackets()const{return received_;}
 uint32_t ClassicProfiles::receivedBytes()const{return bytes_;}
 uint32_t ClassicProfiles::droppedPackets()const{return dropped_;}
@@ -228,31 +300,46 @@ bool ClassicProfiles::customRequest(uint8_t kind,uint8_t pdu,uint32_t now,bth_co
  else if(params)r.data[13]=0x20;
  auto& pending=controller_.pending[label];pending={};pending.kind=kind;pending.deadline=now+3000;controller_.next_label=uint8_t((label+1)&15);n=13+params;return true;
 }
+// Run before consuming control responses as well as from poll: caller ordering
+// must not let a late ACK revive an already expired transaction.
+void ClassicProfiles::expireControl(uint32_t now){
+ if(controller_.rx_active&&int32_t(now-controller_deadline_)>=0)bth_avrcp_ct_expire_assembly(&controller_);
+ if(custom_active_&&int32_t(now-custom_deadline_)>=0){custom_active_=false;custom_used_=0;++control_status_.malformed_events;}
+ uint16_t metadata_labels=0;
+ for(unsigned i=0;i<16;++i)if(controller_.pending[i].kind==CustomMetadata)metadata_labels|=uint16_t(1u<<i);
+ uint16_t expired=bth_avrcp_ct_expire(&controller_,now);
+ if(control_status_.command_state==AvrcpCommandState::Queued&&int32_t(now-tap_deadline_)>=0)control_status_.command_state=AvrcpCommandState::TimedOut;
+ if(control_status_.command_state==AvrcpCommandState::Pending){
+  if(expired&(1u<<press_label_)){press_done_=true;tap_timed_out_=true;}
+  if(expired&(1u<<release_label_)){release_done_=true;tap_timed_out_=true;}
+  completeTap();
+ }
+ if(expired&metadata_labels){metadata_abort_=metadata_active_;metadata_active_=metadata_continue_=false;metadata_used_=0;}
+ if(metadata_active_&&int32_t(now-metadata_deadline_)>=0){
+  for(unsigned i=0;i<16;++i)if(controller_.pending[i].kind==CustomMetadata){controller_.pending[i]={};controller_.retired_labels|=uint16_t(1u<<i);}
+  metadata_abort_=true;metadata_active_=metadata_continue_=custom_active_=false;metadata_used_=custom_used_=0;
+ }
+ if(controller_.protocol_rejected||controller_.retired_labels==0xffff){
+  if(commandActive())control_status_.command_state=AvrcpCommandState::TransportError;
+  close_avrcp_=true;return;
+ }
+}
 void ClassicProfiles::poll(bool secure,uint32_t now,bool allow_transmit){
  if(!validOwner())return;
  if(!secure&&playing_)stop(false);
  if(avdtp_.rx_active&&due(now,avdtp_deadline_)){uint32_t actions;bth_avdtp_expire(&avdtp_,BTH_AVDTP_EXPIRE_ASSEMBLY,&actions);}
  if(target_.rx_active&&due(now,target_deadline_))bth_avrcp_expire(&target_);
- if(controller_.rx_active&&due(now,controller_deadline_))bth_avrcp_ct_expire_assembly(&controller_);
- if(custom_active_&&due(now,custom_deadline_)){custom_active_=false;custom_used_=0;++control_status_.malformed_events;}
- uint16_t metadata_labels=0;
- for(unsigned i=0;i<16;++i)if(controller_.pending[i].kind==CustomMetadata)metadata_labels|=uint16_t(1u<<i);
- uint16_t expired=bth_avrcp_ct_expire(&controller_,now);
- if(expired&metadata_labels){metadata_abort_=metadata_active_;metadata_active_=metadata_continue_=false;metadata_used_=0;}
- if(metadata_active_&&due(now,metadata_deadline_)){
-  for(unsigned i=0;i<16;++i)if(controller_.pending[i].kind==CustomMetadata){controller_.pending[i]={};controller_.retired_labels|=uint16_t(1u<<i);}
-  metadata_abort_=true;metadata_active_=metadata_continue_=custom_active_=false;metadata_used_=custom_used_=0;
- }
- if(controller_.protocol_rejected||controller_.retired_labels==0xffff){close_avrcp_=true;return;}
+ expireControl(now);if(close_avrcp_)return;
  auto* c=channel(avrcp_);if(!allow_transmit||!secure||!c||close_avrcp_)return;
+ if(control_status_.command_state==AvrcpCommandState::Queued){transmitTap(*c,now);return;}
  bth_control_reservation_t r;if(bth_control_tx_reserve(replies_,peer_,&r)!=BTH_OK)return;
  size_t n=0;const size_t cap=minimum(r.capacity,c->mtu);bth_status_t status=BTH_MORE;
  if(callbacks_.volume&&target_.notification_due)status=bth_avrcp_notification(&target_,r.data,cap,&n);
  else if(metadata_abort_){if(customRequest(CustomAbort,0x41,now,r,cap,n)){metadata_abort_=false;status=BTH_OK;}}
  else if(metadata_continue_){if(customRequest(CustomMetadata,0x40,now,r,cap,n)){metadata_continue_=false;status=BTH_OK;}}
  else if(!capabilities_sent_){status=bth_avrcp_ct_capabilities(&controller_,true,now,r.data,cap,&n);if(status==BTH_OK)capabilities_sent_=true;}
- else if(work_&WorkStatus){if(customRequest(CustomStatus,0x30,now,r,cap,n)){work_&=uint8_t(~WorkStatus);status=BTH_OK;}}
- else if(work_&WorkMetadata){if(customRequest(CustomMetadata,0x20,now,r,cap,n)){work_&=uint8_t(~WorkMetadata);metadata_active_=false;metadata_used_=0;metadata_fragments_=0;status=BTH_OK;}}
+ else if(work_&WorkStatus){if(customRequest(CustomStatus,0x30,now,r,cap,n)){status_obsolete_=false;work_&=uint8_t(~WorkStatus);status=BTH_OK;}}
+ else if(work_&WorkMetadata){if(customRequest(CustomMetadata,0x20,now,r,cap,n)){metadata_obsolete_=false;work_&=uint8_t(~WorkMetadata);metadata_active_=false;metadata_used_=0;metadata_fragments_=0;status=BTH_OK;}}
  else if(controller_.capabilities_known){
   const uint8_t events[]={1,2};for(uint8_t event:events)if((controller_.supported_events&(1u<<event))&&!((controller_.disabled_events|controller_.registered_events)&(1u<<event))){status=bth_avrcp_ct_register(&controller_,true,event,0,now,r.data,cap,&n);break;}
  }
@@ -263,10 +350,15 @@ bool ClassicProfiles::emitMetadata(const uint8_t* p,size_t n){
  size_t pos=1;
  for(unsigned i=0;i<p[0];++i){if(n-pos<8)return false;size_t length=be16(p+pos+6);if(length>n-pos-8)return false;pos+=8+length;}
  if(pos!=n)return false;
+ if(metadata_obsolete_)return true; // A previous-track response still retires its transaction.
  pos=1;for(unsigned i=0;i<p[0];++i){uint32_t attribute=be32(p+pos);uint16_t charset=be16(p+pos+4);size_t length=be16(p+pos+6);const uint8_t* text=p+pos+8;
-  if(callbacks_.metadata&&attribute>=1&&attribute<=7&&charset==106){
+  if(attribute>=1&&attribute<=7&&charset==106){
    size_t copied=minimum(length,127);if(copied<length&&(text[copied]&0xc0)==0x80)while(copied&&(text[copied]&0xc0)==0x80)--copied;
-   char value[128];memcpy(value,text,copied);value[copied]=0;callbacks_.metadata(uint8_t(attribute),value,copied,callbacks_.user);
+   char value[128];memcpy(value,text,copied);value[copied]=0;
+   char* retained=attribute==1?metadata_.title:attribute==2?metadata_.artist:attribute==3?metadata_.album:attribute==7?metadata_.playing_time:nullptr;
+   if(retained){memcpy(retained,value,copied+1);const uint8_t bit=uint8_t(1u<<(attribute-1));metadata_.valid_attributes|=bit;
+    if(copied<length)metadata_.truncated_attributes|=bit;else metadata_.truncated_attributes&=uint8_t(~bit);}
+   if(callbacks_.metadata)callbacks_.metadata(uint8_t(attribute),value,copied,callbacks_.user);
   }pos+=8+length;
  }return true;
 }
@@ -276,13 +368,13 @@ void ClassicProfiles::customResponse(uint8_t label,const uint8_t* body,size_t le
  const uint8_t type=body[0]&15,pdu=body[6],packet=body[7];const uint8_t* data=body+10;size_t n=length-10;
  const uint8_t expected=pending.kind==CustomStatus?0x30:pending.kind==CustomAbort?0x41:0x20;
  if(pdu!=expected){++control_status_.malformed_events;return;}
- if(type==8||type==10){if(type==10&&n!=1){++control_status_.malformed_events;return;}pending={};metadata_active_=metadata_continue_=metadata_abort_=false;metadata_used_=0;return;}
+ if(type==8||type==10){if(type==10&&n!=1){++control_status_.malformed_events;return;}++control_status_.rejected_commands;const bool metadata=pending.kind==CustomMetadata;pending={};if(metadata){metadata_active_=metadata_continue_=metadata_abort_=false;metadata_used_=0;}return;}
+ if(pending.kind==CustomAbort){if(type!=9||packet||n){++control_status_.malformed_events;return;}pending={};return;}
  if(type!=12){++control_status_.malformed_events;return;}
  if(pending.kind==CustomStatus){
   if(pdu!=0x30||packet||n!=9||(data[8]>4&&data[8]!=255)){++control_status_.malformed_events;return;}
-  control_status_.song_length_ms=be32(data);control_status_.song_position_ms=be32(data+4);control_status_.playback_status=data[8];pending={};return;
+  if(!status_obsolete_){control_status_.song_length_ms=be32(data);control_status_.song_position_ms=be32(data+4);control_status_.playback_status=data[8];}pending={};return;
  }
- if(pending.kind==CustomAbort){if(pdu!=0x41||packet||n){++control_status_.malformed_events;return;}pending={};return;}
  if(pdu!=0x20){++control_status_.malformed_events;return;}
  if(packet==0){if(metadata_active_||!emitMetadata(data,n)){++control_status_.malformed_events;return;}pending={};return;}
  if((packet==1&&metadata_active_)||(packet>=2&&!metadata_active_)){++control_status_.malformed_events;return;}
@@ -296,14 +388,26 @@ void ClassicProfiles::customResponse(uint8_t label,const uint8_t* body,size_t le
 }
 void ClassicProfiles::controllerResponse(const uint8_t* p,size_t n,bool secure,uint32_t now){
  if(!secure||close_avrcp_)return;
+ expireControl(now);if(close_avrcp_)return;
  uint8_t label=p[0]>>4,packet=(p[0]>>2)&3;
  if(controller_.pending[label].kind<CustomStatus){
   bth_avrcp_ct_event_t event;auto status=bth_avrcp_ct_receive(&controller_,p,n,true,&event);
   if(status<0){++control_status_.malformed_events;return;}
   if(controller_.rx_active)controller_deadline_=now+2000;
+  if(event.actions&BTH_AVRCP_CT_REJECTED)++control_status_.rejected_commands;
+  if((event.actions&BTH_AVRCP_CT_KEY)&&control_status_.command_state==AvrcpCommandState::Pending){
+   if(event.label==press_label_&&!event.released){press_done_=true;control_status_.press_response=event.response;}
+   if(event.label==release_label_&&event.released){release_done_=true;control_status_.release_response=event.response;}
+   completeTap();
+  }
+  if(controller_.protocol_rejected&&commandActive()){control_status_.command_state=AvrcpCommandState::Rejected;close_avrcp_=true;}
   if((event.actions&BTH_AVRCP_CT_NOTIFICATION)&&!(event.actions&BTH_AVRCP_CT_REJECTED)){
-   if(event.event==1){control_status_.playback_status=event.play_status;if(!event.interim)work_|=WorkStatus;}
-   if(event.event==2&&!event.interim)work_|=WorkStatus|(callbacks_.metadata?WorkMetadata:0);
+   if(event.event==1){control_status_.playback_status=event.play_status;status_obsolete_=true;work_|=WorkStatus;}
+   if(event.event==2&&!event.interim){
+    metadata_={};metadata_.generation=control_status_.generation;metadata_obsolete_=status_obsolete_=true;
+    control_status_.song_length_ms=control_status_.song_position_ms=0xffffffffu;
+    work_|=WorkStatus|(callbacks_.metadata?WorkMetadata:0);
+   }
   }return;
  }
  const size_t header=packet==1?4:packet==0?3:1;

@@ -53,3 +53,11 @@ namespace giga_bredr { namespace detail {
 Status radioBleDisconnect(uint32_t,bool){return Status::Unsupported;}
 Status radioBleResumeAdvertising(){return Status::Unsupported;}
 }}
+
+// New AVRCP facade boundary is unavailable in this pre-existing hardware stub.
+namespace giga_bredr { namespace detail {
+AvrcpStatus radioAvrcpStatus(){return{};}
+AvrcpMetadata radioAvrcpMetadata(){return{};}
+Status radioAvrcpCommand(AvrcpCommand,uint32_t,uint32_t&){return Status::Unsupported;}
+Status radioAvrcpCancel(uint32_t,uint32_t){return Status::Unsupported;}
+}}

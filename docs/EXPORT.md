@@ -1,3 +1,11 @@
+# Experimental dev.13 source and packaging boundary
+
+This development package adds only the reviewed profile implementation plus release metadata and documentation. It retains every original codec/buffering/I2S/HCD/GATT source outside the approved AVRCP owner/queue changes and preserves all root/component license and notice bytes. The versioned ZIP is built from a local Git commit and checked member-by-member; its SHA256 remains in an external sidecar. Remote publication is a separate action. The main branch is unchanged.
+
+[Dev.13 validation](validation/dev13-2026-10-27.md) distinguishes the actual package CM7 build from the 28 portable CPU cases and all older field images. This package has not been flashed or tested with a phone. HFP/HSP remain unadvertised groundwork, and the existing intermittent PCM shortages remain unresolved. No private first-shortage recorder, raw capture, device identifier or workstation path is added. Original component terms and unresolved grants remain unchanged.
+
+## Historical dev.12 and earlier export records
+
 # Experimental dev.12 source and packaging boundary
 
 The version12 SCHED0/opt-in3M fullCM7 build produces BIN68e0879498d369ed2f008e541cfdf34ec53e0c6e9559b295489dee610f85ae3d, byte-identical to the readback-verified80/90ms LHDC field image. Final documentation-only archive members are checked against the compiled source/Receiver hashes; the final extracted ZIP is not separately recompiled. The finite field window had no recorded audio faults but14 clock overruns; full qualification remains incomplete. DefaultUART remains2M, which has integration-object checks only in this update. See [dev12 validation](validation/dev12-2026-10-27.md). Root/component terms remain unchanged; main is outside this development update.

@@ -37,6 +37,9 @@ bool bth_control_tx_attach(bth_control_tx_t *q,uint8_t peer,uint16_t handle,uint
 // still-live handle. Already sent controller credits are owned by HCI flow.
 bool bth_control_tx_detach(bth_control_tx_t *q,uint8_t peer,uint32_t owner);
 unsigned bth_control_tx_available(const bth_control_tx_t *q,uint8_t peer);
+// Read-only channel drain query. Includes prepared/partial ACL state and validates
+// the exact live peer owner; never releases a slot, packet credit or reservation.
+bth_status_t bth_control_tx_channel_pending(const bth_control_tx_t *q,uint8_t peer,uint32_t owner,uint16_t remote_cid,bool *pending);
 // Reserve before invoking a state-changing protocol parser. Build the reply
 // directly here, then commit. Mutable pointer is invalid after commit/cancel.
 bth_status_t bth_control_tx_reserve(bth_control_tx_t *q,uint8_t peer,bth_control_reservation_t *reservation);

@@ -1,3 +1,9 @@
+# Dev.13 development status
+
+Experimental; not stable. Typed AVRCP taps, copied metadata/status and scoped channel retirement are implemented. All28 final portable Android ARM64 CPU cases passed on the reviewed source; the dev.13 package build is recorded in [validation](validation/dev13-2026-10-27.md). CPU assertions and compilation do not establish actual GIGA/phone operation. HFP/HSP remain unadvertised standalone modules with no integrated RFCOMM owner, SCO/duplex audio or public microphone registration API. Existing codecs, LHDC80/90, I2S, HCD and BLE defaults are retained. Longer listening produced brief PCM shortages after earlier zero-fault finite tests; their initiating cause remains unresolved. Main is maintained separately.
+
+## Historical dev.12 and earlier evidence
+
 # Dev.12 current development evidence
 
 The LHDC automatic profile is now80ms startup/90ms ring; other codec bases and the clock/radio algorithms are unchanged. The public-code SCHED0/opt-in3M600s LHDC192/BLE window completed130 verified512B exchanges over3cycles with zero recorded missingPCM/RTP/decode/transport faults, but14 clock overruns. The public60/70ms baseline lost59328PCMframes. Version12 builds to the exact field-tested BIN bytes; this does not establish acoustics, total200ms latency, all-codec interoperability or numeric precision. HFP/HSP/RFCOMM/SCO/pluggable microphone and complete typed AVRCP remain unfinished. See [current validation](validation/dev12-2026-10-27.md).

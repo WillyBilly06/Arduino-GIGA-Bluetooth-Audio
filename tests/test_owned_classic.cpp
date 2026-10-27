@@ -104,19 +104,23 @@ static void avrcp_metadata_and_status() {
  f.profiles.poll(true,24);auto request=f.pop(0x83);assert(request[9]==0x20&&request[21]==4);
  std::vector<uint8_t> attrs={2,0,0,0,1,0,106,0,5,'T','i','t','l','e',0,0,0,2,0,106,0,6,'A','r','t','i','s','t'};
  f.rx(vendorResponse(request,0x20,attrs),0x43,true,25);assert(f.app.metadata.size()==2&&f.app.metadata[0].first==1&&f.app.metadata[0].second=="Title"&&f.app.metadata[1].second=="Artist");
- // Track CHANGED schedules status+metadata again, with fresh labels.
+ // A received playback notification makes an older status snapshot obsolete.
+ // Answer the explicit legal refresh before requiring the track registration;
+ // do not index registration parameters in a13-byte GetPlayStatus request.
  f.profiles.poll(true,26);auto notification=f.pop(0x83);assert(notification[9]==0x31&&notification[13]==1);
  f.rx(vendorResponse(notification,0x31,{1,1},0,15),0x43,true,27);
- f.profiles.poll(true,28);auto track=f.pop(0x83);assert(track[13]==2);
- f.rx(vendorResponse(track,0x31,{2,0,0,0,0,0,0,0,1},0,15),0x43,true,29);
- f.rx(vendorResponse(track,0x31,{2,0,0,0,0,0,0,0,2},0,13),0x43,true,30);
- f.profiles.poll(true,31);status=f.pop(0x83);assert(status[9]==0x30);f.rx(vendorResponse(status,0x30,{0,0,0,10,0,0,0,1,1}),0x43,true,32);
- f.profiles.poll(true,33);request=f.pop(0x83);assert(request[9]==0x20);
+ f.profiles.poll(true,28);auto refresh=f.pop(0x83);assert(refresh.size()==13&&refresh[9]==0x30);
+ f.rx(vendorResponse(refresh,0x30,{0,0,0x13,0x88,0,0,0,120,1}),0x43,true,29);
+ f.profiles.poll(true,30);auto track=f.pop(0x83);assert(track.size()==18&&track[9]==0x31&&track[13]==2);
+ f.rx(vendorResponse(track,0x31,{2,0,0,0,0,0,0,0,1},0,15),0x43,true,31);
+ f.rx(vendorResponse(track,0x31,{2,0,0,0,0,0,0,0,2},0,13),0x43,true,32);
+ f.profiles.poll(true,33);status=f.pop(0x83);assert(status[9]==0x30);f.rx(vendorResponse(status,0x30,{0,0,0,10,0,0,0,1,1}),0x43,true,34);
+ f.profiles.poll(true,35);request=f.pop(0x83);assert(request[9]==0x20);
  // AVRCP vendor continuation has its own transactions and bounded assembly.
  std::vector<uint8_t> first(attrs.begin(),attrs.begin()+12),last(attrs.begin()+12,attrs.end());
- f.rx(vendorResponse(request,0x20,first,1),0x43,true,34);assert(f.app.metadata.size()==2);
- f.profiles.poll(true,35);auto continuation=f.pop(0x83);assert(continuation[9]==0x40&&continuation[13]==0x20);
- f.rx(vendorResponse(continuation,0x20,last,3),0x43,true,36);assert(f.app.metadata.size()==4);
+ f.rx(vendorResponse(request,0x20,first,1),0x43,true,36);assert(f.app.metadata.size()==2);
+ f.profiles.poll(true,37);auto continuation=f.pop(0x83);assert(continuation[9]==0x40&&continuation[13]==0x20);
+ f.rx(vendorResponse(continuation,0x20,last,3),0x43,true,38);assert(f.app.metadata.size()==4);
 }
 static void custom_labels_are_not_duplicated_by_track_change() {
  Fixture f;assert(f.profiles.channelOpened(0x17,0x43,0x83,672));
@@ -203,7 +207,19 @@ static void malformed_avrcp_fragment_retires_assembly() {
  body.rx({0x1c,0x50,0,0,1,64},0x43,true,102);
  assert(body.app.volumes==0 && body.q.peers[0].count==0);
 }
-int main() {
+int main(int argc,char** argv) {
+ if(argc==2){
+  struct Case{const char* name;void(*run)();};
+  const Case cases[]={
+   {"metadata_status",avrcp_metadata_and_status},
+   {"metadata_labels",custom_labels_are_not_duplicated_by_track_change},
+   {"metadata_bounds",avctp_fragmented_status_and_utf8_metadata_bounds},
+   {"metadata_unrelated_timeout",unrelated_timeout_preserves_metadata_continuation},
+   {"metadata_blocked_abort",blocked_metadata_continuation_expires_to_abort},
+   {"metadata_fragment_retirement",malformed_avrcp_fragment_retires_assembly}};
+  for(const auto& c:cases)if(!strcmp(argv[1],c.name)){c.run();return 0;}
+  return 2;
+ }
  malformed_avrcp_fragment_retires_assembly();
  configuration_transaction_and_lifecycle();validation_and_reconfigure();reconfigure_and_disabled_endpoint();backpressure_and_generation();sdp_and_avrcp_volume();avrcp_metadata_and_status();custom_labels_are_not_duplicated_by_track_change();malformed_fragment_retires_assembly();custom_response_requires_matching_pdu_even_for_reject();all_endpoint_formats_are_bound_to_their_seid();avctp_fragmented_status_and_utf8_metadata_bounds();
  unrelated_timeout_preserves_metadata_continuation();blocked_metadata_continuation_expires_to_abort();

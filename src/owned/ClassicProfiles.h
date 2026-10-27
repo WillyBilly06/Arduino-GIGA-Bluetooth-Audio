@@ -34,12 +34,19 @@ public:
  uint16_t signalCid() const;
  uint16_t mediaCid() const;
  uint16_t avrcpCid() const;
+ uint16_t avrcpRemoteCid() const;
+ uint16_t retiringAvrcpLocal() const {return retired_avrcp_owner_==generation_?retired_avrcp_local_:0;}
+ uint16_t retiringAvrcpRemote() const {return retired_avrcp_owner_==generation_?retired_avrcp_remote_:0;}
+ bool avrcpRetirementPending() const;
  bool configured() const;
  bool streaming() const;
  bool abortTransportPending() const;
  void abortTransportRetired(); // Actor confirms all non-signaling AVDTP channels retired.
  const CodecConfig& acceptedConfiguration() const;
  AvrcpStatus avrcpStatus() const;
+ AvrcpMetadata avrcpMetadata() const;
+ Status avrcpCommand(AvrcpCommand,uint32_t expected_generation,bool secure,uint32_t now_ms,uint32_t& request_id);
+ Status avrcpCancel(uint32_t expected_generation,uint32_t request_id);
  uint32_t receivedPackets() const;
  uint32_t receivedBytes() const;
  uint32_t droppedPackets() const;
@@ -55,6 +62,11 @@ private:
  void customResponse(uint8_t,const uint8_t*,size_t,uint32_t);
  bool customRequest(uint8_t,uint8_t,uint32_t,bth_control_reservation_t&,size_t,size_t&);
  bool emitMetadata(const uint8_t*,size_t);
+ bool commandActive() const;
+ void disconnectControl();
+ bool transmitTap(Channel&,uint32_t);
+ void completeTap();
+ void expireControl(uint32_t now_ms);
  RadioCallbacks callbacks_;
  bool(*stream_policy_)(bool,void*)=nullptr;void* stream_policy_user_=nullptr;
  bth_control_tx_t* replies_=nullptr;
@@ -62,6 +74,7 @@ private:
  uint8_t peer_=0;
  bool active_=false,valid_=false,playing_=false,close_media_=false,close_avrcp_=false;
  uint16_t signal_=0,media_=0,avrcp_=0;
+ uint16_t retired_avrcp_local_=0,retired_avrcp_remote_=0;uint32_t retired_avrcp_owner_=0;
  CodecConfig accepted_;
  bth_avdtp_endpoint_t endpoints_[9]={};
  size_t endpoint_count_=0;
@@ -74,6 +87,11 @@ private:
  bth_avrcp_t target_={};
  bth_avrcp_ct_t controller_={};
  AvrcpStatus control_status_;
+ AvrcpMetadata metadata_;
+ uint32_t control_generation_=0,command_serial_=0,tap_deadline_=0;
+ uint8_t press_label_=0,release_label_=0;
+ bool press_done_=false,release_done_=false,tap_timed_out_=false;
+ bool metadata_obsolete_=false,status_obsolete_=false;
  uint32_t avdtp_deadline_=0,target_deadline_=0,controller_deadline_=0,custom_deadline_=0,metadata_deadline_=0;
  uint8_t work_=0;
  bool capabilities_sent_=false,metadata_active_=false,metadata_continue_=false,metadata_abort_=false;

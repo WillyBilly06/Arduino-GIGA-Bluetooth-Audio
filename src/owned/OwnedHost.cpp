@@ -90,6 +90,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  for(unsigned i=0;i<2;++i){reserved_[i]=false;admissions_[i]={};}
  erase(bonds_,sizeof bonds_);bond_cursor_=0;patch_position_=patch_pending_bytes_=0;pending_opcode_=0;
  hnc_commands_=hnc_packets_=hnc_last_ms_=0;memset(hnc_handles_,0,sizeof hnc_handles_);memset(hnc_counts_,0,sizeof hnc_counts_);
+ clearAvrcpRetirement();
  deferred_count_=deferred_read_=0;event_serial_=retired_event_=0;close_media_=close_avrcp_=0;now_=begin_ms_=deadline_=settle_until_=packet_order_=command_deadline_=0;
  qos_last_data_ms_=qos_classic_owner_=qos_le_owner_=0;qos_data_fragments_=qos_data_bytes_=qos_paced_deferrals_=qos_urgent_bypasses_=0;qos_classic_burst_=0;qos_have_data_=qos_audio_active_=false;
  memset(le_features_,0,sizeof le_features_);le_features_known_=false;
@@ -97,7 +98,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  memset(sent_at_,0,sizeof sent_at_);accept_deadline_=0;next_peer_=le_trace_=0;le_reply_observe_trace_=0;clock_started_=pending_=tx_turn_=last_ack_=was_secure_=false;boot_=Boot::PatchReset;active_=true;return Status::Ok;
 }
 void OwnedHost::end(){
- audio_supply::hostCreditInvalidate();
+ audio_supply::hostCreditInvalidate();clearAvrcpRetirement();
  le_disconnect_owner_=0;le_advertising_held_=false;le_disconnect_advertise_after_=true;
  if(!active_)return;active_=false;stats_.controller_ready=stats_.connected=stats_.streaming=false;
  for(unsigned i=0;i<2;++i){detach(i);cancelAdmission(i);}if(config_.callbacks.enable_a2dp)resetClassic(0);
@@ -382,12 +383,62 @@ void OwnedHost::receiveImpl(uint8_t type,const uint8_t* packet,size_t n,uint32_t
   memcpy(owned.bytes,packet,n);owned.length=uint16_t(n);owned.order=++packet_order_;owned.used=true;
  }
 }
+void OwnedHost::clearAvrcpRetirement(){
+ avrcp_retiring_=false;avrcp_retire_owner_=avrcp_retire_deadline_=0;avrcp_retire_local_=avrcp_retire_remote_=0;
+}
+bool OwnedHost::avrcpRetirementReady()const{
+ if(!avrcp_retiring_)return true;
+ bool pending=true;
+ return peers_[0].attached&&peers_[0].owner==avrcp_retire_owner_&&
+  bth_control_tx_channel_pending(&control_,0,avrcp_retire_owner_,avrcp_retire_remote_,&pending)==BTH_OK&&!pending&&hooks_.txReady(hooks_.user);
+}
+bool OwnedHost::gateAvrcpRetirement(const bth_l2cap_pdu_t& pdu){
+ if(pdu.cid!=1||!pdu.payload.data||!pdu.payload.len)return true;
+ uint16_t local=avrcp_retiring_?avrcp_retire_local_:classic_.avrcpCid();
+ uint16_t remote=avrcp_retiring_?avrcp_retire_remote_:classic_.avrcpRemoteCid();
+ const bool retired=avrcp_retiring_||classic_.retiringAvrcpRemote();
+ if(!local&&retired){local=classic_.retiringAvrcpLocal();remote=classic_.retiringAvrcpRemote();}
+ const auto* closing=bth_l2cap_sig_find(&signaling_,local);
+ bool closes=false,reuses=false;
+ for(size_t at=0;at<pdu.payload.len;){
+  if(pdu.payload.len-at<4)return true;const uint8_t* p=pdu.payload.data+at;const size_t n=bth_read_le16(p+2);
+  if(!p[1]||n>pdu.payload.len-at-4)return true;
+  if(n==4&&local&&remote&&((p[0]==6&&bth_read_le16(p+4)==local&&bth_read_le16(p+6)==remote)||
+      (p[0]==7&&bth_read_le16(p+4)==remote&&bth_read_le16(p+6)==local&&closing&&closing->state==BTH_CHANNEL_DISCONNECTING&&closing->disconnect_id==p[1])))closes=true;
+  if(p[0]==2&&n==4&&retired&&(bth_read_le16(p+4)==0x17||bth_read_le16(p+6)==remote))reuses=true;
+  at+=n+4;
+ }
+ if(!avrcp_retiring_&&(closes||reuses)&&local&&remote){
+  avrcp_retiring_=true;avrcp_retire_owner_=peers_[0].owner;avrcp_retire_local_=local;avrcp_retire_remote_=remote;avrcp_retire_deadline_=now_+5000;
+ }
+ // No parser mutation or successful reused-CID response can precede this fence.
+ return !avrcp_retiring_||avrcpRetirementReady();
+}
+bool OwnedHost::copiedAvrcpRetirement(const bth_l2cap_pdu_t& pdu)const{
+ if(!avrcp_retiring_||pdu.cid!=1||!pdu.payload.data||!pdu.payload.len)return false;
+ const auto* closing=bth_l2cap_sig_find(&signaling_,avrcp_retire_local_);
+ bool transition=false;
+ for(size_t at=0;at<pdu.payload.len;){
+  if(pdu.payload.len-at<4)return false;const uint8_t* p=pdu.payload.data+at;const size_t n=bth_read_le16(p+2);
+  if(!p[1]||n>pdu.payload.len-at-4)return false;
+  const bool close=n==4&&((p[0]==6&&bth_read_le16(p+4)==avrcp_retire_local_&&bth_read_le16(p+6)==avrcp_retire_remote_)||
+   (p[0]==7&&bth_read_le16(p+4)==avrcp_retire_remote_&&bth_read_le16(p+6)==avrcp_retire_local_&&closing&&closing->state==BTH_CHANNEL_DISCONNECTING&&closing->disconnect_id==p[1]));
+  const bool connect=p[0]==2&&n==4&&(bth_read_le16(p+4)==0x17||bth_read_le16(p+6)==avrcp_retire_remote_);
+  const bool configure=(p[0]==4||p[0]==5)&&n>=4&&bth_read_le16(p+4)==avrcp_retire_local_;
+  const bool stateless=p[0]==8||(p[0]==10&&n==2);
+  if(!close&&!connect&&!configure&&!stateless)return false;
+  transition=transition||close||connect;at+=n+4;
+ }
+ // These transitions affect only the retiring AVRCP identity, never A2DP roles.
+ return transition;
+}
 bool OwnedHost::deliverImpl(unsigned i,const bth_l2cap_pdu_t& pdu,uint16_t* signal_cursor){
  if(i==1)return le_.receive(peers_[i].owner,pdu.cid,pdu.payload.data,pdu.payload.len,now_);
  const bool secure=bth_links_secure(&links_,peers_[0].handle);
  if(pdu.cid!=1){const auto* channel=bth_l2cap_sig_find(&signaling_,pdu.cid);if(!channel||channel->state!=BTH_CHANNEL_OPEN)return true;
   if(pdu.payload.len>channel->local_mtu){closePeer(0,0x13);return true;}return classic_.receive(pdu.cid,pdu.payload.data,pdu.payload.len,secure,now_);
  }
+ if(!gateAvrcpRetirement(pdu))return false;
  // Only a wholly validated, stateless bundle can commit a response prefix.
  // The high bit records validation even when no first response could queue.
  // Mutable/mixed bundles retain the original all-or-nothing parser below.
@@ -407,18 +458,27 @@ bool OwnedHost::deliverImpl(unsigned i,const bth_l2cap_pdu_t& pdu,uint16_t* sign
   if(at<pdu.payload.len)return false;*signal_cursor=0;return true;
  }
  bth_control_reservation_t reservation;if(bth_control_tx_reserve(&control_,0,&reservation)!=BTH_OK)return false;
+ if(avrcp_retiring_&&classic_.avrcpCid()==avrcp_retire_local_&&classic_.avrcpRemoteCid()==avrcp_retire_remote_){
+  // Make the old profile generation visibly closed even if CLOSE+CONNECT+CONFIG
+  // reuses the same kernel slot within this one all-or-nothing signaling SDU.
+  classic_.channelClosed(avrcp_retire_local_);
+  if(avrcp_retire_local_>=0x40&&avrcp_retire_local_-0x40<BTH_CHANNEL_LIMIT)peers_[0].opened[avrcp_retire_local_-0x40]=false;
+ }
  size_t n=0;bool collision=false;bth_status_t result=bth_avrcp_link_receive(&signaling_,pdu.payload.data,pdu.payload.len,secure,avrcp_recovering_,reservation.data,reservation.capacity,&n,&collision);
  if(result==BTH_ERR_CAPACITY){bth_control_tx_cancel(&control_,reservation.token);return false;}
- if(result<0){bth_control_tx_cancel(&control_,reservation.token);++stats_.dropped_packets;return true;}
+ if(result<0){bth_control_tx_cancel(&control_,reservation.token);++stats_.dropped_packets;if(avrcp_retiring_)closePeer(0,0x13);return true;}
  if(n){if(bth_control_tx_commit(&control_,reservation.token,1,n,BTH_SIGNAL_MTU)!=BTH_OK)fail("Owned signaling reservation commit failed");}else bth_control_tx_cancel(&control_,reservation.token);
  if(collision){avrcp_recovering_=true;avrcp_at_=now_+500;}
- synchronizeChannels();return true;
+ clearAvrcpRetirement();synchronizeChannels();return true;
 }
 bool OwnedHost::safeClassicControl(const bth_l2cap_pdu_t& pdu) const{
  if(!pdu.payload.data||!pdu.payload.len||pdu.payload.len>BTH_CONTROL_BYTES)return false;
  if(pdu.cid!=1){const auto* c=bth_l2cap_sig_find(&signaling_,pdu.cid);
   return c&&c->state==BTH_CHANNEL_OPEN&&pdu.payload.len<=c->local_mtu&&(c->psm==1||(c->psm==0x17&&pdu.cid==classic_.avrcpCid()));
  }
+ // AVRCP-only retirement can wait in the existing bounded copied FIFO while
+ // media delivery and RX lease release continue on the independent media CID.
+ if(copiedAvrcpRetirement(pdu))return true;
  // A whole bundle is independent only if every command is stateless. A later
  // disconnect/configuration command must not hide behind an initial Echo.
  for(size_t at=0;at<pdu.payload.len;){const auto* p=pdu.payload.data+at;const size_t remaining=pdu.payload.len-at;
@@ -512,6 +572,7 @@ void OwnedHost::synchronizeChannelsImpl(){
   if(!pending)classic_.abortTransportRetired();
  }
  for(unsigned k=0;k<BTH_CHANNEL_LIMIT;++k){auto& c=signaling_.channels[k];
+  if(avrcp_retiring_&&avrcp_retire_owner_==peer.owner&&uint16_t(0x40+k)==avrcp_retire_local_)continue;
   if(peer.opened[k]&&c.state!=BTH_CHANNEL_OPEN){clearClassicControls(uint16_t(0x40+k));classic_.channelClosed(uint16_t(0x40+k));peer.opened[k]=false;}
   if(c.state==BTH_CHANNEL_OPEN&&peer.opened[k]&&(c.psm==1||bth_links_secure(&links_,peer.handle))&&
      !classic_.channelMtuUpdated(peer.owner,c.psm,c.local_cid,c.remote_cid,c.remote_mtu)){
@@ -537,6 +598,7 @@ void OwnedHost::chargeWaiting(uint32_t barrier){
  }
 }
 void OwnedHost::avrcpPoll(bool secure,bool allow_open){
+ if(avrcp_retiring_||(classic_.retiringAvrcpRemote()&&(classic_.avrcpRetirementPending()||!hooks_.txReady(hooks_.user))))return;
  if(!secure||!classic_.signalCid()||(!config_.callbacks.volume&&!config_.callbacks.metadata))return;
  if(avrcp_recovering_){
   if(bth_avrcp_link_count(&signaling_)){bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)!=BTH_OK)return;size_t n=0;
@@ -593,6 +655,7 @@ void OwnedHost::serviceControllerPriority(bool secure){
  }else if(result<0&&result!=BTH_ERR_CAPACITY)fail("Owned controller-priority queue failed");
 }
 void OwnedHost::runtimePoll(){
+ if(avrcp_retiring_&&int32_t(now_-avrcp_retire_deadline_)>=0)closePeer(0,0x13);
  expanded_control_budget_=BTH_CONTROL_PEER_LIMIT; // At most three split replies per owner pass.
  while(deferred_count_&&active_){auto& d=deferred_[deferred_read_];bth_h4_frame_t event={};uint8_t wire[258];wire[0]=4;memcpy(wire+1,d.bytes,d.length);
   if(bth_h4_decode(wire,d.length+1,&event)!=BTH_OK){fail("Owned retained event corrupt");return;}if(!dispatch(event))break;if(!active_)return;retired_event_=d.serial;chargeWaiting(retired_event_);if(!active_)return;deferred_read_=(deferred_read_+1)%8;--deferred_count_;
@@ -697,7 +760,7 @@ void OwnedHost::synchronizeChannels(){
  creditBoundary(3,false);synchronizeChannelsImpl();audio_supply::hostCreditInvalidate();
 }
 void OwnedHost::resetClassic(uint32_t owner){
- creditBoundary(3,false);classic_.reset(owner);audio_supply::hostCreditInvalidate();
+ creditBoundary(3,false);clearAvrcpRetirement();classic_.reset(owner);audio_supply::hostCreditInvalidate();
 }
 void OwnedHost::pollClassic(bool secure,uint32_t now,bool allow_open){
  creditBoundary(3,false);classic_.poll(secure,now,allow_open);audio_supply::hostCreditInvalidate();

@@ -11,6 +11,7 @@
 #include "detail/ResolveBuffers.h"
 #include "codecs/Codecs.h"
 #include "platform/GigaRadio.h"
+#include "platform/GigaAvrcp.h"
 #include "platform/GigaI2s.h"
 #include "platform/I2sPins.h"
 #include "platform/SchedulerWitness.h"
@@ -936,6 +937,28 @@ ReceiverStats GigaBredr::stats() const {
     if (impl_) { Lock lock(impl_->radio_mutex); result.radio = detail::radioStats(); }
     result.output = detail::i2sStats(); result.memory = detail::memoryStats();
     return result;
+}
+AvrcpStatus GigaBredr::avrcpStatus() const {
+    if (!impl_ || !impl_->options.enable_a2dp) return {};
+    Lock lock(impl_->radio_mutex);
+    return detail::radioAvrcpStatus();
+}
+AvrcpMetadata GigaBredr::avrcpMetadata() const {
+    if (!impl_ || !impl_->options.enable_a2dp) return {};
+    Lock lock(impl_->radio_mutex);
+    return detail::radioAvrcpMetadata();
+}
+Status GigaBredr::avrcpCommand(AvrcpCommand command,uint32_t expected,uint32_t& request_id) {
+    if (!impl_ || !impl_->options.enable_a2dp) return Status::Unsupported;
+    TryLock lock(impl_->radio_mutex);
+    if (!lock) return Status::Busy;
+    return detail::radioAvrcpCommand(command,expected,request_id);
+}
+Status GigaBredr::avrcpCancel(uint32_t expected,uint32_t request_id) {
+    if (!impl_ || !impl_->options.enable_a2dp) return Status::Unsupported;
+    TryLock lock(impl_->radio_mutex);
+    if (!lock) return Status::Busy;
+    return detail::radioAvrcpCancel(expected,request_id);
 }
 BleStats GigaBredr::bleStats() const {
     if (!impl_) return {};

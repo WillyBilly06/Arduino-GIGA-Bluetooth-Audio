@@ -285,6 +285,9 @@ Status radioAvrcpInit(const RadioCallbacks&) { return Status::Unsupported; }
 void radioAvrcpPoll() {}
 void radioAvrcpDeinit() {}
 AvrcpStatus radioAvrcpStatus() { return context?context->host.avrcpStatus():AvrcpStatus(); }
+AvrcpMetadata radioAvrcpMetadata() { return context?context->host.avrcpMetadata():AvrcpMetadata(); }
+Status radioAvrcpCommand(AvrcpCommand command,uint32_t expected,uint32_t& id) { return context?context->host.avrcpCommand(command,expected,id):Status::Unsupported; }
+Status radioAvrcpCancel(uint32_t expected,uint32_t id) { return context?context->host.avrcpCancel(expected,id):Status::Unsupported; }
 Status radioAvrcpSetVolume(uint8_t volume) { return context?context->host.setVolume(volume):Status::Busy; }
 }}
 #endif

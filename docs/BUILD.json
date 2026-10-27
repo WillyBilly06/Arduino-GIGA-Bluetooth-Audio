@@ -3880,5 +3880,84 @@
         "Root_final_archive_member_and365_input_parity_verification": "Required before final packaging/publication claim"
       }
     }
+  },
+  "current_dev13": {
+    "version": "0.1.0-dev.13",
+    "date": "2026-10-27",
+    "channel": "develop",
+    "stable": false,
+    "scope": "Profile source and packaging; no dev13 device deployment or audio continuity repair",
+    "basis_commit": "161e283eac626e69a8d335cc7e11878baa681b45",
+    "new_features": [
+      "Typed AVRCP taps and copied metadata/playback snapshots",
+      "Scoped AVRCP channel/queue/mailbox retirement",
+      "Standalone unadvertised RFCOMM/HFP/HSP protocol groundwork"
+    ],
+    "full_CM7": {
+      "actual": true,
+      "seconds": 101.07799999997951,
+      "exit_code": 0,
+      "owned_job_quiescent": true,
+      "uart_baud": 3000000,
+      "default_uart_baud": 2000000,
+      "private_scheduler_witness": 0,
+      "core": "Cortex-M7",
+      "library_translation_units": 173,
+      "source_Receiver_projection_sha256": "e86611822232613f036b6b8a12e0a2a18b0bbaa9895ab72e1b3784980f1cdbff",
+      "compiler_rows": 386,
+      "library_properties_sha256": "22f30eaec718f81c614b29c391b40c904eafd974b15a01bb6fe3c82f9777ff5a",
+      "binary_sha256": "6096bd289abefc1a6e5dfac23d6178b333cc4e27b486a56af70aff14760be8e2",
+      "binary_bytes": 500532,
+      "elf_sha256": "854b9587705e61e7cffb6485e5775902daeadded8bfd6ee7f154d12ea466b13a",
+      "build_receipt_sha256": "9eeedf0269e5dc11e444d6c0915745ed0257adc2fb323de6345e372d82f724a1",
+      "static_audit_sha256": "78a204437b91527a938e42bda7869cd34e223ede4e501479f5773b6464227b4a",
+      "six_decoder_families": [
+        "sbcOps",
+        "aacOps",
+        "aptxOps",
+        "ldacOps",
+        "lhdcOps",
+        "opusOps"
+      ],
+      "seven_defaults": {
+        "GBR_ENABLE_SBC": "1",
+        "GBR_ENABLE_AAC": "1",
+        "GBR_ENABLE_APTX": "1",
+        "GBR_ENABLE_LDAC": "1",
+        "GBR_ENABLE_LHDC": "1",
+        "GBR_ENABLE_OPUS": "1",
+        "GBR_ENABLE_AAC_HE": "1"
+      },
+      "stock_HCD_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
+      "source_and_SDK_unchanged": true,
+      "default_2M_check": "Two integration objects only; not full default link or field test",
+      "four_public_AVRCP_references": "Exact facade-to-radio object ABI checked; unused APIs may be removed from Receiver image by link GC"
+    },
+    "portable_CPU": {
+      "actual": true,
+      "architecture": "Android ARM64",
+      "cases": 28,
+      "all_return0": true,
+      "all_owned_jobs_quiescent": true,
+      "receipt_sha256": "505f50bedb5798006a65f677bbe0a12456253942dab00f6d97fd24ec1f18d631",
+      "scope": "Portable CPU logic assertions; no Bluetooth, media, phone-call or hardware APIs; not M7 execution"
+    },
+    "protected_original_source_files": 365,
+    "original_licenses_and_notices": "Unchanged",
+    "limits": [
+      "This version has not been flashed or tested with a phone",
+      "AVRCP actual target interoperability unverified",
+      "HFP/HSP remain unadvertised without integrated RFCOMM owner or SCO/duplex audio",
+      "Public microphone registration/lifetime facade unfinished",
+      "Brief long-playback PCM shortages remain unresolved",
+      "All-codec/all-configuration qualification, numerical fidelity, acoustics and total200ms latency unverified"
+    ],
+    "packaging": {
+      "final_documentation_only_updates_after_full_build": true,
+      "exact_compiler_inputs_will_be_verified": true,
+      "final_extracted_ZIP_separately_compiled": false,
+      "ZIP_self_hash": "External sidecar only",
+      "remote_publication": "Separate Root-owned action; not performed by preparation"
+    }
   }
 }

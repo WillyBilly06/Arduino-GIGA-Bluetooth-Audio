@@ -1,0 +1,69 @@
+{
+  "scope": "Final reviewed standalone RFCOMM/HF/HS modules and CPU fixtures",
+  "source_files": [
+    {
+      "path": "src/owned/HfpAt.h",
+      "sha256": "3f7e085d0857d30e319e742e0846a1a714a194c83974e1b50c26d860dc4eee2f",
+      "bytes": 1659,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/HfpAudio.h",
+      "sha256": "b83b652de2cb2a8cf1791cedba2adee859709759b63eaaaab180aae6af9a3db2",
+      "bytes": 4538,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/HfpControl.cpp",
+      "sha256": "79787e9322c1f0bb5bbe5412739f80d6fdeaecc2f8667277747714dc89cda091",
+      "bytes": 10411,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/HfpControl.h",
+      "sha256": "fde5c3e7b0cbfeba98489a97334df909f441e3e737d2d2a77607d7985a379922",
+      "bytes": 2175,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/HspControl.cpp",
+      "sha256": "63a5ccde7933445ad8d1dc7d6b31af3fa931f694ce82b4127cda8d7963bb2465",
+      "bytes": 2728,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/HspControl.h",
+      "sha256": "f599669f2811de7cd478a55c6abe7cd2af2198f8dd9bcf7795bec7f5f360a885",
+      "bytes": 1212,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/core/bth_rfcomm.c",
+      "sha256": "fdccf262304c6035fc4dc98b99f907c9742434998873e982bcfaab9bc71d96b9",
+      "bytes": 18236,
+      "baseline_sha256": null
+    },
+    {
+      "path": "src/owned/core/bth_rfcomm.h",
+      "sha256": "43247c8581958494cc073e67e5bd20e7d8eca74b6a7003be333ae1b2facd3218",
+      "bytes": 3497,
+      "baseline_sha256": null
+    },
+    {
+      "path": "tests/test_hfp_control.cpp",
+      "sha256": "8d7b9e494ab2aebc6fdb6552717535dcc7f5653e5ec5ac0177047398573d20e9",
+      "bytes": 6863,
+      "baseline_sha256": null
+    },
+    {
+      "path": "tests/test_rfcomm.cpp",
+      "sha256": "961ae9184f1924f507f1c1ecab82d8002c09e4256a98830101c3cf9c65a076db",
+      "bytes": 5635,
+      "baseline_sha256": null
+    }
+  ],
+  "validation": "profile-integration-handoff.json",
+  "unadvertised": true,
+  "call_audio_implemented": false,
+  "public_microphone_registration": false
+}

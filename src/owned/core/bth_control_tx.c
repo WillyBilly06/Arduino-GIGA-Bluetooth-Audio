@@ -30,6 +30,24 @@ unsigned bth_control_tx_available(const bth_control_tx_t *q,uint8_t peer) {
     unsigned limit=BTH_CONTROL_PEER_LIMIT-q->peers[peer].owned;
     return free<limit?free:limit;
 }
+bth_status_t bth_control_tx_channel_pending(const bth_control_tx_t *q,uint8_t peer,uint32_t owner,uint16_t cid,bool *pending) {
+    if (pending) *pending=false;
+    if (!q || !q->initialized || !pending || peer>=BTH_CONTROL_PEERS || !owner || cid<0x40) return BTH_ERR_PARAM;
+    const bth_control_peer_t *p=&q->peers[peer];
+    if (!p->attached || p->owner!=owner || p->count>BTH_CONTROL_SLOTS) return BTH_ERR_STATE;
+    for (unsigned j=0;j<p->count;++j) {
+        const unsigned slot=p->order[(p->read+j)&3u];
+        if (slot>=BTH_CONTROL_SLOTS) return BTH_ERR_STATE;
+        const bth_control_slot_t *s=&q->slots[slot];
+        if (s->state!=QUEUED || s->peer!=peer || s->owner!=owner) return BTH_ERR_STATE;
+        if (s->cid==cid) *pending=true;
+    }
+    if (p->tx.active) {
+        if (p->tx.owner!=owner || p->tx.handle!=p->handle) return BTH_ERR_STATE;
+        if (p->tx.cid==cid) *pending=true;
+    }
+    return BTH_OK;
+}
 bth_status_t bth_control_tx_reserve(bth_control_tx_t *q,uint8_t peer,bth_control_reservation_t *r) {
     if (r) memset(r,0,sizeof(*r));
     if (!q || !q->initialized || !r || peer>=BTH_CONTROL_PEERS || !q->peers[peer].attached) return BTH_ERR_PARAM;

@@ -1,6 +1,7 @@
 #pragma once
 #include "Types.h"
 #include "GigaBle.h"
+#include "GigaAvrcp.h"
 #include "AudioDiagnostics.h"
 #include "AudioClock.h"
 #include "I2sConfig.h"
@@ -85,6 +86,19 @@ public:
     ReceiverStats stats() const;
     AudioDiagnostics audioDiagnostics() const;
     BleStats bleStats() const;
+    // Copied current AVRCP session state. Metadata/status are received facts;
+    // song_position_ms is not extrapolated. Snapshots serialize with the radio.
+    AvrcpStatus avrcpStatus() const;
+    AvrcpMetadata avrcpMetadata() const;
+    // Nonblocking foreground admission of ONE typed tap. Ok copies intent,
+    // not phone execution. Poll the matching command_generation/command_id.
+    // Both press/release must receive ACCEPTED for Completed; no automatic retry.
+    // Discard generations/IDs after end()/begin(). Busy leaves request_id intact.
+    Status avrcpCommand(AvrcpCommand command,uint32_t expected_generation,uint32_t& request_id);
+    // Before queue commitment: cancel without sending. After commitment: both
+    // transactions still retire (release is retained); this cannot unsend a key.
+    // A matching repeated cancellation is idempotent. Stale sessions reject.
+    Status avrcpCancel(uint32_t expected_generation,uint32_t request_id);
     // Copies the readable TX value; notifies only while connected/subscribed.
     // Ok is admission, not remote delivery. Busy/OutputFull ask for a retry.
     // Foreground data calls do not wait for the radio owner; contention is Busy.
