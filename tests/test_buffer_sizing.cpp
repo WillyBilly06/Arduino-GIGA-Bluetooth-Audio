@@ -17,8 +17,8 @@ static_assert(defaultBufferSizing(Codec::Aac,8000,1024).pcm_ms==150,"low-rate LC
 static_assert(defaultBufferSizing(Codec::Aptx,48000,512).startup_ms==60,"aptX reserve");
 static_assert(defaultBufferSizing(Codec::AptxHd,48000,512).startup_ms==55,"HD reserve");
 static_assert(defaultBufferSizing(Codec::Ldac,96000,256).startup_ms==50,"LDAC reserve");
-static_assert(defaultBufferSizing(Codec::LhdcV5,192000,960).pcm_ms==70,"LHDC192 time-based ring");
-static_assert(defaultBufferSizing(Codec::LhdcV5,44100,240).startup_ms==60,"LHDC240-hop rate domain");
+static_assert(defaultBufferSizing(Codec::LhdcV5,192000,960).pcm_ms==90,"LHDC192 time-based ring");
+static_assert(defaultBufferSizing(Codec::LhdcV5,44100,240).startup_ms==80,"LHDC240-hop rate domain");
 static_assert(defaultBufferSizing(Codec::Opus,48000,960).pcm_ms==50,"Opus20 capacity");
 static_assert(defaultBufferSizing(Codec::Opus,48000,1920).startup_ms==52,"Opus40 quantum");
 static_assert(defaultBufferSizing(Codec::Opus,48000,2880).pcm_ms==82,"Opus60 quantum");
@@ -36,6 +36,18 @@ static_assert(automaticQueueSlots(48000,120,2048)==31,"short Opus bounded alloca
 static_assert(automaticQueueSlots(48000,512,65535)==1,"explicit large legal SDU gets one slot");
 static_assert(31u*(2048u+2u)<=65536u,"31 strides fit target");
 static_assert(32u*(2048u+2u)>65536u,"32 strides exceed target");
+
+// Public dev.11 LHDC192/BLE capture observed a 76053 us host-arrival gap.
+// Size the nominal running inventory P-2H to cover that observed gap. This is
+// a storage-margin regression, not proof of real PCM availability or latency.
+constexpr bool lhdc_observed_gap_reserve() {
+    const uint32_t rate=192000,half=192;
+    const auto p=defaultBufferSizing(Codec::LhdcV5,rate,960);
+    const uint64_t prime=(uint64_t(rate)*p.startup_ms+999u)/1000u;
+    const uint64_t gap=(uint64_t(rate)*76053u+999999u)/1000000u;
+    return p.valid && prime>=2u*half && prime-2u*half>=gap;
+}
+static_assert(lhdc_observed_gap_reserve(),"LHDC running reserve must cover the observed 76053 us delivery gap");
 
 static_assert(i2sPrimeFrames(3840,192)==2304,"legacy prime retained");
 static_assert(i2sPrimeFrames(13440,192,11520)==11520,"P counts total real frames once");
@@ -76,8 +88,8 @@ constexpr bool selected_high_rate() {
     const auto p=defaultBufferSizing(Codec::LhdcV5,192000,960);
     I2sBufferGeometry g;
     return p.valid && i2sBufferGeometry(192000,p.pcm_ms,g) &&
-        g.ring_frames==13440 && g.dma_bytes==3072 && g.total_bytes==110624 &&
-        i2sPrimeFrames(g.ring_frames,g.half_frames,11520)==11520;
+        g.ring_frames==17280 && g.dma_bytes==3072 && g.total_bytes==141344 &&
+        i2sPrimeFrames(g.ring_frames,g.half_frames,15360)==15360;
 }
 static_assert(selected_high_rate(),"selected LHDC192 lazy arena size, not all codec arenas");
 constexpr bool recovery_thresholds() {

@@ -36,7 +36,8 @@ constexpr BufferDefaults defaultBufferSizing(Codec codec,uint32_t rate,uint32_t 
     uint32_t base=0;
     switch(codec) {
         case Codec::Sbc: case Codec::Aac: case Codec::Ldac: base=50;break;
-        case Codec::Aptx: case Codec::LhdcV5: base=60;break;
+        case Codec::Aptx: base=60;break;
+        case Codec::LhdcV5: base=80;break;
         case Codec::AptxHd: base=55;break;
         case Codec::AacHe: case Codec::Opus: base=40;break;
         default:return {};

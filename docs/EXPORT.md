@@ -1,3 +1,11 @@
+# Experimental dev.12 source and packaging boundary
+
+The version12 SCHED0/opt-in3M fullCM7 build produces BIN68e0879498d369ed2f008e541cfdf34ec53e0c6e9559b295489dee610f85ae3d, byte-identical to the readback-verified80/90ms LHDC field image. Final documentation-only archive members are checked against the compiled source/Receiver hashes; the final extracted ZIP is not separately recompiled. The finite field window had no recorded audio faults but14 clock overruns; full qualification remains incomplete. DefaultUART remains2M, which has integration-object checks only in this update. See [dev12 validation](validation/dev12-2026-10-27.md). Root/component terms remain unchanged; main is outside this development update.
+
+## Historical dev.11 and earlier snapshots
+
+The following text retains its original version/time scope.
+
 # Experimental dev.11 source and packaging boundary
 
 Dev.11 adds the opt-in 3 Mbaud controller-UART admission policy to the existing operation-mode examples. Its public SCHED0 Receiver has an actual full CM7 compile and linked audit; the final documentation-only archive is checked against those exact source and Receiver input hashes. That is not a fresh compilation of the final extracted ZIP or a deployment of its public defaults. [Dev.11 validation](validation/dev11-2026-10-27.md) and its JSON identify this build separately from the private field-test image and all older evidence. Default UART remains 2 Mbaud. The original project and component terms are preserved. Versioned development tags/ZIPs do not establish stability, codec fidelity, acoustics or total latency. Main remains outside this development update.

@@ -17,9 +17,19 @@ constexpr bool automatic_lhdc() {
     if(!resolveAudioBuffers(r,c,960,b))return false;
     if(b.maximum_packet_bytes!=2048 || b.maximum_access_unit_bytes!=8192)return false;
     if(b.queue_packets!=28 || b.startup_packets!=0)return false;
-    return b.startup_buffer_ms==60 && b.pcm_buffer_ms==70;
+    return b.startup_buffer_ms==80 && b.pcm_buffer_ms==90;
 }
 static_assert(automatic_lhdc(),"selected LHDC192 actual-PCM policy");
+constexpr bool lhdc_explicit_reserve_compatibility() {
+    ReceiverConfig r;CodecConfig c;c.codec=Codec::LhdcV5;c.sample_rate=192000;
+    AudioBufferConfig b;
+    auto& p=r.codec_buffers[static_cast<unsigned>(Codec::LhdcV5)];
+    p.pcm_buffer_ms=70;
+    if(resolveAudioBuffers(r,c,960,b))return false; // Inherited80 cannot fit70.
+    p.startup_buffer_ms=60;
+    return resolveAudioBuffers(r,c,960,b) && b.startup_buffer_ms==60 && b.pcm_buffer_ms==70;
+}
+static_assert(lhdc_explicit_reserve_compatibility(),"explicit legacy LHDC60/70 remains valid; an implicit undersized ring is rejected");
 constexpr bool explicit_manual() {
     ReceiverConfig r;r.maximum_packet_bytes=4096;r.maximum_access_unit_bytes=8192;
     r.queue_packets=8;r.startup_packets=2;r.pcm_buffer_ms=20;

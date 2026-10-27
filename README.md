@@ -1,12 +1,12 @@
-# GigaBredr dev.11 develop (experimental)
+# GigaBredr dev.12 develop (experimental)
 
 Bluetooth Classic A2DP receiver and public BLE GATT server for Arduino GIGA R1 Cortex-M7, with all supplied codec decoders and PCM5102A-compatible I2S playback. The project owns the host stack; the radio controller uses Infineon ROM plus the stock HCD patch, and scheduling uses Arduino Mbed/RTOS.
 
-**Experimental; not stable. Earlier audio shortages remain unexplained and clock-deadline failures remain. Total phone-to-DAC latency below 200 ms, full numerical fidelity and acoustic continuity are unproved.** Dev.11 keeps the separate A2DP-only, BLE-only and combined examples and adds an opt-in 3 Mbaud controller UART; the default remains 2 Mbaud. A private 10-minute LHDC V5 playback test with three BLE reconnect/data cycles recorded no audio faults, but does not qualify the public defaults or establish a root-cause fix. See [dev.11 validation](docs/validation/dev11-2026-10-27.md).
+**Experimental; not stable.** Dev.12 increases only the LHDC automatic startup reserve to 80 ms with a 90 ms ring. The public SCHED0 / opt-in 3 Mbaud code completed a 600-second LHDC192/BLE test with 130 verified 512-byte exchanges and zero recorded missing PCM, underruns, RTP discontinuities or decode/transport errors. Clock CUM still failed with 14 overruns. The earlier dev.11 60/70-ms public image lost 59,328 PCM frames in its corresponding finite workload. This improvement does not establish the origin of delivery jitter, all-codec stability, numerical fidelity, acoustics or the requested 200 ms total phone-to-DAC latency. See [dev.12 validation](docs/validation/dev12-2026-10-27.md).
 
 ## Install and start
 
-1. Download the versioned [v0.1.0-dev.11 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.11.zip), or use the [develop source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip). Develop changes over time; retain the commit identifier when reporting results. Both are experimental development sources.
+1. Download the versioned [v0.1.0-dev.12 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.12.zip), or use the [develop source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip). Develop changes over time; retain the commit identifier when reporting results. Both are experimental development sources.
 2. In Arduino IDE choose **Sketch > Include Library > Add .ZIP Library**. Keep one active GigaBredr installation.
 3. Install **Arduino Mbed OS GIGA Boards 4.6.0** and select **Arduino GIGA R1 / Cortex-M7**.
 4. Open **File > Examples > GigaBredr > Receiver**, wire the output below, and upload. The example uses automatic buffers sized for the negotiated configuration.
@@ -17,7 +17,7 @@ For local installation, place the folder containing `library.properties`, `src` 
 arduino-cli compile --fqbn arduino:mbed_giga:giga:target_core=cm7 --jobs 4 --library . examples/Receiver
 ```
 
-Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [Dev.11 build evidence](docs/validation/dev11-2026-10-27.json) records the actual opt-in 3 Mbaud SCHED0 build; [BUILD.json](docs/BUILD.json) retains historical dev.10 and earlier evidence.
+Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [Dev.12 build evidence](docs/validation/dev12-2026-10-27.json) records the actual opt-in 3 Mbaud SCHED0 build; [BUILD.json](docs/BUILD.json) retains historical dev.10 and earlier evidence.
 
 Use **921600** in the serial monitor. GIGA's native USB CDC transfer rate is independent of this baud setting. The diagnostic Receiver queues log lines and pumps at most 64 bytes per foreground turn through the nonblocking USB API; skipped lines increment `console_drops`. Formatting and USB service still consume CPU time.
 
@@ -44,9 +44,11 @@ arduino-cli compile --fqbn arduino:mbed_giga:giga:target_core=cm7 --jobs 4 --lib
 
 Add the define to any existing `compiler.cpp.extra_flags` instead of dropping other project flags. A sketch-local `#define` does not configure the separately compiled library C++ files. Use the same build setting for the example being uploaded.
 
-An isolated private CM7 image operated with BRR=40 (0x28), PRESC=0 and normal post-change HCI/GAP responses. Its 600-second ordinary-source playback test recorded 135 verified 512-byte GATT exchanges across three BLE reconnect/data cycles, with zero recorded missing PCM, decode/transport/DMA errors or RTP discontinuities. Clock CUM still recorded 19 overruns. That image used an 80 ms startup / 90 ms PCM ring override and private timing observers; it is different from the public defaults. The `kernel_hz` getter returned 0 (unsupported/UNKNOWN), so nominal 3 Mbaud uses a separate conditional 120 MHz UART-kernel model rather than an independent frequency measurement.
+With the dev.12 automatic LHDC 80/90-ms profile, a public SCHED0 / 3 Mbaud Receiver image completed three BLE reconnect/data cycles: 130 verified 512-byte exchanges at MTU 517, with zero recorded audio/RTP faults during a 600-second host window. Clock CUM still recorded 14 overruns. The separately compiled version-12 build produces exactly the same firmware BIN bytes as that readback-verified field image; final documentation-only packaging is checked against every source/Receiver input. Default 2 Mbaud was checked by compiling both UART integration units, not a new full default-image field test.
 
-The public dev.11 SCHED0 Receiver compiled and passed the linked-image audit with 3 Mbaud selected; both changed integration units also compiled at 2 Mbaud. This public image was not deployed. The finite private test is promising transport evidence, not a controlled 2-versus-3 Mbaud causal comparison or an audio, fidelity, total-latency or stability qualification. [Exact results and artifact identities](docs/validation/dev11-2026-10-27.md) preserve these boundaries.
+The earlier 60/70-ms public image failed its 3 Mbaud workload with 59,328 missing PCM frames despite zero RTP discontinuities. The new profile adds 30 KiB to the selected LHDC192 arena; other codec profiles are unchanged. Explicit manual overrides remain possible. A 70-ms LHDC ring with no explicit startup setting is now rejected because it cannot fit the inherited 80-ms watermark; see [buffer configuration and compatibility](docs/audio-buffering.md).
+
+These are sequential finite observations, not a controlled RF/causal comparison. Historical private 3 Mbaud register observations remain in [dev.11 validation](docs/validation/dev11-2026-10-27.md): `kernel_hz=0` was UNKNOWN/unsupported, and nominal 3 Mbaud relied on the separate conditional clock model. Neither that observation nor the new digital counters measures physical clock frequency, acoustics or total latency.
 
 The port keeps 4 Mbaud rejected: its clock procedure and board operation are not qualified. No extra controller clock command, HCD or buffer change is included. [Infineon's baud-change example](https://community.infineon.com/t5/Knowledge-Base-Articles/Using-Vendor-Specific-Commands-in-AnyCloud-Bluetooth-Applications/ta-p/267534) documents 3 Mbaud; that does not establish every host/board configuration.
 
@@ -99,7 +101,9 @@ The base preference is 80-120 ms; Receiver requests 120 ms (96 units), latency 2
 ## Validation and known limits
 
 | Evidence | Result | Limit |
-|---|---|
+|---|---|---|
+| Dev.12 public-code SCHED0 / 3 Mbaud field image | LHDC192/24, fixed1000 request; 600 s host / 598.297 s printed; three BLE cycles / 130 verified512B exchanges; zero recorded audio/RTP faults | Clock CUM FAILED14; total latency, acoustics and all-codec operation unqualified |
+| Dev.11 public-code SCHED0 / 3 Mbaud baseline | 60/70-ms profile; 135 verified512B exchanges; RTP/decoder/transport fault counters zero | FAILED59,328 missingPCM frames /309 underrun callbacks and clock CUM11 |
 | Actual private Receiver, SCHED1 | LHDC192 natural 90.072132986 s; 46 verified 512-byte GATT exchanges / 60.005 s / MTU 517; 3 physical BLE controls; 43 non-clock fault gates zero | Clock CUM FAILED 2/88, max 22.1229167 us against 20 us; supply unexercised; prior starvation unresolved |
 | Actual M7 decoder-only benchmark, SCHED0 | 12 configurations x 20 passes, 3440 successful calls; reference/tone, status, count, deadline and allocation-close gates valid | Capture FRAMING_DEGRADED: 1 partial replay line; later complete retained rows valid; no global PASS |
 | Default Receiver build-basis archive, SCHED0 | Official extracted 503-file archive compiled/audited in 104.422 s; 170 library TUs, all six Ops / seven defaults; BIN cf7132ca.../496552 bytes | Final documentation-only ZIP not separately compiled; no default-image field deployment or audio qualification |

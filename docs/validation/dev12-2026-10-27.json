@@ -1,0 +1,186 @@
+{
+  "version": "0.1.0-dev.12",
+  "experimental": true,
+  "stable": false,
+  "source_parent": "fc8f1ea2dc279bda84a5a198dd2a4ae0ab706568",
+  "default_uart": 2000000,
+  "tested_uart": 3000000,
+  "build": {
+    "seconds": 106.89100000000326,
+    "returncode": 0,
+    "owned_job_quiescent": true,
+    "source_SDK_unchanged": true,
+    "source_Receiver_rows": 377,
+    "source_Receiver_projection_sha256": "5112365631a3580ceb8c801fe184914949acca50c1ad55d191d02143d463600d",
+    "library_TUs": 170,
+    "six_ops": true,
+    "seven_defaults": true,
+    "private_sched_witness": 0,
+    "bin_sha256": "68e0879498d369ed2f008e541cfdf34ec53e0c6e9559b295489dee610f85ae3d",
+    "bin_bytes": 497008,
+    "elf_sha256": "c66f318fbe24a9f041cd69a583f550de338ef31bc2c2dfc278e28b47a118dfdc",
+    "build_receipt_sha256": "5450c59fd360af8ea71dd7b96e8d93c26c59ccc0c60e96589e5be9b25449bba3",
+    "linked_audit_sha256": "252af7e23b7c2369efb1374d73f6addf8900380653ea8ad47d71e1fe393b5d5d",
+    "BIN_byte_identical_to_readback_field_image": true,
+    "stock_HCD_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
+    "default2m_check": "INTEGRATION_OBJECTS_ONLY_NOT_FULL_DEFAULT_LINK",
+    "native_runtime_tests_executed": false,
+    "final_documentation_ZIP_separately_compiled": false
+  },
+  "failed_public_dev11_baseline": {
+    "image": "ff8078ce6a10d7948f159e3b7a8cfdcf89825f47a929f4c9bf1dd4f15bd0c9d5",
+    "receiver_sha256": "6c9743edd75a98207081363a6cd98e0f75c88ecab4f589e7cd4ebaa332f9967e",
+    "published_window_seconds": 599.335,
+    "real_frame_progress": 115035264,
+    "status_fault_max": {
+      "underruns": 309,
+      "errors": 0,
+      "dropped": 0,
+      "dma_errors": 0,
+      "transport_errors": 0,
+      "output_dropped": 0
+    },
+    "timing_delta": {
+      "gaps": 0,
+      "missing": 0,
+      "duplicates": 0,
+      "backward": 0,
+      "queue_full": 0,
+      "missing_pcm_frames": 59328,
+      "ble_writes": 135,
+      "ble_notifications": 135
+    },
+    "RTP_fault_max": {
+      "discontinuities": 0,
+      "timestamp_steps": 0,
+      "inner_steps": 0,
+      "payload_unknown": 0,
+      "payload_malformed": 0
+    },
+    "BLE_cycles": [
+      {
+        "index": 0,
+        "completed": 46,
+        "mtu": 517,
+        "active_elapsed_ms": 60937,
+        "closed": true
+      },
+      {
+        "index": 1,
+        "completed": 48,
+        "mtu": 517,
+        "active_elapsed_ms": 61449,
+        "closed": true
+      },
+      {
+        "index": 2,
+        "completed": 41,
+        "mtu": 517,
+        "active_elapsed_ms": 60436,
+        "closed": true
+      }
+    ],
+    "completed_exchanges": 135,
+    "clock_cumulative_overruns": 11,
+    "clock_timing_unknown": 0,
+    "startup_ms": 60,
+    "pcm_ring_ms": 70,
+    "ring_frames": 13440,
+    "dma_half_frames": 192,
+    "controls_final": 31
+  },
+  "dev12_code_field": {
+    "image": "68e0879498d369ed2f008e541cfdf34ec53e0c6e9559b295489dee610f85ae3d",
+    "receiver_sha256": "3bafedd4430f8e4a07a33a316a5f3cafac5497780ac6599a823d4d708d4eb9f8",
+    "published_window_seconds": 598.297,
+    "real_frame_progress": 114840576,
+    "status_fault_max": {
+      "underruns": 0,
+      "errors": 0,
+      "dropped": 0,
+      "dma_errors": 0,
+      "transport_errors": 0,
+      "output_dropped": 0
+    },
+    "timing_delta": {
+      "gaps": 0,
+      "missing": 0,
+      "duplicates": 0,
+      "backward": 0,
+      "queue_full": 0,
+      "missing_pcm_frames": 0,
+      "ble_writes": 130,
+      "ble_notifications": 130
+    },
+    "RTP_fault_max": {
+      "discontinuities": 0,
+      "timestamp_steps": 0,
+      "inner_steps": 0,
+      "payload_unknown": 0,
+      "payload_malformed": 0
+    },
+    "BLE_cycles": [
+      {
+        "index": 0,
+        "completed": 44,
+        "mtu": 517,
+        "active_elapsed_ms": 60875,
+        "closed": true
+      },
+      {
+        "index": 1,
+        "completed": 45,
+        "mtu": 517,
+        "active_elapsed_ms": 60215,
+        "closed": true
+      },
+      {
+        "index": 2,
+        "completed": 41,
+        "mtu": 517,
+        "active_elapsed_ms": 60214,
+        "closed": true
+      }
+    ],
+    "completed_exchanges": 130,
+    "clock_cumulative_overruns": 14,
+    "clock_timing_unknown": 0,
+    "startup_ms": 80,
+    "pcm_ring_ms": 90,
+    "ring_frames": 17280,
+    "dma_half_frames": 192,
+    "controls_final": 6
+  },
+  "baseline_analysis_sha256": "f3a13b045256f2fdf2517b8ca22cc9a51941c20a3311609a2e3b52c22905c9cb",
+  "field_analysis_sha256": "fa58f2436ddf22c903d0a2d4fba36134b9e521b85e35ca3441f95d4a61090f00",
+  "reserve": {
+    "LHDC_base_startup_ms": 80,
+    "LHDC_ring_ms": 90,
+    "selected192_P": 15360,
+    "H": 192,
+    "R": 17280,
+    "derived_clock_target": 14976,
+    "arena_bytes": 141344,
+    "extra_selected_arena_bytes": 30720,
+    "other_codec_bases_unchanged": true,
+    "explicit60_70_supported": true,
+    "implicit80_with_explicit70_rejected": true
+  },
+  "interrupted_trial": {
+    "status": "ABORTED_ON_HOST_STATE_PUBLICATION_ERROR_NOT_A_FULL_PASS",
+    "R4_control_history_settled": 33,
+    "raw_serial_file_drops": 0,
+    "old_evidence_retained": true,
+    "R5_fresh_window_separate": true
+  },
+  "limits": [
+    "Clock14overruns remain; original20us/CUM gates not waived",
+    "Sequential trials do not locate RF/controller/phone/host delay origin",
+    "The larger target includes compressed-work estimates, not a realPCMfloor guarantee",
+    "Default2M/newbuffers not given a full fresh field test",
+    "Physical audio/numerical fidelity/total200ms latency/allcodecs unqualified",
+    "IndependentLHDC encodedgolden missing; aptXHD fullwidth M7 comparison pending",
+    "CompleteAVRCP/HFP/HSP/RFCOMM/SCO/microphone work remains incomplete",
+    "Existing licenses/notices and unresolved grants unchanged"
+  ]
+}

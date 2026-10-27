@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-dev.12 - experimental development source, 2026-10-27
+
+- Raise only the LHDC automatic base startup reserve from60 to80ms; its default ring becomes90ms. At192kHz this selects a141344-byte DMA/ring arena (+30720bytes), rather than allocating other codec arenas. Keep DMA halves, radio commands/HCD, other codec bases and clock algorithm unchanged.
+- Preserve explicit manual60/70ms and legacy packet startup. An explicit70ms LHDC ring without a startup override now safely rejects the inherited80ms watermark; document and compile-check this compatibility effect.
+- Record the public60/70ms baseline failure:59328 missingPCM frames,309 underrun callbacks,135 verified GATT exchanges, no RTP discontinuities or decode/transport errors. Record the80/90ms SCHED0/3M candidate600s window:130 verified GATT exchanges across3cycles, zero recorded audio faults, but14 clock overruns. No universal cure/stable/RF/fidelity/latency claim.
+- The version12 fullCM7 build/link audit retains170 libraryTUs, six codec operation families, seven defaults and stockHCD; its BIN is byte-identical to the field image. ARM constexpr buffer/override checks pass, including the observed76053us arrival-gap storage screen. Native Windows runtime tests were not executed.
+
 ## 0.1.0-dev.11 - experimental development source, 2026-10-27
 
 - Add a shared controller-UART baud admission policy and exact-value checks. Keep 2 Mbaud by default and admit experimental 3 Mbaud through `compiler.cpp.extra_flags`; a sketch-local define cannot configure separately compiled library C++ files. Keep 4 Mbaud unsupported by this port.
