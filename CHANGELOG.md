@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0-dev.10 - experimental source preparation, 2026-10-26
+## 0.1.0-dev.10 - experimental development source, 2026-10-26
 
 - Select automatic packet/PCM storage for the negotiated configuration and wait for real decoded PCM before DMA startup/recovery. Keep explicit per-codec overrides and the legacy startup_packets path.
 - Use the configured running inventory target T=P-2H for real-PCM startup, retained through learning/recovery. This target includes estimated compressed work; it is not a real-PCM floor or measured total latency.
@@ -8,7 +8,8 @@
 - Record the actual private SCHED1 LHDC192 90.072132986 s / GATT 46 window: 43 non-clock gates zero, but clock CUM FAILED 2/88, max 22.1229167 us. Five printed tracking cohorts remain UNKNOWN; supply witness unexercised and prior starvation unresolved.
 - Record actual SCHED0 M7 valid-vector execution: 12 cases, 20 passes, 3440 successful calls and complete-case oracle/deadline/status/heap-close gates valid. Capture remains FRAMING_DEGRADED with one partial replay row; no global PASS or A2DP/I2S qualification.
 - Keep LHDC golden MISSING, LDAC tone-only, aptX HD PCM16/HE SBR/Opus fixture limits, unfinished call/microphone/typed-AVRCP features and all historical failures visible.
-- Default SCHED0 Receiver extracted-ZIP build and develop-only tagged distribution are pending at this documentation step. No stable/main/deployment claim.
+- Root extracted the 503-file build-basis Git archive cffc98e8... from c5db0292..., compiled the default SCHED0 Receiver in 104.422 s (exit 0/quiescent) and completed static audit: 170 library TUs, all six Ops/seven defaults, stock HCD, no RTX wraps, 32768-byte main stack. Actual BIN cf7132ca.../496552 bytes; no parity to private e417 or field-deployment claim.
+- This final revision changes documentation only. Root verifies final archive members, all 373 compiler-input bytes and unchanged library.properties version against that actual build basis before develop/tag publication. The final ZIP is not claimed separately compiled; its SHA256 stays in an external sidecar. Main/stable/audio-cure/E2E claims remain absent.
 
 ## 0.1.0-dev.9 - experimental development source, 2026-10-26
 

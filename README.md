@@ -2,7 +2,7 @@
 
 Bluetooth Classic A2DP receiver and public BLE GATT server for Arduino GIGA R1 Cortex-M7, with all supplied codec decoders and PCM5102A-compatible I2S playback. The project owns the host stack; the radio controller uses Infineon ROM plus the stock HCD patch, and scheduling uses Arduino Mbed/RTOS.
 
-**Not stable. Clock-deadline failures and earlier audio-supply gaps remain unresolved. Total phone-to-DAC latency below 200 ms, full numerical fidelity and acoustic continuity are unproved.** This checkout prepares experimental dev.10; its default Receiver source-ZIP build and publication are pending.
+**Not stable. Clock-deadline failures and earlier audio-supply gaps remain unresolved. Total phone-to-DAC latency below 200 ms, full numerical fidelity and acoustic continuity are unproved.** The 503-file dev.10 build-basis archive has been extracted, compiled for default Cortex-M7 and statically audited. This final documentation-only revision requires archive/input/property parity verification; no default-image field deployment is claimed.
 
 ## Install and start
 
@@ -17,7 +17,7 @@ For local installation, place the folder containing `library.properties`, `src` 
 arduino-cli compile --fqbn arduino:mbed_giga:giga:target_core=cm7 --jobs 4 --library . examples/Receiver
 ```
 
-Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [BUILD.json](docs/BUILD.json) keeps actual private builds separate from the pending default ZIP build.
+Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [BUILD.json](docs/BUILD.json) records the actual default build-basis compile separately from private Receiver/benchmark evidence.
 
 | GIGA pin | PCM5102A signal |
 |---|---|
@@ -82,7 +82,7 @@ The base preference is 80-120 ms; Receiver requests 120 ms (96 units), latency 2
 |---|---|
 | Actual private Receiver, SCHED1 | LHDC192 natural 90.072132986 s; 46 verified 512-byte GATT exchanges / 60.005 s / MTU 517; 3 physical BLE controls; 43 non-clock fault gates zero | Clock CUM FAILED 2/88, max 22.1229167 us against 20 us; supply unexercised; prior starvation unresolved |
 | Actual M7 decoder-only benchmark, SCHED0 | 12 configurations x 20 passes, 3440 successful calls; reference/tone, status, count, deadline and allocation-close gates valid | Capture FRAMING_DEGRADED: 1 partial replay line; later complete retained rows valid; no global PASS |
-| Default Receiver source ZIP, SCHED0 | Pending official extracted-archive build | No fresh default Receiver artifact, deployment or qualification claimed |
+| Default Receiver build-basis archive, SCHED0 | Official extracted 503-file archive compiled/audited in 104.422 s; 170 library TUs, all six Ops / seven defaults; BIN cf7132ca.../496552 bytes | Final documentation-only ZIP not separately compiled; no default-image field deployment or audio qualification |
 
 Forty coherent printed tracking cohorts matched T=11136 frames, zero mismatched; five remain UNKNOWN across 1 ms print boundaries. All original 20 us / 44 / CUM gates remain mandatory; a sampled/final zero cannot erase cumulative failure. Inclusive timings do not identify a preemptor or prove instrumentation neutrality.
 

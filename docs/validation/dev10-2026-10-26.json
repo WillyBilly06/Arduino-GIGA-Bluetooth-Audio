@@ -3,7 +3,7 @@
   "version": "0.1.0-dev.10",
   "date": "2026-10-26",
   "stable": false,
-  "qualification": "EXPERIMENTAL_SOURCE_PREPARATION_DEFAULT_RECEIVER_ZIP_BUILD_PENDING",
+  "qualification": "EXPERIMENTAL_DEFAULT_BUILD_BASIS_STATIC_PASS_KNOWN_CLOCK_SUPPLY_LIMITS_RETAINED",
   "source_basis": {
     "commit": "0449e41630dae0ac1f02b717c18100687c1cc33d",
     "baseline_source_files": 501,
@@ -17,12 +17,13 @@
   },
   "publication": {
     "channel": "experimental develop only",
-    "default_receiver_SCHED0_extracted_ZIP_build": "PENDING",
+    "default_receiver_SCHED0_extracted_ZIP_build": "ACTUAL_BUILD_BASIS_ARCHIVE_COMPILE_AND_STATIC_AUDIT_PASS_NOT_FIELD",
     "tag": "v0.1.0-dev.10",
     "tag_status": "PROSPECTIVE_NOT_PUBLISHED_AT_THIS_DOCUMENTATION_STEP",
     "ZIP_sha256": "EXTERNAL_SIDECAR_AFTER_ROOT_EXPORT",
     "deployment": "NOT_CLAIMED",
-    "main": "UNCHANGED_BY_THIS_PREPARATION"
+    "main": "UNCHANGED_BY_THIS_PREPARATION",
+    "final_documentation_revision": "Documentation-only finalization; Root verifies final archive members, all 373 compiler bytes and unchanged property version against the actual build basis before publication"
   },
   "configured_receiver_private": {
     "kind": "ACTUAL_PRIVATE_SCHED1_M7_RECEIVER",
@@ -233,5 +234,63 @@
     "Opus48k stereo20ms valid fixture is not Opus phone negotiation or sender interoperability proof",
     "Full HFP/HSP/RFCOMM/SCO/microphone and complete typed AVRCP unfinished"
   ],
-  "licenses": "All original root/component license and notice bytes preserved; THIRD_PARTY.md and existing unresolved grants remain authoritative"
+  "licenses": "All original root/component license and notice bytes preserved; THIRD_PARTY.md and existing unresolved grants remain authoritative",
+  "default_receiver_build": {
+    "status": "PASS_EXTRACTED_DEV10_DEFAULT_M7_SOURCE_AND_STATIC_AUDIT_NOT_FIELD",
+    "scope": "Actual 503-file build-basis archive compiled; not a field/deployment result and not a separate compile of the final documentation-only ZIP",
+    "build_basis_commit": "c5db02928f7e4eaee3cf7f6557c8f0e58a9ad636",
+    "build_basis_archive_sha256": "cffc98e8f260727c9c678f1f598703239717f2cb6a3428c1c84d38944eea1969",
+    "build_basis_archive_members": 503,
+    "build_seconds": 104.422,
+    "build_exit_code": 0,
+    "owned_job_quiescent": true,
+    "core": "arduino:mbed_giga 4.6.0",
+    "fqbn": "arduino:mbed_giga:giga:target_core=cm7",
+    "source_code_projection": "6d5ca487819a2f7189dcdd8ed4b6839fd1e1fbd45ca378fc09cc63602f651f3f",
+    "compiler_input_rows": 373,
+    "library_translation_units": 170,
+    "scheduler_witness": 0,
+    "RTX_wrappers": false,
+    "all_seven_defaults": {
+      "GBR_ENABLE_SBC": "1",
+      "GBR_ENABLE_AAC": "1",
+      "GBR_ENABLE_APTX": "1",
+      "GBR_ENABLE_LDAC": "1",
+      "GBR_ENABLE_LHDC": "1",
+      "GBR_ENABLE_OPUS": "1",
+      "GBR_ENABLE_AAC_HE": "1"
+    },
+    "all_six_ops": [
+      "sbcOps",
+      "aacOps",
+      "aptxOps",
+      "ldacOps",
+      "lhdcOps",
+      "opusOps"
+    ],
+    "owned_host_components": 4,
+    "forbidden_host_symbols": 0,
+    "stock_HCD": {
+      "sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
+      "bytes": 35182,
+      "commands": 139,
+      "version": "BCM4343A1_001.002.009.0083.0000_Generic_UART_37_4MHz_wlbga_wiced"
+    },
+    "main_stack_reserved_bytes": 32768,
+    "binary_sha256": "cf7132ca0b9442c71e54bc026f18ee4942382fb46822f750fc1b2b3625ac337e",
+    "binary_bytes": 496552,
+    "ELF_sha256": "c5c15b7dd05ba9f045f72822ae7cb3ecb7fd320b592d8a2624608711b1291da9",
+    "build_facts_sha256": "c55f41fad0f312ccaab5baf698d2d0591e943f00ad383621727f71f047e42301",
+    "build_receipt_sha256": "2e673e8f4e31c835a7ed115e5c965fdeff3547edda388c5c68a8b58fd7c78bf9",
+    "compile_database_sha256": "52612a594a871fd7077d5f25d156af3cdf6bbfe4480cac739583f33aedc55f6a",
+    "target_execution": false,
+    "private_SCHED1_field_results_transferred": false,
+    "final_documentation_revision": {
+      "changes": "Documentation only; library.properties version/description and all 373 compiler-input bytes unchanged in this pass",
+      "separate_final_ZIP_compile": false,
+      "Root_final_member_and_code_property_parity_verification": "REQUIRED_BEFORE_PUBLICATION",
+      "ZIP_selfhash": "EXTERNAL_SHA256_SIDECAR_ONLY"
+    },
+    "artifact_parity_to_private_images": "NOT_CLAIMED_DIFFERENT_MACRO_AND_ARTIFACTS"
+  }
 }
