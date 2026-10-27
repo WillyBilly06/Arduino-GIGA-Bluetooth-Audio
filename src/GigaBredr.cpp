@@ -13,6 +13,7 @@
 #include "platform/GigaI2s.h"
 #include "platform/I2sPins.h"
 #include "platform/SchedulerWitness.h"
+#include "platform/AudioSupplyRuntime.h"
 #include <atomic>
 #include <new>
 #include <string.h>
@@ -25,6 +26,7 @@
 #endif
 
 namespace giga_bredr {
+namespace supply = detail::audio_supply;
 namespace {
 std::atomic<const void*> receiver_owner{nullptr};
 #if defined(ARDUINO)
@@ -403,6 +405,9 @@ struct GigaBredr::Impl {
                     const auto result = detail::i2sClockTrim(decision.output_epoch, decision.requested_q16, decision.lower_q16, decision.upper_q16);
                     auto& stats = counters.clock;
                     clockWitness(stats, decision, result);
+                    supply::counterObserved(decision.stream_epoch,decision.output_epoch,
+                        result.accepted && result.output_epoch==decision.output_epoch &&
+                        result.duration_valid && !(result.witness_mask&0x80u));
                     if (clock_mailbox.complete(key, result, true) != Code::Ok) clock_local_backend_fault = true;
                     stats.backend_status = clockBackendStatus(result.status);
                     stats.backend_fault = detail::i2sClockTrimStats().faulted || clock_local_backend_fault;
@@ -535,6 +540,7 @@ struct GigaBredr::Impl {
         Lock lock(event_mutex); volume.store(value); volume_event = true;
     }
     void releaseCodec() { // caller owns codec_mutex; queued packets cannot refer to freed storage
+        supply::end();
         clockRetireMailbox(detail::ClockMailReason::LifecycleReset);
         clockStop();
         playing.store(false);
@@ -588,6 +594,7 @@ struct GigaBredr::Impl {
           rtp_timing.beginEpoch(stream_epoch); queue_timing.beginEpoch(stream_epoch, active_buffers.queue_packets);
           uses_rtp = c.codec != Codec::Aptx; token_read = token_write = 0;
           rtp_lhdc_hop = c.codec == Codec::LhdcV5 ? (c.sample_rate > 48000 ? c.sample_rate / 200 : 240) : 0;
+          supply::begin(stream_epoch,options.enable_i2s?detail::i2sSourceSnapshot().output_epoch:0);
         }
         work_timing.beginEpoch(stream_epoch);
         counters.buffers = selected_buffers;
@@ -608,6 +615,7 @@ struct GigaBredr::Impl {
         }
     }
     void receive(const uint8_t* bytes, size_t n) {
+        supply::receiveEntry(); // Callback entry, BEFORE queue locking; not raw UART/RF arrival.
         if (!playing.load() || !bytes || !n) { ++dropped; return; }
         { Lock lock(queue_mutex);
           if (!playing.load()) { ++dropped; return; }
@@ -619,36 +627,46 @@ struct GigaBredr::Impl {
               if (rtp_lhdc_hop) payload_detail=detail::lhdcRtpDetail(rtp.payload,rtp.bytes,rtp_lhdc_hop);
               rtp_timing.observe(stream_epoch, ssrc, rtp.sequence, rtp.timestamp, arrival, payload_detail);
           }
+          supply::queueMutation(stream_epoch,true);
           if (!queue.push(bytes, n)) {
+              supply::queueMutation(stream_epoch,false);
               if (n <= active_buffers.maximum_packet_bytes && queue.count() == active_buffers.queue_packets) { detail::QueueToken ignored; queue_timing.enqueued(stream_epoch, arrival, ignored); }
               ++dropped; return;
           }
           queue_timing.enqueued(stream_epoch, arrival, queue_tokens[token_write]);
           token_write = (token_write + 1) % active_buffers.queue_packets;
+          supply::accepted(stream_epoch,uint32_t(queue.count()));
+          supply::queueMutation(stream_epoch,false);
         }
 #if defined(ARDUINO)
         wake.release();
 #endif
     }
     bool processOne() {
+        supply::markPhase(supply::DecoderPhase::WaitCodec);
         Lock codec_lock(codec_mutex);
         clockFeedback();
-        if (!playing.load() || !configured || !packet || !pcm) return false;
+        if (!playing.load() || !configured || !packet || !pcm) { supply::markPhase(supply::DecoderPhase::Idle,stream_epoch); return false; }
         size_t n;
+        supply::markPhase(supply::DecoderPhase::WaitQueue,stream_epoch);
         { Lock queue_lock(queue_mutex);
           if (!startup_buffered) {
               size_t reserve = active_buffers.startup_packets;
-              if (!queue.count() || queue.count() < reserve) return false;
+              if (!queue.count() || queue.count() < reserve) { supply::markPhase(supply::DecoderPhase::Idle,stream_epoch); return false; }
               startup_buffered = true;
           }
+          supply::queueMutation(stream_epoch,true);
           n = queue.take(packet, active_buffers.maximum_packet_bytes);
           if (n) {
               queue_timing.dequeued(queue_tokens[token_read], clockUs());
               token_read = (token_read + 1) % active_buffers.queue_packets;
+              supply::dequeued(stream_epoch,uint32_t(queue.count()));
           }
+          supply::queueMutation(stream_epoch,false);
         }
-        if (!n) return false;
+        if (!n) { supply::markPhase(supply::DecoderPhase::Idle,stream_epoch); return false; }
         const uint32_t packet_epoch = stream_epoch;
+        supply::markPhase(supply::DecoderPhase::PacketOwned,packet_epoch);
         detail::PacketWorkSample work;
         const uint32_t packet_began = clockUs();
         auto record_work = [&]() { work.elapsed_us = clockUs() - packet_began; work_timing.record(packet_epoch, work); };
@@ -656,8 +674,8 @@ struct GigaBredr::Impl {
         const auto retained_before = media.retainedState();
         Status status = media.feed(packet, n, view);
         clockStartPacket(retained_before, media.retainedState());
-        if (status == Status::NeedMoreData) { clockFinishPacket(true, true); clockFeedback(); record_work(); return true; }
-        if (status != Status::Ok) { ++counters.decode_errors; counters.last_error = status; clockFinishPacket(false, false); clockFeedback(); record_work(); return true; }
+        if (status == Status::NeedMoreData) { clockFinishPacket(true, true); clockFeedback(); record_work(); supply::markPhase(supply::DecoderPhase::Idle,packet_epoch); return true; }
+        if (status != Status::Ok) { ++counters.decode_errors; counters.last_error = status; clockFinishPacket(false, false); clockFeedback(); record_work(); supply::markPhase(supply::DecoderPhase::Idle,packet_epoch); return true; }
         size_t offset = 0; bool need_more = false, valid_packet = true;
         while (offset < view.bytes) {
             size_t input = view.bytes - offset;
@@ -666,9 +684,11 @@ struct GigaBredr::Impl {
                 size_t bound = pcm_frames / 4 * word;
                 if (input > bound) input = bound;
             }
+            supply::markPhase(supply::DecoderPhase::Decoding,packet_epoch);
             uint32_t start = clockUs();
             DecodeResult result = decoder.decode(view.data + offset, input, pcm, pcm_frames);
             uint32_t elapsed = clockUs() - start;
+            supply::markPhase(supply::DecoderPhase::PacketOwned,packet_epoch);
             work.decode_work_us += elapsed;
             if (elapsed > counters.maximum_decode_us) counters.maximum_decode_us = elapsed;
             if (result.status == Status::NeedMoreData && !result.consumed) { need_more = true; break; }
@@ -698,6 +718,7 @@ struct GigaBredr::Impl {
                 const uint32_t write_limit_us = write_budget < 0x80000000u ? uint32_t(write_budget) : 0x7fffffffu;
                 size_t sent = 0; uint32_t began = clockUs();
                 while (sent < result.frames) {
+                    supply::markPhase(supply::DecoderPhase::OutputWrite,packet_epoch);
                     sent += detail::i2sWrite(pcm + sent * 2, result.frames - sent);
                     OutputStats output = detail::i2sStats();
                     if (!output.initialized || (!output.running && !output.priming)) {
@@ -710,11 +731,13 @@ struct GigaBredr::Impl {
                     if (!running.load() || clockUs() - began > write_limit_us) { counters.output_dropped_frames += uint32_t(result.frames - sent); clockDiscard(result.frames - sent); break; }
                     uint32_t waiting = clockUs();
                     clockFeedback();
+                    supply::markPhase(supply::DecoderPhase::BackpressureWait,packet_epoch);
                     { UnlockDuringWait unlock(codec_mutex); waitOne(); }
                     work.write_wait_us += clockUs() - waiting;
                     // Stop/reconfigure can release every saved packet/PCM view
                     // during the wait. Validate before any pointer is reused.
                     if (packet_epoch != stream_epoch || !configured || !playing.load()) return true;
+                    supply::markPhase(supply::DecoderPhase::PacketOwned,packet_epoch);
                     clockFeedback();
                     if (!running.load()) {
                         counters.output_dropped_frames += uint32_t(result.frames - sent); clockDiscard(result.frames - sent);
@@ -728,6 +751,7 @@ struct GigaBredr::Impl {
         if (offset == view.bytes) ++counters.decoded_packets;
         clockFinishPacket(valid_packet, need_more); clockFeedback();
         record_work();
+        supply::markPhase(supply::DecoderPhase::Idle,packet_epoch);
         return true;
     }
 #if defined(ARDUINO)
@@ -749,6 +773,7 @@ struct GigaBredr::Impl {
     }
     void decoderMain() {
         while (running.load()) {
+            supply::markPhase(supply::DecoderPhase::WaitWake);
             wake.try_acquire_for(10);
             for (unsigned i = 0; i < 64 && running.load(); ++i) {
                 const bool worked=processOne();
@@ -800,11 +825,19 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     impl_->host_thread = new (std::nothrow) rtos::Thread(osPriorityAboveNormal, config.host_stack_bytes, nullptr, "gbr-host");
     impl_->decoder_thread = new (std::nothrow) rtos::Thread(osPriorityNormal, config.decoder_stack_bytes, nullptr, "gbr-decode");
     if (!impl_->host_thread || !impl_->decoder_thread) { end(); return Status::OutOfMemory; }
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+    { Lock codec_lock(impl_->codec_mutex); Lock queue_lock(impl_->queue_mutex);
+      supply::registerRoles(0,0,0); // Invalidate previous-lifetime IDs BEFORE workers can run.
+      supply::begin(0,0); } // Inactive generation also retires old-lifetime records.
+#endif
     if (impl_->decoder_thread->start(mbed::callback(impl_, &Impl::decoderMain)) != osOK ||
         impl_->host_thread->start(mbed::callback(impl_, &Impl::hostMain)) != osOK) { end(); return Status::OutOfMemory; }
 #if GIGA_BREDR_PRIVATE_SCHED_WITNESS
     { Lock role_lock(impl_->codec_mutex);
       detail::schedulerRegisterRoles(reinterpret_cast<uintptr_t>(rtos::ThisThread::get_id()),
+          reinterpret_cast<uintptr_t>(impl_->host_thread->get_id()),
+          reinterpret_cast<uintptr_t>(impl_->decoder_thread->get_id()));
+      supply::registerRoles(reinterpret_cast<uintptr_t>(rtos::ThisThread::get_id()),
           reinterpret_cast<uintptr_t>(impl_->host_thread->get_id()),
           reinterpret_cast<uintptr_t>(impl_->decoder_thread->get_id())); }
 #endif
@@ -842,10 +875,15 @@ void GigaBredr::poll() {
         if (impl_->options.diagnostic) impl_->options.diagnostic(scheduler_row, impl_->options.user);
         detail::schedulerRowFinished(scheduler_ordinal);
     }
+    if (lifetime_ != lifetime || !impl_) return;
+    char supply_row[112];
+    if(supply::nextRow(supply_row,sizeof supply_row) && impl_->options.diagnostic)
+        impl_->options.diagnostic(supply_row,impl_->options.user);
 #endif
 }
 void GigaBredr::end() {
     if (!impl_) return;
+    supply::end();
 #if GIGA_BREDR_PRIVATE_SCHED_WITNESS
     detail::schedulerShutdown();
 #endif

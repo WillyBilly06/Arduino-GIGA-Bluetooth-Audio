@@ -2,6 +2,7 @@
 #include "I2sBuffer.h"
 #include "I2sPins.h"
 #include "SchedulerWitness.h"
+#include "AudioSupplyRuntime.h"
 #include "../detail/Memory.h"
 #if defined(ARDUINO_GIGA) && defined(CORE_CM7)
 #include <Arduino.h>
@@ -148,7 +149,10 @@ void refill(unsigned half) {
   int32_t* p=dmaWords+half*halfFrames*2;
   const uint32_t queued=uint32_t(ring->queued());
   const uint32_t at=micros();
+  const bool wasRecovering=recovery.recovering();
   const uint32_t real=uint32_t(recovery.refill(*ring,p,at));
+  if(real<halfFrames && !wasRecovering)
+    audio_supply::firstStarvation(timingEpoch,at,queued,halfFrames,real);
   sourcePrepared+=real;sourceMissing+=halfFrames-real;
   if(real!=halfFrames) ++stats.underruns;
   timing.refill(timingEpoch,at,halfFrames,real,queued);

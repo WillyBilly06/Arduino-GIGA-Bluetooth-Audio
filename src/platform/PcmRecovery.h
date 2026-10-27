@@ -82,6 +82,7 @@ public:
         return real;
     }
     constexpr PcmRecoverySnapshot snapshot() const { return stats_; }
+    constexpr bool recovering() const { return stats_.recovering; }
 private:
     // Symmetric truncation toward zero; all arithmetic stays within int64_t
     // even for INT32_MIN -> INT32_MAX. No signed negative shift or division.
