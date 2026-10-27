@@ -13,6 +13,7 @@ struct RadioCallbacks {
     // Internal ISR-safe owner notification. It only signals the existing owner;
     // user must remain alive until radioEnd has detached both UART IRQs.
     void (*owner_wake)(void*) = nullptr;
+    bool enable_a2dp = true; // Internal profile intent; defaults preserve existing callers.
 };
 Status radioBegin(const char* local_name, uint32_t codec_mask, const RadioCallbacks& callbacks);
 Status radioBegin(const char* local_name, uint32_t codec_mask, const RadioCallbacks& callbacks, const BleConfig& ble);

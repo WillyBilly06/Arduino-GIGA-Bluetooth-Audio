@@ -229,7 +229,7 @@ Status radioBegin(const char* name,uint32_t mask,const RadioCallbacks& callbacks
     context->uart->attach(mbed::callback(uartIrq),mbed::SerialBase::RxIrq);
     gpio_write(&context->power,1);delay(150);
     context->started=context->last_byte=millis();
-    diagnostic("GIGA owned Classic + BLE host; UART7 initial=115200; RAM-only bonds");
+    diagnostic(callbacks.enable_a2dp?"GIGA owned Classic + BLE host; UART7 initial=115200; RAM-only bonds":"GIGA owned BLE-only host; UART7 initial=115200; RAM-only bonds");
     return Status::Ok;
 }
 void radioPoll() {

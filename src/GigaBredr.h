@@ -44,6 +44,10 @@ struct ReceiverConfig {
     void* user = nullptr;
     I2sPins i2s; // Hardware-compatible output route; optional MCLK=-1.
     uint16_t startup_buffer_ms = 0; // Zero selects the negotiated-codec real-PCM reserve.
+    // false selects real BLE-only operation: no Classic admission/audio worker.
+    // At least enable_a2dp or ble.enabled must be true. Audio options are unused
+    // in BLE-only mode; enable_i2s=false alone still leaves Classic enabled.
+    bool enable_a2dp = true;
 };
 struct ReceiverStats {
     AudioClockStats clock;

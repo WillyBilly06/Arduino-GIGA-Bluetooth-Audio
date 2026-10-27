@@ -6,6 +6,7 @@
 #include "detail/PacketQueue.h"
 #include "detail/Volume.h"
 #include "detail/AudioClockControl.h"
+#include "detail/OperationModePolicy.h"
 #include "detail/AudioClockMailbox.h"
 #include "detail/ResolveBuffers.h"
 #include "codecs/Codecs.h"
@@ -568,6 +569,7 @@ struct GigaBredr::Impl {
     }
     Status configure(const CodecConfig& c) {
         Lock lock(codec_mutex);
+        if (!options.enable_a2dp) return Status::Unsupported;
         if (configured && decoder.active() && sameConfiguration(format, c)) return Status::Ok;
         releaseCodec();
         if (!(options.codecs & codecBit(c.codec))) return counters.last_error = Status::Unsupported;
@@ -611,6 +613,7 @@ struct GigaBredr::Impl {
         return Status::Ok;
     }
     void stream(bool start) {
+        if (!options.enable_a2dp) return;
         if (start) {
             CodecConfig selected;
             { Lock lock(codec_mutex); selected = format; }
@@ -804,22 +807,31 @@ uint32_t GigaBredr::availableCodecs() { return detail::compiledCodecs(); }
 bool GigaBredr::setExternalAllocator(Allocate a, Free f, void* user) { return detail::setMemoryProvider(MemoryKind::External, a, f, user); }
 Status GigaBredr::begin(const ReceiverConfig& input) {
     if (impl_) return Status::Busy;
-    if (input.clock.limit_ppm > 500 || input.clock.slew_ppm_per_second > 10) return Status::InvalidArgument;
-    detail::I2sRoutePlan route;
-    if (input.enable_i2s && !detail::i2sRoutePlan(input.i2s, route)) return Status::InvalidArgument;
-    if (!input.name || !*input.name || !detail::validBufferSettings(detail::globalBufferSettings(input)) ||
-        input.host_stack_bytes < 4096 || input.decoder_stack_bytes < 8192)
+    const detail::OperationModePolicy mode{input.enable_a2dp,input.ble.enabled};
+    if (!mode.valid() || !input.name || !*input.name || input.host_stack_bytes < 4096)
         return Status::InvalidArgument;
-    for (const auto& profile : input.codec_buffers) if (!validBufferOverride(profile)) return Status::InvalidArgument;
+    if (mode.needsDecoder()) {
+        if (input.clock.limit_ppm > 500 || input.clock.slew_ppm_per_second > 10) return Status::InvalidArgument;
+        detail::I2sRoutePlan route;
+        if (input.enable_i2s && !detail::i2sRoutePlan(input.i2s, route)) return Status::InvalidArgument;
+        if (!detail::validBufferSettings(detail::globalBufferSettings(input)) || input.decoder_stack_bytes < 8192)
+            return Status::InvalidArgument;
+        for (const auto& profile : input.codec_buffers) if (!validBufferOverride(profile)) return Status::InvalidArgument;
+    }
     ReceiverConfig config = input;
-    if (!config.codecs) config.codecs = availableCodecs();
-    if (!config.codecs || (config.codecs & ~availableCodecs())) return Status::Unsupported;
+    if (mode.needsDecoder()) {
+        if (!config.codecs) config.codecs = availableCodecs();
+        if (!config.codecs || (config.codecs & ~availableCodecs())) return Status::Unsupported;
+    } else {
+        config.enable_i2s = false; // Audio geometry/allocations belong to no BLE-only worker.
+        config.codecs = 0;
+    }
     const void* expected = nullptr;
     if (!receiver_owner.compare_exchange_strong(expected, this)) return Status::Busy;
     void* storage = detail::allocate(sizeof(Impl));
     if (!storage) { receiver_owner.store(nullptr); return Status::OutOfMemory; }
     impl_ = new (storage) Impl(config); ++lifetime_; impl_->running.store(true);
-    detail::RadioCallbacks callbacks;
+    detail::RadioCallbacks callbacks; callbacks.enable_a2dp = config.enable_a2dp;
     callbacks.configure = Impl::onConfigure; callbacks.media = Impl::onMedia;
     callbacks.stream = Impl::onStream; callbacks.diagnostic = Impl::onDiagnostic; callbacks.user = impl_;
     callbacks.volume = Impl::onVolume; callbacks.metadata = Impl::onMetadata;
@@ -831,17 +843,17 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     impl_->radio_owned = true;
 #if defined(ARDUINO)
     impl_->host_thread = new (std::nothrow) rtos::Thread(osPriorityAboveNormal, config.host_stack_bytes, nullptr, "gbr-host");
-    impl_->decoder_thread = new (std::nothrow) rtos::Thread(osPriorityNormal, config.decoder_stack_bytes, nullptr, "gbr-decode");
-    if (!impl_->host_thread || !impl_->decoder_thread) { end(); return Status::OutOfMemory; }
+    if (mode.needsDecoder()) impl_->decoder_thread = new (std::nothrow) rtos::Thread(osPriorityNormal, config.decoder_stack_bytes, nullptr, "gbr-decode");
+    if (!impl_->host_thread || (mode.needsDecoder() && !impl_->decoder_thread)) { end(); return Status::OutOfMemory; }
 #if GIGA_BREDR_PRIVATE_SCHED_WITNESS
     { Lock codec_lock(impl_->codec_mutex); Lock queue_lock(impl_->queue_mutex);
       supply::registerRoles(0,0,0); // Invalidate previous-lifetime IDs BEFORE workers can run.
       supply::begin(0,0); } // Inactive generation also retires old-lifetime records.
 #endif
-    if (impl_->decoder_thread->start(mbed::callback(impl_, &Impl::decoderMain)) != osOK ||
+    if ((impl_->decoder_thread && impl_->decoder_thread->start(mbed::callback(impl_, &Impl::decoderMain)) != osOK) ||
         impl_->host_thread->start(mbed::callback(impl_, &Impl::hostMain)) != osOK) { end(); return Status::OutOfMemory; }
 #if GIGA_BREDR_PRIVATE_SCHED_WITNESS
-    { Lock role_lock(impl_->codec_mutex);
+    if (impl_->decoder_thread) { Lock role_lock(impl_->codec_mutex);
       detail::schedulerRegisterRoles(reinterpret_cast<uintptr_t>(rtos::ThisThread::get_id()),
           reinterpret_cast<uintptr_t>(impl_->host_thread->get_id()),
           reinterpret_cast<uintptr_t>(impl_->decoder_thread->get_id()));
@@ -856,7 +868,7 @@ void GigaBredr::poll() {
     if (!impl_) return;
     const uint64_t lifetime = lifetime_;
 #if !defined(ARDUINO)
-    detail::radioPoll(); impl_->processOne();
+    detail::radioPoll(); if (impl_->options.enable_a2dp) impl_->processOne();
 #endif
     char text[128]; bool has_event = false, volume_changed = false; uint8_t kind = 0, text_bytes = 0, selected_volume = 127;
     { Lock lock(impl_->event_mutex); if (impl_->event_count) {

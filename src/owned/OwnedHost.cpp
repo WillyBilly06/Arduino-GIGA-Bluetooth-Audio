@@ -1,4 +1,5 @@
 #include "OwnedHost.h"
+#include "../detail/OperationModePolicy.h"
 #include "LifecycleCommandBudget.h"
 #include "../platform/AudioSupplyRuntime.h"
 #include <new>
@@ -60,24 +61,28 @@ bth_confirmation_t OwnedHost::confirm(void*,const uint8_t*,uint32_t){return BTH_
 Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hooks){
  audio_supply::hostCreditInvalidate(); // Main may invalidate, never publish.
  if(active_)return Status::Busy;
- if(!config.name||!config.name[0]||!config.callbacks.configure||!hooks.txReady||!hooks.sendH4||!hooks.setBaud||!config.firmware||!config.firmwareSize||
-    !(config.codecMask&codecBit(Codec::Sbc))||(config.codecMask&~AllCodecs)||
+ const OperationModePolicy mode{config.callbacks.enable_a2dp,config.ble.enabled};
+ if(!mode.valid()||!config.name||!config.name[0]||(mode.a2dp&&!config.callbacks.configure)||!hooks.txReady||!hooks.sendH4||!hooks.setBaud||!config.firmware||!config.firmwareSize||
+    (mode.a2dp&&(!(config.codecMask&codecBit(Codec::Sbc))||(config.codecMask&~AllCodecs)))||
     (config.baud!=115200&&config.baud!=460800&&config.baud!=921600&&config.baud!=2000000))return Status::InvalidArgument;
  size_t name=0;while(name<sizeof name_&&config.name[name])++name;if(name==sizeof name_)return Status::InvalidArgument;
  bool zero=true,ones=true;for(auto b:config.address){zero&=b==0;ones&=b==255;}if(zero||ones)return Status::InvalidArgument;
  for(size_t p=0;p<config.firmwareSize;){if(config.firmwareSize-p<3||size_t(config.firmware[p+2])+3>config.firmwareSize-p)return Status::FirmwareMismatch;p+=size_t(config.firmware[p+2])+3;}
  config_=config;hooks_=hooks;memcpy(name_,config.name,name+1);config_.name=name_;stats_=RadioStats{};stats_.baud_rate=115200;
  classic_.~ClassicProfiles();new(&classic_)ClassicProfiles();le_.~LeProfiles();new(&le_)LeProfiles();
- controller_priority_.reset(config.ble.audio_priority);
+ controller_priority_.reset(mode.a2dp&&config.ble.audio_priority);
  bth_hci_flow_init(&flow_);bth_cmdq_init(&commands_);bth_control_tx_init(&control_);
  if(!bth_rx_flow_init(&rx_,RxSlots,RxWindow))return Status::HardwareError;
  const bth_security_policy_t policy={3,4,16,4,{'0','0','0','0'}};
  const bth_security_callbacks_t callbacks={loadBond,saveBond,removeBond,confirm};
  if(!bth_links_init(&links_,&flow_,&commands_,&policy,&callbacks,this))return Status::HardwareError;
- Status result=classic_.begin(config.codecMask,config.callbacks,control_);if(result!=Status::Ok)return result;
- classic_.setStreamPolicy(streamPolicy,this);
+ Status result=Status::Ok;
+ if(mode.a2dp){
+  result=classic_.begin(config.codecMask,config.callbacks,control_);if(result!=Status::Ok)return result;
+  classic_.setStreamPolicy(streamPolicy,this);
+ }
  result=le_.begin(config.ble,name_,commands_,control_);if(result!=Status::Ok)return result;
- const bth_gap_config_t gapConfig={{reinterpret_cast<const uint8_t*>(name_),name},uuids_,0x240414,AclBytes,RxWindow,uint8_t(config.callbacks.volume?3:1),false};
+ const bth_gap_config_t gapConfig={{reinterpret_cast<const uint8_t*>(name_),name},uuids_,mode.a2dp?0x240414u:0u,AclBytes,RxWindow,mode.classicUuidCount(config.callbacks.volume!=nullptr),false};
  if(!bth_gap_start(&gap_,&gapConfig))return Status::HardwareError;
  memset(&signaling_,0,sizeof signaling_);for(auto& p:packets_) {p.used=p.charged=false;p.length=0;p.order=p.barrier=0;p.lease={};}
  for(auto& p:peers_) {p.attached=p.has_pending=false;p.owner=0;p.borrowed_slot=-1;}clearClassicControls();
@@ -94,7 +99,7 @@ void OwnedHost::end(){
  audio_supply::hostCreditInvalidate();
  le_disconnect_owner_=0;le_advertising_held_=false;le_disconnect_advertise_after_=true;
  if(!active_)return;active_=false;stats_.controller_ready=stats_.connected=stats_.streaming=false;
- for(unsigned i=0;i<2;++i){detach(i);cancelAdmission(i);}resetClassic(0);
+ for(unsigned i=0;i<2;++i){detach(i);cancelAdmission(i);}if(config_.callbacks.enable_a2dp)resetClassic(0);
  for(auto& p:packets_)p.used=false;deferred_count_=0;bth_cmdq_init(&commands_);bth_control_tx_init(&control_);erase(bonds_,sizeof bonds_);erase(&links_,sizeof links_);
   pending_=false;boot_=Boot::Failed;memset(le_features_,0,sizeof le_features_);le_features_known_=false;
 }
@@ -259,8 +264,13 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
  if(bth_cmdq_available(&commands_)<private_lifecycle::commandBudget(completionSlots(event),lifecycleBudgetClass))return false;
  const uint32_t previous_le_owner=peers_[1].attached?peers_[1].owner:0;
  const uint16_t previous_le_handle=peers_[1].handle;
- if(event.event.code==4&&p.len==10&&links_.classic.state==BTH_PEER_EMPTY&&!reserved_[0]){
+ const OperationModePolicy mode{config_.callbacks.enable_a2dp,config_.ble.enabled};
+ if(event.event.code==4&&p.len==10&&(!mode.a2dp||(links_.classic.state==BTH_PEER_EMPTY&&!mode.admitClassic(reserved_[0])))){
   uint8_t reply[7];memcpy(reply,p.data,6);reply[6]=0x0d;bth_cmdq_push(&commands_,0x040a,reply,7,true);return true;
+ }
+ // Page scan is off in BLE-only mode; never provision an unsolicited Classic success.
+ if(!mode.a2dp&&event.event.code==3&&p.len==11&&!p.data[0]&&p.data[9]==1&&bth_read_le16(p.data+1)<=0x0eff){
+  uint8_t reply[3]={p.data[1],p.data[2],0x0d};bth_cmdq_push(&commands_,0x0406,reply,3,true);return true;
  }
  if(event.event.code==0x3e&&p.len&&(p.data[0]==1||p.data[0]==0x0a)&&p.len>4&&!p.data[1]&&(!config_.ble.enabled||!reserved_[1])){
   uint8_t reply[3]={p.data[2],p.data[3],0x0d};bth_cmdq_push(&commands_,0x0406,reply,3,true);return true;
@@ -615,7 +625,7 @@ void OwnedHost::runtimePoll(){
  for(unsigned i=0;i<2;++i)if(peers_[i].attached){const auto* link=bth_links_find(&links_,peers_[i].handle);
   if(link&&link->disconnecting&&!peers_[i].disconnect_deadline)peers_[i].disconnect_deadline=now_+5000;
   if(due(now_,peers_[i].disconnect_deadline)){fail("Owned disconnect completion timeout");return;}}
- if(links_.classic.state==BTH_PEER_EMPTY&&!reserved_[0])admission(0,0);
+ if(config_.callbacks.enable_a2dp&&links_.classic.state==BTH_PEER_EMPTY&&!reserved_[0])admission(0,0);
  if(config_.ble.enabled&&links_.le.state==BTH_PEER_EMPTY&&!reserved_[1])admission(1,0);
   le_.poll(now_,reserved_[1]&&!le_advertising_held_,updateAudioPriority());
   if(le_.closeRequested())closePeer(1,0x13);
@@ -646,8 +656,9 @@ void OwnedHost::runtimePoll(){
    }return;}
   if(result<0&&result!=BTH_ERR_CAPACITY){fail("Owned transmit queue invariant failed");return;}}
  if(bth_rx_flow_next_completed(&rx_,output_,sizeof output_,&n)==BTH_OK){last_ack_=true;submit(n);return;}
- const uint8_t scan=uint8_t(reserved_[0]&&links_.classic.state==BTH_PEER_EMPTY?3:1);
- if(!gap_.pending&&gap_.scan!=scan){const auto result=bth_gap_set_scan(&gap_,&flow_,true,scan,output_,sizeof output_,&n);if(result==BTH_OK){deadline_=now_+3000;last_ack_=false;submit(n);return;}if(result<0){fail("Owned scan admission failed");return;}}
+ const OperationModePolicy mode{config_.callbacks.enable_a2dp,config_.ble.enabled};
+ const uint8_t scan=mode.classicScan(reserved_[0],links_.classic.state==BTH_PEER_EMPTY);
+ if(!gap_.pending&&gap_.scan!=scan){const auto result=bth_gap_set_scan(&gap_,&flow_,mode.a2dp,scan,output_,sizeof output_,&n);if(result==BTH_OK){deadline_=now_+3000;last_ack_=false;submit(n);return;}if(result<0){fail("Owned scan admission failed");return;}}
  if(gap_.pending&&due(now_,deadline_)){fail("Owned scan command ACK timeout");return;}
 
 }
@@ -691,11 +702,12 @@ void OwnedHost::pollClassic(bool secure,uint32_t now,bool allow_open){
  creditBoundary(3,false);classic_.poll(secure,now,allow_open);audio_supply::hostCreditInvalidate();
 }
 Status OwnedHost::configureOutput(const CodecConfig& config){
+ if(!config_.callbacks.enable_a2dp)return Status::Unsupported;
  creditBoundary(3,false);const Status result=config_.callbacks.configure(config,config_.callbacks.user);
  audio_supply::hostCreditInvalidate();return result;
 }
 void OwnedHost::notifyStream(bool start){
- if(config_.callbacks.stream){creditBoundary(3,false);config_.callbacks.stream(start,config_.callbacks.user);
+ if(config_.callbacks.enable_a2dp&&config_.callbacks.stream){creditBoundary(3,false);config_.callbacks.stream(start,config_.callbacks.user);
   audio_supply::hostCreditInvalidate();}
 }
 #if GIGA_BREDR_PRIVATE_SCHED_WITNESS

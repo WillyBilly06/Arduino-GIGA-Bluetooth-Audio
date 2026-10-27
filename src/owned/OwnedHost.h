@@ -41,7 +41,7 @@ public:
  Status bleDisconnect(uint32_t expected_generation,bool advertise_after_disconnect=true);
  Status bleResumeAdvertising();
  bool bleReadWrite(BleWrite& value) {return active_&&le_.readWrite(value);}
- Status setVolume(uint8_t v) {return active_?classic_.setVolume(v):Status::Unsupported;}
+ Status setVolume(uint8_t v) {return active_&&config_.callbacks.enable_a2dp?classic_.setVolume(v):Status::Unsupported;}
  AvrcpStatus avrcpStatus() const {return classic_.avrcpStatus();}
  static constexpr unsigned AclBytes=1021,RxSlots=8,RxWindow=4,SduBytes=4096;
 private:

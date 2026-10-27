@@ -91,3 +91,7 @@ The benchmark covers SBC/SBC-XQ, AAC-LC ADTS/LATM, aptX/HD, Opus 48k stereo 20 m
 Phone-family history and all earlier failures stay in [STATUS](docs/STATUS.md) and [BUILD](docs/BUILD.json). Finite zero non-clock faults do not prove RF delivery, physical I2S, low-bit accuracy, acoustics, general continuity or 200 ms total latency. [EXPORT](docs/EXPORT.md) distinguishes prospective develop-only distribution from actual build evidence.
 
 Original Apache-2.0 project terms and every supplied component notice/license are preserved. [THIRD_PARTY.md](THIRD_PARTY.md) remains authoritative for component terms and existing unresolved grants; this version creates no new grant.
+
+## Operation-mode examples
+
+Use [A2dpOnly](examples/A2dpOnly/A2dpOnly.ino), [BleOnly](examples/BleOnly/BleOnly.ino), or [A2dpBleCoexist](examples/A2dpBleCoexist/A2dpBleCoexist.ino). Set enable_a2dp=false for real BLE-only operation; disabling I2S alone keeps Classic enabled. Existing defaults remain A2DP+BLE. See [mode selection, DAC wiring and nonblocking BLE echo](docs/operation-modes.md).
