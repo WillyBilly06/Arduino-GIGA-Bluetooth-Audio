@@ -24,15 +24,15 @@ struct AudioClockSnapshot {
 // external. No allocation, catch-up loop, radio callback or clock-domain mix.
 class AudioClockControl {
 public:
- bool begin(uint32_t stream,uint32_t output,uint32_t rate,uint32_t pcmCapacity,
+ constexpr bool begin(uint32_t stream,uint32_t output,uint32_t rate,uint32_t pcmCapacity,
             uint32_t queueCapacity,const AudioClockConfig& config=AudioClockConfig()) {
   *this=AudioClockControl{};config_=config;
   if(!stream||!output||!rate||rate>192000||!pcmCapacity||!queueCapacity||queueCapacity>64||
      config.limit_ppm<0||config.limit_ppm>500||config.slew_ppm<0||config.slew_ppm>10)return false;
   stream_=stream;output_=output;rate_=rate;pcmCapacity_=pcmCapacity;queueCapacity_=queueCapacity;active_=true;return true;
  }
- AudioClockSnapshot snapshot()const{return stats_;}
- AudioClockDecision observe(const AudioClockSample& s) {
+ constexpr AudioClockSnapshot snapshot()const{return stats_;}
+ constexpr AudioClockDecision observe(const AudioClockSample& s) {
   if(!active_||!config_.enabled)return {};
   const bool counters=s.discarded<=s.decoded && s.prepared<=s.decoded-s.discarded && s.completed_frames<=s.decoded;
   const bool forward=!haveCounters_ || (s.decoded>=lastA_&&s.discarded>=lastD_&&s.prepared>=lastP_&&
@@ -105,7 +105,7 @@ public:
   ++serial_;if(!serial_)++serial_;
   pending_={stream_,output_,serial_,int32_t(request),lower,upper,true};++stats_.decisions;return pending_;
  }
- bool acknowledge(const AudioClockDecision& d,bool accepted,int32_t applied_q16) {
+ constexpr bool acknowledge(const AudioClockDecision& d,bool accepted,int32_t applied_q16) {
   if(!pending_.update||!d.update||d.stream_epoch!=stream_||d.output_epoch!=output_||d.serial!=pending_.serial){++stats_.rejected_ack;return false;}
   if(accepted&&(applied_q16<pending_.lower_q16||applied_q16>pending_.upper_q16)){++stats_.rejected_ack;return false;}
   pending_.update=false;
@@ -113,15 +113,15 @@ public:
   stats_.applied_q16=applied_q16;++stats_.accepted;return true;
  }
 private:
- uint64_t targetCeilingQ16()const{
+ constexpr uint64_t targetCeilingQ16()const{
   // Estimated inventory headroom, not guaranteed free physical packet slots:
   // PCM need not be full and frames-per-packet is an average. Tiny queues
   // retain the exact prior policy; this does not promise burst absorption.
   const uint32_t reserve=queueCapacity_>=4?(queueCapacity_+3)/4:0;
   return uint64_t(pcmCapacity_)*65536u+stats_.frames_per_packet_q16*(queueCapacity_-reserve);
  }
- static uint64_t q16mean(uint64_t area,uint64_t time){return (area/time)*65536+(area%time)*65536/time;}
- static uint64_t ratio(uint64_t frames,uint64_t packets){
+ static constexpr uint64_t q16mean(uint64_t area,uint64_t time){return (area/time)*65536+(area%time)*65536/time;}
+ static constexpr uint64_t ratio(uint64_t frames,uint64_t packets){
   const uint64_t whole=frames/packets;if(whole>UINT32_MAX)return uint64_t(UINT32_MAX)*65536;
   uint64_t remainder=frames%packets,fraction=0;
   // Fixed16-bit long division avoids overflow of remainder*65536.
@@ -131,8 +131,8 @@ private:
   }
   return whole*65536+fraction;
  }
- void suspend(){stats_.tracking=stats_.learning=false;stats_.suspended=true;haveTime_=false;area_=elapsed_=learnArea_=learnElapsed_=0;previousError_=0;pending_.update=false;}
- void remember(const AudioClockSample& s){lastA_=s.decoded;lastD_=s.discarded;lastP_=s.prepared;lastZ_=s.zeros;lastF_=s.completed_packets;lastG_=s.completed_frames;haveCounters_=true;}
+ constexpr void suspend(){stats_.tracking=stats_.learning=false;stats_.suspended=true;haveTime_=false;area_=elapsed_=learnArea_=learnElapsed_=0;previousError_=0;pending_.update=false;}
+ constexpr void remember(const AudioClockSample& s){lastA_=s.decoded;lastD_=s.discarded;lastP_=s.prepared;lastZ_=s.zeros;lastF_=s.completed_packets;lastG_=s.completed_frames;haveCounters_=true;}
  AudioClockConfig config_;AudioClockSnapshot stats_;AudioClockDecision pending_;
  uint32_t stream_=0,output_=0,rate_=0,pcmCapacity_=0,queueCapacity_=0,lastTime_=0,windowStart_=0,lastDecision_=0,serial_=0;
  uint64_t lastA_=0,lastD_=0,lastP_=0,lastZ_=0,lastF_=0,lastG_=0,windowF_=0,windowG_=0;
