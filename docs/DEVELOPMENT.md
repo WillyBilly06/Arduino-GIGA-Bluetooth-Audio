@@ -1,3 +1,31 @@
+# Current main development baseline
+
+Main now contains the tested v0.1.0-dev.12 source, merged with the original
+documentation-only history. The source and firmware code are unchanged from
+that development tag; this merge adds only these historical policy/audit notes.
+
+The LHDC192/24 / opt-in3M /80ms-startup90ms-ring image completed the recorded
+600-second BLE coexistence window with130 verified512-byte exchanges and no
+recorded audio/RTP faults. The user reported smooth playback during BLE use
+and reconnects. This is development evidence, not universal stability or a
+measurement of total200ms latency. Default2M has separate, narrower evidence.
+
+A brief gap on some song transitions has subsequently been reported and is
+under investigation. The retained incident overlaps a changed title and a BLE
+attachment; it does not isolate either as its cause. The underrun total is
+cumulative per output epoch and clears when playback is stopped/restarted.
+Clock-update timing over-budget measurements are tracked separately from audio
+underruns. See validation/dev12-2026-10-27.md and README.md for current limits.
+
+Main receives reviewed snapshots incrementally; develop receives integration
+work. New typed AVRCP/metadata and RFCOMM/HFP/HSP work remains in isolated
+branches until compiled and behavior/target checks are complete. Call audio and
+the microphone backend are not advertised as working. Existing project and
+component licenses/notices and unresolved grants remain unchanged; consult
+../THIRD_PARTY.md for the current supplied-source inventory.
+
+## Historical bootstrap policy (original text retained)
+
 # Development status and promotion notes
 
 The project-owned Bluetooth host is under active development. Its intended

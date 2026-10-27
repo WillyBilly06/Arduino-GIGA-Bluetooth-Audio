@@ -1,0 +1,72 @@
+{
+  "scope": "Configuration-sized SBC and compact Opus history; bounded allocation/regression evidence, not full codec/audio qualification",
+  "target": {
+    "sbc_configurations": 256,
+    "opus_configurations": 60,
+    "opus_payload_saved_each": 548,
+    "sbc_max_decoder_payload_saved": 1344,
+    "zero_residual_allocations": true,
+    "tracked_payload_only": true
+  },
+  "frontend": {
+    "native_max_payload_saved": 896,
+    "separate_from_physical_decoder_probe": true
+  },
+  "receiver": {
+    "binary_sha256": "470e7e6accf0e52766944cef2e7683449207598b9ee6d3963b9fa4c6612573a6",
+    "binary_bytes": 473896,
+    "full_flash_readback": true,
+    "source_inputs_unchanged_during_build": true,
+    "forbidden_btstack_host_symbols": 0
+  },
+  "live": {
+    "capture_seconds": 95,
+    "complete_cycles": 45,
+    "gatt_exact512_echoes": 30,
+    "mtu": 517,
+    "actual_ble_interval_ms": 120,
+    "actual_ble_latency": 2,
+    "actual_ble_timeout_seconds": 5,
+    "timestamp_steps": 4,
+    "inner_steps": 4,
+    "missing_pcm_frames": 97152,
+    "local_error_deltas": {
+      "errors": 0,
+      "dropped": 0,
+      "dma_errors": 0,
+      "output_dropped": 0,
+      "transport_errors": 0,
+      "diagnostic_drops": 0,
+      "console_drops": 0
+    },
+    "audio_gaps_remain": true
+  },
+  "reproduction": {
+    "imported_files": 257,
+    "changed_vendor_files": 8,
+    "unchanged_vendor_rows": 249,
+    "original_source_identities_preserved": 257,
+    "all_codec_defaults_enabled": true
+  },
+  "proof_sha256": {
+    "sbc_review": "2c762ce34ac019c64546db774de380888299dacfb348071ac166eabddfc2a28d",
+    "opus_review": "4b43463e5636a8660bbff3c41bb350665e518fc39f966365c2c550cd791d57c6",
+    "importer_review": "af268e913a764fd1e440c73918c7bdba07f7073880c222829322519dbbdd7622",
+    "portable_review": "68eb6d705e00ecca5ce62659494fe4e1c0ada56dccb7aa5222640535697643b5",
+    "target_allocation_comparison": "d29f6a7c02384ea6d4a800b695fae7fd1bc73793172eeb61d5c239c4dd29e7cb",
+    "independent_sbc_comparison": "52ce49c696bdfb939ba1f150fdc031731f9690a4013614845b762cca6abcfb2d",
+    "private_native": "1b17c7ee9276c5fb4cc86587d628463aa752deb9ad9a24e075dbc924a2c0478f",
+    "private_portable_native": "3ca2c603d40e0ba50e71edfb71a15a7c210dabcaa8a3926a2f3c43177e353177",
+    "private_m7": "71df6fca1f6d0949f4afb71b4bfa06ce8a1adc8ec82dea7189280c6eb6d7707b",
+    "matched_live": "5466bb77676ffd07f8d83c34b41aa37cfb959252ab4912df73679cdc483d2f5d"
+  },
+  "limits": [
+    "No total-SRAM or speedup claim",
+    "Frontend reduction is native, not physical measurement",
+    "Finite SBC reference comparisons are not normative conformance",
+    "Opus phone sender unavailable",
+    "Remaining audio gaps unresolved",
+    "No new acoustic or I2S clock measurement",
+    "Public transformed build is a distinct artifact"
+  ]
+}

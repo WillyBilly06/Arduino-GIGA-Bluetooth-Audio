@@ -1,0 +1,207 @@
+{
+  "scope": "Lower-priority nonblocking BLE host/control policy; finite gap-free waveform case but YouTube gaps remain. Goal not complete.",
+  "native_gate": "PASS",
+  "actor_preference_checks": 5175,
+  "actor_qos_checks": 6069,
+  "core_preference_checks": 543,
+  "core_qos_checks": 697,
+  "legacy_core_tests": 48,
+  "legacy_ble_suites": 7,
+  "host_suites": 7,
+  "production_pin_sha256": "229ca38b3056b70d9283727702f0e00ae8e69242c015496794c6d45c7f241ff0",
+  "native_receipt_sha256": "3c5e00dc15dcad309c08fee79b509b22595bce5200d4610ddd2ee5e3e5f58cb6",
+  "private_deployed_build": {
+    "scope": "Private frozen phase2 target-build selection gates; no deployment/RF/audio claim",
+    "project_translation_units": 199,
+    "foreign_maintained_translation_units": [],
+    "compile_database_sha256": "10163298c84d0b29b21cd6d4ca1c1960d0e4282d517e184e631afd8e91ea37e7",
+    "binary_sha256": "cbbf53035dfccf2381ff109256b9b5f75b86e91610f37a28dd33dc0c5042cdb8",
+    "binary_bytes": 473560,
+    "elf_sha256": "688afac9bc85738f695793bf534a02eee2f01826ab9b1a447a3f51972997168b",
+    "owned_host_components": 4,
+    "forbidden_host_symbols": 0,
+    "hcd_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
+    "main_stack_bytes": 32768,
+    "phase2_added_m7_actor_bytes": 236
+  },
+  "source_qualification": {
+    "scope": "Finite phone PCM source completion/route/underruns only; no encoder, RF or acoustic claim",
+    "launch_sha256": "842642f6ff87f2e8700048aac314fbac9d5584e71a28a9a44b5674903fda92ae",
+    "source_receipt_sha256": "88f4facd4642e2a5ab039b2de297f953497991cce1a1bb757997e8039229a465",
+    "exact_route_reports": 24,
+    "completed": true,
+    "source_underruns": 0,
+    "installed_apk_sha256": "988d0b0bbb91a8659f5fdaed9b0db579a0554f7976ba3186d363f9c0bc8ce3b8",
+    "token": "ce55d0e291464c25990d01693a07c67f"
+  },
+  "cases": [
+    {
+      "case": "earlier_waveform",
+      "capture_id": "0b4b464d4306426bb0846d9e286bf1db",
+      "image_sha256": "4ece5feffa2cdb14e250318c8b5744f8224b7613cea28e2e9ed046c94a00a4fa",
+      "serial_sha256": "62e9b583899eb47b927bc9e5590f5cb222cbd2ded3a28fa031155412c1e2799c",
+      "seconds": 95.06299999999464,
+      "exact512_echoes": 30,
+      "att_mtu": 517,
+      "retained_streaming_snapshots": 45,
+      "timestamp_steps": 15,
+      "codec_sequence_steps": 15,
+      "missing_pcm_frames": 385152,
+      "local_error_increments": 0,
+      "recovery": {
+        "starved": 25344,
+        "held": 359808
+      },
+      "transition": {
+        "synthesized": 33660,
+        "zero_padding": 351492,
+        "mixed_real": 33792
+      },
+      "padding_accounting_conserved": true
+    },
+    {
+      "case": "host_priority_waveform",
+      "capture_id": "3857b4cb48ea46f9baed92219768f352",
+      "image_sha256": "005440bdd05b088c8f6e0155ab732626ac2454cfca7f602e75d8207eb281d847",
+      "serial_sha256": "c4c8fbdef33a4c93cdb69bfd95914acebcfc0528f5c818d0b0ccb6254c3a300e",
+      "seconds": 95.04699999999139,
+      "exact512_echoes": 30,
+      "att_mtu": 517,
+      "retained_streaming_snapshots": 44,
+      "timestamp_steps": 7,
+      "codec_sequence_steps": 7,
+      "missing_pcm_frames": 185088,
+      "local_error_increments": 0,
+      "recovery": {
+        "starved": 12096,
+        "held": 172992
+      },
+      "transition": {
+        "synthesized": 16065,
+        "zero_padding": 169023,
+        "mixed_real": 16128
+      },
+      "padding_accounting_conserved": true
+    },
+    {
+      "case": "connection_preference_waveform",
+      "capture_id": "f53fa402fcc049219e5b0c1e5a4086fe",
+      "image_sha256": "cbbf53035dfccf2381ff109256b9b5f75b86e91610f37a28dd33dc0c5042cdb8",
+      "serial_sha256": "c60e84fbd71ee602d69835328103626d2792024bfa3cb028e123571fe2bd90ed",
+      "seconds": 95.03099999998813,
+      "exact512_echoes": 30,
+      "att_mtu": 517,
+      "retained_streaming_snapshots": 45,
+      "timestamp_steps": 0,
+      "codec_sequence_steps": 0,
+      "missing_pcm_frames": 0,
+      "local_error_increments": 0,
+      "recovery": {
+        "starved": 0,
+        "held": 0
+      },
+      "transition": {
+        "synthesized": 0,
+        "zero_padding": 0,
+        "mixed_real": 0
+      },
+      "padding_accounting_conserved": true,
+      "actual_ble_interval_ms": 120,
+      "actual_ble_latency": 2,
+      "actual_supervision_timeout_ms": 5000,
+      "matching_parameter_snapshots": 45,
+      "last_parameter_observation": {
+        "ms": 153263,
+        "gen": 2,
+        "requested": "64/96/2/500",
+        "enabled": 1,
+        "started": 1,
+        "stage": 6,
+        "error": 0,
+        "submitted": "64/96/2/500",
+        "feature_sub": 1,
+        "update_sub": 1,
+        "reply_sub": 2,
+        "signal_queued": 0,
+        "status_reports": 2,
+        "command_status": 0,
+        "actual_known": 1,
+        "actual_source": 3,
+        "actual": "96/2/500",
+        "update_seen": 1,
+        "update_status": 0,
+        "match": 1
+      },
+      "qos_actor_submission_delta": {
+        "data_fragments": 634,
+        "data_bytes": 15742,
+        "paced_deferrals": 7680,
+        "urgent_bypasses": 0
+      }
+    },
+    {
+      "case": "connection_preference_youtube",
+      "capture_id": "de794f963a644e6d8e30887f464176bc",
+      "image_sha256": "cbbf53035dfccf2381ff109256b9b5f75b86e91610f37a28dd33dc0c5042cdb8",
+      "serial_sha256": "72a0adb775223b3b6f48f11e307a971bfa689715953a2d98088b27f81a6e941e",
+      "seconds": 95.01500000001397,
+      "exact512_echoes": 30,
+      "att_mtu": 517,
+      "retained_streaming_snapshots": 45,
+      "timestamp_steps": 4,
+      "codec_sequence_steps": 4,
+      "missing_pcm_frames": 103680,
+      "local_error_increments": 0,
+      "recovery": {
+        "starved": 7296,
+        "held": 96384
+      },
+      "transition": {
+        "synthesized": 9435,
+        "zero_padding": 94245,
+        "mixed_real": 9728
+      },
+      "padding_accounting_conserved": true,
+      "actual_ble_interval_ms": 120,
+      "actual_ble_latency": 2,
+      "actual_supervision_timeout_ms": 5000,
+      "matching_parameter_snapshots": 45,
+      "last_parameter_observation": {
+        "ms": 303303,
+        "gen": 2,
+        "requested": "64/96/2/500",
+        "enabled": 1,
+        "started": 1,
+        "stage": 6,
+        "error": 0,
+        "submitted": "64/96/2/500",
+        "feature_sub": 1,
+        "update_sub": 1,
+        "reply_sub": 2,
+        "signal_queued": 0,
+        "status_reports": 2,
+        "command_status": 0,
+        "actual_known": 1,
+        "actual_source": 3,
+        "actual": "96/2/500",
+        "update_seen": 1,
+        "update_status": 0,
+        "match": 1
+      },
+      "qos_actor_submission_delta": {
+        "data_fragments": 633,
+        "data_bytes": 15735,
+        "paced_deferrals": 7584,
+        "urgent_bypasses": 0
+      }
+    }
+  ],
+  "limits": [
+    "Requested/submitted/ACK and applied settings are separate; actual tuples come from valid controller observations.",
+    "Host pacing does not limit central incoming traffic or reserve RF airtime. The central can later choose other parameters.",
+    "The95s captures include8s pre-GATT baseline; audio counter deltas use narrower periodic-snapshot brackets.",
+    "Same waveform cases have different capture offsets and connection history; YouTube content differs. No statistical ranking.",
+    "Public transformed-source binary is a separate artifact; the private image/readback does not qualify it.",
+    "No fresh listening, analog/I2S clock, or unconditional gap-free coexistence proof. YouTube still has4 timestamp/codec jumps and103680 missing PCM frames."
+  ]
+}

@@ -1,0 +1,56 @@
+#include <vector>
+#include <atomic>
+#include <cstdio>
+#include <cstdlib>
+#define private public
+#include "GigaBredr.h"
+#undef private
+#include "support/clock_backend_contract.h"
+#include "GigaBredr.cpp"
+using namespace giga_bredr;
+namespace probe {void(*beforeLock)(void*)=nullptr;void(*sleepHook)(unsigned)=nullptr;}
+static uint32_t tick=100;uint32_t micros(){return tick;}
+static unsigned checks=0,snapshots=0,trims=0;static GigaBredr* receiver=nullptr;
+#define CHECK(x) do{++checks;if(!(x)){std::fprintf(stderr,"FRONTEND_CLOCK line%d %s\n",__LINE__,#x);std::abort();}}while(0)
+static detail::RadioCallbacks callbacks;static detail::OutputSourceSnapshot source;static bool stall=false,bad_trim=false,fail_decode=false,partial_fault=false;
+static uint32_t backend_epoch=10,mock_ring_capacity=960;
+static CodecConfig format(){CodecConfig c;c.codec=Codec::Aac;c.sample_rate=48000;c.channels=2;c.aac_transport=AacTransport::Raw;return c;}
+namespace giga_bredr {namespace detail {
+uint32_t compiledCodecs(){return AllCodecs;}
+static Status open(void**p,const CodecConfig&){*p=&source;return Status::Ok;}static void close(void*){}
+static DecodeResult decode(void*,const uint8_t*,size_t n,int32_t*p,size_t cap){if(fail_decode){fail_decode=false;return {Status::CorruptFrame,0,0};}if(n<8)return {Status::NeedMoreData,0,0};CHECK(cap>=1024);for(unsigned i=0;i<2048;++i)p[i]=int32_t(i);return {Status::Ok,n,1024};}
+const DecoderOps* codecOperations(Codec){static DecoderOps ops={open,decode,close};return &ops;}
+Status radioBegin(const char*,uint32_t,const RadioCallbacks&c,const BleConfig&){callbacks=c;return Status::Ok;}Status radioBegin(const char*n,uint32_t m,const RadioCallbacks&c){return radioBegin(n,m,c,{});}void radioPoll(){}void radioEnd(){}RadioStats radioStats(){return{};}BleStats radioBleStats(){return{};}Status radioBleNotify(const uint8_t*,size_t){return Status::Unsupported;}bool radioBleReadWrite(BleWrite&){return false;}
+Status i2sBegin(uint32_t rate,uint16_t,const I2sPins&){source={};source.output_epoch=++backend_epoch;source.sample_rate=rate;source.ring_capacity=mock_ring_capacity;source.half_frames=(((rate+999u)/1000u+3u)&~3u);source.initialized=true;return Status::Ok;}Status i2sBegin(uint32_t r,uint16_t m){return i2sBegin(r,m,{});}Status i2sBegin(uint32_t r){return i2sBegin(r,20,{});}
+Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins& pins,uint16_t){return i2sBegin(rate,ms,pins);}
+size_t i2sWrite(const int32_t*,size_t n){CHECK(!receiver||!receiver->impl_->options.clock.enabled||receiver->impl_->counters.clock.decoded_frames>=source.prepared+n);if(stall)return 0;source.prepared+=n;source.running=true;return n;}
+void i2sEnd(){source.initialized=source.running=false;}OutputStats i2sStats(){OutputStats s;s.initialized=source.initialized;s.running=source.running;s.priming=source.initialized&&!source.running;return s;}OutputTimingSnapshot i2sTiming(){return{};}PcmRecoverySnapshot i2sRecovery(){return{};}
+OutputSourceSnapshot i2sSourceSnapshot(){++snapshots;return source;}I2sClockTrimSnapshot i2sClockTrimStats(){return{};}
+ClockTrimResult i2sClockTrim(uint32_t epoch,int32_t request,int32_t,int32_t){++trims;ClockTrimResult r;r.output_epoch=epoch;r.requested_q16=request;r.applied_q16=bad_trim?500*65536:request;r.accepted=!partial_fault;r.partial=partial_fault;r.status=partial_fault?ClockTrimCode::ReadbackFault:ClockTrimCode::Applied;return r;}
+}}
+static void send(unsigned seq,unsigned ts,unsigned bytes){std::vector<uint8_t>p(12+bytes,0x44);p[0]=0x80;p[1]=0x60;p[2]=uint8_t(seq>>8);p[3]=uint8_t(seq);p[4]=uint8_t(ts>>24);p[5]=uint8_t(ts>>16);p[6]=uint8_t(ts>>8);p[7]=uint8_t(ts);callbacks.media(p.data(),p.size(),callbacks.user);receiver->impl_->processOne();}
+static ReceiverConfig config(){ReceiverConfig c;c.queue_packets=c.startup_packets=1;c.apply_remote_volume=false;return c;}
+static void sleep(unsigned ms){tick+=ms*1000;}
+static void exercise(bool enabled){GigaBredr r;receiver=&r;auto cfg=config();cfg.clock.enabled=enabled;CHECK(r.begin(cfg)==Status::Ok);CHECK(callbacks.configure(format(),callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);snapshots=trims=0;
+ send(1,10,4);auto first=r.impl_->counters.clock;CHECK(!enabled||first.completed_packets==1&&first.completed_frames==0&&first.decoded_frames==0&&first.retained_units_q16==65536);
+ tick+=1000;send(2,10,4);auto second=r.impl_->counters.clock;CHECK(!enabled||second.completed_packets==2&&second.completed_frames==1024&&second.decoded_frames==1024&&!second.retained_units_q16);
+ unsigned before=snapshots;for(unsigned i=0;i<100;++i)r.impl_->processOne();CHECK(snapshots==before);
+ tick+=1000;send(3,20,4);tick+=1000;send(5,30,4);auto discarded=r.impl_->counters.clock;CHECK(!enabled||discarded.retained_units_q16==65536);CHECK(!enabled||discarded.assembly_discards==1);
+ if(!enabled)CHECK(!snapshots&&!trims);r.end();receiver=nullptr;}
+static void dropped_decode(){GigaBredr r;receiver=&r;auto cfg=config();CHECK(r.begin(cfg)==Status::Ok);CHECK(callbacks.configure(format(),callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);stall=true;probe::sleepHook=sleep;send(1,10,8);auto s=r.impl_->counters.clock;CHECK(s.decoded_frames==1024&&s.discarded_frames==1024&&s.completed_packets==1&&s.completed_frames==1024);stall=false;probe::sleepHook=nullptr;r.end();receiver=nullptr;}
+static void idle(GigaBredr&r,unsigned ms){for(unsigned i=0;i<ms;++i){tick+=1000;r.impl_->processOne();}}
+static void error_resume(){GigaBredr r;receiver=&r;auto cfg=config();CHECK(r.begin(cfg)==Status::Ok);CHECK(callbacks.configure(format(),callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);send(1,10,8);idle(r,2100);fail_decode=true;tick+=1000;send(2,20,8);CHECK(r.stats().decode_errors==1);tick+=1000;send(3,30,8);idle(r,2200);CHECK(r.stats().decode_errors==1&&r.stats().clock.state==AudioClockState::Tracking);r.end();receiver=nullptr;}
+static void invalid_backend_ack(){GigaBredr r;receiver=&r;auto cfg=config();CHECK(r.begin(cfg)==Status::Ok);CHECK(callbacks.configure(format(),callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);send(1,10,8);bad_trim=true;idle(r,2200);auto s=r.stats().clock;CHECK(s.backend_fault&&!s.applied_valid&&s.accepted==0&&s.refused==1&&s.backend_status==AudioClockBackendStatus::ReadbackFault);unsigned calls=trims;idle(r,2200);CHECK(trims==calls);bad_trim=false;r.end();receiver=nullptr;}
+static void output_epoch_mismatch(){GigaBredr r;receiver=&r;auto cfg=config();CHECK(r.begin(cfg)==Status::Ok);CHECK(callbacks.configure(format(),callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);send(1,10,8);idle(r,2100);source.output_epoch++;source.prepared=17;idle(r,1);auto s=r.stats().clock;CHECK(s.output_epoch==source.output_epoch&&!s.applied_valid&&s.state!=AudioClockState::Tracking);r.end();receiver=nullptr;}
+static void partial_failure_invalidates_previous_acceptance(){GigaBredr r;receiver=&r;auto cfg=config();CHECK(r.begin(cfg)==Status::Ok);CHECK(callbacks.configure(format(),callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);send(1,10,8);idle(r,2100);auto old=r.stats().clock;CHECK(old.applied_valid&&old.accepted>0);partial_fault=true;idle(r,1100);auto s=r.stats().clock;CHECK(!s.applied_valid&&s.backend_fault&&s.state==AudioClockState::BackendFault&&s.accepted==old.accepted&&s.refused==1);unsigned calls=trims;idle(r,2200);CHECK(trims==calls);partial_fault=false;r.end();receiver=nullptr;}
+static void published_row_has_one_observation_time(){GigaBredr r;receiver=&r;auto cfg=config();CHECK(r.begin(cfg)==Status::Ok);CHECK(callbacks.configure(format(),callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);send(1,10,8);auto sampled=r.stats().clock;CHECK(sampled.observation_us==tick&&sampled.decoded_frames==0&&sampled.prepared_frames==0&&sampled.completed_packets==0);idle(r,1);auto current=r.stats().clock;CHECK(current.observation_us==tick&&current.decoded_frames==1024&&current.prepared_frames==1024&&current.completed_packets==1&&current.completed_frames==1024);r.end();receiver=nullptr;}
+static void end_request_does_not_actuate(){GigaBredr r;receiver=&r;auto cfg=config();CHECK(r.begin(cfg)==Status::Ok);CHECK(callbacks.configure(format(),callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);send(1,10,8);idle(r,2100);unsigned calls=trims,reads=snapshots;r.impl_->running.store(false);idle(r,2200);CHECK(trims==calls&&snapshots==reads);r.end();receiver=nullptr;}
+static void stop_inventory_publication(){GigaBredr r;receiver=&r;auto cfg=config();CHECK(r.begin(cfg)==Status::Ok);CHECK(callbacks.configure(format(),callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);send(1,10,8);source.prepared=2048;callbacks.stream(false,callbacks.user);auto s=r.stats().clock;CHECK(s.state==AudioClockState::Inactive&&!s.inventory_valid&&s.prepared_frames==2048);r.end();receiver=nullptr;}
+static void small_headroom_does_not_observe(){for(Codec codec:{Codec::Aptx,Codec::AptxHd}){GigaBredr r;receiver=&r;auto cfg=config();cfg.pcm_buffer_ms=2;mock_ring_capacity=96;CHECK(r.begin(cfg)==Status::Ok);auto f=format();f.codec=codec;CHECK(callbacks.configure(f,callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);source.running=true;snapshots=trims=0;idle(r,2200);CHECK(snapshots==0&&trims==0&&r.impl_->counters.clock.observations==0);r.end();receiver=nullptr;}mock_ring_capacity=960;}
+static void public_headroom_uses_actual_geometry(){for(uint32_t rate:{8000u,11025u,16000u,22050u,24000u,32000u,44100u,48000u,88200u,96000u,176400u,192000u})for(uint16_t ms:{uint16_t(2),uint16_t(4),uint16_t(20)}){detail::I2sBufferGeometry geometry;CHECK(detail::i2sBufferGeometry(rate,ms,geometry));GigaBredr r;receiver=&r;auto cfg=config();cfg.pcm_buffer_ms=ms;mock_ring_capacity=geometry.ring_frames;CHECK(r.begin(cfg)==Status::Ok);auto f=format();f.sample_rate=rate;CHECK(callbacks.configure(f,callbacks.user)==Status::Ok);callbacks.stream(true,callbacks.user);auto row=r.stats().clock;bool expected=geometry.ring_frames>=4*geometry.half_frames;CHECK(row.enabled&&row.eligible==expected&&row.ring_capacity==geometry.ring_frames&&row.required_ring_frames==4*geometry.half_frames);source.running=true;snapshots=trims=0;idle(r,5);CHECK(!trims&&(expected?snapshots>0:snapshots==0));if(!expected)CHECK(r.stats().clock.observations==0);r.end();receiver=nullptr;}mock_ring_capacity=960;}
+int main(){ReceiverConfig defaults;CHECK(defaults.clock.enabled&&defaults.clock.limit_ppm==500&&defaults.clock.slew_ppm_per_second==10);GigaBredr r;auto bad=config();bad.clock.limit_ppm=501;CHECK(r.begin(bad)==Status::InvalidArgument);bad.clock.limit_ppm=500;bad.clock.slew_ppm_per_second=11;CHECK(r.begin(bad)==Status::InvalidArgument);exercise(true);exercise(false);dropped_decode();error_resume();invalid_backend_ack();output_epoch_mismatch();partial_failure_invalidates_previous_acceptance();published_row_has_one_observation_time();end_request_does_not_actuate();stop_inventory_publication();small_headroom_does_not_observe();public_headroom_uses_actual_geometry();std::printf("PRODUCTION_CLOCK_FRONTEND_PASS checks=%u\n",checks);}
+
+namespace giga_bredr {namespace detail {
+Status radioBleDisconnect(uint32_t,bool){return Status::Unsupported;}
+Status radioBleResumeAdvertising(){return Status::Unsupported;}
+}}

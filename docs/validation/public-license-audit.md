@@ -1,3 +1,11 @@
+# Historical public-export audit
+
+The text below is the original2026-10-21 documentation-scaffold audit, retained
+for provenance. Its scaffold-only inclusion decisions describe that date.
+The current supplied-source inventory and unresolved grants are recorded in
+../../THIRD_PARTY.md. This history is not a new redistribution grant or a
+replacement for original component terms.
+
 # Public source licensing and export audit
 
 Audit date: 2026-10-21. This is a file/provenance inventory for the public
