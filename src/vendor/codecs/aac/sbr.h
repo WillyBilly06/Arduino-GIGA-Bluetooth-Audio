@@ -50,6 +50,7 @@
 #ifndef _SBR_H
 #define _SBR_H
 
+#include <stddef.h>
 #include "aaccommon.h"
 #include "bitstream.h"
 
@@ -294,7 +295,6 @@ typedef struct _PSInfoSBR {
 	int                   extendedDataSize;
 
 	signed char           envDataDequantScale[MAX_NCHANS_ELEM][MAX_NUM_ENV];
-	int                   envDataDequant[MAX_NCHANS_ELEM][MAX_NUM_ENV][MAX_QMF_BANDS];
 	int                   noiseDataDequant[MAX_NCHANS_ELEM][MAX_NUM_NOISE_FLOORS][MAX_NUM_NOISE_FLOOR_BANDS];
 
 	int                   eCurr[MAX_QMF_BANDS];
@@ -339,7 +339,20 @@ typedef struct _PSInfoSBR {
 	int (*XBufDelay)[HF_GEN][64][2];
 	int                   XBuf[32+8][64][2];
 
+	/* GigaBredr 2026-10-27: keep every legal envelope/band, but reserve
+	 * only the opened channel count. This tail shares the state allocation. */
+	int                   envDataDequant[][MAX_NUM_ENV][MAX_QMF_BANDS];
 } PSInfoSBR;
+
+#ifdef __cplusplus
+static constexpr size_t SBRStorageBytes(int channels) {
+#else
+static inline size_t SBRStorageBytes(int channels) {
+#endif
+    return channels>=1 && channels<=MAX_NCHANS_ELEM
+        ? sizeof(PSInfoSBR) + channels * sizeof(((PSInfoSBR*)0)->envDataDequant[0]) : 0;
+}
+
 
 /* sbrfft.c */
 void FFT32C(int *x);

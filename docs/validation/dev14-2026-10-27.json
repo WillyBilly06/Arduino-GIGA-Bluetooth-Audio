@@ -1,0 +1,144 @@
+{
+  "version": "0.1.0-dev.14",
+  "date": "2026-10-27",
+  "channel": "develop",
+  "stable": false,
+  "scope": "Reviewed AAC mono allocation and optional owned voice-control integration; not deployed or an audio continuity repair",
+  "basis_commit": "950d8ded744d9de40e92ab7c0ac59bd573805166",
+  "approved_inputs": {
+    "voice_commit": "2eabe0f2ee9e3d6fee93beb5c4d872b9bc13e0c9",
+    "voice_files": 15,
+    "aac_files": 8,
+    "code_test_tool_files": 17,
+    "all_code_test_tool_bytes_exact": true
+  },
+  "full_CM7": {
+    "actual": true,
+    "core": "Cortex-M7",
+    "arduino_mbed_giga": "4.6.0",
+    "jobs": 4,
+    "seconds": 106.125,
+    "exit_code": 0,
+    "owned_job_quiescent": true,
+    "uart_baud": 3000000,
+    "default_uart_baud": 2000000,
+    "private_scheduler_witness": 0,
+    "private_supply_witness_included": false,
+    "library_translation_units": 175,
+    "source_Receiver_projection_sha256": "8a43ebfea9751380a9d8b8e52ccac3ea477765bf6db6eb82ebeb25dea80a3dac",
+    "source_Receiver_library_metadata_projection_sha256": "cf69a971dd304a6c142cce3462da52b5f9f54a0f9e436251ac29ae467744631e",
+    "compiler_rows": 390,
+    "library_properties_sha256": "01ce8a1d64db97877df21131cf6af2a101300a77b21ebcc6d2f9c0b84abc7b89",
+    "binary_sha256": "08c30a31254fd3a665a52265f568ddb4d45a817a2846f100e0c7f5fe93eb1981",
+    "binary_bytes": 513456,
+    "elf_sha256": "ada5277e6b8ca04df2094c00531bbf0c62570e988eedf5633dd02959ad77cb04",
+    "build_receipt_sha256": "40749acafa931302a039cea4d0886a1720f0b9446d8f2d9cbfaf5b21150c5f6f",
+    "static_audit_sha256": "2dc739fab74656d47af39ed0c3348aaef75186f869f1bbe3ca743c844fad67ba",
+    "six_decoder_families": [
+      "sbcOps",
+      "aacOps",
+      "aptxOps",
+      "ldacOps",
+      "lhdcOps",
+      "opusOps"
+    ],
+    "seven_defaults": {
+      "GBR_ENABLE_SBC": "1",
+      "GBR_ENABLE_AAC": "1",
+      "GBR_ENABLE_APTX": "1",
+      "GBR_ENABLE_LDAC": "1",
+      "GBR_ENABLE_LHDC": "1",
+      "GBR_ENABLE_OPUS": "1",
+      "GBR_ENABLE_AAC_HE": "1"
+    },
+    "stock_HCD_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
+    "source_and_SDK_unchanged": true,
+    "default_2M_check": "Two unchanged integration units compiled only; not a full default image or field test",
+    "public_AVRCP_object_ABI": "Four facade-to-radio references checked; not target API execution"
+  },
+  "AAC": {
+    "scope": "HE-AAC envelope-dequant tail only; same allocation block count and same arithmetic",
+    "paired_portable_CPU": {
+      "architecture": "Android ARM64",
+      "baseline_exit": 0,
+      "candidate_exit": 0,
+      "accepted_configurations": 66,
+      "PCM_streams": 8,
+      "PCM_equal_before_after": true,
+      "independent_PCM_truth_oracle": false,
+      "mono_HE_requested_payload_and_provider_raw_delta_bytes": 960,
+      "LC_stereo_delta_bytes": 0,
+      "block_count_unchanged": true,
+      "receipt_sha256": "55ec3384f4830ba4b8f31f121157b7511d865b54170a32fc95f581f8dc1a403a",
+      "comparison_sha256": "ffe5b24cc0cd6850c8c05c8cf3df46e2e3921d62a7748fc064e29a105ea4a30a"
+    },
+    "M7_compiler": {
+      "baseline_requested_state_bytes": 24584,
+      "mono_candidate_requested_state_bytes": 23624,
+      "stereo_candidate_requested_state_bytes": 24584,
+      "initializer_frame_bytes": 56,
+      "baseline_initializer_frame_bytes": 64,
+      "DecodeSBRData_frame_bytes": 112,
+      "stack_object_allocated_sections_equal_linked": true
+    },
+    "corrected_candidate_only": true,
+    "rejected_earlier_initializer_frame_bytes": 22680,
+    "M7_PCM_executed": false,
+    "M7_runtime_allocation_measured": false,
+    "whole_SRAM_saving": null,
+    "prior_component_build": {
+      "wrapper_exit": 1,
+      "CLI_exit": null,
+      "reason": "Post-compile noncompiler endpoint assertion; original failure retained. This record does not reinterpret it as exit0."
+    }
+  },
+  "voice_control": {
+    "scope": "Optional internal owned RFCOMM/HF/HS control owner, default pointer null",
+    "paired_CPU": {
+      "architecture": "Android ARM64",
+      "cases": 4,
+      "all_exit0": true,
+      "owned_actor_checks": 736,
+      "voice_owner_checks": 339,
+      "combined_Classic_checks": 861,
+      "retirement_cases": true,
+      "receipt_sha256": "41a1319aefcabad5d9c8759ee6d8e7e1b0c99ccfe479c6ea737bf0863bd693bc",
+      "M7_runtime": false,
+      "phone_interoperability": false
+    },
+    "M7_type_sizes": {
+      "OwnedHost_before": 35072,
+      "OwnedHost_after": 35100,
+      "actor_delta": 28,
+      "caller_reserved_VoiceProfiles": 2496,
+      "default_voice_arena_allocated": false,
+      "total_heap_delta_not_measured": true
+    },
+    "unadvertised": true,
+    "SDP_voice_records": false,
+    "SCO_route": false,
+    "synchronous_PCM_worker": false,
+    "public_microphone_path": false,
+    "voice_only_mode": false
+  },
+  "protected_original_src_files": 377,
+  "licenses": {
+    "root_and_component_files_exact": 8,
+    "project_license": "Apache-2.0 for project-owned code; retained supplied-component terms apply",
+    "unresolved_component_grants": "Unchanged; no blanket relicensing"
+  },
+  "limits": [
+    "No dev14 firmware deployment or phone/call test",
+    "No initiating audio-shortage cause or continuity repair established",
+    "Clock deadline, all-codec/configuration field coverage, numeric fidelity, acoustics and total200ms phone-to-DAC latency remain unqualified",
+    "SCO/duplex voice, honest SDP advertisement, I2S arbitration and a working public microphone path remain incomplete"
+  ],
+  "packaging": {
+    "documentation_only_edits_after_full_build": true,
+    "exact_compiler_inputs_checked": true,
+    "final_extracted_ZIP_separately_compiled": false,
+    "ZIP_self_hash": "External sidecar",
+    "remote_publication": false,
+    "main_unchanged": true
+  }
+}

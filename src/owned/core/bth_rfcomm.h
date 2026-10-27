@@ -17,7 +17,7 @@ typedef struct {
  bool credit,msc_received,msc_sent,msc_acked,peer_flow_off,local_flow_off;
 } bth_rfcomm_dlc_t;
 typedef struct {
- uint32_t generation,deadline;uint16_t mtu;uint8_t server_channel,window,mode;
+ uint32_t generation,deadline,listener_mask;uint16_t mtu;uint8_t server_channel,window,mode;
  bool initialized,initiator,peer_flow_off;bth_rfcomm_state_t mux;
  bth_rfcomm_dlc_t dlc[BTH_RFCOMM_DLC_LIMIT];
 } bth_rfcomm_t;
@@ -29,6 +29,9 @@ bth_status_t bth_rfcomm_encode(uint8_t dlci,bool cr,uint8_t control,bool pf,bool
 // Reserve window*mtu application RX bytes per admitted DLC before init (window1..7).
 // mtu127..512; server_channel0 means no incoming service. All actor calls serialized.
 bool bth_rfcomm_init(bth_rfcomm_t*,uint32_t,bool initiator,uint8_t server_channel,uint16_t mtu,uint8_t window);
+// Configure at most two distinct incoming SCNs before opening the mux. This
+// does not allocate another mux or change its negotiated flow-control mode.
+bth_status_t bth_rfcomm_add_listener(bth_rfcomm_t*,uint32_t,uint8_t server_channel);
 void bth_rfcomm_close(bth_rfcomm_t*);
 bth_status_t bth_rfcomm_start(bth_rfcomm_t*,uint32_t,uint32_t now_ms,uint8_t*,size_t,size_t*);
 // Production RFCOMM1.2 initiators must try_credit=true; false supports legacy-peer fixtures.

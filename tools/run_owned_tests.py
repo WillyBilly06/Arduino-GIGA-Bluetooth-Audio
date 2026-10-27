@@ -20,12 +20,12 @@ def main():
  # Pure standalone HF/HS/RFCOMM and timeout/epoch regressions.
  # Execute this runner only on a permitted native-test host; Android cross-builds
  # and Root-owned CPU execution use their separate pinned receipts.
- for n in ['test_rfcomm','test_hfp_control','test_profile_expiry']:
-  exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,'-DGIGA_BREDR_PORTABLE_TEST_MAIN=1','tests/'+n+'.cpp','src/owned/HfpControl.cpp','src/owned/HspControl.cpp',*objects,'-o',exe]);run([exe])
- actor=['src/owned/OwnedHost.cpp','src/owned/ClassicProfiles.cpp','src/owned/LeProfiles.cpp','src/platform/RadioProtocol.cpp']
+ for n in ['test_rfcomm','test_hfp_control','test_profile_expiry','test_voice_profiles']:
+  exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,'-DGIGA_BREDR_PORTABLE_TEST_MAIN=1','tests/'+n+'.cpp','src/owned/VoiceProfiles.cpp','src/owned/HfpControl.cpp','src/owned/HspControl.cpp',*objects,'-o',exe]);run([exe])
+ actor=['src/owned/OwnedHost.cpp','src/owned/ClassicProfiles.cpp','src/owned/LeProfiles.cpp','src/platform/RadioProtocol.cpp','src/owned/VoiceProfiles.cpp','src/owned/HfpControl.cpp','src/owned/HspControl.cpp']
  for n in ['test_single_hnc','test_single_signal','test_ble_audio_qos','test_le_connection_preference','test_le_transport','test_le_control']:
   exe=out/(n+'.exe');run([cc,'-std=c11',*flags,'tests/owned_core/'+n+'.c',*objects,'-o',exe]);run([exe])
- units=['test_avrcp_controls','test_avrcp_channel_retirement','test_avrcp_owner_retirement','test_avrcp_stale_disconnect','test_owned_classic','test_owned_ble','test_owned_host','test_owned_host_review','test_owned_host_bootstrap','test_owned_host_ble_large','test_owned_host_service','test_owned_host_single_hnc','test_owned_host_hnc','test_owned_host_benign','test_owned_host_le_requests','test_owned_host_signaling','test_owned_host_ble_commands','test_owned_host_ble_unsubscribe','test_owned_host_config_reject','test_owned_host_abort','test_owned_host_scheduling','test_owned_host_classic_combined','test_owned_host_mixed_att','test_uart_tx_mailbox','test_ble_audio_qos','test_ble_connection_preference','test_owned_ble_lifecycle']
+ units=['test_owned_voice','test_avrcp_controls','test_avrcp_channel_retirement','test_avrcp_owner_retirement','test_avrcp_stale_disconnect','test_owned_classic','test_owned_ble','test_owned_host','test_owned_host_review','test_owned_host_bootstrap','test_owned_host_ble_large','test_owned_host_service','test_owned_host_single_hnc','test_owned_host_hnc','test_owned_host_benign','test_owned_host_le_requests','test_owned_host_signaling','test_owned_host_ble_commands','test_owned_host_ble_unsubscribe','test_owned_host_config_reject','test_owned_host_abort','test_owned_host_scheduling','test_owned_host_classic_combined','test_owned_host_mixed_att','test_uart_tx_mailbox','test_ble_audio_qos','test_ble_connection_preference','test_owned_ble_lifecycle']
  for n in units:
   sources=actor[1:] if n in ('test_owned_host_scheduling','test_owned_host_classic_combined') else actor
   extra=['-DGBR_QOS_CANDIDATE=1'] if n=='test_ble_audio_qos' else []

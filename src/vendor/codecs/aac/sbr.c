@@ -81,8 +81,23 @@ static void InitSBRState(PSInfoSBR *psi)
 	if (!psi)
 		return;
 
-PSInfoSBR saved=*psi;
-    memset(psi,0,sizeof(*psi)); psi->allocatedChannels=saved.allocatedChannels;
+    /* Save ownership only. Copying the complete state before a variable-size
+     * clear can retain a large automatic copy on the Cortex-M7 compiler. */
+    struct {
+        int allocatedChannels;
+        SBRHeader *sbrHdr;
+        SBRGrid *sbrGrid;
+        SBRFreq *sbrFreq;
+        SBRChan *sbrChan;
+        int *delayIdxQMFA;
+        int (*delayQMFA)[DELAY_SAMPS_QMFA];
+        int *delayIdxQMFS;
+        int (*delayQMFS)[DELAY_SAMPS_QMFS];
+        int (*XBufDelay)[HF_GEN][64][2];
+    } saved = {psi->allocatedChannels, psi->sbrHdr, psi->sbrGrid,
+        psi->sbrFreq, psi->sbrChan, psi->delayIdxQMFA, psi->delayQMFA,
+        psi->delayIdxQMFS, psi->delayQMFS, psi->XBufDelay};
+    memset(psi,0,SBRStorageBytes(saved.allocatedChannels)); psi->allocatedChannels=saved.allocatedChannels;
     psi->sbrHdr=saved.sbrHdr; memset(psi->sbrHdr,0,psi->allocatedChannels*sizeof(*psi->sbrHdr));
     psi->sbrGrid=saved.sbrGrid; memset(psi->sbrGrid,0,psi->allocatedChannels*sizeof(*psi->sbrGrid));
     psi->sbrFreq=saved.sbrFreq; memset(psi->sbrFreq,0,psi->allocatedChannels*sizeof(*psi->sbrFreq));
@@ -113,7 +128,9 @@ PSInfoSBR saved=*psi;
  * Note:        memory allocation for SBR is only done here
  **************************************************************************************/
 int InitSBRChannels(AACDecInfo *info,int channels) {
-    PSInfoSBR *psi=(PSInfoSBR*)gbr_calloc(1,sizeof(PSInfoSBR));
+    const size_t storageBytes=SBRStorageBytes(channels);
+    if(!storageBytes)return ERR_AAC_SBR_INIT;
+    PSInfoSBR *psi=(PSInfoSBR*)gbr_calloc(1,storageBytes);
     if(!psi)return ERR_AAC_SBR_INIT;
     info->psInfoSBR=psi; psi->allocatedChannels=channels;
     psi->sbrHdr=(SBRHeader*)gbr_calloc(channels,sizeof(*psi->sbrHdr)); if(!psi->sbrHdr)return ERR_AAC_SBR_INIT;

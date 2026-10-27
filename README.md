@@ -1,14 +1,14 @@
-# GigaBredr dev.13 develop (experimental)
+# GigaBredr dev.14 develop (experimental)
 
 Bluetooth Classic A2DP receiver and public BLE GATT server for Arduino GIGA R1 Cortex-M7, with all supplied codec decoders and PCM5102A-compatible I2S playback. The project owns the host stack; the radio controller uses Infineon ROM plus the stock HCD patch, and scheduling uses Arduino Mbed/RTOS.
 
-**Experimental; not stable.** Dev.13 adds typed AVRCP Play/Pause/Stop/Next/Previous taps, copied metadata/playback-status snapshots and scoped channel retirement. Standalone RFCOMM/HFP/HSP control modules and an internal microphone-provider contract are included as groundwork; HFP/HSP remain unadvertised and have no integrated SCO or duplex call audio. The final reviewed source passed 28 portable Android ARM64 CPU cases and an official CM7 Receiver build. Those checks do not establish target/phone interoperability. See [dev.13 validation](docs/validation/dev13-2026-10-27.md).
+**Experimental; not stable.** Dev.14 integrates a channel-sized HE-AAC envelope-dequant allocation and an optional owned RFCOMM/HF/HS control owner. Mono HE-AAC reserves one 960-byte plane less; paired portable CPU fixtures cover 66 accepted geometries and eight identical PCM streams. LC/stereo payload and allocation counts are unchanged. The optional control owner has protocol/queue/retirement CPU tests, but remains unadvertised with no SDP voice records, SCO/duplex audio or public microphone path. Compilation and portable CPU results do not establish GIGA/phone interoperability. See [dev.14 validation](docs/validation/dev14-2026-10-27.md).
 
 The existing LHDC automatic reserve remains 80 ms with a 90 ms ring. Earlier finite BLE/A2DP windows had zero recorded audio faults, but longer listening subsequently produced brief PCM shortages. The root cause and a complete continuity fix remain unresolved. No all-codec stability, numerical-fidelity, acoustic or 200 ms total phone-to-DAC latency claim is made.
 
 ## Install and start
 
-1. Download the versioned [v0.1.0-dev.13 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.13.zip), or use the [develop source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip). Develop changes over time; retain the commit identifier when reporting results. Both are experimental development sources.
+1. Download the versioned [v0.1.0-dev.14 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.14.zip), or use the [develop source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip). Develop changes over time; retain the commit identifier when reporting results. Both are experimental development sources.
 2. In Arduino IDE choose **Sketch > Include Library > Add .ZIP Library**. Keep one active GigaBredr installation.
 3. Install **Arduino Mbed OS GIGA Boards 4.6.0** and select **Arduino GIGA R1 / Cortex-M7**.
 4. Open **File > Examples > GigaBredr > Receiver**, wire the output below, and upload. The example uses automatic buffers sized for the negotiated configuration.
@@ -19,7 +19,7 @@ For local installation, place the folder containing `library.properties`, `src` 
 arduino-cli compile --fqbn arduino:mbed_giga:giga:target_core=cm7 --jobs 4 --library . examples/Receiver
 ```
 
-Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [Dev.13 build evidence](docs/validation/dev13-2026-10-27.json) identifies the package build separately from previous field images; [BUILD.json](docs/BUILD.json) retains historical dev.10 and earlier evidence.
+Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [Dev.14 build evidence](docs/validation/dev14-2026-10-27.json) identifies the package build separately from previous field images; [BUILD.json](docs/BUILD.json) retains historical dev.10 and earlier evidence.
 
 Use **921600** in the serial monitor. GIGA's native USB CDC transfer rate is independent of this baud setting. The diagnostic Receiver queues log lines and pumps at most 64 bytes per foreground turn through the nonblocking USB API; skipped lines increment `console_drops`. Formatting and USB service still consume CPU time.
 
@@ -90,7 +90,7 @@ Immutable tables remain in flash; selected decoder/buffers release on reconfigur
 
 All six supplied decoder-operation families, eight Codec identities and seven enabled build defaults remain: SBC/SBC-XQ, AAC-LC, HE-AAC v1, aptX/aptX HD, LDAC, LHDC V5 and Opus. SBC-XQ shares the SBC identity. One selected codec runs at a time. Compiled support and valid-vector execution do not make a phone offer a mode or qualify every rate/depth/transport.
 
-Full HFP/HSP, RFCOMM/SCO call operation and a public pluggable microphone-input API remain unfinished. Standalone RFCOMM/HF/HS protocol modules and an internal None/Provider microphone contract are present; they are unadvertised and have no integrated SCO or duplex voice path. The existing AVRCP volume and bounded metadata callback paths are retained. Typed Play/Pause/Stop/Next/Previous taps, copied metadata/playback-status snapshots and scoped channel retirement are implemented. The28-case portable CPU suite and full official CM7 Receiver link pass; actual target control/metadata interoperability remains unverified. See [AVRCP API and completion limits](docs/avrcp.md). AVRCP browsing, cover art and full profile coverage remain unfinished. PCM5102A is playback output, not a microphone path. HE-AACv2/PS, xHE-AAC and BLE Audio are not implemented.
+Full HFP/HSP, RFCOMM/SCO call operation and a public pluggable microphone-input API remain unfinished. An optional internal RFCOMM/HF/HS control owner now connects the bounded protocol modules to secure PSM3 admission, durable queues and scoped retirement. Its default pointer is null, so the normal actor still refuses PSM3 without a caller-reserved owner. Profiles remain unadvertised; SDP voice records, SCO/duplex audio, a public microphone registration facade and voice-only operation remain unfinished. The existing AVRCP volume and bounded metadata callback paths are retained. Typed Play/Pause/Stop/Next/Previous taps, copied metadata/playback-status snapshots and scoped channel retirement are implemented. The earlier AVRCP portable CPU suite and current official CM7 Receiver build evidence are separate; actual target control/metadata interoperability remains unverified. See [AVRCP API and completion limits](docs/avrcp.md). AVRCP browsing, cover art and full profile coverage remain unfinished. PCM5102A is playback output, not a microphone path. HE-AACv2/PS, xHE-AAC and BLE Audio are not implemented.
 
 ## BLE server and coexistence
 
@@ -106,6 +106,7 @@ Longer playback after the finite dev.12 test produced brief PCM shortages. Histo
 
 | Evidence | Result | Limit |
 |---|---|---|
+| Dev.14 source integration | Paired AAC CPU fixtures: 66 geometries/eight PCM streams; optional voice owner CPU protocol/retirement cases; separate CM7 build | No deployment, MCU heap saving, SCO/call audio, acoustic, latency or continuity-fix claim |
 | Dev.13 profile source | 28 portable Android ARM64 CPU cases passed; full official CM7 compilation recorded separately | No dev.13 firmware deployment, phone control interoperability, integrated call audio or audio-cure claim |
 | Dev.12 public-code SCHED0 / 3 Mbaud field image | LHDC192/24, fixed1000 request; 600 s host / 598.297 s printed; three BLE cycles / 130 verified512B exchanges; zero recorded audio/RTP faults | Clock CUM FAILED14; total latency, acoustics and all-codec operation unqualified |
 | Dev.11 public-code SCHED0 / 3 Mbaud baseline | 60/70-ms profile; 135 verified512B exchanges; RTP/decoder/transport fault counters zero | FAILED59,328 missingPCM frames /309 underrun callbacks and clock CUM11 |

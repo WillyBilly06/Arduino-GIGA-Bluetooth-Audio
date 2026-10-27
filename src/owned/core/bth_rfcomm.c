@@ -37,7 +37,7 @@ bth_status_t bth_rfcomm_encode(uint8_t dlci,bool cr,uint8_t ctl,bool pf,bool has
 static bool live(const bth_rfcomm_t* s,uint32_t g){return s&&s->initialized&&g&&s->generation==g;}
 static bth_rfcomm_dlc_t* find(bth_rfcomm_t* s,uint8_t d){unsigned i;for(i=0;i<BTH_RFCOMM_DLC_LIMIT;++i)if(s->dlc[i].state&&s->dlc[i].dlci==d)return &s->dlc[i];return 0;}
 static bth_rfcomm_dlc_t* allocate(bth_rfcomm_t* s,uint8_t d){unsigned i;bth_rfcomm_dlc_t* c=find(s,d);if(c)return c;for(i=0;i<BTH_RFCOMM_DLC_LIMIT;++i)if(!s->dlc[i].state){c=&s->dlc[i];memset(c,0,sizeof *c);c->dlci=d;return c;}return 0;}
-static bool incoming(const bth_rfcomm_t* s,uint8_t d){return s->server_channel&&d==s->server_channel*2+(s->initiator?1:0);}
+static bool incoming(const bth_rfcomm_t* s,uint8_t d){return d>=2&&((d&1)==(s->initiator?1:0))&&(s->listener_mask&(1u<<(d>>1)));}
 static bth_status_t frame(bth_rfcomm_t* s,uint8_t d,uint8_t ctl,bool command,uint8_t* out,size_t cap,size_t* n){return bth_rfcomm_encode(d,command?s->initiator:!s->initiator,ctl,true,false,0,0,0,out,cap,n);}
 static bth_status_t mcc(bth_rfcomm_t* s,uint8_t type,bool command,const uint8_t* p,size_t len,uint8_t* out,size_t cap,size_t* n){
  uint8_t data[BTH_RFCOMM_MTU_LIMIT];size_t header=1+length_size(len);if(len>sizeof data-header)return BTH_ERR_CAPACITY;
@@ -46,7 +46,13 @@ static bth_status_t mcc(bth_rfcomm_t* s,uint8_t type,bool command,const uint8_t*
 }
 bool bth_rfcomm_init(bth_rfcomm_t* s,uint32_t g,bool initiator,uint8_t scn,uint16_t mtu,uint8_t window){
  if(!s||!g||scn>30||mtu<127||mtu>BTH_RFCOMM_MTU_LIMIT||!window||window>7)return false;
- memset(s,0,sizeof *s);s->generation=g;s->initiator=initiator;s->server_channel=scn;s->mtu=mtu;s->window=window;s->initialized=true;return true;
+ memset(s,0,sizeof *s);s->generation=g;s->initiator=initiator;s->server_channel=scn;s->listener_mask=scn?1u<<scn:0;s->mtu=mtu;s->window=window;s->initialized=true;return true;
+}
+bth_status_t bth_rfcomm_add_listener(bth_rfcomm_t* s,uint32_t g,uint8_t scn){
+ unsigned count=0,i;if(!live(s,g))return BTH_IGNORED;if(!scn||scn>30)return BTH_ERR_PARAM;
+ if(s->mux!=BTH_RFCOMM_CLOSED)return BTH_ERR_STATE;if(s->listener_mask&(1u<<scn))return BTH_OK;
+ for(i=1;i<=30;++i)if(s->listener_mask&(1u<<i))++count;if(count>=BTH_RFCOMM_DLC_LIMIT)return BTH_ERR_CAPACITY;
+ s->listener_mask|=1u<<scn;return BTH_OK;
 }
 void bth_rfcomm_close(bth_rfcomm_t* s){if(s)memset(s,0,sizeof *s);}
 bth_status_t bth_rfcomm_start(bth_rfcomm_t* s,uint32_t g,uint32_t now,uint8_t* out,size_t cap,size_t* n){

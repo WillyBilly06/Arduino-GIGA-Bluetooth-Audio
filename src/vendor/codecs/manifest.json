@@ -602,10 +602,11 @@
     "patches": [
       "tracked-allocation",
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "channel-sized-sbr-envelope-tail-20261027"
     ],
-    "exported_sha256": "814daed38f527a86ecc1aa3c1efc5e3f145a81459aab8ce55f0bc2a5d26a2771",
-    "exported_bytes": 17609
+    "exported_sha256": "ec3780ddec6b981337699f33c85834e7ede98a9d115487ce8607d1096e1bae9f",
+    "exported_bytes": 18397
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/sbr.h",
@@ -613,10 +614,11 @@
     "source_sha256": "75740331241a1c0ed56e629ce3fe99e03fc180c53ddb847c0345f65a398004bf",
     "patched_sha256": "4051bb4d2c5a9e48c91efbad8eb1e17c33a6f7fa3738de6937c8bc32ebb9e7c4",
     "patches": [
-      "giga-portable-reviewed-patch-v1"
+      "giga-portable-reviewed-patch-v1",
+      "channel-sized-sbr-envelope-tail-20261027"
     ],
-    "exported_sha256": "811a8487e3f9398eac08cc892f49db51218c5546bcbd874d95da78735a31ba26",
-    "exported_bytes": 14095
+    "exported_sha256": "5549cbb239a1a13190b1949c08de68ad16dbecc23d07401a978dadbe050914c7",
+    "exported_bytes": 14533
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/sbrfft.c",

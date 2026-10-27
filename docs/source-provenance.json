@@ -2438,15 +2438,16 @@
       "original_sha256": "59dba38285e1c9dce453dea520f1385fab7d24572744fc59ce459ef4546a66a9",
       "imported_sha256": "602c25dac2f97ea0845750054e72c3c060da10151de787fe495f431057dc20b8",
       "input_sha256": "814daed38f527a86ecc1aa3c1efc5e3f145a81459aab8ce55f0bc2a5d26a2771",
-      "sha256": "814daed38f527a86ecc1aa3c1efc5e3f145a81459aab8ce55f0bc2a5d26a2771",
-      "bytes": 17609,
-      "export_modified": false,
+      "sha256": "ec3780ddec6b981337699f33c85834e7ede98a9d115487ce8607d1096e1bae9f",
+      "bytes": 18397,
+      "export_modified": true,
       "base_export_sha256": "814daed38f527a86ecc1aa3c1efc5e3f145a81459aab8ce55f0bc2a5d26a2771",
-      "clean_integration_modified": false,
+      "clean_integration_modified": true,
       "compiled_basis_sha256": "814daed38f527a86ecc1aa3c1efc5e3f145a81459aab8ce55f0bc2a5d26a2771",
       "candidate_documentation_modified": false,
       "R2_changed_from_compiled": false,
-      "R3_noncompiler_documentation_change": false
+      "R3_noncompiler_documentation_change": false,
+      "aac_mono_storage_candidate": "channel-sized envelope tail; target allocation/PCM execution pending"
     },
     {
       "source": "src/vendor/codecs/aac/sbr.h",
@@ -2456,15 +2457,16 @@
       "original_sha256": "75740331241a1c0ed56e629ce3fe99e03fc180c53ddb847c0345f65a398004bf",
       "imported_sha256": "4051bb4d2c5a9e48c91efbad8eb1e17c33a6f7fa3738de6937c8bc32ebb9e7c4",
       "input_sha256": "811a8487e3f9398eac08cc892f49db51218c5546bcbd874d95da78735a31ba26",
-      "sha256": "811a8487e3f9398eac08cc892f49db51218c5546bcbd874d95da78735a31ba26",
-      "bytes": 14095,
-      "export_modified": false,
+      "sha256": "5549cbb239a1a13190b1949c08de68ad16dbecc23d07401a978dadbe050914c7",
+      "bytes": 14533,
+      "export_modified": true,
       "base_export_sha256": "811a8487e3f9398eac08cc892f49db51218c5546bcbd874d95da78735a31ba26",
-      "clean_integration_modified": false,
+      "clean_integration_modified": true,
       "compiled_basis_sha256": "811a8487e3f9398eac08cc892f49db51218c5546bcbd874d95da78735a31ba26",
       "candidate_documentation_modified": false,
       "R2_changed_from_compiled": false,
-      "R3_noncompiler_documentation_change": false
+      "R3_noncompiler_documentation_change": false,
+      "aac_mono_storage_candidate": "channel-sized envelope tail; target allocation/PCM execution pending"
     },
     {
       "source": "src/vendor/codecs/aac/sbrfft.c",

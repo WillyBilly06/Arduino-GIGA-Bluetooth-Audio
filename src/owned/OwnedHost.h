@@ -2,6 +2,7 @@
 #include "ClassicProfiles.h"
 #include "LeProfiles.h"
 #include "ControllerAudioPriority.h"
+#include "VoiceProfiles.h"
 #ifndef GIGA_BREDR_PRIVATE_SCHED_WITNESS
 #define GIGA_BREDR_PRIVATE_SCHED_WITNESS 0
 #endif
@@ -12,11 +13,15 @@ extern "C" {
 #include "core/bth_l2cap_rx.h"
 #include "core/bth_l2cap_sig.h"
 #include "core/bth_rx_flow.h"
+#include "core/bth_rfcomm_link.h"
 }
 namespace giga_bredr { namespace detail {
 struct OwnedHostConfig {
  const char* name=nullptr;uint32_t codecMask=AllCodecs;RadioCallbacks callbacks;BleConfig ble;
  const uint8_t* firmware=nullptr;size_t firmwareSize=0;uint8_t address[6]={};uint32_t baud=2000000;
+ // Opt-in unadvertised control integration. Caller reserves this object and
+ // retains it through end(); only the serialized actor may operate on it.
+ VoiceProfiles* voice_control=nullptr;VoiceControlConfig voice_config;
 };
 struct OwnedHostHooks {
  bool (*txReady)(void*)=nullptr;
@@ -95,6 +100,9 @@ private:
  bool gateAvrcpRetirement(const bth_l2cap_pdu_t&);
  bool copiedAvrcpRetirement(const bth_l2cap_pdu_t&) const;
  bool avrcpRetirementReady() const;void clearAvrcpRetirement();
+ bool gateVoiceRetirement(const bth_l2cap_pdu_t&);
+ bool copiedVoiceRetirement(const bth_l2cap_pdu_t&)const;
+ bool voiceRetirementReady()const;void clearVoiceRetirement();
  bool deferClassicControl(const bth_l2cap_pdu_t&,uint32_t,uint16_t signal_cursor=0);bool retryClassicControls();void clearClassicControls(uint16_t cid=0);
  void synchronizeChannels();bool disconnectChannel(uint16_t);void chargeWaiting(uint32_t);void closePeer(unsigned,uint8_t);
  void avrcpPoll(bool secure,bool allow_open=true);void runtimePoll();void refreshStats();bool admission(unsigned,uint32_t);void cancelAdmission(unsigned);
@@ -119,6 +127,8 @@ private:
  uint32_t avrcp_at_=0;unsigned avrcp_attempts_=0;bool avrcp_recovering_=false;
  uint32_t avrcp_retire_owner_=0,avrcp_retire_deadline_=0;
  uint16_t avrcp_retire_local_=0,avrcp_retire_remote_=0;bool avrcp_retiring_=false;
+ uint32_t voice_retire_owner_=0,voice_retire_deadline_=0;
+ uint16_t voice_retire_local_=0,voice_retire_remote_=0;bool voice_retiring_=false;
  unsigned next_peer_=0,bond_cursor_=0,le_trace_=0;Boot boot_=Boot::Failed;
  uint8_t le_reply_observe_trace_=0; // Shared peer-reply CC/update quota, separate from GAP.
  uint32_t qos_last_data_ms_=0,qos_classic_owner_=0,qos_le_owner_=0;

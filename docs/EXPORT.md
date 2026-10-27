@@ -1,3 +1,13 @@
+# Experimental dev.14 source and packaging boundary
+
+This package combines only the frozen AAC mono allocation patch, optional voice-control owner and release documentation. It retains all unrelated codec, buffer, clock, I2S, controller-patch and LE source bytes. Existing root/component notices and unresolved grant boundaries remain unchanged; the project license does not relicense supplied decoder components.
+
+The versioned Arduino ZIP is created from one local Git commit and checked member by member against its final manifest. Compiled source, Receiver and library.properties are pinned before a fresh combined CM7 build; later edits are documentation only. The final extracted archive is not separately recompiled. The ZIP self-hash is stored in an external sidecar. A remote push/tag is a separate Root-reviewed action; main is unchanged.
+
+[Dev.14 validation](validation/dev14-2026-10-27.md) separates the new combined build, prior component build attempts and actual portable CPU results. No dev.14 firmware deployment or phone/call test is claimed. Long-playback shortages and complete voice support remain unresolved. No private first-shortage recorder, SDK heap logger, raw capture, workstation path or device identifier is added.
+
+## Historical dev.13 and earlier export records
+
 # Experimental dev.13 source and packaging boundary
 
 This development package adds only the reviewed profile implementation plus release metadata and documentation. It retains every original codec/buffering/I2S/HCD/GATT source outside the approved AVRCP owner/queue changes and preserves all root/component license and notice bytes. The versioned ZIP is built from a local Git commit and checked member-by-member; its SHA256 remains in an external sidecar. Remote publication is a separate action. The main branch is unchanged.

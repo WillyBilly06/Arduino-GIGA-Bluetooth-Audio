@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-dev.14 - experimental development source, 2026-10-27
+
+- Allocate the HE-AAC envelope-dequant tail for the opened channel count in the same owned state block. Mono HE payload/provider requests are 960 bytes lower in paired portable CPU fixtures; LC/stereo bytes, block counts, PCM and framing/arithmetic remain unchanged in those tests. The M7 compiler confirms the geometry and a 56-byte InitSBRState frame; MCU allocation/PCM execution remains unverified.
+- Integrate an optional serialized RFCOMM/HF/HS control owner with secure PSM3 admission, durable copied AT queues and scoped local/remote channel retirement. The default has no voice arena and retains PSM3 refusal; the M7 actor type adds 28 bytes.
+- Retain unadvertised voice profiles: SDP voice records, real SCO routing, synchronous PCM worker/I2S arbitration and a public pluggable microphone path remain unfinished. Voice-only mode is not enabled.
+- Preserve all existing codecs/defaults, operation-mode examples, I2S pin options, 80/90-ms LHDC reserve, BLE policy, clock control, stock HCD and component notices. Brief long-playback shortages remain unresolved; this is not an audio repair or stable release.
+- Record a fresh combined CM7 build and exact versioned source ZIP separately from the earlier component builds and portable CPU evidence.
+
+
 ## 0.1.0-dev.13 - experimental development source, 2026-10-27
 
 - Add public typed AVRCP transport taps, copied metadata/status snapshots, owner-bound cancellation and separate response outcomes.

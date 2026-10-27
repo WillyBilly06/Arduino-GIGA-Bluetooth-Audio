@@ -1,3 +1,9 @@
+# Current experimental source: dev.14
+
+The current develop package combines channel-sized mono HE-AAC envelope storage and an optional owned RFCOMM/HF/HS control owner. [Dev.14 validation](validation/dev14-2026-10-27.md) separates portable CPU tests, the combined CM7 build and missing field/voice/audio gates. It is not a stable release or an audio-shortage fix. Main remains independently maintained. The following records retain their historical scope.
+
+## Historical development notes
+
 # Current main development baseline
 
 Main now contains the tested v0.1.0-dev.12 source, merged with the original

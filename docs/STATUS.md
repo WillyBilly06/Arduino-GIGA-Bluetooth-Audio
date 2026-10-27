@@ -1,3 +1,11 @@
+# Dev.14 development status
+
+Experimental; not stable. This version combines the reviewed channel-sized HE-AAC envelope-dequant allocation and optional owned RFCOMM/HF/HS control owner. Paired portable AAC fixtures cover 66 accepted geometries and eight identical PCM streams, with a 960-byte mono-HE requested payload/provider reduction and unchanged LC/stereo bytes and block counts. Voice-control CPU cases cover SLC, storage pressure, timeout and scoped retirement while preserving independent media/LE progress. See [current validation](validation/dev14-2026-10-27.md).
+
+Those results do not establish actual MCU memory saving, phone control interoperability, full voice operation or numerical fidelity for all streams/codecs. The default allocates no voice arena; HF/HS remain unadvertised. SDP voice records, SCO routing/PCM worker, I2S arbitration and a public microphone registration path remain unfinished. The existing long-playback PCM shortages have not been repaired. A private first-shortage capture distinguishes an initial shortage from policy-held recovery frames, but does not establish the initiating cause. The private recorder/heap logger is not included in this package. Main is maintained separately.
+
+## Historical dev.13 and earlier evidence
+
 # Dev.13 development status
 
 Experimental; not stable. Typed AVRCP taps, copied metadata/status and scoped channel retirement are implemented. All28 final portable Android ARM64 CPU cases passed on the reviewed source; the dev.13 package build is recorded in [validation](validation/dev13-2026-10-27.md). CPU assertions and compilation do not establish actual GIGA/phone operation. HFP/HSP remain unadvertised standalone modules with no integrated RFCOMM owner, SCO/duplex audio or public microphone registration API. Existing codecs, LHDC80/90, I2S, HCD and BLE defaults are retained. Longer listening produced brief PCM shortages after earlier zero-fault finite tests; their initiating cause remains unresolved. Main is maintained separately.
