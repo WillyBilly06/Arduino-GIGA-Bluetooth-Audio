@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-dev.10 - experimental source preparation, 2026-10-26
+
+- Select automatic packet/PCM storage for the negotiated configuration and wait for real decoded PCM before DMA startup/recovery. Keep explicit per-codec overrides and the legacy startup_packets path.
+- Use the configured running inventory target T=P-2H for real-PCM startup, retained through learning/recovery. This target includes estimated compressed work; it is not a real-PCM floor or measured total latency.
+- Retain all six supplied decoder-operation families/eight Codec identities/seven defaults, hardware I2S pin configuration, original controller HCD and all root/component terms.
+- Record the actual private SCHED1 LHDC192 90.072132986 s / GATT 46 window: 43 non-clock gates zero, but clock CUM FAILED 2/88, max 22.1229167 us. Five printed tracking cohorts remain UNKNOWN; supply witness unexercised and prior starvation unresolved.
+- Record actual SCHED0 M7 valid-vector execution: 12 cases, 20 passes, 3440 successful calls and complete-case oracle/deadline/status/heap-close gates valid. Capture remains FRAMING_DEGRADED with one partial replay row; no global PASS or A2DP/I2S qualification.
+- Keep LHDC golden MISSING, LDAC tone-only, aptX HD PCM16/HE SBR/Opus fixture limits, unfinished call/microphone/typed-AVRCP features and all historical failures visible.
+- Default SCHED0 Receiver extracted-ZIP build and develop-only tagged distribution are pending at this documentation step. No stable/main/deployment claim.
+
 ## 0.1.0-dev.9 - experimental development source, 2026-10-26
 
 - Prepare source from the exact corrected all-codec f42 compiled tree; production C/C++/headers and seven license/notice files remain byte-identical to that input. R2 also corrects the distributed LHDC exported hash/size record and includes two nonproduction fixture repairs; it is not a rebuild of f42.

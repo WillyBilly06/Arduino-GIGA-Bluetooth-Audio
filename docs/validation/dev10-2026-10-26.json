@@ -1,0 +1,237 @@
+{
+  "schema": "GIGABREDR_DEV10_VALIDATION_V1",
+  "version": "0.1.0-dev.10",
+  "date": "2026-10-26",
+  "stable": false,
+  "qualification": "EXPERIMENTAL_SOURCE_PREPARATION_DEFAULT_RECEIVER_ZIP_BUILD_PENDING",
+  "source_basis": {
+    "commit": "0449e41630dae0ac1f02b717c18100687c1cc33d",
+    "baseline_source_files": 501,
+    "receiver_compiler_rows": 373,
+    "library_translation_units": 170,
+    "compiler_source_projection": "6d5ca487819a2f7189dcdd8ed4b6839fd1e1fbd45ca378fc09cc63602f651f3f",
+    "final_export_member_count": "PENDING_ROOT_PACKAGING",
+    "all_supplied_families": 6,
+    "codec_enum_identities": 8,
+    "enabled_build_defaults": 7
+  },
+  "publication": {
+    "channel": "experimental develop only",
+    "default_receiver_SCHED0_extracted_ZIP_build": "PENDING",
+    "tag": "v0.1.0-dev.10",
+    "tag_status": "PROSPECTIVE_NOT_PUBLISHED_AT_THIS_DOCUMENTATION_STEP",
+    "ZIP_sha256": "EXTERNAL_SIDECAR_AFTER_ROOT_EXPORT",
+    "deployment": "NOT_CLAIMED",
+    "main": "UNCHANGED_BY_THIS_PREPARATION"
+  },
+  "configured_receiver_private": {
+    "kind": "ACTUAL_PRIVATE_SCHED1_M7_RECEIVER",
+    "image_sha256": "e417e6adc814177267f0387de5082c2428eaa364913686a4b04487f5f13a7c4a",
+    "image_bytes": 503812,
+    "ELF_sha256": "b549d04900939f3cdc1a086e4b4fed2f40522f32553786d2575c31de53912d6d",
+    "build_facts_sha256": "98f21580c85311931a9fdc0c5a114cce99c4cabc7d26ec163d2501d03a43d909",
+    "linked_review_sha256": "4d7d8de55450f3522d77ac60c1fa24777debbe1a5a2d40009639af9148eb72e5",
+    "scheduler_witness": 1,
+    "RTX_wrappers": true,
+    "all_codecs_retained": true,
+    "field": {
+      "status": "FINITE_WORKLOAD_COMPLETE_FAULT_OR_CUMULATIVE_CLOCK_FAILED_NO_QUALIFICATION",
+      "source_seconds": 90.072132986,
+      "GATT_verified512": 46,
+      "GATT_seconds": 60.005,
+      "MTU": 517,
+      "physical_BLE_controls": 3,
+      "non_clock_zero_gates": 43,
+      "clock_CUM": {
+        "results": 88,
+        "overruns": 2,
+        "timing_unknown": 0,
+        "maximum_configured_us": 22.122916666666665,
+        "original_bound_us": 20,
+        "verdict": "FAIL"
+      },
+      "configured_target": {
+        "frames": 11136,
+        "matched_cohorts": 40,
+        "mismatched_cohorts": 0,
+        "unknown_cohorts": 5,
+        "unknown_reason": "clock/frames/status text crossed a1ms print boundary; strict UNKNOWN retained"
+      },
+      "supply": "UNEXERCISED_COVERAGE_UNKNOWN",
+      "prior_starvation_resolved": false,
+      "causal_improvement_proved": false,
+      "resources_and_public_baseline_restored": true,
+      "result_sha256": "c5e97fe0a4f011c2e535486377ce14c831e415bc2fd26cfa2b9dd8b21812cf93",
+      "field_facts_sha256": "63382f784242c6e74f0f7c4ff0bbb677705519e2d7a48ba07d5b19f733403679"
+    }
+  },
+  "decoder_benchmark": {
+    "kind": "ACTUAL_SCHED0_M7_DECODER_ONLY_PRIVATE_12_CASE_BENCHMARK",
+    "source_commit": "0449e41630dae0ac1f02b717c18100687c1cc33d",
+    "image_sha256": "3c7e880afc95612526738ff5cd0b746510aede230c72bd1fe514a308ae1a250f",
+    "image_bytes": 638264,
+    "ELF_sha256": "703800ff0020985541e17994252793682ab4edf37e65fe006d96ed491b596b48",
+    "scheduler_witness": 0,
+    "RTX_wrappers": false,
+    "CPU_Hz": 480000000,
+    "DWT": true,
+    "complete_cases": 12,
+    "passes_per_case": 20,
+    "successful_invocations": 3440,
+    "source_oracle_deadline_status_memory_gates": "VALID_FOR_COMPLETE_RETAINED_CASES",
+    "deadline_misses": 0,
+    "residual_bytes": 0,
+    "residual_blocks": 0,
+    "allocation_failures": 0,
+    "log_buffer_dropped": 0,
+    "capture_framing": "CAPTURE_FRAMING_DEGRADED",
+    "partial_rows": 1,
+    "divergent_complete_rows": 0,
+    "framing_cause_scope": "Private DiagnosticConsole replay can reset an undrained send offset; later complete retained rows are valid separate evidence. Original capture was not repaired.",
+    "global_PASS": false,
+    "physical_resets_excluded": false,
+    "analysis_sha256": "f42724369cd222d7d29dcd01ed58d11f680f2cb150c40aba59b8a8d5b0716846",
+    "outcome_sha256": "30504011e1c922c1cc7214d28da668aa54ed142a1f6e2fa045b48e62e1d1d87b",
+    "maximum_tracked_codec_heap_bytes": 88378,
+    "metrics": [
+      {
+        "name": "sbc",
+        "rate": 48000,
+        "channels": 2,
+        "calls": 740,
+        "micros_p50": 65,
+        "micros_max": 77,
+        "open_bytes": 2540,
+        "peak_bytes": 2540
+      },
+      {
+        "name": "sbc-xq",
+        "rate": 48000,
+        "channels": 2,
+        "calls": 140,
+        "micros_p50": 72,
+        "micros_max": 79,
+        "open_bytes": 2540,
+        "peak_bytes": 2540
+      },
+      {
+        "name": "aac-adts",
+        "rate": 48000,
+        "channels": 2,
+        "calls": 120,
+        "micros_p50": 656,
+        "micros_max": 678,
+        "open_bytes": 25262,
+        "peak_bytes": 25262
+      },
+      {
+        "name": "aac-latm",
+        "rate": 48000,
+        "channels": 2,
+        "calls": 120,
+        "micros_p50": 667,
+        "micros_max": 689,
+        "open_bytes": 25262,
+        "peak_bytes": 25262
+      },
+      {
+        "name": "aptx",
+        "rate": 48000,
+        "channels": 2,
+        "calls": 760,
+        "micros_p50": 414,
+        "micros_max": 447,
+        "open_bytes": 4412,
+        "peak_bytes": 4412
+      },
+      {
+        "name": "aptx-hd",
+        "rate": 48000,
+        "channels": 2,
+        "calls": 760,
+        "micros_p50": 414,
+        "micros_max": 420,
+        "open_bytes": 4412,
+        "peak_bytes": 4412
+      },
+      {
+        "name": "opus",
+        "rate": 48000,
+        "channels": 2,
+        "calls": 120,
+        "micros_p50": 1392,
+        "micros_max": 1411,
+        "open_bytes": 29868,
+        "peak_bytes": 29868
+      },
+      {
+        "name": "ldac-stereo-hq",
+        "rate": 96000,
+        "channels": 2,
+        "calls": 40,
+        "micros_p50": 256,
+        "micros_max": 265,
+        "open_bytes": 11036,
+        "peak_bytes": 11036
+      },
+      {
+        "name": "ldac-mono-hq",
+        "rate": 96000,
+        "channels": 1,
+        "calls": 80,
+        "micros_p50": 130,
+        "micros_max": 137,
+        "open_bytes": 5708,
+        "peak_bytes": 5708
+      },
+      {
+        "name": "ldac-mono-mq",
+        "rate": 96000,
+        "channels": 1,
+        "calls": 240,
+        "micros_p50": 106,
+        "micros_max": 113,
+        "open_bytes": 5708,
+        "peak_bytes": 5708
+      },
+      {
+        "name": "he-mono",
+        "rate": 44100,
+        "channels": 1,
+        "calls": 160,
+        "micros_p50": 1350,
+        "micros_max": 1749,
+        "open_bytes": 58104,
+        "peak_bytes": 58104
+      },
+      {
+        "name": "he-stereo",
+        "rate": 44100,
+        "channels": 2,
+        "calls": 160,
+        "micros_p50": 2998,
+        "micros_max": 3378,
+        "open_bytes": 88378,
+        "peak_bytes": 88378
+      }
+    ],
+    "oracles": {
+      "PCM16": "SBC, AAC-LC ADTS/LATM, aptX, aptX HD, Opus and HE v1 reference comparisons at pinned configurations",
+      "LDAC": "Tone amplitude/residual oracle only; no independent24-bit PCM reference",
+      "HE": "Local SBR-only HE-AAC v1 mono/stereo44.1kHz references; local media excluded from distribution",
+      "LHDC": "MISSING independent encoded golden; no benchmark decode case"
+    },
+    "memory_scope": "Tracked decoder allocation only; static arrays, console, main stack/RTOS, queue/ring/DMA buffers and allocator overhead excluded. Runtime free heap/stack highwater UNKNOWN.",
+    "timing_scope": "Successful invocations of complete PASS cases, including any StatusOK zero-frame priming; call wall time includes interrupts/preemption. No WCET or CPU-only claim.",
+    "A2DP_or_I2S": false
+  },
+  "remaining_limits": [
+    "Clock20us/CUM failure remains; finite zero non-clock faults do not establish continuity or stability",
+    "Supply witness unexercised and previous starvation unresolved",
+    "No total phone-to-DAC200ms measurement, independent full24-bit fidelity, physical I2S or acoustic qualification",
+    "LHDC golden missing; LDAC tone-only; aptX HD PCM16 does not prove24-bit precision; HE PS/xHE/other configurations unqualified",
+    "Opus48k stereo20ms valid fixture is not Opus phone negotiation or sender interoperability proof",
+    "Full HFP/HSP/RFCOMM/SCO/microphone and complete typed AVRCP unfinished"
+  ],
+  "licenses": "All original root/component license and notice bytes preserved; THIRD_PARTY.md and existing unresolved grants remain authoritative"
+}

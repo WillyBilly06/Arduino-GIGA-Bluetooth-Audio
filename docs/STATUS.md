@@ -1,3 +1,21 @@
+# Experimental develop status: 0.1.0-dev.10
+
+Source preparation; NOT STABLE. Default SCHED0 Receiver extracted-ZIP build and publication are pending. Current code basis 0449e41630dae0ac1f02b717c18100687c1cc33d has 501 baseline files/373 Receiver input rows/170 library TUs. New release documentation is separate. All supplied decoder families/identities/defaults and original licenses remain.
+
+The selected real-PCM policy sizes storage for the negotiated configuration and delays DMA startup/recovery until the watermark P is present. Its running inventory target is fixed T=P-2H, with R/P/H geometry checked. Estimated compressed work participates in inventory; this is not a PCM floor, measured total latency or a supply repair. Explicit legacy startup_packets retains learned-target behavior.
+
+The actual private SCHED1 Receiver image e417e6ad... (503812 bytes, ELF b549d049...) has official full M7/static and fresh linked structural proof. Its LHDC192 source 90.072132986 s and 46 verified 512-byte GATT exchanges/60.005s/MTU517/three physical BLE controls completed, with 43 non-clock gates zero. Clock CUM FAILED 2/88, max 22.1229167 us against the unchanged 20 us bound; timing_unknown=0. Forty coherent target cohorts matched 11136 frames, zero mismatched; five remain UNKNOWN at 1 ms print boundaries. Supply witness UNEXERCISED/coverage unknown; prior starvation unresolved. No causal improvement or continuity claim.
+
+Actual SCHED0 decoder-only benchmark image 3c7e880a... (638264 bytes, ELF 703800ff...) ran 12 configurations x 20 passes/3440 successful invocations. Complete retained results satisfy oracle/status/count/deadline/tracked-heap-close gates with deadline 0 / residual 0 / allocation-failure 0. Capture remains CAPTURE_FRAMING_DEGRADED: one partial HE-stereo row was interrupted by private console replay; later complete rows are valid separate evidence, not capture repair. No global PASS, physical-reset exclusion, A2DP/I2S or end-to-end qualification.
+
+LHDC independent encoded golden remains MISSING. LDAC uses tone oracles, aptX HD PCM16 does not establish 24-bit precision, HE v1 covers SBR-only 44.1k mono/stereo, and Opus 48k stereo 20 ms fixture execution does not prove phone interoperability. Other configurations, Apple AAC sender, physical/electrical/acoustic continuity and total 200 ms phone-to-DAC latency remain unproved. Full HFP/HSP/RFCOMM/SCO/microphone and complete typed AVRCP remain unfinished. SDRAM is caller-initialized; audio/stock SDRAM PLL2 ownership must be resolved by the application.
+
+See [current dated validation](validation/dev10-2026-10-26.md) and BUILD.json current_dev10. Private Receiver, decoder benchmark and default ZIP have different build/evidence scopes. No prior failed result is rescored.
+
+## Historical dev.9 and earlier snapshot (retained verbatim)
+
+The status labels below describe their original preparation/build steps, not current dev.10 publication.
+
 R3 code-input parity: Root verified/extracted the475-file R2 ZIP and built the official all-codec M7 source in106.797s (exit0/quiescent). The corrected static audit passed; its first failed attempt is retained. The binary is byte-identical to the field-tested f42 image, so that finite clock-failed observation applies by exact binary parity, not a new hardware test. R3 changes only noncompiler documentation; all365 ordered input hashes/projection remain2cb3a3a2.... The final archive self-hash belongs only in the external sidecar. No clock/stability/fidelity/E2E pass is created.
 
 # Experimental develop status: 0.1.0-dev.9

@@ -1,3 +1,19 @@
+# Experimental dev.10 source and packaging boundary
+
+This checkout prepares develop-only version 0.1.0-dev.10 from source basis 0449e41630dae0ac1f02b717c18100687c1cc33d. It retains all supplied decoder families/identities/defaults, project-owned host, stock controller HCD and original component licenses/notices. Only release documentation and version/description metadata change in this step. Baseline 501 files/373 Receiver compiler rows/170 library TUs identify the code basis, not the final export member count.
+
+The actual private Receiver build is SCHED1 BIN e417e6adc814177267f0387de5082c2428eaa364913686a4b04487f5f13a7c4a (503812 bytes), ELF b549d04900939f3cdc1a086e4b4fed2f40522f32553786d2575c31de53912d6d. It has fresh linked review and the bounded V11 LHDC192 field evidence recorded in current validation; clock CUM still FAILED 2/88 and supply remains unexercised. The SCHED0 decoder-only benchmark is a different actual image 3c7e880a... with 12 complete retained cases and CAPTURE_FRAMING_DEGRADED. Neither is a fresh default Receiver ZIP build or blanket qualification.
+
+Default Receiver uses SCHED0/no private RTX wrapping. Root has not yet compiled/audited the final extracted dev.10 ZIP at this documentation step. Root will add that actual archive/source/compiler/artifact evidence before publication. No default-image parity, deployment or stability is invented. Existing BUILD.json is preserved in history.dev9_and_embedded_earlier; current_dev10 and planned_current_package_code_basis separate new evidence from old snapshots. All failed/unknown timing, supply, fidelity and interoperability results remain.
+
+The [versioned v0.1.0-dev.10 source-ZIP URL](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.10.zip) is prospective until Root completes develop-only publication/tagging. Main is outside this update; experimental development source is not stable. Final archive member checks and extracted official M7 build remain separate from source-byte parity. Keep the final ZIP SHA256 in an external sidecar; do not put its self-hash inside the payload.
+
+No private HE reference media, benchmark fixture headers, raw captures, workstation paths or device identifiers are added to this library export. Dated validation publishes sanitized artifact identities and metrics only. Historical source/component mappings and all root/vendor licenses/notices remain exact, including existing unresolved grants; source publication creates no new licensing grant.
+
+## Historical dev.9 export snapshot (retained verbatim)
+
+Statements below retain their original step/time scope and do not assert dev.10 packaging/build/publication.
+
 # Experimental dev.9 source and packaging boundary
 
 The475-file R2 source ZIP was verified, extracted and actually compiled/audited. R3 starts from that frozen export and changes only existing noncompiler documentation; all365 ordered input hashes and all other files are identical to R2. All production src/example C/C++/headers/INO and the seven identified root/component license-notice files remain byte-identical to that prior compiled input. The distributed vendor manifest has one record corrected in two exported hash/size fields; two nonproduction fixture leaves have Root compile-only verification. Those metadata/fixture differences and listed documentation/library description changes are explicit; R2 added CHANGELOG.md and the dated validation MD/JSON; R3 keeps those same paths. The final external delta/manifest records every entry. No maintained root, old export, SDK, public clone or branch is modified.

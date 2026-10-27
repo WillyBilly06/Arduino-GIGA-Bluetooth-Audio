@@ -1,23 +1,23 @@
-# GigaBredr 0.1.0-dev.9 (experimental)
+# GigaBredr 0.1.0-dev.10 (experimental)
 
-Bluetooth Classic A2DP music receiver and public BLE GATT server for the Arduino GIGA R1 Cortex-M7, with a project-owned host stack, the supplied codec decoders, and PCM5102A-compatible I2S playback.
+Bluetooth Classic A2DP receiver and public BLE GATT server for Arduino GIGA R1 Cortex-M7, with all supplied codec decoders and PCM5102A-compatible I2S playback. The project owns the host stack; the radio controller uses Infineon ROM plus the stock HCD patch, and scheduling uses Arduino Mbed/RTOS.
 
-**Clock-deadline failures remain. This version is experimental and not stable. Total phone-to-DAC latency below 200 ms, full numerical fidelity and acoustic continuity are unproved.** See [validation and known limits](#validation-and-known-limits) before relying on continuous audio.
+**Not stable. Clock-deadline failures and earlier audio-supply gaps remain unresolved. Total phone-to-DAC latency below 200 ms, full numerical fidelity and acoustic continuity are unproved.** This checkout prepares experimental dev.10; its default Receiver source-ZIP build and publication are pending.
 
 ## Install and start
 
-1. Download the [v0.1.0-dev.9 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.9.zip).
-2. In Arduino IDE, use **Sketch > Include Library > Add .ZIP Library** and select the ZIP. Keep one active GigaBredr installation.
-3. Install **Arduino Mbed OS GIGA Boards 4.6.0**, then select **Arduino GIGA R1 / Cortex-M7**.
-4. Open **File > Examples > GigaBredr > Receiver**, wire the output below, and upload the sketch. Published dev.9 uses explicit buffer profiles; the working branch example uses the new automatic PCM-reserve policy awaiting hardware validation.
+1. When published, download the [v0.1.0-dev.10 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.10.zip). This is a prospective versioned link, not a stable release claim.
+2. In Arduino IDE choose **Sketch > Include Library > Add .ZIP Library**. Keep one active GigaBredr installation.
+3. Install **Arduino Mbed OS GIGA Boards 4.6.0** and select **Arduino GIGA R1 / Cortex-M7**.
+4. Open **File > Examples > GigaBredr > Receiver**, wire the output below, and upload. The example uses automatic buffers sized for the negotiated configuration.
 
-For a local source install, place the folder containing `library.properties`, `src` and `examples` at `<sketchbook>/libraries/GigaBredr`. To compile the Receiver example with Arduino CLI:
+For local installation, place the folder containing `library.properties`, `src` and `examples` at `<sketchbook>/libraries/GigaBredr`. Compile the default Receiver with:
 
 ```sh
 arduino-cli compile --fqbn arduino:mbed_giga:giga:target_core=cm7 --jobs 4 --library . examples/Receiver
 ```
 
-The defaults are `GIGA_BREDR_USE_BTSTACK=0` (project-owned host), `GIGA_BREDR_UART_BAUD=2000000`, and `GIGA_BREDR_I2S_WS_PIN=74`. These are the same values passed explicitly in the verified build; exact build inputs and artifact identities are in [BUILD.json](docs/BUILD.json).
+Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [BUILD.json](docs/BUILD.json) keeps actual private builds separate from the pending default ZIP build.
 
 | GIGA pin | PCM5102A signal |
 |---|---|
@@ -26,55 +26,68 @@ The defaults are `GIGA_BREDR_USE_BTSTACK=0` (project-owned host), `GIGA_BREDR_UA
 | D72 / PI3 | DIN |
 | GND | GND |
 
-Use the breakout's required supply and 3.3V logic. Output uses Philips I2S, stereo 32-bit slots with samples left-aligned; slot width is not a numerical precision measurement. **MCLK defaults to `-1` (disabled)**; PCM5102A can use its BCLK PLL. Set `ReceiverConfig.i2s` before `begin()` for a compatible route. Alternate pads and optional 256Fs MCLK remain electrically unqualified. See [pin routing](docs/runtime-i2s-pins.md).
+Use the breakout supply and 3.3 V logic. Output is Philips I2S with stereo 32-bit slots and left-aligned samples; slot width is not measured numerical precision. MCLK defaults to -1 (disabled); PCM5102A can use its BCLK PLL. Configure `ReceiverConfig.i2s` before `begin()` for a compatible hardware route. Alternate pads/optional 256Fs MCLK remain electrically unqualified; see [pin routing](docs/runtime-i2s-pins.md).
 
 The PCM5102A analog L/R outputs are line outputs specified for loads of at least 1 kOhm. For lower-impedance headphones, connect the DAC to a headphone amplifier's line input, then connect the headphones to the amplifier. See the [TI PCM510xA datasheet](https://www.ti.com/lit/ds/symlink/pcm5102a.pdf). Direct headphone loading can distort the analog output even when the receiver reports no digital audio faults.
 
-Call `receiver.poll()` from `loop()` to deliver bounded diagnostic/configuration/volume/metadata callbacks; radio and decoder workers run independently. Check `begin()` and status results, keep callbacks bounded, and serialize `begin/end/poll`. `availableCodecs()` reports compiled decoders; `ReceiverConfig.codecs` limits negotiation. `end()` releases receiver-owned resources.
+## API and configuration
 
-## Codecs, memory and unfinished features
+Call `receiver.poll()` from `loop()` to deliver bounded configuration/volume/metadata/diagnostic callbacks. Radio and decoder workers run independently. Check `begin()` and Status results, keep callbacks bounded, serialize `begin/end/poll` and keep the receiver alive through callbacks. `end()` releases receiver-owned resources. `availableCodecs()` reports compiled support; `config.codecs=0` permits the compiled set, while a nonzero mask limits negotiation.
 
-All seven decoder defaults remain enabled: SBC/SBC-XQ, AAC-LC, experimental HE-AACv1, aptX/aptX HD, LDAC, LHDC V5 and Opus. One codec is negotiated at a time. Inclusion and M7 linkage do not make a phone offer it, prove a decoded reference, or qualify every configuration.
+```cpp
+#include <GigaBredr.h>
+using namespace giga_bredr;
+GigaBredr receiver;
 
-The six ECA4 phone-family windows exercised SBC44.1, AAC-LC44.1, aptX48, aptX HD48, LDAC96 and LHDC192. A separate SBC-XQ sender selection, Opus/HE-AAC phone operation and an Apple AAC sender remain unproved. HE-AACv2/parametric stereo, xHE-AAC and BLE Audio are not implemented. Android AAC-LC evidence is not Apple interoperability proof.
+void setup() {
+  Serial.begin(115200);
+  ReceiverConfig config;
+  config.name = "GIGA Audio";
+  config.codecs = 0; // All compiled codecs remain available.
+  config.i2s.bclk = 70; config.i2s.data = 72;
+  config.i2s.lrck = 74; config.i2s.mclk = -1;
+  config.ble.enabled = true; config.ble.maximum_mtu = 517;
+  config.ble.audio_connection_preference.interval_min = 96;
+  config.ble.audio_connection_preference.interval_max = 96; // 120 ms.
+  Status status = receiver.begin(config);
+  if (status != Status::Ok) Serial.println(statusName(status));
+}
 
-Immutable tables stay in flash. The selected decoder workspace, packet/access-unit queues and PCM storage allocate for its configuration and release on stop/reconfiguration; inactive codec overrides are data only. `setExternalAllocator()` provides an allocation hook; the application must initialize/supply external memory. This does not prove SDRAM placement, heap fragmentation, allocator overhead or stack high-water. Historical AAC-LC stereo selected payload saving was 1222 bytes (25262 vs26484), not system free-memory or CPU improvement.
+void loop() { receiver.poll(); }
+```
 
-This working development branch uses zero-to-auto buffer settings and a configuration-sized **real decoded PCM watermark before DMA starts**. Explicit nonzero settings remain available; `startup_packets` selects the legacy compressed-startup path. The published dev.9 tag retains its previous explicit example profiles. See [configured buffering](docs/audio-buffering.md) for startup/recovery rules, selected-codec memory formulas, overrides and validation limits. Buffer capacity is not an end-to-end latency measurement.
+Zero buffer fields inherit selected-codec defaults. Only the selected configuration allocates: packet/AU storage, decoded scratch and PCM ring. Let P be the real-PCM startup watermark, R ring capacity and H one DMA half. Startup/recovery waits for real decoded PCM; automatic geometry requires 2H <= P <= R. The running clock target is fixed at T = P - 2H in real-PCM mode, retained through learning/recovery; its inventory includes estimated compressed work, so T is not a guaranteed PCM floor or end-to-end latency.
 
-AVRCP volume and bounded metadata/status handling are present, including callbacks. Full typed transport controls and complete AVRCP coverage remain unfinished. Full HFP/HSP call/profile operation, RFCOMM/SCO integration and a public pluggable microphone-input API remain unfinished. PCM5102A is playback output; no microphone/call runtime capability is claimed.
+Nonzero `config.codec_buffers[static_cast<size_t>(Codec::LhdcV5)]` fields override globals for that codec, for example `startup_buffer_ms=60`, `pcm_buffer_ms=70`. Nonzero `startup_packets` selects the explicit legacy compressed-packet startup/learned-target path; leave `startup_buffer_ms` zero in that same layer. Setting both startup modes together is rejected. A manual P=2H may prime audio but makes optional fixed-target tracking ineligible. See [buffering formulas and memory](docs/audio-buffering.md). Buffer capacity is not measured latency.
 
-## BLE coexistence and diagnostics
+Immutable tables remain in flash; selected decoder/buffers release on reconfiguration/end. `setExternalAllocator()` supplies allocation/free hooks, but the application must provide and initialize that memory. Audio clock control requires exclusive PLL2 ownership; stock SDRAM initialization also uses PLL2R. The library does not automatically initialize SDRAM or establish compatible external-memory clocks, placement, fragmentation or stack headroom.
 
-BLE is a public **unencrypted peripheral/GATT server**. ATT MTU begins at 23 and may negotiate 517; value size is at most `min(512, negotiated_mtu-3)`. `bleReadWrite()` returns copied writes; `bleNotify()` admission is distinct from remote receipt. The Receiver example echoes one pending copied write and retains it on `Busy/OutputFull`. Generation-bound replies reject stale origins. Pairing/encrypted BLE and central/client roles remain unsupported.
+## Codecs and unfinished features
 
-The base audio preference is 80-120 ms; **Receiver requests 120 ms** (`96 x 1.25 ms`), latency 2 and 5 s supervision timeout. Existing connection-age eligibility and peer-reply cooldown remain 1 s. During secure Classic audio, host policy prioritizes Classic receive work and paces ordinary ATT data with 27-byte fragments/10 ms spacing. Valid in-band peer tuples are echoed exactly; out-of-band intervals select standard negative 2021/reason 3B. A central may retry, override or disconnect. Requested/submitted/controller-observed parameters remain distinct; no RF airtime reservation is implied.
+All six supplied decoder-operation families, eight Codec identities and seven enabled build defaults remain: SBC/SBC-XQ, AAC-LC, HE-AAC v1, aptX/aptX HD, LDAC, LHDC V5 and Opus. SBC-XQ shares the SBC identity. One selected codec runs at a time. Compiled support and valid-vector execution do not make a phone offer a mode or qualify every rate/depth/transport.
 
-`bleDisconnect(generation,false)` asynchronously holds advertising after the matching peer departs; `bleResumeAdvertising()` releases the hold through normal GAP processing. `Ok` is admission, not physical departure, advertising delivery or reconnection proof. Discard saved generations after `end/begin`. Serial `d/a` example controls are diagnostic lifecycle requests, not a qualification shortcut.
+Full HFP/HSP, RFCOMM/SCO call operation and a public pluggable microphone-input API remain unfinished. AVRCP volume and bounded metadata/status callbacks exist; complete typed transport controls and full AVRCP coverage remain unfinished. PCM5102A is playback output, not a microphone path. HE-AACv2/PS, xHE-AAC and BLE Audio are not implemented.
 
-Clock SUM/WORST/RESTORE records retain cumulative overruns and bounded phase context. Inclusive spans can include instrumentation, interrupts and released work; they do not identify a preemptor or prove timing neutrality. **Every original 20 us clock bound and all 44 full/active fault gates remain mandatory.** A final last-result zero cannot erase a prior maximum or a nonzero cumulative count. The 4096-byte foreground console ring and bounded mailbox can drop records; missing/unknown/saturated data are not zeros or an all-results upper bound.
+## BLE server and coexistence
+
+BLE is an unencrypted peripheral/GATT server, not a central/client or encrypted pairing implementation. ATT starts at MTU 23 and may negotiate 517; values are bounded by min(512,MTU-3). `bleReadWrite()` returns a copied write. `bleNotify(data,length)` admits a copied value; `bleNotify(origin)` rejects stale generations. Keep a pending value on `Busy`/`OutputFull`, as the Receiver echo example does. Ok does not prove remote receipt.
+
+The base preference is 80-120 ms; Receiver requests 120 ms (96 units), latency 2 and 5 s supervision timeout. Actual parameters remain peer/controller observed facts, separate from requests. Existing 1 s connection-age/cooldown rules remain. During secure Classic audio the host prioritizes Classic receive work and paces ATT fragments. This is not an RF airtime reservation.
+
+`bleDisconnect(generation,false)` queues an owner-bound asynchronous LE disconnect and holds later advertising; `bleResumeAdvertising()` releases that hold through normal GAP processing. Observe actual disconnected/advertising/new-generation events; Ok is admission. Discard saved origins/generations after `end()`/`begin()`.
 
 ## Validation and known limits
 
-The verified 475-file source ZIP was extracted and compiled with the official ARM toolchain for GIGA Cortex-M7/core 4.6.0: all 168 library translation units, six decoder-operation families and seven decoder defaults were included. The stock controller HCD patch was retained. The 493052-byte binary is byte-identical to the field-tested `f42f467f...` image; this establishes artifact parity, not another hardware test or a blanket test-suite pass.
+| Evidence | Result | Limit |
+|---|---|
+| Actual private Receiver, SCHED1 | LHDC192 natural 90.072132986 s; 46 verified 512-byte GATT exchanges / 60.005 s / MTU 517; 3 physical BLE controls; 43 non-clock fault gates zero | Clock CUM FAILED 2/88, max 22.1229167 us against 20 us; supply unexercised; prior starvation unresolved |
+| Actual M7 decoder-only benchmark, SCHED0 | 12 configurations x 20 passes, 3440 successful calls; reference/tone, status, count, deadline and allocation-close gates valid | Capture FRAMING_DEGRADED: 1 partial replay line; later complete retained rows valid; no global PASS |
+| Default Receiver source ZIP, SCHED0 | Pending official extracted-archive build | No fresh default Receiver artifact, deployment or qualification claimed |
 
-That image's normal LHDC192 window completed a 90.066154810 s natural source, 43 verified 512-byte GATT transactions over 61.118 s at MTU517, and three physical BLE controls. All 43 non-clock gates were zero, including media/RTP/decoder/PCM/diagnostic/console faults. **The clock gate failed: four cumulative overruns in 91 backend results**, with no unknown clock results. The largest retained wait1 was 528.4354 configured microseconds. A finite traffic check does not prove that a clipped sample reached the corrected S32 conversion, bit-exact 24-bit fidelity, a pop cure, a timing improvement or stability.
+Forty coherent printed tracking cohorts matched T=11136 frames, zero mismatched; five remain UNKNOWN across 1 ms print boundaries. All original 20 us / 44 / CUM gates remain mandatory; a sampled/final zero cannot erase cumulative failure. Inclusive timings do not identify a preemptor or prove instrumentation neutrality.
 
-Earlier finite phone-family windows on the `eca4bdd5...` image remain recorded:
+The benchmark covers SBC/SBC-XQ, AAC-LC ADTS/LATM, aptX/HD, Opus 48k stereo 20 ms, LDAC 96 mono/stereo and HE v1 SBR 44.1 mono/stereo. It does not run radio/I2S. See [per-case timing/heap metrics and oracles](docs/validation/dev10-2026-10-26.md). LHDC independent encoded golden remains MISSING; LDAC uses tone checks, aptX HD PCM16 does not establish 24-bit fidelity, HE PS/xHE/other configurations are unqualified, and Opus fixture evidence is not phone interoperability. Apple AAC sender and distinct SBC-XQ sender operation remain unproved.
 
-| ECA4 family | Natural source(s) | Verified512B GATT | Active(s), MTU517 | Cumulative clock overruns |
-|---|---:|---:|---:|---:|
-| LHDC192 |90.062811320|48|61.149|9|
-| SBC44.1 |90.096202934|78|60.737|1|
-| AAC-LC44.1 |90.075535017|82|60.269|1|
-| aptX48 |90.078970330|84|60.351|0|
-| aptX HD48 |90.070886060|70|61.055|4|
-| LDAC96 |90.060856008|60|60.607|5|
+Phone-family history and all earlier failures stay in [STATUS](docs/STATUS.md) and [BUILD](docs/BUILD.json). Finite zero non-clock faults do not prove RF delivery, physical I2S, low-bit accuracy, acoustics, general continuity or 200 ms total latency. [EXPORT](docs/EXPORT.md) distinguishes prospective develop-only distribution from actual build evidence.
 
-All 43 non-clock gates were zero in those windows. SBC's sampled 44 zeros do not erase its cumulative overrun; aptX's finite zero window is not continuous stability. Earlier failed windows, including the AAC logger-receipt attempt before GATT, remain failed and are not rescored by later runs.
-
-The S32 correction defines finite saturation before conversion; it does not establish independent full 24-bit LHDC PCM fidelity, a pop cause, electrical I2S accuracy, acoustic quality or a clock-overrun cure. LDAC phone 32-bit input is separate from receiver 24-bit configuration; neither proves decoded numerical precision. Total phone-to-DAC 200 ms latency remains **unknown for every codec**. Queue, residence and local AudioTrack metrics are not an aligned end-to-end measurement.
-
-See [dated validation](docs/validation/dev9-2026-10-26.md), [status](docs/STATUS.md), [BUILD.json](docs/BUILD.json) and [export provenance](docs/EXPORT.md) for exact artifacts, preserved audit history and evidence limits.
-
-Original Apache-2.0 project terms and every supplied component notice/license are preserved. [THIRD_PARTY.md](THIRD_PARTY.md) remains authoritative for component terms and existing unresolved grants; this update creates no new grant or relicense.
+Original Apache-2.0 project terms and every supplied component notice/license are preserved. [THIRD_PARTY.md](THIRD_PARTY.md) remains authoritative for component terms and existing unresolved grants; this version creates no new grant.
