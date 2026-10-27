@@ -12,6 +12,8 @@ def main():
  logs=[]
  def run(cmd):
   cmd=list(map(str,cmd));r=subprocess.run(cmd,cwd=ROOT,env=env,text=True,capture_output=True);print(r.stdout+r.stderr,end='',flush=True);logs.append(dict(command=cmd,exit=r.returncode,stdout=r.stdout,stderr=r.stderr));(out/'receipt.json').write_text(json.dumps({'synthetic_only':True,'logs':logs},indent=2)+'\n');r.check_returncode()
+ # Compile-time baud-policy assertions need no executable or hardware.
+ run([cxx,'-std=c++17',*flags,'-c','tests/test_owned_uart_baud_policy.cpp','-o',out/'uart-baud-policy.o'])
  objects=[]
  for s in sorted((ROOT/'src/owned/core').glob('*.c')):
   obj=out/(s.stem+'.o');run([cc,'-std=c11',*flags,'-c',s,'-o',obj]);objects.append(obj)

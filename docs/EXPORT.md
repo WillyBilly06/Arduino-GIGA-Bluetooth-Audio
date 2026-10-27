@@ -1,3 +1,11 @@
+# Experimental dev.11 source and packaging boundary
+
+Dev.11 adds the opt-in 3 Mbaud controller-UART admission policy to the existing operation-mode examples. Its public SCHED0 Receiver has an actual full CM7 compile and linked audit; the final documentation-only archive is checked against those exact source and Receiver input hashes. That is not a fresh compilation of the final extracted ZIP or a deployment of its public defaults. [Dev.11 validation](validation/dev11-2026-10-27.md) and its JSON identify this build separately from the private field-test image and all older evidence. Default UART remains 2 Mbaud. The original project and component terms are preserved. Versioned development tags/ZIPs do not establish stability, codec fidelity, acoustics or total latency. Main remains outside this development update.
+
+## Historical dev.10 snapshot
+
+The following sections retain their original step/time scope; they are not dev.11 build or export evidence.
+
 # Experimental dev.10 source and packaging boundary
 
 This checkout prepares develop-only version 0.1.0-dev.10 from source basis 0449e41630dae0ac1f02b717c18100687c1cc33d. It retains all supplied decoder families/identities/defaults, project-owned host, stock controller HCD and original component licenses/notices. This final step changes documentation only; the already-built library.properties version/description and all 373 compiler-input bytes remain unchanged. Baseline 501 files/373 Receiver compiler rows/170 library TUs identify the code basis, not the final export member count.

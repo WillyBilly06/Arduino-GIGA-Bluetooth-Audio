@@ -1,4 +1,5 @@
 #include "OwnedHost.h"
+#include "../detail/OwnedUartBaudPolicy.h"
 #include "../detail/OperationModePolicy.h"
 #include "LifecycleCommandBudget.h"
 #include "../platform/AudioSupplyRuntime.h"
@@ -64,7 +65,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  const OperationModePolicy mode{config.callbacks.enable_a2dp,config.ble.enabled};
  if(!mode.valid()||!config.name||!config.name[0]||(mode.a2dp&&!config.callbacks.configure)||!hooks.txReady||!hooks.sendH4||!hooks.setBaud||!config.firmware||!config.firmwareSize||
     (mode.a2dp&&(!(config.codecMask&codecBit(Codec::Sbc))||(config.codecMask&~AllCodecs)))||
-    (config.baud!=115200&&config.baud!=460800&&config.baud!=921600&&config.baud!=2000000))return Status::InvalidArgument;
+    !ownedUartBaudSupported(config.baud))return Status::InvalidArgument;
  size_t name=0;while(name<sizeof name_&&config.name[name])++name;if(name==sizeof name_)return Status::InvalidArgument;
  bool zero=true,ones=true;for(auto b:config.address){zero&=b==0;ones&=b==255;}if(zero||ones)return Status::InvalidArgument;
  for(size_t p=0;p<config.firmwareSize;){if(config.firmwareSize-p<3||size_t(config.firmware[p+2])+3>config.firmwareSize-p)return Status::FirmwareMismatch;p+=size_t(config.firmware[p+2])+3;}

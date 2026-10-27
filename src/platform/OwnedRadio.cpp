@@ -7,6 +7,7 @@
 #include "../owned/OwnedHost.h"
 #include "../detail/Memory.h"
 #include "../detail/TxAdmissionOrder.h"
+#include "../detail/OwnedUartBaudPolicy.h"
 #include <Arduino.h>
 #include <mbed.h>
 #include <drivers/UnbufferedSerial.h>
@@ -22,9 +23,8 @@ extern const uint8_t brcm_patchram_format;
 #ifndef GIGA_BREDR_UART_BAUD
 #define GIGA_BREDR_UART_BAUD 2000000
 #endif
-#if GIGA_BREDR_UART_BAUD != 115200 && GIGA_BREDR_UART_BAUD != 460800 && GIGA_BREDR_UART_BAUD != 921600 && GIGA_BREDR_UART_BAUD != 2000000
-#error Unsupported GIGA UART baud
-#endif
+static_assert(giga_bredr::detail::ownedUartBaudSupported(GIGA_BREDR_UART_BAUD),
+              "Unsupported GIGA UART baud");
 namespace giga_bredr { namespace detail {
 namespace {
 constexpr unsigned RxSize=8192;

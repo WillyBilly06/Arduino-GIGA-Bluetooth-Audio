@@ -1,12 +1,12 @@
-# GigaBredr develop (experimental)
+# GigaBredr dev.11 develop (experimental)
 
 Bluetooth Classic A2DP receiver and public BLE GATT server for Arduino GIGA R1 Cortex-M7, with all supplied codec decoders and PCM5102A-compatible I2S playback. The project owns the host stack; the radio controller uses Infineon ROM plus the stock HCD patch, and scheduling uses Arduino Mbed/RTOS.
 
-**Not stable. Clock-deadline failures and audio-supply gaps remain unresolved. Total phone-to-DAC latency below 200 ms, full numerical fidelity and acoustic continuity are unproved.** Develop adds separate A2DP-only, BLE-only and combined examples. The tagged dev.10 validation remains historical evidence; these additions do not establish stable audio or validate every operating mode on hardware.
+**Experimental; not stable. Earlier audio shortages remain unexplained and clock-deadline failures remain. Total phone-to-DAC latency below 200 ms, full numerical fidelity and acoustic continuity are unproved.** Dev.11 keeps the separate A2DP-only, BLE-only and combined examples and adds an opt-in 3 Mbaud controller UART; the default remains 2 Mbaud. A private 10-minute LHDC V5 playback test with three BLE reconnect/data cycles recorded no audio faults, but does not qualify the public defaults or establish a root-cause fix. See [dev.11 validation](docs/validation/dev11-2026-10-27.md).
 
 ## Install and start
 
-1. Download the [v0.1.0-dev.10 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.10.zip), or use the [develop source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip) for the newer operation-mode examples. Develop changes over time; retain the commit identifier when reporting results.
+1. Download the versioned [v0.1.0-dev.11 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.11.zip), or use the [develop source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip). Develop changes over time; retain the commit identifier when reporting results. Both are experimental development sources.
 2. In Arduino IDE choose **Sketch > Include Library > Add .ZIP Library**. Keep one active GigaBredr installation.
 3. Install **Arduino Mbed OS GIGA Boards 4.6.0** and select **Arduino GIGA R1 / Cortex-M7**.
 4. Open **File > Examples > GigaBredr > Receiver**, wire the output below, and upload. The example uses automatic buffers sized for the negotiated configuration.
@@ -17,7 +17,7 @@ For local installation, place the folder containing `library.properties`, `src` 
 arduino-cli compile --fqbn arduino:mbed_giga:giga:target_core=cm7 --jobs 4 --library . examples/Receiver
 ```
 
-Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [BUILD.json](docs/BUILD.json) records the actual default build-basis compile separately from private Receiver/benchmark evidence.
+Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [Dev.11 build evidence](docs/validation/dev11-2026-10-27.json) records the actual opt-in 3 Mbaud SCHED0 build; [BUILD.json](docs/BUILD.json) retains historical dev.10 and earlier evidence.
 
 Use **921600** in the serial monitor. GIGA's native USB CDC transfer rate is independent of this baud setting. The diagnostic Receiver queues log lines and pumps at most 64 bytes per foreground turn through the nonblocking USB API; skipped lines increment `console_drops`. Formatting and USB service still consume CPU time.
 
@@ -33,6 +33,22 @@ Choose [A2dpOnly](examples/A2dpOnly/A2dpOnly.ino), [BleOnly](examples/BleOnly/Bl
 Use the breakout supply and 3.3 V logic. Output is Philips I2S with stereo 32-bit slots and left-aligned samples; slot width is not measured numerical precision. MCLK defaults to -1 (disabled); PCM5102A can use its BCLK PLL. Configure `ReceiverConfig.i2s` before `begin()` for a compatible hardware route. Alternate pads/optional 256Fs MCLK remain electrically unqualified; see [pin routing](docs/runtime-i2s-pins.md).
 
 The PCM5102A analog L/R outputs are line outputs specified for loads of at least 1 kOhm. For lower-impedance headphones, connect the DAC to a headphone amplifier's line input, then connect the headphones to the amplifier. See the [TI PCM510xA datasheet](https://www.ti.com/lit/ds/symlink/pcm5102a.pdf). Direct headphone loading can distort the analog output even when the receiver reports no digital audio faults.
+
+### Optional 3 Mbaud controller UART
+
+Dev.11 admits `GIGA_BREDR_UART_BAUD=3000000` as an experimental build-time option for the project-owned host. The default stays `2000000`; this is separate from the serial monitor's 921600 USB CDC setting. For a stock Arduino CLI build:
+
+```sh
+arduino-cli compile --fqbn arduino:mbed_giga:giga:target_core=cm7 --jobs 4 --library . --build-property "compiler.cpp.extra_flags=-DGIGA_BREDR_UART_BAUD=3000000" examples/Receiver
+```
+
+Add the define to any existing `compiler.cpp.extra_flags` instead of dropping other project flags. A sketch-local `#define` does not configure the separately compiled library C++ files. Use the same build setting for the example being uploaded.
+
+An isolated private CM7 image operated with BRR=40 (0x28), PRESC=0 and normal post-change HCI/GAP responses. Its 600-second ordinary-source playback test recorded 135 verified 512-byte GATT exchanges across three BLE reconnect/data cycles, with zero recorded missing PCM, decode/transport/DMA errors or RTP discontinuities. Clock CUM still recorded 19 overruns. That image used an 80 ms startup / 90 ms PCM ring override and private timing observers; it is different from the public defaults. The `kernel_hz` getter returned 0 (unsupported/UNKNOWN), so nominal 3 Mbaud uses a separate conditional 120 MHz UART-kernel model rather than an independent frequency measurement.
+
+The public dev.11 SCHED0 Receiver compiled and passed the linked-image audit with 3 Mbaud selected; both changed integration units also compiled at 2 Mbaud. This public image was not deployed. The finite private test is promising transport evidence, not a controlled 2-versus-3 Mbaud causal comparison or an audio, fidelity, total-latency or stability qualification. [Exact results and artifact identities](docs/validation/dev11-2026-10-27.md) preserve these boundaries.
+
+The port keeps 4 Mbaud rejected: its clock procedure and board operation are not qualified. No extra controller clock command, HCD or buffer change is included. [Infineon's baud-change example](https://community.infineon.com/t5/Knowledge-Base-Articles/Using-Vendor-Specific-Commands-in-AnyCloud-Bluetooth-Applications/ta-p/267534) documents 3 Mbaud; that does not establish every host/board configuration.
 
 ## API and configuration
 

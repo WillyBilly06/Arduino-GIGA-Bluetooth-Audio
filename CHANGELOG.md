@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased develop
+## 0.1.0-dev.11 - experimental development source, 2026-10-27
+
+- Add a shared controller-UART baud admission policy and exact-value checks. Keep 2 Mbaud by default and admit experimental 3 Mbaud through `compiler.cpp.extra_flags`; a sketch-local define cannot configure separately compiled library C++ files. Keep 4 Mbaud unsupported by this port.
+- Record the public opt-in 3 Mbaud SCHED0 full CM7 compile and linked-image audit (170 library translation units, all six codec operation families / seven defaults, project host and unchanged stock HCD). The compile-time policy assertions pass with the official ARM compiler; both integration units also compile at default 2 Mbaud. The public image was not deployed; the full Windows native test suite was not executed.
+- Record a different private 3 Mbaud image's 600-second ordinary-source LHDC V5 192 kHz/24-bit playback test: three BLE reconnect/data cycles, 135 verified 512-byte GATT exchanges, zero recorded audio/RTP faults, but 19 clock CUM overruns. Its 80/90 ms buffer override and timing observers differ from public defaults. BRR=40/PRESC=0 and normal HCI/GAP responses establish transport operation; `kernel_hz=0` remains UNKNOWN. Earlier shortages have no demonstrated root-cause fix. Preserve HCD, codecs, buffers, licenses and all stability/fidelity/latency limits.
 
 - Add A2DP-only, BLE-only and combined examples using explicit profile selection. All three have full Cortex-M7 build evidence; operating-mode hardware validation remains incomplete.
 - Use 921600 in all example serial setup calls and document native USB CDC baud behavior. The six edited sketches compile with the ARM SDK flags. This does not establish higher USB throughput or repair the unresolved audio shortages.
