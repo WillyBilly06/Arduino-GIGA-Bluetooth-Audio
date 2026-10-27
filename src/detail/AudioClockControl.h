@@ -2,6 +2,16 @@
 #include <stdint.h>
 #include <limits.h>
 namespace giga_bredr { namespace detail {
+// Output is the existing OutputStats value, read during serialized priming.
+// No runtime state or dependency on the hardware adapter is introduced here.
+template<class Output> constexpr uint32_t realPcmClockTarget(const Output& output,
+ uint32_t rate,uint32_t half,uint32_t capacity) {
+ const uint64_t prepared=uint64_t(half)*2u;
+ return rate&&half&&capacity&&output.initialized&&output.priming&&!output.running&&
+   output.sample_rate==rate&&output.dma_half_frames==half&&
+   output.buffer_capacity_frames==capacity&&output.startup_frames>prepared&&
+   output.startup_frames<=capacity?uint32_t(output.startup_frames-prepared):0u;
+}
 struct AudioClockConfig { bool enabled=true;int32_t limit_ppm=500,slew_ppm=10; };
 struct AudioClockSample {
  uint32_t stream_epoch=1,output_epoch=1,now_us=0;
@@ -24,11 +34,17 @@ struct AudioClockSnapshot {
 // external. No allocation, catch-up loop, radio callback or clock-domain mix.
 class AudioClockControl {
 public:
+ // UINT32_MAX retains legacy learning; configured targets are positive frames
+ // of the same total-inventory domain observed below, bounded by PCM capacity.
  constexpr bool begin(uint32_t stream,uint32_t output,uint32_t rate,uint32_t pcmCapacity,
-            uint32_t queueCapacity,const AudioClockConfig& config=AudioClockConfig()) {
+            uint32_t queueCapacity,const AudioClockConfig& config=AudioClockConfig(),
+            uint32_t targetFrames=UINT32_MAX) {
   *this=AudioClockControl{};config_=config;
   if(!stream||!output||!rate||rate>192000||!pcmCapacity||!queueCapacity||queueCapacity>64||
-     config.limit_ppm<0||config.limit_ppm>500||config.slew_ppm<0||config.slew_ppm>10)return false;
+     config.limit_ppm<0||config.limit_ppm>500||config.slew_ppm<0||config.slew_ppm>10||
+     (targetFrames!=UINT32_MAX&&(!targetFrames||targetFrames>pcmCapacity)))return false;
+  configured_target_=targetFrames!=UINT32_MAX;
+  if(configured_target_)targetQ16_=uint64_t(targetFrames)*65536u;
   stream_=stream;output_=output;rate_=rate;pcmCapacity_=pcmCapacity;queueCapacity_=queueCapacity;active_=true;return true;
  }
  constexpr AudioClockSnapshot snapshot()const{return stats_;}
@@ -65,11 +81,11 @@ public:
   if(stats_.learning){
    learnArea_+=area_;learnElapsed_+=elapsed_;
    if(learnElapsed_>=2000000u){
-    uint64_t target=q16mean(learnArea_,learnElapsed_);
-    const uint64_t measured=target;
+    const uint64_t measured=q16mean(learnArea_,learnElapsed_);
+    uint64_t target=configured_target_?targetQ16_:measured;
     const uint64_t capacity=targetCeilingQ16();
     if(target>capacity)target=capacity;
-    targetQ16_=target;filterQ16_=queueCapacity_>=4?measured:target;stats_.target_frames=target>>16;
+    targetQ16_=target;filterQ16_=(configured_target_||queueCapacity_>=4)?measured:target;stats_.target_frames=target>>16;
     stats_.tracking=true;stats_.learning=false;previousError_=0;
    }
   }else if(stats_.tracking){
@@ -138,6 +154,6 @@ private:
  uint64_t lastA_=0,lastD_=0,lastP_=0,lastZ_=0,lastF_=0,lastG_=0,windowF_=0,windowG_=0;
  uint64_t area_=0,elapsed_=0,learnArea_=0,learnElapsed_=0,lastInventory_=0,targetQ16_=0,filterQ16_=0;
  int64_t previousError_=0;
- bool active_=false,haveCounters_=false,haveTime_=false,haveDecision_=false;
+ bool active_=false,haveCounters_=false,haveTime_=false,haveDecision_=false,configured_target_=false;
 };
 }}

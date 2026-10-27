@@ -39,7 +39,8 @@ struct AudioClockStats {
     AudioClockState state = AudioClockState::Inactive;
     AudioClockBackendStatus backend_status = AudioClockBackendStatus::Unavailable;
     // enabled is the requested I2S control path; eligible separately reports
-    // whether this epoch has at least four actual rounded DMA halves of ring.
+    // whether this epoch has at least four actual rounded DMA halves of ring
+    // and, in real-PCM mode, a positive unprepared configured reserve.
     bool enabled = true, eligible = false, backend_fault = false, applied_valid = false, inventory_valid = false;
     uint32_t stream_epoch = 0, output_epoch = 0, expected_output_epoch = 0, sample_rate = 0, observation_us = 0;
     uint32_t ring_capacity = 0, required_ring_frames = 0;

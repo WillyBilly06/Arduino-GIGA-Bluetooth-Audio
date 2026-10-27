@@ -33,6 +33,10 @@ Stereo S32 storage uses 8 bytes per frame, including expanded mono and lower-bit
 
 The existing clock inventory A-D-P already includes both queued ring PCM and unsent decoded scratch. Do not add the ring a second time when accounting for buffered audio. DMA completion counters are not physical output measurements.
 
+In real-PCM startup mode, the running clock controller now uses the actual backend startup watermark minus the two already-prepared DMA halves as its inventory target. For LHDC192 this is11520-384=11136 frames (58 ms in the controller's domain, plus2 ms already prepared for DMA). The healthy two-second learning period still initializes packet estimates and filtering; it no longer replaces this configured target with the early average, including after recovery. The target includes estimated compressed work as well as PCM, so it is not a guaranteed minimum amount of real PCM or measured total latency. Playback continues while the decoder replenishes storage.
+
+Explicit legacy startup_packets retains learned-target behavior. A manually selected real-PCM watermark of only2H leaves no unprepared reserve: audio still follows that manual priming choice, while optional clock tracking reports eligible=false instead of selecting an empty target or silently learning another one. No new allocation, public configuration field, playback pause, clock slew or hardware-timing change is introduced by this handoff.
+
 Fast and Dma categories share the default allocator. The current audio clock requires exclusive PLL2 ownership; stock Arduino SDRAM initialization also selects PLL2R. This change does not initialize SDRAM or override clock ownership. An external allocator must be evaluated with its actual clock/memory setup.
 
 ## Explicit settings
@@ -47,4 +51,4 @@ lhdc.queue_packets = 32; // Explicit capacity; not a startup packet count.
 
 For the legacy packet-startup path, set `startup_packets` and leave `startup_buffer_ms` zero in that layer. Its legacy prime/recovery threshold is retained. Setting both in the same layer is rejected. A codec-layer startup mode overrides the global mode. An explicit ring smaller than its requested real-PCM watermark is rejected before codec/buffer allocation. Existing manual profiles remain possible; their aggregate latency is the caller's responsibility.
 
-Full M7, allocation, clock gates and codec/BLE traffic checks must pass before qualification. The last measured candidate still failed cumulative clock timing4/91 despite zero sampled media faults. Physical I2S continuity, numerical fidelity, headphone acoustics and total latency remain unproved.
+Full M7, allocation, clock gates and codec/BLE traffic checks must pass before qualification. The latest preceding supply-witness candidate completed90.087 seconds with47 GATT exchanges and no recorded PCM/RTP/decode/DMA faults, but failed cumulative clock timing6/87 (maximum24.2042 configured microseconds). The earlier reserve candidate's one starvation/51 hold refills remains unresolved. This configured-target change has not yet been flashed or measured. Physical I2S continuity, numerical fidelity, headphone acoustics and total latency remain unproved.

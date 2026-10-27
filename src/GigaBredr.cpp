@@ -145,7 +145,7 @@ struct GigaBredr::Impl {
     uint32_t clock_previous_decode_errors = 0, clock_previous_dropped = 0;
     uint64_t clock_previous_discarded = 0, clock_packet_start = 0, clock_rtp_errors[9] = {};
     bool clock_have_time = false, clock_packet_active = false, clock_input_fault = false, clock_local_backend_fault = false;
-    bool clock_eligible = false; // Epoch geometry only; never changes requested enable.
+    bool clock_eligible = false; // Epoch geometry/reserve only; never changes requested enable.
     bool clockEnabled() const { return options.clock.enabled && options.enable_i2s; }
     void clockBegin() {
         clockRetireMailbox(detail::ClockMailReason::LifecycleReset);
@@ -168,8 +168,16 @@ struct GigaBredr::Impl {
         stats.prepared_frames = source.prepared; stats.missing_frames = source.missing;
         stats.inventory_valid = source.prepared == 0;
         detail::AudioClockConfig config; config.limit_ppm = options.clock.limit_ppm; config.slew_ppm = options.clock.slew_ppm_per_second;
+        uint32_t target_frames = UINT32_MAX; // Explicit packet-startup preserves learned policy.
+        if (active_buffers.startup_buffer_ms) {
+            // Configuration still owns codec_mutex; no PCM producer/DMA has
+            // started. Read the backend's actual rounded geometry once.
+            const auto output = detail::i2sStats();
+            target_frames = detail::realPcmClockTarget(output, source.sample_rate,
+                source.half_frames, source.ring_capacity); // Zero makes tracking ineligible.
+        }
         if (source.ring_capacity >= stats.required_ring_frames)
-            clock_eligible = clock_control.begin(stream_epoch, source.output_epoch, format.sample_rate, source.ring_capacity, active_buffers.queue_packets, config);
+            clock_eligible = clock_control.begin(stream_epoch, source.output_epoch, format.sample_rate, source.ring_capacity, active_buffers.queue_packets, config, target_frames);
         stats.eligible = clock_eligible;
         stats.observation_us = clockUs(); clock_published = stats;
     }
