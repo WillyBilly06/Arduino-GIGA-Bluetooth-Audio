@@ -46,7 +46,7 @@ void beginTrial() {
  started=lastReport=millis();
 }
 void setup() {
- Serial.begin(115200); const uint32_t wait=millis(); while(!Serial && millis()-wait<3000) {}
+ Serial.begin(921600); const uint32_t wait=millis(); while(!Serial && millis()-wait<3000) {}
  delay(500);
  Serial.print("I2S2 PCM5102A D70=BCK D"); Serial.print(GIGA_BREDR_I2S_WS_PIN);
  Serial.println("=WS D72=DIN; wire/acoustic output UNVERIFIED");

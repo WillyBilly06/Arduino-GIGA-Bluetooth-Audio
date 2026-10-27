@@ -6,7 +6,7 @@ GigaBredr receiver;
 NonblockingBleEcho echo;
 bool started=false;
 void setup() {
- Serial.begin(115200);
+ Serial.begin(921600);
  ReceiverConfig config;
  config.name="GIGA BLE only";
  config.enable_a2dp=false; // Real Classic off: no inquiry/page/admission or audio worker.

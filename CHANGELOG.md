@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased develop
+
+- Add A2DP-only, BLE-only and combined examples using explicit profile selection. All three have full Cortex-M7 build evidence; operating-mode hardware validation remains incomplete.
+- Use 921600 in all example serial setup calls and document native USB CDC baud behavior. The six edited sketches compile with the ARM SDK flags. This does not establish higher USB throughput or repair the unresolved audio shortages.
+
 ## 0.1.0-dev.10 - experimental development source, 2026-10-26
 
 - Select automatic packet/PCM storage for the negotiated configuration and wait for real decoded PCM before DMA startup/recovery. Keep explicit per-codec overrides and the legacy startup_packets path.

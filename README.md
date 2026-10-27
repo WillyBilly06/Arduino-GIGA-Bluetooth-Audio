@@ -1,12 +1,12 @@
-# GigaBredr 0.1.0-dev.10 (experimental)
+# GigaBredr develop (experimental)
 
 Bluetooth Classic A2DP receiver and public BLE GATT server for Arduino GIGA R1 Cortex-M7, with all supplied codec decoders and PCM5102A-compatible I2S playback. The project owns the host stack; the radio controller uses Infineon ROM plus the stock HCD patch, and scheduling uses Arduino Mbed/RTOS.
 
-**Not stable. Clock-deadline failures and earlier audio-supply gaps remain unresolved. Total phone-to-DAC latency below 200 ms, full numerical fidelity and acoustic continuity are unproved.** The 503-file dev.10 build-basis archive has been extracted, compiled for default Cortex-M7 and statically audited. This final documentation-only revision requires archive/input/property parity verification; no default-image field deployment is claimed.
+**Not stable. Clock-deadline failures and audio-supply gaps remain unresolved. Total phone-to-DAC latency below 200 ms, full numerical fidelity and acoustic continuity are unproved.** Develop adds separate A2DP-only, BLE-only and combined examples. The tagged dev.10 validation remains historical evidence; these additions do not establish stable audio or validate every operating mode on hardware.
 
 ## Install and start
 
-1. When published, download the [v0.1.0-dev.10 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.10.zip). This is a prospective versioned link, not a stable release claim.
+1. Download the [v0.1.0-dev.10 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.10.zip), or use the [develop source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip) for the newer operation-mode examples. Develop changes over time; retain the commit identifier when reporting results.
 2. In Arduino IDE choose **Sketch > Include Library > Add .ZIP Library**. Keep one active GigaBredr installation.
 3. Install **Arduino Mbed OS GIGA Boards 4.6.0** and select **Arduino GIGA R1 / Cortex-M7**.
 4. Open **File > Examples > GigaBredr > Receiver**, wire the output below, and upload. The example uses automatic buffers sized for the negotiated configuration.
@@ -18,6 +18,10 @@ arduino-cli compile --fqbn arduino:mbed_giga:giga:target_core=cm7 --jobs 4 --lib
 ```
 
 Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [BUILD.json](docs/BUILD.json) records the actual default build-basis compile separately from private Receiver/benchmark evidence.
+
+Use **921600** in the serial monitor. GIGA's native USB CDC transfer rate is independent of this baud setting. The diagnostic Receiver queues log lines and pumps at most 64 bytes per foreground turn through the nonblocking USB API; skipped lines increment `console_drops`. Formatting and USB service still consume CPU time.
+
+Choose [A2dpOnly](examples/A2dpOnly/A2dpOnly.ino), [BleOnly](examples/BleOnly/BleOnly.ino), or [A2dpBleCoexist](examples/A2dpBleCoexist/A2dpBleCoexist.ino); see [operation modes](docs/operation-modes.md) for their configuration and validation limits.
 
 | GIGA pin | PCM5102A signal |
 |---|---|
@@ -40,7 +44,7 @@ using namespace giga_bredr;
 GigaBredr receiver;
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(921600);
   ReceiverConfig config;
   config.name = "GIGA Audio";
   config.codecs = 0; // All compiled codecs remain available.

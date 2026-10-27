@@ -22,7 +22,7 @@ void configured(const CodecConfig& c, void*) {
 void volume(uint8_t value, void*) { console.print("GBR_VOLUME value=%u\n", value); }
 void metadata(uint8_t attribute, const char* text, size_t bytes, void*) { console.print("GBR_METADATA attribute=%u bytes=%u text=%.*s\n", attribute, unsigned(bytes), int(bytes), text); }
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(921600);
   uint32_t start=millis(); while (!Serial && millis()-start<3000) delay(10);
   ReceiverConfig config; config.name="GIGA Audio";
   // Zero buffer settings select the negotiated codec's real-PCM reserve.

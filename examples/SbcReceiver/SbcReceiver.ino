@@ -3,7 +3,7 @@ using namespace giga_bredr;
 GigaBredr receiver;
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(921600);
   ReceiverConfig config;
   config.name = "GIGA SBC Receiver";
   config.codecs = codecBit(Codec::Sbc); // Includes SBC-XQ bitstreams.

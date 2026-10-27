@@ -4,7 +4,7 @@ using namespace giga_bredr;
 GigaBredr receiver;
 bool started=false;
 void setup() {
- Serial.begin(115200); // Never wait for a USB monitor before starting radio.
+ Serial.begin(921600); // Never wait for a USB monitor before starting radio.
  ReceiverConfig config;
  config.name="GIGA A2DP only";
  config.enable_a2dp=true;
