@@ -36,6 +36,7 @@ struct alignas(4) State {
     ReceiveCell receive;
     PhaseCell phase;
     RoleCell roles;
+    HostCreditCell host;
     Record records[FirstRecordCount];
     uint32_t captured, lost;
     // Foreground is sole writer. begin never resets the consumer cursor.
@@ -44,7 +45,7 @@ struct alignas(4) State {
 State state{};
 static_assert(std::is_trivial<State>::value && std::is_standard_layout<State>::value,
               "Atomic scalar POD only");
-static_assert(sizeof(State) == 456u, "Account for every new persistent scalar");
+static_assert(sizeof(State) == 472u, "Account for every new persistent scalar");
 static_assert(sizeof(state) <= NewStateBudgetBytes, "New observer state budget");
 static_assert(552u + sizeof(state) <= 1024u, "Combined private observer budget");
 
@@ -127,7 +128,7 @@ bool continuousCounter(uint32_t generation, CounterSample now,
            load(state.counter_generation) == generation;
 }
 
-constexpr size_t RowBytes = 2u + 9u + 8u * 9u + 1u; // S0 + ordinal + words + NUL
+constexpr size_t RowBytes = 2u + 9u + 8u * 9u + 1u; // H0 + ordinal + words + NUL
 constexpr size_t ConsolePrefixBytes = 24u;
 static_assert(RowBytes == 84u && RowBytes + ConsolePrefixBytes + 1u <= 128u,
               "Foreground row including prefix/newline/NUL");
@@ -185,6 +186,27 @@ void begin(uint32_t stream_epoch, uint32_t output_epoch) {
 }
 void end() {
     store(state.active, 0u); // Retain records, stamps and generation for draining.
+}
+void hostCreditInvalidate() {
+    // Already odd remains odd: Main cannot accidentally publish old payload.
+    store(state.host.version,hostInvalidateVersion(load(state.host.version)));
+}
+uint32_t hostCreditGeneration() {
+    const uint32_t g=load(state.active);
+    return g&&g!=UINT32_MAX&&g==load(state.generation)?g:0u;
+}
+void hostCreditPublish(uint32_t generation,uint32_t host,uint32_t transport) {
+    // Main can reach shared profile helpers during end(). It may invalidate
+    // there, but only the registered Host thread can commit this cell.
+    if(__get_IPSR()||current()!=load(state.roles.ids[1]))return;
+    if(!generation||generation!=hostCreditGeneration())return;
+    const uint32_t odd=hostStartVersion(load(state.host.generation),generation,load(state.host.version));
+    store(state.host.version,odd);
+    store(state.host.generation,generation);
+    store(state.host.host,host);
+    store(state.host.transport,transport);
+    if(generation!=hostCreditGeneration())return; // Leave odd; never close a late view.
+    store(state.host.version,hostCloseVersion(odd));
 }
 void counterObserved(uint32_t stream, uint32_t output, bool valid) {
     const uint32_t generation = load(state.active);
@@ -296,7 +318,6 @@ void firstStarvation(uint32_t output_epoch, uint32_t at_us,
     const uint32_t rv0 = load(state.receive.version);
     const uint32_t re = load(state.receive.epoch);
     const uint32_t rt = load(state.receive.total);
-    const uint32_t rc = load(state.receive.at_cycles);
     const uint32_t rs = load(state.receive.saturated);
     const uint32_t ra = load(state.receive.available);
     const uint32_t rv1 = load(state.receive.version);
@@ -308,7 +329,6 @@ void firstStarvation(uint32_t output_epoch, uint32_t at_us,
     queue.accepted = load(state.queue.accepted);
     queue.dequeued = load(state.queue.dequeued);
     queue.depth = load(state.queue.depth);
-    const uint32_t qc = load(state.queue.at_cycles);
     queue.saturated = load(state.queue.saturated);
     const uint32_t qa = load(state.queue.available);
     queue.version_after = load(state.queue.version);
@@ -331,6 +351,13 @@ void firstStarvation(uint32_t output_epoch, uint32_t at_us,
     const uint32_t decoder_role = load(state.roles.ids[2]);
     const uint32_t roles_v1 = load(state.roles.version);
     const uint32_t current_thread = current(), next_thread = next();
+
+    // One bounded scalar pass. Host validity is independent of phase/queue.
+    const uint32_t hv0=load(state.host.version);
+    const uint32_t hg=load(state.host.generation);
+    const uint32_t hw=load(state.host.host);
+    const uint32_t ht=load(state.host.transport);
+    const uint32_t hv1=load(state.host.version);
 
     uint32_t rx_flags = publicationFlags(stream, re, rv0, rv1);
     if (rs || rt == UINT32_MAX) rx_flags |= Unknown | CounterSaturated;
@@ -369,10 +396,11 @@ void firstStarvation(uint32_t output_epoch, uint32_t at_us,
         host_role == decoder_role) flags |= Unknown | RolesUnknown;
     if (load(state.generation) != generation || load(state.active) != generation)
         flags |= Unknown | EpochInvalid | GenerationChanged;
+    flags |= hostCreditPublicationFlags(generation,hg,hv0,hv1,hw,ht);
 
     Snapshot snapshot{{index + 1u, stream, output_epoch, at_us, now.cycles, flags,
-        half, real, pcm_queued, rt, rc, queue.accepted, queue.dequeued, queue.depth,
-        qc, static_cast<uint32_t>(phase.phase), phase.at_cycles, phase.epoch,
+        half, real, pcm_queued, rt, hg, queue.accepted, queue.dequeued, queue.depth,
+        hw, static_cast<uint32_t>(phase.phase), phase.at_cycles, ht,
         current_thread, next_thread, main_role, host_role, decoder_role,
         load(state.core_hz)}};
     Record& record = state.records[index];
@@ -404,7 +432,7 @@ bool nextRow(char* destination, size_t capacity) {
     const uint32_t stamp_after = load(record.generation);
     if (stamp_before != stamp_after || load(state.generation) != generation) return false;
     Row output{destination, 0u};
-    output.character('S'); output.character(char('0' + row));
+    output.character('H'); output.character(char('0' + row));
     output.hex(ordinal);
     for (uint32_t i = 0u; i < 8u; ++i) output.hex(words[i]);
     output.character(0);

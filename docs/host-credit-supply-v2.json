@@ -1,0 +1,50 @@
+{
+  "schema": "HOST_CREDIT_SUPPLY_V2",
+  "stage": 1,
+  "status": "DIAGNOSTIC_IMPLEMENTATION_NOT_FIELD_QUALIFIED",
+  "supersedes": "Stage1 design new_flag_bits mapping only; all other design constraints retained",
+  "tags": ["H0", "H1", "H2"],
+  "row_format": "GBR_EVENT ms=<decimal> H<0|1|2> <8hex ordinal> <eight 8hex words>",
+  "words": [
+    "ordinal", "stream_epoch", "output_epoch", "refill_at_us_before_refill",
+    "capture_cycles_after_refill", "flags", "dma_half_frames", "real_frames_this_refill",
+    "pcm_queued_before_refill", "receive_entry_total", "host_generation", "accepted_total",
+    "dequeued_total", "queue_depth", "packed_host", "decoder_phase", "phase_cycles",
+    "packed_transport", "current_raw_address", "next_raw_address", "main_role_address",
+    "host_role_address", "decoder_role_address", "configured_core_hz"
+  ],
+  "host_flags": {
+    "23": "HostUnknown",
+    "24": "HostEpochInvalid",
+    "25": "HostVersionInvalid",
+    "26": "HostIncomplete",
+    "27": "HostCountsUnknown",
+    "28": "HostIdentityClipped",
+    "29": "HostViewUnavailable"
+  },
+  "original_flags": "bits0..22 and SupplyPoint30..31 unchanged; Host flags never clear original point",
+  "packed_host": {
+    "0..5": "head event0..62;63 unknown",
+    "6..9": "head LE subevent0..14;15 unknown;0 for non-LE/no head",
+    "10..13": "deferred count0..8;15 unknown",
+    "14..16": "known current Classic charged physical held0..4;7 unknown",
+    "17..19": "shared RX outstanding0..4;7 unknown",
+    "20..22": "shared pending HNC0..4;7 unknown",
+    "23..26": "queued command count0..8;15 unknown",
+    "27..30": "sent command count0..8;15 unknown",
+    "31": "incomplete transaction/callback view"
+  },
+  "packed_transport": {
+    "0..2": "raw unassigned ACL all links0..4;7 unknown; never infer owner by handle",
+    "3..5": "current Classic RX outstanding0..4;7 unknown",
+    "6..8": "current Classic pending HNC0..4;7 unknown",
+    "9..12": "ordinary command credits0..14 exact;15 means >=15",
+    "13..15": "boundary0 idle,1 blocked head,2 receive,3 callback,4 TX not ready,5 submit,6 transport,7 unknown",
+    "16..29": "Stage1 fixed mask0x3fff0000/value0x3f3f0000; transport counters, ring and readiness UNKNOWN",
+    "30": "head event/subevent identity clipped",
+    "31": "reserved zero; optional history disabled; history always UNKNOWN"
+  },
+  "retention": "Only a complete coherent same-generation point can exclude copied Classic/unassigned input held at that point. It cannot exclude an earlier barrier or prove causation.",
+  "binding": "Saved parser requires exact capture digest, independently supplied firmware/source projection digests and stream/output epochs; this is artifact attribution, not target qualification.",
+  "limits": "No transport freshness, head age, RF delivery, exclusive task residence, physical output, acoustics, E2E latency or stability claim. Original44/CUM/20us gates remain independent."
+}

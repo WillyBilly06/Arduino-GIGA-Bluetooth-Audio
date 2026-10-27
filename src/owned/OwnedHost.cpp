@@ -1,5 +1,6 @@
 #include "OwnedHost.h"
 #include "LifecycleCommandBudget.h"
+#include "../platform/AudioSupplyRuntime.h"
 #include <new>
 #include <stdio.h>
 #include <string.h>
@@ -44,7 +45,8 @@ bool leCommandPreflight(const bth_cmdq_t& q,const bth_h4_frame_t& e){
 
 
 }
-void OwnedHost::diagnose(const char* s){if(config_.callbacks.diagnostic)config_.callbacks.diagnostic(s,config_.callbacks.user);}
+void OwnedHost::diagnose(const char* s){if(config_.callbacks.diagnostic){
+ creditBoundary(3,false);config_.callbacks.diagnostic(s,config_.callbacks.user);audio_supply::hostCreditInvalidate();}}
 void OwnedHost::fail(const char* reason){if(boot_==Boot::Failed)return;++stats_.transport_errors;diagnose(reason);end();boot_=Boot::Failed;}
 bool OwnedHost::loadBond(void* context,const uint8_t* address,bth_bond_t* out){
  auto& h=*static_cast<OwnedHost*>(context);for(const auto& b:h.bonds_)if(b.used&&!memcmp(address,b.address,6)){*out=b.value;return true;}return false;
@@ -56,6 +58,7 @@ bool OwnedHost::saveBond(void* context,const uint8_t* address,const bth_bond_t* 
 bool OwnedHost::removeBond(void* context,const uint8_t* address){auto& h=*static_cast<OwnedHost*>(context);for(auto& b:h.bonds_)if(b.used&&!memcmp(address,b.address,6))erase(&b,sizeof b);return true;}
 bth_confirmation_t OwnedHost::confirm(void*,const uint8_t*,uint32_t){return BTH_CONFIRM_ACCEPT;}
 Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hooks){
+ audio_supply::hostCreditInvalidate(); // Main may invalidate, never publish.
  if(active_)return Status::Busy;
  if(!config.name||!config.name[0]||!config.callbacks.configure||!hooks.txReady||!hooks.sendH4||!hooks.setBaud||!config.firmware||!config.firmwareSize||
     !(config.codecMask&codecBit(Codec::Sbc))||(config.codecMask&~AllCodecs)||
@@ -88,9 +91,10 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  memset(sent_at_,0,sizeof sent_at_);accept_deadline_=0;next_peer_=le_trace_=0;le_reply_observe_trace_=0;clock_started_=pending_=tx_turn_=last_ack_=was_secure_=false;boot_=Boot::PatchReset;active_=true;return Status::Ok;
 }
 void OwnedHost::end(){
+ audio_supply::hostCreditInvalidate();
  le_disconnect_owner_=0;le_advertising_held_=false;le_disconnect_advertise_after_=true;
  if(!active_)return;active_=false;stats_.controller_ready=stats_.connected=stats_.streaming=false;
- for(unsigned i=0;i<2;++i){detach(i);cancelAdmission(i);}classic_.reset(0);
+ for(unsigned i=0;i<2;++i){detach(i);cancelAdmission(i);}resetClassic(0);
  for(auto& p:packets_)p.used=false;deferred_count_=0;bth_cmdq_init(&commands_);bth_control_tx_init(&control_);erase(bonds_,sizeof bonds_);erase(&links_,sizeof links_);
   pending_=false;boot_=Boot::Failed;memset(le_features_,0,sizeof le_features_);le_features_known_=false;
 }
@@ -108,7 +112,9 @@ bool OwnedHost::submit(size_t n){
  if(n>=5&&output_[0]==1&&bth_read_le16(output_+1)==0x0c35){++hnc_commands_;hnc_last_ms_=now_;memset(hnc_handles_,0,sizeof hnc_handles_);memset(hnc_counts_,0,sizeof hnc_counts_);
   for(unsigned i=0;i<output_[4]&&i<2&&9u+4u*i<=n;++i){hnc_handles_[i]=bth_read_le16(output_+5+4*i);hnc_counts_[i]=bth_read_le16(output_+7+4*i);hnc_packets_+=hnc_counts_[i];}
  }
- if(n>sizeof output_||!hooks_.sendH4(output_,n,hooks_.user)){fail("Owned HCI submission failed; controller reset required");return false;}return true;}
+ bool submitted=false;
+ if(n<=sizeof output_){creditBoundary(5,false);submitted=hooks_.sendH4(output_,n,hooks_.user);audio_supply::hostCreditInvalidate();}
+ if(!submitted){fail("Owned HCI submission failed; controller reset required");return false;}return true;}
 bool OwnedHost::bootCommand(uint16_t opcode,const uint8_t* params,size_t count){
  size_t n=0;if(!flow_.command_credits||!hooks_.txReady(hooks_.user))return false;
  if(bth_hci_command_encode(output_,sizeof output_,opcode,params,count,&n)!=BTH_OK||!bth_hci_flow_take_command(&flow_)){fail("Owned boot command encoding failed");return false;}
@@ -186,7 +192,7 @@ bool OwnedHost::attach(unsigned i,const bth_peer_link_t& link){
  peer.security_deadline=now_+35000;peer.disconnect_deadline=peer.assembly_deadline=peer.pending_deadline=0;memset(peer.opened,0,sizeof peer.opened);memset(peer.channel_deadlines,0,sizeof peer.channel_deadlines);
  if(!bth_l2cap_rx_init(&peer.assembly,link.handle,peer.bytes,i==0?ClassicAssemblyBytes:sizeof peer.bytes))return false;
  if(i==0){clearClassicControls();const bth_l2cap_service_t services[]={{1,672,false},{0x19,ClassicMtu,true},{0x17,672,true}};
-  if(!bth_l2cap_sig_init(&signaling_,link.handle,services,3))return false;classic_.reset(link.owner);close_media_=close_avrcp_=0;was_secure_=false;avrcp_at_=0;avrcp_attempts_=0;avrcp_recovering_=false;controller_priority_.attach(link.owner,link.handle);
+  if(!bth_l2cap_sig_init(&signaling_,link.handle,services,3))return false;resetClassic(link.owner);close_media_=close_avrcp_=0;was_secure_=false;avrcp_at_=0;avrcp_attempts_=0;avrcp_recovering_=false;controller_priority_.attach(link.owner,link.handle);
  }else if(!le_.attach(link.owner,link.handle,link.role,le_features_known_?le_features_:nullptr,now_))return false;
  return true;
 }
@@ -195,7 +201,7 @@ void OwnedHost::detach(unsigned i){
  bth_rx_flow_detach(&rx_,peer.handle,peer.owner);
  for(auto& packet:packets_)if(packet.used&&packet.charged&&rx_.slots[packet.lease.slot].owner==peer.owner){bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}
  bth_control_tx_detach(&control_,uint8_t(i),peer.owner);
- if(i==0){controller_priority_.detach(peer.owner);clearClassicControls();classic_.reset(0);memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
+ if(i==0){controller_priority_.detach(peer.owner);clearClassicControls();resetClassic(0);memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
  peer.attached=peer.has_pending=false;peer.owner=0;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
  if(i==1){le_disconnect_owner_=0;le_disconnect_advertise_after_=true;}
 }
@@ -212,6 +218,7 @@ Status OwnedHost::bleDisconnect(uint32_t expected,bool advertise_after){
  if(deferred_count_||le_.controlState().pending)return Status::Busy;
  if(link.disconnecting)return le_disconnect_owner_==expected&&le_disconnect_advertise_after_==advertise_after?Status::Ok:Status::Busy;
  if(bth_cmdq_available(&commands_)<3)return Status::Busy; // Preserve two security slots.
+ audio_supply::hostCreditInvalidate();
  const auto result=bth_links_disconnect(&links_,peer.handle,0x13);
  if(result==BTH_ERR_CAPACITY)return Status::Busy;
  if(result!=BTH_OK)return Status::HardwareError;
@@ -228,7 +235,7 @@ Status OwnedHost::bleResumeAdvertising(){
  le_advertising_held_=false;return Status::Ok;
 }
 void OwnedHost::closePeer(unsigned i,uint8_t reason){if(!peers_[i].attached)return;if(bth_links_disconnect(&links_,peers_[i].handle,reason)==BTH_ERR_CAPACITY)return;
- if(!peers_[i].disconnect_deadline)peers_[i].disconnect_deadline=now_+5000;if(i==0){clearClassicControls();classic_.reset(0);}
+ if(!peers_[i].disconnect_deadline)peers_[i].disconnect_deadline=now_+5000;if(i==0){clearClassicControls();resetClassic(0);}
 }
 bool OwnedHost::defer(const uint8_t* packet,size_t n){if(deferred_count_==8||n>sizeof deferred_[0].bytes){fail("Owned event backlog exhausted");return false;}
  auto& d=deferred_[(deferred_read_+deferred_count_)%8];memcpy(d.bytes,packet,n);d.length=uint16_t(n);d.serial=++event_serial_;if(!d.serial)d.serial=++event_serial_;++deferred_count_;return true;
@@ -324,7 +331,7 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
  if(event.event.code==0x0e&&gap_.pending){if(bth_gap_on_event(&gap_,&event)<0){fail("Owned scan completion rejected");return true;}}
  return true;
 }
-void OwnedHost::receive(uint8_t type,const uint8_t* packet,size_t n,uint32_t now){
+void OwnedHost::receiveImpl(uint8_t type,const uint8_t* packet,size_t n,uint32_t now){
  if(!active_)return;now_=now;if(!clock_started_){begin_ms_=now;clock_started_=true;}
  if(!packet||n>1025){fail("Owned HCI input bounds");return;}uint8_t wire[1026];wire[0]=type;memcpy(wire+1,packet,n);bth_h4_frame_t event={};
  if(bth_h4_decode(wire,n+1,&event)!=BTH_OK){fail("Owned malformed HCI frame");return;}
@@ -364,7 +371,7 @@ void OwnedHost::receive(uint8_t type,const uint8_t* packet,size_t n,uint32_t now
   memcpy(owned.bytes,packet,n);owned.length=uint16_t(n);owned.order=++packet_order_;owned.used=true;
  }
 }
-bool OwnedHost::deliver(unsigned i,const bth_l2cap_pdu_t& pdu,uint16_t* signal_cursor){
+bool OwnedHost::deliverImpl(unsigned i,const bth_l2cap_pdu_t& pdu,uint16_t* signal_cursor){
  if(i==1)return le_.receive(peers_[i].owner,pdu.cid,pdu.payload.data,pdu.payload.len,now_);
  const bool secure=bth_links_secure(&links_,peers_[0].handle);
  if(pdu.cid!=1){const auto* channel=bth_l2cap_sig_find(&signaling_,pdu.cid);if(!channel||channel->state!=BTH_CHANNEL_OPEN)return true;
@@ -485,7 +492,7 @@ void OwnedHost::processRx(unsigned i){
  }
  if(due(now_,peer.assembly_deadline)){++stats_.dropped_packets;closePeer(i,0x13);}
 }
-void OwnedHost::synchronizeChannels(){
+void OwnedHost::synchronizeChannelsImpl(){
  if(!peers_[0].attached)return;auto& peer=peers_[0];
  if(classic_.abortTransportPending()){
   if(deferred_count_)return; // Never retire owners or issue work ahead of a retained event.
@@ -584,15 +591,15 @@ void OwnedHost::runtimePoll(){
  const bool secure=peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle);
  const bool classic_ready=!deferred_count_&&secure;
  if(peers_[0].attached){
-  if(!secure&&was_secure_){controller_priority_.request(false);peers_[0].security_deadline=now_+35000;if(config_.callbacks.stream)config_.callbacks.stream(false,config_.callbacks.user);was_secure_=false;}
+  if(!secure&&was_secure_){controller_priority_.request(false);peers_[0].security_deadline=now_+35000;notifyStream(false);was_secure_=false;}
   if(classic_ready&&!was_secure_&&(!classic_.streaming()||requestControllerPriority(true))){bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)==BTH_OK){size_t n=0;const auto result=bth_l2cap_sig_security_ready(&signaling_,slot.data,slot.capacity,&n);
     if(result==BTH_OK&&n)bth_control_tx_commit(&control_,slot.token,1,n,BTH_SIGNAL_MTU);else bth_control_tx_cancel(&control_,slot.token);if(result!=BTH_ERR_CAPACITY){
-     if(classic_.streaming()&&classic_.configured()){Status prepared=config_.callbacks.configure(classic_.acceptedConfiguration(),config_.callbacks.user);if(prepared==Status::Ok){if(config_.callbacks.stream)config_.callbacks.stream(true,config_.callbacks.user);}else{closePeer(0,5);return;}}
+     if(classic_.streaming()&&classic_.configured()){Status prepared=configureOutput(classic_.acceptedConfiguration());if(prepared==Status::Ok){notifyStream(true);}else{closePeer(0,5);return;}}
      was_secure_=true;
     }}}
   if(!secure&&due(now_,peers_[0].security_deadline))closePeer(0,5);
   const bool input_waiting=classic_deferred_count_||peers_[0].has_pending;
-  if(classic_ready)classic_.poll(true,now_,!input_waiting);synchronizeChannels();avrcpPoll(classic_ready,!classic_deferred_count_&&!peers_[0].has_pending);
+  if(classic_ready)pollClassic(true,now_,!input_waiting);synchronizeChannels();avrcpPoll(classic_ready,!classic_deferred_count_&&!peers_[0].has_pending);
   if(classic_.takeCloseMedia())close_media_=classic_.mediaCid();if(classic_.takeCloseAvrcp())close_avrcp_=classic_.avrcpCid();
   if(close_media_&&disconnectChannel(close_media_))close_media_=0;if(close_avrcp_&&disconnectChannel(close_avrcp_))close_avrcp_=0;
  }
@@ -646,11 +653,106 @@ void OwnedHost::runtimePoll(){
 }
 void OwnedHost::refreshStats(){stats_.connected=peers_[0].attached;stats_.streaming=!deferred_count_&&was_secure_&&peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle)&&classic_.streaming();stats_.received_packets=classic_.receivedPackets();stats_.received_bytes=classic_.receivedBytes();}
 RadioStats OwnedHost::radioStats()const {RadioStats s=stats_;s.connected=peers_[0].attached;s.streaming=!deferred_count_&&was_secure_&&peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle)&&classic_.streaming();s.received_packets=classic_.receivedPackets();s.received_bytes=classic_.receivedBytes();s.dropped_packets+=classic_.droppedPackets();return s;}
-void OwnedHost::serviceReceiveCredits(uint32_t now){
+void OwnedHost::serviceReceiveCreditsImpl(uint32_t now){
  if(!active_||boot_!=Boot::Ready||deferred_count_||!hooks_.txReady(hooks_.user))return;
  size_t n=0;if(bth_rx_flow_next_completed(&rx_,output_,sizeof output_,&n)!=BTH_OK)return;
  now_=now;last_ack_=true;submit(n);
 }
-void OwnedHost::poll(uint32_t now){if(!active_)return;now_=now;if(!clock_started_){begin_ms_=now;clock_started_=true;}
+void OwnedHost::pollImpl(uint32_t now){if(!active_)return;now_=now;if(!clock_started_){begin_ms_=now;clock_started_=true;}
  if(boot_!=Boot::Ready){if(uint32_t(now_-begin_ms_)>60000){fail("Owned controller startup timeout");return;}bootPoll();}else runtimePoll();refreshStats();}
+
+// Only complete actor returns publish complete views. Nested helpers and
+// callbacks can publish incomplete views but never close an actor transaction.
+void OwnedHost::receive(uint8_t type,const uint8_t* packet,size_t n,uint32_t now){
+ audio_supply::hostCreditInvalidate();const uint32_t generation=audio_supply::hostCreditGeneration();
+ receiveImpl(type,packet,n,now);creditBoundary(2,true,generation);
+}
+void OwnedHost::poll(uint32_t now){
+ audio_supply::hostCreditInvalidate();const uint32_t generation=audio_supply::hostCreditGeneration();
+ pollImpl(now);creditBoundary(0,true,generation);
+}
+void OwnedHost::serviceReceiveCredits(uint32_t now){
+ audio_supply::hostCreditInvalidate();const uint32_t generation=audio_supply::hostCreditGeneration();
+ serviceReceiveCreditsImpl(now);creditBoundary(0,true,generation);
+}
+// Explicit incomplete boundaries: never claim an intermediate transaction was
+// committed, and never let its even incomplete view survive later mutations.
+bool OwnedHost::deliver(unsigned i,const bth_l2cap_pdu_t& pdu,uint16_t* cursor){
+ creditBoundary(3,false);const bool result=deliverImpl(i,pdu,cursor);
+ audio_supply::hostCreditInvalidate();return result;
+}
+void OwnedHost::synchronizeChannels(){
+ creditBoundary(3,false);synchronizeChannelsImpl();audio_supply::hostCreditInvalidate();
+}
+void OwnedHost::resetClassic(uint32_t owner){
+ creditBoundary(3,false);classic_.reset(owner);audio_supply::hostCreditInvalidate();
+}
+void OwnedHost::pollClassic(bool secure,uint32_t now,bool allow_open){
+ creditBoundary(3,false);classic_.poll(secure,now,allow_open);audio_supply::hostCreditInvalidate();
+}
+Status OwnedHost::configureOutput(const CodecConfig& config){
+ creditBoundary(3,false);const Status result=config_.callbacks.configure(config,config_.callbacks.user);
+ audio_supply::hostCreditInvalidate();return result;
+}
+void OwnedHost::notifyStream(bool start){
+ if(config_.callbacks.stream){creditBoundary(3,false);config_.callbacks.stream(start,config_.callbacks.user);
+  audio_supply::hostCreditInvalidate();}
+}
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+void OwnedHost::creditBoundary(uint32_t boundary,bool complete,uint32_t generation) const {
+ using namespace audio_supply;
+ if(!complete)generation=hostCreditGeneration();
+ if(!generation||generation!=hostCreditGeneration())return;
+ HostCreditScalars s;
+ s.incomplete=!complete||!active_||boot_!=Boot::Ready;
+ s.boundary=static_cast<HostCreditBoundary>(boundary);
+ s.deferred=deferred_count_;s.command_queued=commands_.used;s.command_sent=commands_.sent_count;
+ s.command_credits=flow_.command_credits;s.rx_outstanding=rx_.outstanding;
+ bool valid=rx_.initialized&&rx_.slot_count==RxSlots&&rx_.budget==RxWindow;
+ uint32_t outstanding=0,held=0;bool classic_found=false;
+ for(unsigned i=0;i<BTH_RX_LINK_LIMIT;++i){const auto& link=rx_.links[i];
+  if(!link.active)continue;
+  outstanding+=link.outstanding;s.pending_hnc+=link.pending;
+  if(!link.owner||link.handle>0xeff||link.pending>link.outstanding)valid=false;
+  if(peers_[0].attached&&link.owner==peers_[0].owner&&link.handle==peers_[0].handle){
+   if(classic_found)valid=false;classic_found=true;
+   s.classic_outstanding=link.outstanding;s.classic_pending=link.pending;
+  }
+ }
+ if(outstanding!=rx_.outstanding||s.pending_hnc>outstanding)valid=false;
+ if(peers_[0].attached&&!classic_found)valid=false;
+ for(unsigned k=0;k<RxSlots;++k){const auto& packet=packets_[k];
+  if(!packet.used)continue;
+  if(!packet.charged){++s.raw_barriered;continue;}
+  if(packet.lease.slot>=RxSlots){valid=false;continue;}
+  const auto& slot=rx_.slots[packet.lease.slot];
+  if(!hostLeaseMatches(k,packet.lease.slot,slot.busy,slot.owner,slot.owner,slot.handle,slot.handle,slot.serial,packet.lease.serial)){
+   valid=false;continue;
+  }
+  bool live=false;
+  for(unsigned i=0;i<BTH_RX_LINK_LIMIT;++i){const auto& link=rx_.links[i];
+   if(link.active&&link.owner==slot.owner&&link.handle==slot.handle)live=true;
+  }
+  if(live)++held;
+  if(peers_[0].attached&&hostLeaseMatches(k,packet.lease.slot,slot.busy,slot.owner,peers_[0].owner,
+      slot.handle,peers_[0].handle,slot.serial,packet.lease.serial))++s.classic_held;
+ }
+ if(held+s.pending_hnc!=outstanding||s.classic_held+s.classic_pending!=s.classic_outstanding||
+    s.raw_barriered+outstanding>RxWindow)valid=false;
+ if(!valid){s.classic_held=s.rx_outstanding=s.pending_hnc=s.raw_barriered=
+  s.classic_outstanding=s.classic_pending=UINT32_MAX;}
+ if(deferred_count_){
+  if(deferred_count_>8||deferred_read_>=8){s.event=s.subevent=UINT32_MAX;s.incomplete=true;}
+  else {const auto& head=deferred_[deferred_read_];
+   if(head.length<2||head.length>sizeof head.bytes||size_t(head.bytes[1])+2!=head.length){
+    s.event=s.subevent=UINT32_MAX;s.incomplete=true;
+   }else {s.event=head.bytes[0];
+    if(s.event==0x3e){if(head.length>=3)s.subevent=head.bytes[2];else s.subevent=UINT32_MAX;}
+   }
+  }
+  if(complete)s.boundary=HostCreditBoundary::BlockedHead;
+ }
+ hostCreditPublish(generation,hostCreditWord(s),hostCreditTransportWord(s));
+}
+#endif
 }}

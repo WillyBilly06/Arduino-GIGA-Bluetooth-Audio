@@ -1,5 +1,6 @@
 #pragma once
 #include "AudioSupplyWitness.h"
+#include "HostCreditWitness.h"
 #include <stddef.h>
 #ifndef GIGA_BREDR_PRIVATE_SCHED_WITNESS
 #define GIGA_BREDR_PRIVATE_SCHED_WITNESS 0
@@ -13,6 +14,11 @@ namespace giga_bredr { namespace detail { namespace audio_supply {
 // Serialized lifecycle/Host caller owns codec+queue locks; no concurrent
 // queue/RX writers and DMA must be stopped, including inactive begin(0, 0).
 void begin(uint32_t stream_epoch, uint32_t output_epoch);
+// radio_mutex serializes all actor writers. Main only invalidates; Host alone
+// publishes. None of these functions reads a clock, lock or object pointer.
+void hostCreditInvalidate();
+uint32_t hostCreditGeneration();
+void hostCreditPublish(uint32_t generation,uint32_t host,uint32_t transport);
 // Deactivate only: retained records can still be consumed in foreground.
 void end();
 // After the existing measured endpoint only. This is a conditional owned-app
@@ -35,10 +41,13 @@ void markPhase(DecoderPhase phase, uint32_t expected_epoch = 0);
 // First empty-PCM transition of an episode only; bounded IRQ capture.
 void firstStarvation(uint32_t output_epoch, uint32_t at_us,
                      uint32_t pcm_queued, uint32_t half, uint32_t real);
-// Single foreground consumer; one S0/S1/S2 row, at most once per poll.
+// Single foreground consumer; one H0/H1/H2 row, at most once per poll.
 bool nextRow(char* destination, size_t capacity);
 #else
 inline void begin(uint32_t, uint32_t) {}
+inline void hostCreditInvalidate() {}
+inline uint32_t hostCreditGeneration() { return 0; }
+inline void hostCreditPublish(uint32_t,uint32_t,uint32_t) {}
 inline void end() {}
 inline void counterObserved(uint32_t, uint32_t, bool) {}
 inline void registerRoles(uintptr_t, uintptr_t, uintptr_t) {}

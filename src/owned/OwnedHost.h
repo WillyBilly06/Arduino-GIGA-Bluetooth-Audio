@@ -2,6 +2,9 @@
 #include "ClassicProfiles.h"
 #include "LeProfiles.h"
 #include "ControllerAudioPriority.h"
+#ifndef GIGA_BREDR_PRIVATE_SCHED_WITNESS
+#define GIGA_BREDR_PRIVATE_SCHED_WITNESS 0
+#endif
 extern "C" {
 #include "core/bth_gap.h"
 #include "core/bth_avrcp_link.h"
@@ -42,6 +45,20 @@ public:
  AvrcpStatus avrcpStatus() const {return classic_.avrcpStatus();}
  static constexpr unsigned AclBytes=1021,RxSlots=8,RxWindow=4,SduBytes=4096;
 private:
+ void receiveImpl(uint8_t,const uint8_t*,size_t,uint32_t);
+ void pollImpl(uint32_t);
+ void serviceReceiveCreditsImpl(uint32_t);
+ bool deliverImpl(unsigned,const bth_l2cap_pdu_t&,uint16_t*);
+ void synchronizeChannelsImpl();
+ void resetClassic(uint32_t);
+ void pollClassic(bool,uint32_t,bool);
+ Status configureOutput(const CodecConfig&);
+ void notifyStream(bool);
+#if GIGA_BREDR_PRIVATE_SCHED_WITNESS
+ void creditBoundary(uint32_t boundary,bool complete,uint32_t generation=0) const;
+#else
+ void creditBoundary(uint32_t,bool,uint32_t=0) const {}
+#endif
  enum class Boot:uint8_t {PatchReset,Minidriver,Patch,Settle,Reset,Version,Features,AddressWrite,AddressRead,Buffers,LeBuffers,LeFeatures,Baud,LeHost,Gap,Ready,Failed};
  struct Packet {uint8_t bytes[AclBytes+4];uint16_t length=0;uint32_t order=0,barrier=0;bool used=false,charged=false; bth_rx_lease_t lease={};};
  struct Deferred {uint8_t bytes[257];uint16_t length=0;uint32_t serial=0;};
