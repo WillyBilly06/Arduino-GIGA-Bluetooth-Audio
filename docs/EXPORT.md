@@ -1,3 +1,13 @@
+# Experimental dev.16 source and packaging boundary
+
+This experimental development update retains the dev.15 source and changes the reviewed AAC retained-suffix frontend, its owned synthetic regression/provenance and runner registration, the existing clock fixture's host-mailbox service correction, plus version/documentation metadata. The real ADTS CPU evidence and fresh paired official CM7 builds are scoped in [dev.16 validation](validation/dev16-2026-10-28.md). The final version/paragraph-only property update is checked separately from the compiled source; the final ZIP is not separately compiled. These source and test updates have not been deployed.
+
+The [v0.1.0-dev.16 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.16.zip) identifies this version. The [develop ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip) follows branch HEAD and may change. The versioned Arduino package is checked member by member against its manifest, all 257 codec-component export hashes, unchanged root/component license/notice bytes and the compiler-input projection. Its self-checksum remains in an external sidecar. Private captures, build output, local codec media, caches and device identities are excluded. The owned ADTS header and provenance notice are included. The project license creates no new component grant.
+
+Existing LHDC playback shortages remain unresolved, and the separate earlier-source M7 LHDC numerical comparison remains QUALITY_UNQUALIFIED. This experimental source distribution does not establish stable audio, voice interoperability, acoustic fidelity or 200 ms total phone-to-DAC latency.
+
+## Historical dev.14 and earlier export records
+
 # Experimental dev.14 source and packaging boundary
 
 This package combines only the frozen AAC mono allocation patch, optional voice-control owner and release documentation. It retains all unrelated codec, buffer, clock, I2S, controller-patch and LE source bytes. Existing root/component notices and unresolved grant boundaries remain unchanged; the project license does not relicense supplied decoder components.

@@ -67,7 +67,7 @@ class OwnedRunnerPlanTests(unittest.TestCase):
         value=self.plan('--asan','--sanitize')
         children=[row['command']for row in value['commands']if row['kind']=='child-suite']
         names={Path(command[1]).name for command in children}
-        self.assertEqual(names,{'test_audio_clock.py','test_owned_wake.py',
+        self.assertEqual(names,{'test_adts_retained_prefix.py','test_audio_clock.py','test_owned_wake.py',
                                'test_codec_memory.py','test_audio_scheduling.py','test_owned_runner_plan.py'})
         self.assertIn('test_voice_preemption',[row['case']for row in value['commands']if row.get('case')])
 
@@ -123,5 +123,22 @@ class OwnedRunnerPlanTests(unittest.TestCase):
         adapter=compiled['test_voice_rx_byte_progress'][0]
         self.assertNotIn('tests/test_owned_voice_audio.cpp',adapter) # Included by actual adapter fixture.
         self.assertIn('src/Types.cpp',compiled['test_hf_admission'][0]) # Real statusName used by exact fixture.
+
+    def test_adts_child_plan_is_pure_and_uses_real_decoder(self):
+        spec=importlib.util.spec_from_file_location('adts_child_plan',ROOT/'tools/test_adts_retained_prefix.py')
+        child=importlib.util.module_from_spec(spec);spec.loader.exec_module(child)
+        with tempfile.TemporaryDirectory(prefix='giga-adts-plan-') as temporary:
+            argv=['test_adts_retained_prefix.py','--plan','--output',temporary,'--cc',sys.executable,'--cxx',sys.executable]
+            with patch.object(sys,'argv',argv),contextlib.redirect_stdout(io.StringIO()),\
+                 patch('subprocess.run',side_effect=AssertionError('ADTS plan launched a command')):
+                child.main()
+            value=json.loads((Path(temporary)/'receipt.json').read_text())
+            self.assertEqual(value['status'],'PLAN_ONLY_NO_COMMANDS_EXECUTED')
+            self.assertTrue(value['actual_aac_decoder']);self.assertFalse(value['runtime_or_sanitizers_qualified'])
+            commands=[row['command'] for row in value['records']]
+            self.assertTrue(all(not row['executed'] for row in value['records']))
+            self.assertTrue(any(any(str(arg).endswith('src/codecs/Codecs.cpp') for arg in cmd) for cmd in commands))
+            self.assertTrue(any('tests/test_adts_retained_prefix.cpp' in cmd for cmd in commands))
+            self.assertTrue(any(any(str(arg).replace('\\','/').endswith('src/vendor/codecs/aac/aacdec.c') for arg in cmd) for cmd in commands))
 
 if __name__=='__main__':unittest.main(verbosity=2)

@@ -1,14 +1,16 @@
-# GigaBredr dev.15 candidate (experimental)
+# GigaBredr dev.16 develop (experimental)
 
 Bluetooth Classic A2DP receiver and public BLE GATT server for Arduino GIGA R1 Cortex-M7, with all supplied codec decoders and PCM5102A-compatible I2S playback. The project owns the host stack; the radio controller uses Infineon ROM plus the stock HCD patch, and scheduling uses Arduino Mbed/RTOS.
 
-**Experimental; not stable.** This dev.15 candidate retains dev.14's channel-sized HE-AAC envelope allocation and adds default-off HF/HS synchronous voice, conditional profile advertisement and an optional PCM microphone provider. The combined source compiled for the Receiver and VoiceQualification sketches; it still needs independent review and hardware qualification. Controller audio routing, real call interoperability, microphone hardware, long-call behavior, acoustics and latency are unqualified; no call-audio guarantee is made. See [dev.15 validation](docs/validation/dev15-2026-10-27.md) and the earlier [dev.14 validation](docs/validation/dev14-2026-10-27.md).
+**Experimental; not stable.** This experimental dev.16 update fixes retention of an incomplete AAC suffix after a decoded prefix in diagnostic ADTS mode, avoiding repeated prefix output and duplicate work accounting. Eleven real-decoder/frontend CPU cases passed, including retained-byte and intermediate Q16 accounting assertions. Receiver and VoiceQualification passed fresh official Cortex-M7 builds; the fix has not been deployed or tested with phone audio. This result does not explain the separate LHDC playback shortages. See [dev.16 validation](docs/validation/dev16-2026-10-28.md). Default-off HF/HS voice, the optional PCM input provider and the earlier memory reduction are retained; controller routing, calls, microphone hardware, long-call behavior, acoustics and latency remain unqualified. Earlier evidence remains under [dev.15](docs/validation/dev15-2026-10-27.md) and [dev.14](docs/validation/dev14-2026-10-27.md).
 
 The existing LHDC automatic reserve remains 80 ms with a 90 ms ring. Earlier finite BLE/A2DP windows had zero recorded audio faults, but longer listening subsequently produced brief PCM shortages. The root cause and a complete continuity fix remain unresolved. No all-codec stability, numerical-fidelity, acoustic or 200 ms total phone-to-DAC latency claim is made.
 
+The existing clock fixture initially failed on both the preceding published source and the AAC update because its fake host did not service the asynchronous mailbox. The corrected test passed 394 checks on each source basis, retaining prior assertions and adding positive execution checks. The other recorded regression cases passed separately. This corrects the test harness; production clock code is unchanged, and no full-suite or sanitizer PASS is claimed.
+
 ## Install and start
 
-1. Use the prepared dev.15 library ZIP, the [develop source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip) after the candidate is published, or the prior [v0.1.0-dev.14 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.14.zip). Develop changes over time; retain the commit identifier when reporting results. These are experimental development sources.
+1. Download the [v0.1.0-dev.16 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.16.zip) for this version. The [develop source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip) follows the current branch HEAD and changes over time; retain its commit identifier when reporting results. These are experimental development sources.
 2. In Arduino IDE choose **Sketch > Include Library > Add .ZIP Library**. Keep one active GigaBredr installation.
 3. Install **Arduino Mbed OS GIGA Boards 4.6.0** and select **Arduino GIGA R1 / Cortex-M7**.
 4. Open **File > Examples > GigaBredr > Receiver**, wire the output below, and upload. The example uses automatic buffers sized for the negotiated configuration.
@@ -19,7 +21,7 @@ For local installation, place the folder containing `library.properties`, `src` 
 arduino-cli compile --fqbn arduino:mbed_giga:giga:target_core=cm7 --jobs 4 --library . examples/Receiver
 ```
 
-Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [Dev.14 build evidence](docs/validation/dev14-2026-10-27.json) identifies the package build separately from previous field images; [BUILD.json](docs/BUILD.json) retains historical dev.10 and earlier evidence.
+Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [Dev.16 build evidence](docs/validation/dev16-2026-10-28.json) identifies the new source builds separately from previous field images. Final packaging changes documentation and the version/paragraph metadata only; the final ZIP is not separately compiled. [BUILD.json](docs/BUILD.json) retains historical dev.10 and earlier evidence.
 
 Use **921600** in the serial monitor. GIGA's native USB CDC transfer rate is independent of this baud setting. The diagnostic Receiver queues log lines and pumps at most 64 bytes per foreground turn through the nonblocking USB API; skipped lines increment `console_drops`. Formatting and USB service still consume CPU time.
 
@@ -108,6 +110,9 @@ Longer playback after the finite dev.12 test produced brief PCM shortages. Histo
 
 | Evidence | Result | Limit |
 |---|---|---|
+| Dev.16 AAC retained suffix | Old-source CPU RED reproduced repeated prefix output; strengthened GREEN passed 11/11 frontend cases with first retained bytes=100/Q16=13212 and final=0/0 | Synthetic owned ADTS, real decoder/frontend, fake radio/I2S; not negotiated A2DP AAC or an LHDC continuity fix |
+| Dev.16 combined source | Fresh Receiver and VoiceQualification official CM7 builds/static audits passed; 191 library TUs and 223 compile rows each | Final metadata-only package is not separately compiled; no fix-image deployment or voice/controller qualification |
+| Separate earlier-source M7 decoder diagnostic | All 28 vector safety cases passed; 26 strict numerical matches, 2 LHDC nonzero mismatches; 8 zero/lifecycle cases passed and 328 provider allocations/frees balanced | Earlier public codec basis, no radio/I2S. LHDC remains QUALITY_UNQUALIFIED; no bits or expectations were relaxed |
 | Dev.15 combined source | Receiver and VoiceQualification official CM7 builds and static link audits passed; 17 combined-source ARM64 voice fixtures and focused byte-pacing/HF admission cases passed | CPU fixtures use fake radio/I2S and single-thread reentry; no GIGA voice runtime, controller route, phone call, long-call, acoustic or latency qualification |
 | Dev.14 source integration | Paired AAC CPU fixtures: 66 geometries/eight PCM streams; optional voice owner CPU protocol/retirement cases; separate CM7 build | No deployment, MCU heap saving, SCO/call audio, acoustic, latency or continuity-fix claim |
 | Dev.13 profile source | 28 portable Android ARM64 CPU cases passed; full official CM7 compilation recorded separately | No dev.13 firmware deployment, phone control interoperability, integrated call audio or audio-cure claim |
@@ -121,7 +126,7 @@ Forty coherent printed tracking cohorts matched T=11136 frames, zero mismatched;
 
 The benchmark covers SBC/SBC-XQ, AAC-LC ADTS/LATM, aptX/HD, Opus 48k stereo 20 ms, LDAC 96 mono/stereo and HE v1 SBR 44.1 mono/stereo. It does not run radio/I2S. See [per-case timing/heap metrics and oracles](docs/validation/dev10-2026-10-26.md). LHDC independent encoded golden remains MISSING; LDAC uses tone checks, aptX HD PCM16 does not establish 24-bit fidelity, HE PS/xHE/other configurations are unqualified, and Opus fixture evidence is not phone interoperability. Apple AAC sender and distinct SBC-XQ sender operation remain unproved.
 
-Phone-family history and all earlier failures stay in [STATUS](docs/STATUS.md) and [BUILD](docs/BUILD.json). Finite zero non-clock faults do not prove RF delivery, physical I2S, low-bit accuracy, acoustics, general continuity or 200 ms total latency. [EXPORT](docs/EXPORT.md) distinguishes prospective develop-only distribution from actual build evidence.
+Phone-family history and all earlier failures stay in [STATUS](docs/STATUS.md) and [BUILD](docs/BUILD.json). Finite zero non-clock faults do not prove RF delivery, physical I2S, low-bit accuracy, acoustics, general continuity or 200 ms total latency. [EXPORT](docs/EXPORT.md) distinguishes versioned development-source packaging from build and runtime evidence.
 
 Original Apache-2.0 project terms and every supplied component notice/license are preserved. [THIRD_PARTY.md](THIRD_PARTY.md) remains authoritative for component terms and existing unresolved grants; this version creates no new grant.
 

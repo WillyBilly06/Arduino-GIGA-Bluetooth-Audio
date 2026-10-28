@@ -106,6 +106,7 @@ def main():
  byte_sources=['src/owned/OwnedVoiceAudio.cpp','src/owned/VoiceAudioPipeline.cpp','src/owned/VoiceMsbc.cpp','src/detail/Memory.cpp']
  run([cxx,'-std=c++17',*flags,'tests/'+n+'.cpp',*byte_sources,*voice_objects,'-o',exe],n)
  for selector in ('cvsd_unfragmented','ncp_fragmented','cvsd_fragmented','msbc_fragmented'):run([exe,selector],n+':'+selector)
+ run([sys.executable,'tools/test_adts_retained_prefix.py','--cc',cc,'--cxx',cxx,'--output',out/'adts-retained',*(['--sanitize']if a.sanitize else[]),*(['--asan']if a.asan else[])])
  run([sys.executable,'tools/test_audio_clock.py','--compiler',cxx,'--cc',cc,'--output',out/'audio-clock'])
  run([sys.executable,'tests/test_owned_wake.py','--cc',cc,'--cxx',cxx,'--output',out/'owned-wake',*(['--sanitize']if a.sanitize else[]),*(['--asan']if a.asan else[])])
  run([sys.executable,'tools/test_codec_memory.py','--cc',cc,'--cxx',cxx,'--output',out/'codec-memory',*(['--sanitize']if a.sanitize else[]),*(['--asan']if a.asan else[])])

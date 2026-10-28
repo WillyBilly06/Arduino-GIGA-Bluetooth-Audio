@@ -16,6 +16,8 @@ public:
     Status feed(const uint8_t* packet, size_t bytes, MediaView& view);
     // After AAC decode succeeds or fails irrecoverably, discard retained fragments.
     void consumed();
+    // Retain an AAC decoder's undecoded suffix without retiring this assembly.
+    bool retainDecodedSuffix(const MediaView& view, size_t consumed_prefix);
     void reset();
     void close();
     // Read-only bookkeeping; no payload parsing/copy or acceptance change.

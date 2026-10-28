@@ -1,0 +1,147 @@
+{
+  "status": "EXPERIMENTAL_AAC_ADTS_CPU_GREEN_AND_CM7_STATIC_BUILDS_NOT_DEPLOYED",
+  "version": "0.1.0-dev.16",
+  "base_develop": "4851e40bc108e119f4fdb568adb6ccf6c49d8f33",
+  "production_pins_sha256": "c3117b609a99591ef0905465b129b6f836256468ca06883642b00eb004f9662d",
+  "evidence": {
+    "aac_red": {
+      "sha256": "c79a382f4b9b2077b2b81c5c2fefcbac1df3c10c10400ca101ebbe82abe8be6e",
+      "bytes": 10808
+    },
+    "aac_r5_green": {
+      "sha256": "edde6ddf958ea6f0914f8b3fff4a8715c9530fd1e33b10aa426987ba1b1395d5",
+      "bytes": 11874
+    },
+    "aac_r6_accounting_green": {
+      "sha256": "04b7cee9c1b76e59c05710844da4b3b4f66a255505f3b8b02f2cb51079648a78",
+      "bytes": 12011
+    },
+    "independent_aac_review": {
+      "sha256": "a4cf1a2623d35b4927291c8176dfcd0cb1761c4ced692705dea700e2b194a431",
+      "bytes": 7237
+    },
+    "earlier_source_numeric_review": {
+      "sha256": "88c7603d72b5572733cb787f1b5524a2a5a15e10a0d5f585ed57a5c599339e0e",
+      "bytes": 791
+    },
+    "paired_cm7_gate": {
+      "sha256": "9e5eb7d3ba7f9de213f890707087a7720530d45d58395e7115e39ac1a82a856a",
+      "bytes": 14262
+    },
+    "clock_baseline_and_candidate_red": {
+      "sha256": "9a523078de50adfcbe2ae2822db45e9ee38e32147288a7c917aede304f5d8a0e",
+      "bytes": 14668
+    },
+    "remaining_existing_regressions": {
+      "sha256": "35cd26eb2f534b37315a35c0300970a3d67e19c0610110459d3dbbc125ad5868",
+      "bytes": 19274
+    },
+    "corrected_clock_baseline_and_candidate_green": {
+      "sha256": "97900215462ae7c23cdea1fbb5d8cd8e5e084cef5a003250ac5b09f4e9259c31",
+      "bytes": 12550
+    }
+  },
+  "aac_cpu": {
+    "real_decoder_and_frontend": true,
+    "framing": "explicit diagnostic ADTS, not demonstrated negotiated A2DP AAC",
+    "red_repeated_prefix": true,
+    "r5_cases_passed": 11,
+    "r6_cases_passed": 11,
+    "r6_first_retained_bytes": 100,
+    "r6_first_retained_q16": 13212,
+    "r6_final_retained_bytes": 0,
+    "r6_final_retained_q16": 0,
+    "radio_and_i2s": "fake CPU boundaries",
+    "fixture_sha256": "92b995861aecc7803de9be06b620ea3b4e73056a42a0d972e561e37a8781bfa6",
+    "fixture_provenance_sha256": "13db7982880fd676fce3eb7fca0c9c5ab4d31ae4db1bdee5a00ba8350908ed6a"
+  },
+  "static_review": {
+    "critical_findings": 0,
+    "important_findings": 0,
+    "scope": "bounded introduced-source review, not universal proof"
+  },
+  "stock_platform": "arduino:mbed_giga 4.6.0, Cortex-M7",
+  "default_uart_baud": 2000000,
+  "private_observers": false,
+  "enabled_codec_defaults": 7,
+  "linked_decoder_operation_families": 6,
+  "stock_hcd_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
+  "stock_hcd_commands": 139,
+  "binary_size_limit": 786432,
+  "cm7": {
+    "Receiver": {
+      "binary_sha256": "d2621995e5e2f974e63e3831a22a732d62013c6b32d9fd1e6149d2d8090ca46b",
+      "binary_bytes": 539124,
+      "elf_sha256": "678dbaf4d7c3922d0984e11b54e40975fe7e7f066842964ee311cdf7ef8e6db9",
+      "library_TUs": 191,
+      "compile_rows": 223,
+      "compiler_returncode": 0,
+      "owned_job_quiescent": true,
+      "compiler_stack_usage_files": 223
+    },
+    "VoiceQualification": {
+      "binary_sha256": "db47aacc1f313241c5fec2f662b988e10710ba5a26a8662a2e42a8934b25a5eb",
+      "binary_bytes": 531300,
+      "elf_sha256": "eca1e43ac28a019dd6449c0a4e1ce7e1089b921eaade750488c431e9cf7ed5ac",
+      "library_TUs": 191,
+      "compile_rows": 223,
+      "compiler_returncode": 0,
+      "owned_job_quiescent": true,
+      "compiler_stack_usage_files": 223
+    }
+  },
+  "final_package": {
+    "compiled_separately": false,
+    "allowed_compiled_snapshot_difference": "library.properties version and paragraph only; documentation is outside compiler input subset",
+    "self_checksum_location": "external sidecar",
+    "compiled_source_projection_verified": true
+  },
+  "earlier_source_numeric": {
+    "basis": "earlier public fc7 codec source, not current combined AAC/voice candidate",
+    "vector_safety_passed": 28,
+    "strict_numerical_matches": 26,
+    "strict_numerical_mismatches": 2,
+    "mismatch_case": "LHDC nonzero, both passes",
+    "qualification": "QUALITY_UNQUALIFIED",
+    "actual_full_s32_crc": "dbdf4256",
+    "arm64_differential_full_s32_crc": "fe87f2ef",
+    "sparse_points_per_channel": 224,
+    "sparse_mismatches_left": 158,
+    "sparse_mismatches_right": 156,
+    "sparse_max_abs_s32_left": 192,
+    "sparse_max_abs_s32_right": 160,
+    "full_stream_maximum": "UNKNOWN",
+    "zero_lifecycle_cases_passed": 8,
+    "balanced_provider_allocations": 328,
+    "balanced_provider_frees": 328,
+    "independent_lhdc_fidelity": "UNKNOWN",
+    "oracle_or_low_bits_relaxed": false,
+    "radio_or_i2s": false,
+    "saved_full_application_restored": true
+  },
+  "fix_image_deployed": false,
+  "phone_a2dp_fix_tested": false,
+  "lhdc_playback_shortage_fixed": false,
+  "voice_hardware_tested": false,
+  "acoustic_or_200ms_latency_qualified": false,
+  "clock_fixture_regression": {
+    "status": "CORRECTED_CLOCK_FIXTURE_CPU_GREEN_NO_PRODUCTION_CLOCK_CHANGE",
+    "media_retained_checks_passed": 35,
+    "original_clock_frontend_exit": 134,
+    "same_original_assertion_reproduced_on_published_baseline": true,
+    "baseline_and_candidate_debug_state": {
+      "decisions": 1,
+      "trims": 0,
+      "pending": 1,
+      "mailbox": 1
+    },
+    "cause": "Fake test host never serviced the asynchronous mailbox; test-only host/completion drive correction confirmed. No physical clock defect established.",
+    "corrected_test_sha256": "b4e5da049ff984538a759a4c8eb08f7d3175fa7b0aa465b73057d64192d1d811",
+    "corrected_fixture_actual_green": true,
+    "corrected_baseline_checks_passed": 394,
+    "corrected_candidate_checks_passed": 394,
+    "output_wait_lifecycle_modes_passed": 5,
+    "receiver_lifetime_checks_passed": 349,
+    "all_full_suite_or_sanitizer_passed": false
+  }
+}

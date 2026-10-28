@@ -782,6 +782,12 @@ struct GigaBredr::Impl {
             }
             offset += result.consumed;
         }
+        if (need_more && offset && (format.codec == Codec::Aac || format.codec == Codec::AacHe)) {
+            if (!media.retainDecodedSuffix(view, offset)) {
+                ++counters.decode_errors; counters.last_error = Status::CorruptFrame;
+                valid_packet = false; need_more = false;
+            }
+        }
         if (!need_more) media.consumed();
         if (offset == view.bytes) ++counters.decoded_packets;
         clockFinishPacket(valid_packet, need_more); clockFeedback();

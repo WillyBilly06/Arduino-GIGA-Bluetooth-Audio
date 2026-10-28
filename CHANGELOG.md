@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-dev.16 - experimental development source, 2026-10-28
+
+- Retain only the undecoded AAC suffix after a successful prefix followed by NeedMoreData, preserving assembly ownership and remaining compressed-work credit. The bounded helper moves existing bytes without adding an allocation; decoder arithmetic and other codec paths are unchanged.
+- Reproduce the old diagnostic ADTS prefix twice in a real-decoder/frontend CPU RED, then pass all 11 strengthened cases. Intermediate retained bytes/Q16 are 100/13212 and clear to 0/0 after completion; gap/reset/overflow and ownership controls remain strict. These are synthetic ADTS tests with fake radio/I2S, not demonstrated negotiated A2DP AAC behavior.
+- Record fresh official Receiver and VoiceQualification CM7 builds/static audits, each with 191 library translation units, 223 compile rows, all seven enabled codec defaults, six decoder operation families, default 2 Mbaud UART and stock HCD. The fix has not been flashed; final documentation/version metadata are reconciled against the compiled source rather than described as a new ZIP compilation.
+- Preserve the separate earlier-source M7 numeric diagnostic failure: 28 safety cases passed but only 26 strict numerical comparisons matched; the two LHDC nonzero passes remain QUALITY_UNQUALIFIED. Eight zero/lifecycle cases and 328 balanced provider allocations/frees do not turn that numerical failure into a pass.
+- Preserve the original clock-fixture failure on published baseline and candidate, then service the real asynchronous host mailbox in the fake-host harness. Corrected baseline and candidate each passed 394 CPU checks with all prior assertions retained; production clock source is unchanged. Media retention (35 checks), five output-wait/lifecycle modes and receiver lifetime (349 checks) also passed. This is finite CPU regression evidence, not a full-suite/sanitizer or hardware-clock claim.
+- Retain dev.15 voice, BLE, I2S/buffer/clock policies, supplied codecs and component terms. Existing LHDC playback shortages, controller/call interoperability, acoustics and the 200 ms total latency target remain unresolved or unqualified. These source and test updates have not been deployed; no stable-audio or LHDC continuity claim is made.
+
 ## 0.1.0-dev.15 - experimental candidate, 2026-10-27
 
 - Integrate the frozen opt-in HF/HS voice source, bounded synchronous transport and worker, conditional SDP and a copied microphone-input provider API. Voice remains off by default; no provider means silence.

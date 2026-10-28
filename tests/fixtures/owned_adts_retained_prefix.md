@@ -1,0 +1,5 @@
+# Owned synthetic ADTS regression input
+
+`owned_adts_retained_prefix.h` contains the first two complete frames (396 and 468 bytes) of `tests/codec_vectors/aac.adts` from the local, owned synthetic codec-vector set. That set was generated with an independent FFmpeg AAC-LC encoder from 100 ms of synthetic stereo PCM (1 kHz left, 2 kHz right); no external media is included. The original local vector SHA-256 was `553601a455068d19d2c13efefd19eb48033cd90b654178ca5c083d0ae24c5571`; its generator receipt SHA-256 was `814922dc3191112a99d9d12ff7d18abe135608ef359dd4e36c414ac709f3116d`. Frame SHA-256 values are `02dacdcd9083beab0f46dd4c968d5ce8e4ee4832a565246ad5758b29cfffb483` and `b8bf3b4c909721630c4beb44066366fa5250f7f8bff773960541a7c0408755af`.
+
+The test selects explicit diagnostic ADTS framing and uses the production AAC decoder and media frontend with fake radio and I2S. It does not establish normal A2DP AAC framing, phone behavior, RF delivery, acoustic output or an explanation for unrelated LHDC shortages.
