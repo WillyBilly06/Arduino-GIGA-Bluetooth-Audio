@@ -205,6 +205,22 @@ bool ClassicProfiles::receive(uint16_t cid,const uint8_t* p,size_t n,bool secure
  }
  return finish(*c,r,status,written);
 }
+bool ClassicProfiles::independentReadResponse(uint16_t cid,const uint8_t* p,size_t n,uint32_t now)const{
+ // Only a complete matched, unexpired success for a known read transaction.
+ // Notification/key responses and all AVCTP fragmentation remain barriers.
+ if(!validOwner()||!avrcp_||cid!=avrcp_||close_avrcp_||!p||n<13||(p[0]&15)!=2||p[1]!=0x11||p[2]!=0x0e||
+    p[3]!=12||p[4]!=0x48||p[5]!=0||p[6]!=0||p[7]!=0x19||p[8]!=0x58||p[10]!=0||controller_.protocol_rejected)return false;
+ const unsigned label=p[0]>>4;const auto& pending=controller_.pending[label];
+ if(!pending.kind||(controller_.retired_labels&(1u<<label))||int32_t(now-pending.deadline)>=0)return false;
+ const size_t bytes=(size_t(p[11])<<8)|p[12];if(bytes!=n-13)return false;const uint8_t* data=p+13;
+ // CAPS is kind 2 in bth_avrcp_ct.c; its actual request asks for events (3).
+ if(pending.kind==2)return p[9]==0x10&&bytes>=2&&data[0]==3&&bytes==size_t(data[1])+2;
+ if(pending.kind==CustomStatus)return p[9]==0x30&&bytes==9&&(data[8]<=4||data[8]==255);
+ if(pending.kind!=CustomMetadata||p[9]!=0x20||metadata_active_||!bytes)return false;
+ // Match emitMetadata's bounded complete-attribute validation without callbacks.
+ size_t at=1;for(unsigned i=0;i<data[0];++i){if(bytes-at<8)return false;const size_t length=(size_t(data[at+6])<<8)|data[at+7];
+  if(length>bytes-at-8)return false;at+=8+length;}return at==bytes;
+}
 bool ClassicProfiles::wantsMediaChannel()const{return validOwner()&&signal_&&!media_&&valid_&&avdtp_.state==BTH_AVDTP_OPENING;}
 bool ClassicProfiles::takeCloseMedia(){bool value=close_media_;close_media_=false;return value;}
 bool ClassicProfiles::takeCloseAvrcp(){bool value=close_avrcp_;close_avrcp_=false;return value;}

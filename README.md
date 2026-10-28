@@ -1,16 +1,16 @@
-# GigaBredr dev.16 develop (experimental)
+# GigaBredr dev.17 develop (experimental)
 
 Bluetooth Classic A2DP receiver and public BLE GATT server for Arduino GIGA R1 Cortex-M7, with all supplied codec decoders and PCM5102A-compatible I2S playback. The project owns the host stack; the radio controller uses Infineon ROM plus the stock HCD patch, and scheduling uses Arduino Mbed/RTOS.
 
-**Experimental; not stable.** This experimental dev.16 update fixes retention of an incomplete AAC suffix after a decoded prefix in diagnostic ADTS mode, avoiding repeated prefix output and duplicate work accounting. Eleven real-decoder/frontend CPU cases passed, including retained-byte and intermediate Q16 accounting assertions. Receiver and VoiceQualification passed fresh official Cortex-M7 builds; the fix has not been deployed or tested with phone audio. This result does not explain the separate LHDC playback shortages. See [dev.16 validation](docs/validation/dev16-2026-10-28.md). Default-off HF/HS voice, the optional PCM input provider and the earlier memory reduction are retained; controller routing, calls, microphone hardware, long-call behavior, acoustics and latency remain unqualified. Earlier evidence remains under [dev.15](docs/validation/dev15-2026-10-27.md) and [dev.14](docs/validation/dev14-2026-10-27.md).
+**Experimental; not stable.** Dev.17 fixes a reproducible host-stack stall: accepted A2DP media can now continue in order while an eligible completed read-only Classic control waits for transmit/reply capacity. The host reuses bounded existing packet storage without adding per-frame heap allocation. All 84 exported progress/response/boundary CPU cases passed, along with the focused existing actor suites; Receiver and VoiceQualification passed fresh official Cortex-M7 builds. The fix has not been flashed or field-tested, and it is not established as the cause or cure of the separate rare playback shortages. See [dev.17 validation](docs/validation/dev17-2026-10-28.md). Earlier AAC and voice evidence remains under [dev.16](docs/validation/dev16-2026-10-28.md) and [dev.15](docs/validation/dev15-2026-10-27.md).
 
 The existing LHDC automatic reserve remains 80 ms with a 90 ms ring. Earlier finite BLE/A2DP windows had zero recorded audio faults, but longer listening subsequently produced brief PCM shortages. The root cause and a complete continuity fix remain unresolved. No all-codec stability, numerical-fidelity, acoustic or 200 ms total phone-to-DAC latency claim is made.
 
-The existing clock fixture initially failed on both the preceding published source and the AAC update because its fake host did not service the asynchronous mailbox. The corrected test passed 394 checks on each source basis, retaining prior assertions and adding positive execution checks. The other recorded regression cases passed separately. This corrects the test harness; production clock code is unchanged, and no full-suite or sanitizer PASS is claimed.
+Media remains subject to normal ownership, security, reassembly, AVDTP state and credit checks. Older control replies keep their FIFO order; mutating signaling, voice traffic and unrecognized or stale responses retain their barriers. This is a scoped host fix, not a radio airtime reservation or a claim that all control traffic can bypass backpressure.
 
 ## Install and start
 
-1. Download the [v0.1.0-dev.16 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.16.zip) for this version. The [develop source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip) follows the current branch HEAD and changes over time; retain its commit identifier when reporting results. These are experimental development sources.
+1. Download the [v0.1.0-dev.17 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.17.zip) for this version. The [develop source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip) follows the current branch HEAD and changes over time; retain its commit identifier when reporting results. These are experimental development sources.
 2. In Arduino IDE choose **Sketch > Include Library > Add .ZIP Library**. Keep one active GigaBredr installation.
 3. Install **Arduino Mbed OS GIGA Boards 4.6.0** and select **Arduino GIGA R1 / Cortex-M7**.
 4. Open **File > Examples > GigaBredr > Receiver**, wire the output below, and upload. The example uses automatic buffers sized for the negotiated configuration.
@@ -21,7 +21,7 @@ For local installation, place the folder containing `library.properties`, `src` 
 arduino-cli compile --fqbn arduino:mbed_giga:giga:target_core=cm7 --jobs 4 --library . examples/Receiver
 ```
 
-Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [Dev.16 build evidence](docs/validation/dev16-2026-10-28.json) identifies the new source builds separately from previous field images. Final packaging changes documentation and the version/paragraph metadata only; the final ZIP is not separately compiled. [BUILD.json](docs/BUILD.json) retains historical dev.10 and earlier evidence.
+Defaults are `GIGA_BREDR_USE_BTSTACK=0` (project host), `GIGA_BREDR_UART_BAUD=2000000`, `GIGA_BREDR_I2S_WS_PIN=74` and `GIGA_BREDR_PRIVATE_SCHED_WITNESS=0`. [Dev.17 build evidence](docs/validation/dev17-2026-10-28.json) identifies the new source builds separately from previous field images. Final packaging changes documentation and the version/paragraph metadata only; the final ZIP is not separately compiled. [BUILD.json](docs/BUILD.json) retains historical dev.10 and earlier evidence.
 
 Use **921600** in the serial monitor. GIGA's native USB CDC transfer rate is independent of this baud setting. The diagnostic Receiver queues log lines and pumps at most 64 bytes per foreground turn through the nonblocking USB API; skipped lines increment `console_drops`. Formatting and USB service still consume CPU time.
 
@@ -110,6 +110,7 @@ Longer playback after the finite dev.12 test produced brief PCM shortages. Histo
 
 | Evidence | Result | Limit |
 |---|---|---|
+| Dev.17 Classic media progress | All 84 exported fake-wire CPU cases passed; existing expanded/scheduling/combined suites passed 5758/6256/861 checks. Fresh Receiver/VoiceQualification CM7 builds passed | Scoped read-only-control backpressure fix; no field deployment, radio/voice qualification, full-suite or sanitizer PASS |
 | Dev.16 AAC retained suffix | Old-source CPU RED reproduced repeated prefix output; strengthened GREEN passed 11/11 frontend cases with first retained bytes=100/Q16=13212 and final=0/0 | Synthetic owned ADTS, real decoder/frontend, fake radio/I2S; not negotiated A2DP AAC or an LHDC continuity fix |
 | Dev.16 combined source | Fresh Receiver and VoiceQualification official CM7 builds/static audits passed; 191 library TUs and 223 compile rows each | Final metadata-only package is not separately compiled; no fix-image deployment or voice/controller qualification |
 | Separate earlier-source M7 decoder diagnostic | All 28 vector safety cases passed; 26 strict numerical matches, 2 LHDC nonzero mismatches; 8 zero/lifecycle cases passed and 328 provider allocations/frees balanced | Earlier public codec basis, no radio/I2S. LHDC remains QUALITY_UNQUALIFIED; no bits or expectations were relaxed |

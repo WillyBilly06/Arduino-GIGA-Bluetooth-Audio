@@ -104,6 +104,8 @@ private:
  bool attach(unsigned,const bth_peer_link_t&);void detach(unsigned);
  bool deliver(unsigned,const bth_l2cap_pdu_t&,uint16_t* signal_cursor=nullptr);void processRx(unsigned);
  bool expandedClassicControl(const bth_l2cap_pdu_t&) const;
+ bool mediaIndependentControl(const bth_l2cap_pdu_t&) const;bool mediaBypassAllowed() const;
+ bool parkClassicPending();void releaseClassicParked();void processIndependentMedia();
  bool safeClassicControl(const bth_l2cap_pdu_t&) const;
  bool gateAvrcpRetirement(const bth_l2cap_pdu_t&);
  bool copiedAvrcpRetirement(const bth_l2cap_pdu_t&) const;
@@ -124,6 +126,8 @@ private:
  bth_control_tx_t control_={};bth_rx_flow_t rx_={};bth_gap_t gap_={};bth_l2cap_sig_t signaling_={};
  Packet packets_[RxSlots];Peer peers_[2];Bond bonds_[4];bth_rx_admission_t admissions_[2]={};bool reserved_[2]={};
  uint8_t expanded_control_budget_=0;
+ // A reserved physical packet buffer owns a blocked safe control, never an RX lease.
+ int classic_parked_slot_=-1;uint32_t classic_parked_owner_=0;bool bypass_media_active_=false;
  DeferredControl classic_deferred_[ClassicDeferredSlots];uint32_t classic_deferred_owner_=0;uint8_t classic_deferred_read_=0,classic_deferred_count_=0;
  Deferred deferred_[8];unsigned deferred_read_=0,deferred_count_=0;
  uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[5]={0x110b,0x110c,0x110e};

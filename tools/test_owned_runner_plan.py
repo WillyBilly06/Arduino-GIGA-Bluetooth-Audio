@@ -102,6 +102,17 @@ class OwnedRunnerPlanTests(unittest.TestCase):
                     sources=[str(s)for s in cmd if str(s).endswith(('.cpp','.c'))]
                     self.assertEqual(len(sources),len(set(sources)))
 
+    def test_classic_progress_batches_are_registered_with_owned_actor(self):
+        value=self.plan();rows=value['commands']
+        for name,args in [('test_classic_progress_batch',['all']),('test_classic_ct_batch',[]),('test_classic_review_batch',[])]:
+            compile_rows=[r for r in rows if r.get('case')==name and r['kind']=='compile']
+            runtime_rows=[r for r in rows if r.get('case')==name and r['kind']=='project-runtime']
+            self.assertEqual(len(compile_rows),1,name);self.assertEqual(len(runtime_rows),1,name)
+            command=compile_rows[0]['command'];self.assertIn('tests/'+name+'.cpp',command)
+            self.assertNotIn('src/owned/OwnedHost.cpp',command) # Included once by the fixture.
+            self.assertIn('src/owned/ClassicProfiles.cpp',command)
+            self.assertEqual(runtime_rows[0]['command'][1:],args)
+
     def test_all_permanent_voice_regressions_and_selectors_are_registered_once(self):
         value=self.plan();compiled={};executed={}
         for row in value['commands']:

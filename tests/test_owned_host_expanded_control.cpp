@@ -49,7 +49,7 @@ static void benign_capacity_full(){
  Fixture f(false);const auto cid=audio(f);Wire w(f);w.exhaust();
  for(unsigned i=0;i<3;++i){f.acl(0x25,1,bundle(43,1+i*43));w.poll(4);CHECK(f.host.classic_deferred_count_==i+1&&!f.host.peers_[0].has_pending);}
  f.acl(0x25,1,bundle(43,130));w.poll(4);CHECK(f.host.classic_deferred_count_==3&&f.host.peers_[0].has_pending);
- f.acl(0x25,cid,media(90));w.poll(4);CHECK(!f.media); // Fourth bundle keeps a bounded FIFO barrier.
+ f.acl(0x25,cid,media(90));w.poll(4);CHECK(f.media==1); // Wholly stateless control remains FIFO while independent media progresses.
  w.restore();w.finish();w.info(1,172);CHECK(f.media==1&&f.host.flow_.classic.available==8&&!f.host.radioStats().transport_errors);
  puts("THREE_COPIED_BUNDLES_FOURTH_PENDING_EXACT172_FIFO_RECOVERY_PASS");
 }

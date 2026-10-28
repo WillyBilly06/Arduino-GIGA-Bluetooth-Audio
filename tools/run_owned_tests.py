@@ -60,6 +60,10 @@ def main():
   extra=['-DGBR_QOS_CANDIDATE=1']if n=='test_ble_audio_qos'else[]
   arguments=['all']if n in ('test_ble_audio_qos','test_ble_connection_preference')else[]
   exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,*extra,'-Itests','tests/'+n+'.cpp',*sources,*objects,'-o',exe],n);run([exe,*arguments],n)
+ # The three actor batches inline the real OwnedHost exactly once and retain
+ # the complete target, matched-controller and wrap/ownership selectors.
+ for name,args in [('test_classic_progress_batch',['all']),('test_classic_ct_batch',[]),('test_classic_review_batch',[])]:
+  exe=out/(name+'.exe');run([cxx,'-std=c++17',*flags,'-Itests','tests/'+name+'.cpp','src/Types.cpp',*actor[1:],*objects,'-o',exe],name);run([exe,*args],name)
  # The exact pending-user/codec wrapper regression has its own main and uses
  # the existing real host fixture through a renamed include, not a fake result.
  n='test_hf_admission';exe=out/(n+'.exe')

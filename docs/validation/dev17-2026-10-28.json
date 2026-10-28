@@ -1,0 +1,146 @@
+{
+  "status": "EXPERIMENTAL_CLASSIC_MEDIA_PROGRESS_CPU_GREEN_AND_CM7_STATIC_BUILDS_NOT_DEPLOYED",
+  "version": "0.1.0-dev.17",
+  "base_develop": "f6593c7f7b2e358c31403a9e14f2887d727f1014",
+  "production_pins_sha256": "030a753c0dc2f1a69f9090cfd6573e067756efdf82547055e5a1fcde68eb0ebb",
+  "public_source_pins_sha256": "837f58849ad6021b32e4c78d512c5e839b4098bf721167917c94d91b66178c40",
+  "evidence": {
+    "same_source_actor_cpu": {
+      "sha256": "c607f14cfca19f0e42e5fb72c9eb9eb769f2026a7a6f35900ffcf07d568a49d6",
+      "bytes": 52940
+    },
+    "independent_source_review": {
+      "sha256": "bc570df90a7f10d0e15d23a01e27615fd9eaf966f2541598232a85da19437b6d",
+      "bytes": 8455
+    },
+    "paired_cm7_gate": {
+      "sha256": "a3c31a635455bc74a8637119ef65ed76009d5b9038a96ffda4134a381287e99a",
+      "bytes": 14684
+    },
+    "public_export": {
+      "sha256": "c20b15b88b5cbe9a61cd351b21aa21e353f430bcaeaa4849eadc54953e36fc56",
+      "bytes": 1080
+    },
+    "public_fixture_projection": {
+      "sha256": "72eb913e249243d557b1e2f811629878aaac6911790558f296acb9be0501fec3",
+      "bytes": 2150
+    },
+    "public_actual_cpu": {
+      "sha256": "eb0a2444a510f1e0fe9a786c79c190a7d252ad37b829e52626aaaac444a3548c",
+      "bytes": 47781
+    },
+    "earlier_field_independent_review": {
+      "sha256": "1d50b5d82b56df632018477c5c9a289359d0fa5c348a203a635b68088e9637db",
+      "bytes": 3620
+    }
+  },
+  "scope": {
+    "production_files_changed": [
+      "src/owned/OwnedHost.h",
+      "src/owned/OwnedHost.cpp",
+      "src/owned/ClassicProfiles.h",
+      "src/owned/ClassicProfiles.cpp"
+    ],
+    "fix": "Ordered accepted A2DP media can progress behind eligible completed read-only Classic controls waiting for transmit/reply capacity.",
+    "bounded_existing_Packet_storage_reused": true,
+    "new_per_frame_heap": false,
+    "new_IRQ_work": false,
+    "preserve": [
+      "control FIFO",
+      "owner/CID lifetime",
+      "genuine receive credits",
+      "normal L2CAP reassembly",
+      "security and active AVDTP",
+      "mutating/voice/unknown/stale response barriers"
+    ]
+  },
+  "actual_cpu": {
+    "progress_read_barrier_cases": 69,
+    "matched_controller_response_cases": 13,
+    "boundary_cases": 2,
+    "existing_expanded_control_checks": 5758,
+    "existing_scheduling_checks": 6256,
+    "existing_classic_combined_checks": 861,
+    "scope": "actual protocol/actor CPU with fake wire, not radio/RTOS/phone",
+    "all_recorded_cases_exit_zero": true
+  },
+  "exported_tests": {
+    "actual_separate_executions": true,
+    "batch_cases": [
+      69,
+      13,
+      2
+    ],
+    "total_passed": 84,
+    "projection_preserves_assertions": true,
+    "offline_runner_plan_checks": 8,
+    "full_suite_or_sanitizer_pass_claim": false
+  },
+  "static_review": {
+    "critical_findings": 0,
+    "important_findings": 0,
+    "scope": "bounded frozen-source review"
+  },
+  "stock_platform": "arduino:mbed_giga 4.6.0, Cortex-M7",
+  "default_uart_baud": 2000000,
+  "enabled_codec_defaults": 7,
+  "linked_decoder_operation_families": 6,
+  "private_observers": false,
+  "stock_hcd_commands": 139,
+  "stock_hcd_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
+  "binary_size_limit": 786432,
+  "cm7": {
+    "Receiver": {
+      "binary_sha256": "40ee29008401c501f44ac8c6aa7986ad088e9d509fb95bca62203483bd4169d6",
+      "binary_bytes": 541716,
+      "elf_sha256": "db71f5a0729ec533a4ba24333e76c135c68e16522663b6c23d11801d42aa6beb",
+      "library_TUs": 191,
+      "compile_rows": 223,
+      "compiler_returncode": 0,
+      "owned_job_quiescent": true,
+      "compiler_stack_usage_files": 223
+    },
+    "VoiceQualification": {
+      "binary_sha256": "9d426748da758245429afa5323861cc220a7cc3cdca588fa561ff2140d0296a2",
+      "binary_bytes": 533892,
+      "elf_sha256": "ac298d09b6819f6184f05ed1f98190ad5d58ad7527212221fd945ccec83680cb",
+      "library_TUs": 191,
+      "compile_rows": 223,
+      "compiler_returncode": 0,
+      "owned_job_quiescent": true,
+      "compiler_stack_usage_files": 223
+    }
+  },
+  "final_package": {
+    "compiled_separately": false,
+    "compiled_source_projection_verified": true,
+    "production_source_examples_exact": 432,
+    "allowed_compiled_snapshot_difference": "library.properties version and paragraph values only; documentation is outside compiler input subset",
+    "self_checksum_location": "external sidecar"
+  },
+  "separate_earlier_field": {
+    "shortages_observed": true,
+    "inventory_conserved": true,
+    "net_production_delivery_shortfall": true,
+    "sustained_decoder_H4_HNC_backlog_at_sampled_instants": false,
+    "sampling_interval_nominal_ms": 50,
+    "transient_between_sample_stalls_excluded": false,
+    "sampled_heap_growth_or_allocation_failure": false,
+    "new_host_defect_proven_as_field_cause": false,
+    "controller_or_RF_or_phone_cause_proven": false,
+    "physical_audio_gap_duration_proven": false
+  },
+  "earlier_lhdc_numeric": {
+    "qualification": "QUALITY_UNQUALIFIED",
+    "vector_safety_passes": 28,
+    "strict_numerical_matches": 26,
+    "strict_numerical_mismatches": 2,
+    "independent_fidelity": "UNKNOWN",
+    "oracle_or_low_bits_relaxed": false
+  },
+  "firmware_deployed": false,
+  "field_audio_cure_proven": false,
+  "radio_or_voice_hardware_qualified": false,
+  "all_codecs_physically_qualified": false,
+  "acoustic_or_200ms_total_latency_qualified": false
+}

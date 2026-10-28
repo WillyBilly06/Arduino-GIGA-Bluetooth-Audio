@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-dev.17 - experimental development source, 2026-10-28
+
+- Allow ordered accepted A2DP media to progress while an eligible completed read-only SDP/AVRCP control waits for transmit/reply capacity. Park the pending control in an existing bounded spare Packet buffer before releasing its borrowed receive lease; add no per-frame heap allocation or IRQ work.
+- Preserve reply FIFO, owner/CID lifetime, genuine receive credits, canonical L2CAP reassembly, security and active AVDTP checks. Mutating signaling, voice/RFCOMM, unknown/stale responses and fragmented AVCTP continuations retain conservative barriers. Revalidate matched read responses against live owner, label, kind and deadline without consuming their effects early.
+- Export the faithful 69 progress/read/barrier cases, 13 matched-controller-response cases and two boundary regressions; all 84 passed on the actual exported CPU fixtures. The same production revision also passed focused existing actor suites (5758/6256/861 checks) and eight offline runner-plan checks. These are fake-wire CPU tests, not a full-suite or sanitizer result.
+- Record fresh official Receiver and VoiceQualification CM7 builds/static audits: 191 library translation units and 223 compile rows each, all seven codec defaults/six decoder operation families, default 2 Mbaud UART and unchanged stock HCD. Final version/paragraph-only metadata is reconciled against the compiled source; the final ZIP is not separately compiled.
+- Retain codec arithmetic, selected buffers, the LHDC 80/90 ms profile, clock policy, BLE behavior and all component terms. The host defect is real but is not established as the cause of the separate recorded field reserve depletion. This update has not been flashed; rare shortages, LHDC numerical qualification, voice interoperability, acoustics and the 200 ms total latency target remain unresolved or unqualified.
+
 ## 0.1.0-dev.16 - experimental development source, 2026-10-28
 
 - Retain only the undecoded AAC suffix after a successful prefix followed by NeedMoreData, preserving assembly ownership and remaining compressed-work credit. The bounded helper moves existing bytes without adding an allocation; decoder arithmetic and other codec paths are unchanged.

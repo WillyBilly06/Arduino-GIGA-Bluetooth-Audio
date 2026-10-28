@@ -26,6 +26,8 @@ public:
  // FALSE when reply capacity or the asynchronous START policy is pending: retain this exact SDU.
  // Application callbacks run synchronously and must not reenter the host actor.
  bool receive(uint16_t local_cid,const uint8_t* bytes,size_t length,bool secure,uint32_t now_ms);
+ // Pure eligibility check; never consumes a response or changes CT state.
+ bool independentReadResponse(uint16_t local_cid,const uint8_t* bytes,size_t length,uint32_t now_ms) const;
  // Expiration always runs; older retained input can suppress optional requests.
  void poll(bool secure,uint32_t now_ms,bool allow_transmit=true);
  Status setVolume(uint8_t);

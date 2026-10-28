@@ -1,3 +1,13 @@
+# Experimental dev.17 source and packaging boundary
+
+This development update changes only the scoped Classic control/media-progress host logic, faithful public actor tests/runner registration and version/documentation metadata. It retains the prior AAC/voice source, every supplied decoder, selected codec buffers, LHDC 80/90 ms defaults, clock/BLE policy and stock HCD. [Dev.17 validation](validation/dev17-2026-10-28.md) separates actual fake-wire CPU checks, independent review, official paired CM7 builds and the distinct earlier field shortage. The source/test update has not been deployed, and the host defect is not established as that field cause.
+
+The [v0.1.0-dev.17 source ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/tags/v0.1.0-dev.17.zip) identifies this version. The [develop ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/archive/refs/heads/develop.zip) follows branch HEAD and changes over time. The Arduino ZIP is verified against its per-file manifest, all 257 codec-component hashes and unchanged root/component license/notice bytes. All 432 production-source/example paths match the official build; only the version/paragraph property values and documentation change afterward. The final extracted ZIP is not separately compiled; its checksum remains in an external sidecar.
+
+Private captures, build artifacts, local media, caches and device identities are excluded. Public tests preserve the executed assertions/expectations with normalized include paths and batch wrappers; all 84 exported cases were separately executed. Original component terms and unresolved grant limits remain unchanged. Experimental source distribution does not establish stable audio, numerical or acoustic fidelity, voice interoperability or 200 ms total phone-to-DAC latency.
+
+## Historical dev.16 and earlier export records
+
 # Experimental dev.16 source and packaging boundary
 
 This experimental development update retains the dev.15 source and changes the reviewed AAC retained-suffix frontend, its owned synthetic regression/provenance and runner registration, the existing clock fixture's host-mailbox service correction, plus version/documentation metadata. The real ADTS CPU evidence and fresh paired official CM7 builds are scoped in [dev.16 validation](validation/dev16-2026-10-28.md). The final version/paragraph-only property update is checked separately from the compiled source; the final ZIP is not separately compiled. These source and test updates have not been deployed.

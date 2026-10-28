@@ -59,8 +59,12 @@ static void overflow_and_fragment(bool reassembled){
  Bytes large(2048);for(unsigned k=0;k<large.size();++k)large[k]=uint8_t(k*7);const auto delivered=f.media;fragmented(f,p.media,large);CHECK(f.media==delivered+1&&f.last_media==large);
  if(reassembled)fragmented(f,1,fourth);else {f.acl(0x25,1,fourth);drain(f);}
  CHECK(f.host.peers_[0].has_pending&&f.host.peers_[0].pending.payload.len==fourth.size()&&f.host.classic_deferred_count_==3);
- CHECK((f.host.peers_[0].borrowed_slot<0)==reassembled);CHECK(!memcmp(f.host.peers_[0].pending.payload.data,fourth.data(),fourth.size()));
- f.acl(0x25,p.media,media_packet(99));drain(f);CHECK(f.media==delivered+1);
+ const auto& pending=f.host.peers_[0];const int parked=f.host.classic_parked_slot_;
+ const bool parked_owned=parked>=0&&parked<int(OwnedHost::RxSlots)&&f.host.classic_parked_owner_==pending.owner&&pending.borrowed_slot<0&&!f.host.packets_[parked].used&&!f.host.rx_.slots[parked].busy&&pending.pending.payload.data==f.host.packets_[parked].bytes;
+ const bool borrowed_owned=pending.borrowed_slot>=0&&pending.borrowed_slot<int(OwnedHost::RxSlots)&&f.host.packets_[pending.borrowed_slot].used&&f.host.packets_[pending.borrowed_slot].charged&&f.host.rx_.slots[pending.borrowed_slot].busy&&f.host.rx_.slots[pending.borrowed_slot].owner==pending.owner&&f.host.packets_[pending.borrowed_slot].lease.slot==unsigned(pending.borrowed_slot)&&f.host.packets_[pending.borrowed_slot].lease.serial==f.host.rx_.slots[pending.borrowed_slot].serial;
+ const bool assembly_owned=reassembled&&parked<0&&pending.borrowed_slot<0&&pending.pending.reassembled&&pending.pending.payload.data==pending.bytes+4;
+ CHECK(parked_owned||borrowed_owned||assembly_owned);CHECK(!memcmp(pending.pending.payload.data,fourth.data(),fourth.size()));
+ f.acl(0x25,p.media,media_packet(99));drain(f);CHECK(f.media==delivered+2);
  f.event(0x13,{1,0x25,0,8,0});drain(f,true,160);
  CHECK(f.media==delivered+2&&f.last_media==media_packet(99)&&!f.host.classic_deferred_count_&&!f.host.peers_[0].has_pending&&!f.host.rx_.outstanding);
  CHECK(response(1,echo_response(first))&&response(1,echo_response(second))&&response(1,echo_response(third))&&response(1,echo_response(fourth)));

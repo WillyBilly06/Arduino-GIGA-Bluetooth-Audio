@@ -90,6 +90,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  const bth_gap_config_t gapConfig={{reinterpret_cast<const uint8_t*>(name_),name},uuids_,mode.a2dp?0x240414u:0u,AclBytes,RxWindow,mode.classicUuidCount(config.callbacks.volume!=nullptr),false};
  if(!bth_gap_start(&gap_,&gapConfig))return Status::HardwareError;
  memset(&signaling_,0,sizeof signaling_);for(auto& p:packets_) {p.used=p.charged=false;p.length=0;p.order=p.barrier=0;p.lease={};}
+ classic_parked_slot_=-1;classic_parked_owner_=0;bypass_media_active_=false;
  for(auto& p:peers_) {p.attached=p.has_pending=false;p.owner=0;p.borrowed_slot=-1;}clearClassicControls();
  for(unsigned i=0;i<2;++i){reserved_[i]=false;admissions_[i]={};}
  erase(bonds_,sizeof bonds_);bond_cursor_=0;patch_position_=patch_pending_bytes_=0;pending_opcode_=0;
@@ -113,7 +114,7 @@ void OwnedHost::end(){
   pending_=false;boot_=Boot::Failed;memset(le_features_,0,sizeof le_features_);le_features_known_=false;
 }
 void OwnedHost::receiveWindowReceipt(const bth_acl_view_t& acl,unsigned uncharged){
- unsigned used=0,busy=0;for(unsigned k=0;k<RxSlots;++k){used+=packets_[k].used?1:0;busy+=rx_.slots[k].busy?1:0;}
+ unsigned used=0,busy=0;for(unsigned k=0;k<RxSlots;++k){used+=(packets_[k].used||int(k)==classic_parked_slot_)?1:0;busy+=rx_.slots[k].busy?1:0;}
  char line[128];snprintf(line,sizeof line,"Owned RXWIN handle=%04x pb=%u bc=%u n=%u out=%u raw=%u used=%u busy=%u budget=%u",acl.handle,acl.pb,acl.bc,unsigned(acl.payload.len),rx_.outstanding,uncharged,used,busy,rx_.budget);diagnose(line);
  for(unsigned i=0;i<BTH_RX_LINK_LIMIT;++i){const auto& link=rx_.links[i];unsigned slots=0;for(unsigned k=0;k<RxSlots;++k)if(rx_.slots[k].busy&&rx_.slots[k].owner==link.owner&&rx_.slots[k].handle==link.handle)++slots;
   snprintf(line,sizeof line,"Owned RXWIN link=%u active=%u reserved=%u handle=%04x owner=%lu out=%u pending=%u slots=%u",i,link.active,link.reserved,link.handle,(unsigned long)link.owner,link.outstanding,link.pending,slots);diagnose(line);
@@ -242,6 +243,7 @@ void OwnedHost::detach(unsigned i){
  for(auto& packet:packets_)if(packet.used&&packet.charged&&rx_.slots[packet.lease.slot].owner==peer.owner){bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}
  bth_control_tx_detach(&control_,uint8_t(i),peer.owner);
  if(i==0){if(config_.voice_audio)config_.voice_audio->detach();controller_priority_.detach(peer.owner);clearClassicControls();resetClassic(0);if(config_.voice_control)config_.voice_control->reset(0);clearVoiceRetirement();memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
+ if(i==0)releaseClassicParked();
  peer.attached=peer.has_pending=false;peer.owner=0;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
  if(i==1){le_disconnect_owner_=0;le_disconnect_advertise_after_=true;}
 }
@@ -439,7 +441,7 @@ void OwnedHost::receiveImpl(uint8_t type,const uint8_t* packet,size_t n,uint32_t
   if(i==2&&!deferred_count_){++stats_.dropped_packets;return;}
   unsigned uncharged=0;for(const auto& p:packets_)if(p.used&&!p.charged)++uncharged;
   if(rx_.outstanding+uncharged>=RxWindow){receiveWindowReceipt(event.acl,uncharged);fail("Owned controller exceeded advertised receive window");return;}
-  unsigned slot=RxSlots;for(unsigned k=0;k<RxSlots;++k)if(!packets_[k].used&&!rx_.slots[k].busy){slot=k;break;}
+  unsigned slot=RxSlots;for(unsigned k=0;k<RxSlots;++k)if(int(k)!=classic_parked_slot_&&!packets_[k].used&&!rx_.slots[k].busy){slot=k;break;}
   if(slot==RxSlots||n>AclBytes+4){fail("Owned physical ACL receive storage exhausted");return;}
   auto& owned=packets_[slot];owned.charged=false;owned.barrier=deferred_count_?event_serial_:0;
   if(!owned.barrier){if(bth_rx_flow_received(&rx_,uint8_t(slot),event.acl.handle,peers_[i].owner,&owned.lease)!=BTH_OK){fail("Owned controller exceeded advertised receive window");return;}owned.charged=true;}
@@ -621,11 +623,92 @@ bool OwnedHost::expandedClassicControl(const bth_l2cap_pdu_t& pdu) const{
  }
  return response_bytes>BTH_CONTROL_BYTES;
 }
+// This is deliberately narrower than safeClassicControl: voice, channel
+// transitions, mutating/mixed signaling and unrecognized AVRCP commands fence
+// later media. SDP, validated AVRCP read requests and matched read responses are independent.
+bool OwnedHost::mediaIndependentControl(const bth_l2cap_pdu_t& pdu)const{
+ if(!safeClassicControl(pdu))return false;
+ if(pdu.cid==1){for(size_t at=0;at<pdu.payload.len;){const auto* p=pdu.payload.data+at;const size_t n=bth_read_le16(p+2);
+   if(p[0]!=8&&(p[0]!=10||n!=2))return false;at+=n+4;}return true;}
+ const auto* channel=bth_l2cap_sig_find(&signaling_,pdu.cid);if(!channel)return false;
+ if(channel->psm==1)return true;
+ if(channel->psm!=0x17||pdu.cid!=classic_.avrcpCid()||pdu.payload.len<6)return false;
+ const auto* p=pdu.payload.data;const size_t n=pdu.payload.len;
+ if(p[0]&2)return classic_.independentReadResponse(pdu.cid,p,n,now_);
+ // Only complete single AVCTP commands; partial/response/malformed packets fence.
+ if((p[0]&0x0f)||p[1]!=0x11||p[2]!=0x0e||p[3]!=1)return false;
+ // The target accepts an eight-byte status body for UnitInfo/SubunitInfo.
+ if(n==11&&p[4]==0xff&&(p[5]==0x30||(p[5]==0x31&&p[6]==7)))return true;
+ // GetCapabilities(company/events): valid fixed vendor body, single parameter.
+ return n==14&&p[4]==0x48&&p[5]==0&&p[6]==0&&p[7]==0x19&&p[8]==0x58&&
+  p[9]==0x10&&p[10]==0&&p[11]==0&&p[12]==1&&(p[13]==2||p[13]==3);
+}
+bool OwnedHost::mediaBypassAllowed()const{
+ const auto& peer=peers_[0];if(!peer.attached||!peer.has_pending||deferred_count_||!was_secure_||
+  !bth_links_secure(&links_,peer.handle)||!classic_.configured()||!classic_.streaming()||!classic_.mediaCid()||
+  !mediaIndependentControl(peer.pending))return false;
+ if(classic_parked_slot_>=0&&(classic_parked_slot_>=int(RxSlots)||classic_parked_owner_!=peer.owner||peer.borrowed_slot>=0||peer.pending.payload.data!=packets_[classic_parked_slot_].bytes))return false;
+ if(classic_deferred_count_&&classic_deferred_owner_!=peer.owner)return false;
+ for(unsigned k=0;k<classic_deferred_count_;++k){const unsigned slot=(classic_deferred_read_+k)%ClassicDeferredSlots;
+  const auto& d=classic_deferred_[slot];const bth_l2cap_pdu_t pdu={peer.handle,d.cid,{peer.bytes+ClassicAssemblyBytes+slot*BTH_CONTROL_BYTES,d.length},false};
+  if(!mediaIndependentControl(pdu))return false;}
+ return true;
+}
+void OwnedHost::releaseClassicParked(){classic_parked_slot_=-1;classic_parked_owner_=0;bypass_media_active_=false;}
+bool OwnedHost::parkClassicPending(){
+ auto& peer=peers_[0];if(!peer.attached||!peer.has_pending||!mediaIndependentControl(peer.pending))return false;
+ if(classic_parked_slot_>=0)return classic_parked_slot_<int(RxSlots)&&classic_parked_owner_==peer.owner&&
+  peer.borrowed_slot<0&&peer.pending.payload.data==packets_[classic_parked_slot_].bytes;
+ const auto* data=peer.pending.payload.data;const size_t n=peer.pending.payload.len;const uintptr_t address=reinterpret_cast<uintptr_t>(data);
+ if(!data||!n||n>BTH_CONTROL_BYTES)return false;
+ if(peer.borrowed_slot>=0){if(peer.borrowed_slot>=int(RxSlots))return false;const auto& p=packets_[peer.borrowed_slot];const uintptr_t base=reinterpret_cast<uintptr_t>(p.bytes);
+  if(!p.used||!p.charged||p.lease.slot!=unsigned(peer.borrowed_slot)||!rx_.slots[p.lease.slot].busy||rx_.slots[p.lease.slot].owner!=peer.owner||address<base||address-base>p.length||n>p.length-(address-base))return false;
+ }else {const uintptr_t base=reinterpret_cast<uintptr_t>(peer.bytes);if(!peer.pending.reassembled||address<base||address-base>ClassicAssemblyBytes||n>ClassicAssemblyBytes-(address-base))return false;}
+ int available=-1;for(unsigned k=0;k<RxSlots;++k)if(!packets_[k].used&&!rx_.slots[k].busy){available=int(k);break;}
+ if(available<0)return false;memcpy(packets_[available].bytes,data,n);classic_parked_slot_=available;classic_parked_owner_=peer.owner;peer.pending.payload.data=packets_[available].bytes;
+ if(peer.borrowed_slot>=0){auto& p=packets_[peer.borrowed_slot];if(bth_rx_flow_release(&rx_,p.lease)!=BTH_OK){fail("Owned parked control lease release failed");return false;}p.used=false;peer.borrowed_slot=-1;}
+ return true;
+}
+void OwnedHost::processIndependentMedia(){
+ auto& peer=peers_[0];if(!mediaBypassAllowed())return;
+ auto oldest=[this,&peer](bool after,uint32_t order)->int{int found=-1;for(unsigned k=0;k<RxSlots;++k){const auto& p=packets_[k];
+  // The borrowed pending control is already represented by peer.pending; it
+  // is not a later ingress packet. Its real lease remains held until parking.
+  if(int(k)==peer.borrowed_slot||!p.used||!p.charged||rx_.slots[k].owner!=peer.owner||(after&&int32_t(p.order-order)<=0))continue;
+  if(found<0||int32_t(p.order-packets_[found].order)<0)found=int(k);}return found;};
+ for(unsigned budget=0;budget<RxWindow&&active_&&peer.attached&&peer.has_pending;++budget){
+  if(!mediaBypassAllowed())return;
+  if(bypass_media_active_&&int32_t(now_-peer.assembly_deadline)>=0){++stats_.dropped_packets;closePeer(0,0x13);return;}
+  const int index=oldest(false,0);if(index<0)return;auto& packet=packets_[index];const uint8_t pb=uint8_t((packet.bytes[1]>>4)&3),bc=uint8_t(packet.bytes[1]>>6);
+  if(bc||packet.length<=4)return;
+  if(bypass_media_active_){if(!peer.assembly.active||pb!=1)return;}
+  else {
+   if(peer.assembly.active||pb==1||pb>2)return;
+   uint8_t header[4];size_t used=0;int next=index;uint32_t order=0;bool first=true;
+   while(next>=0&&used<4){const auto& candidate=packets_[next];const uint8_t part_pb=uint8_t((candidate.bytes[1]>>4)&3),part_bc=uint8_t(candidate.bytes[1]>>6);
+    if(part_bc||candidate.length<=4||(!first&&part_pb!=1))return;
+    const size_t n=size_t(candidate.length)-4;const size_t take=n<4-used?n:4-used;memcpy(header+used,candidate.bytes+4,take);used+=take;order=candidate.order;first=false;
+    if(used<4)next=oldest(true,order);
+   }
+   if(used<4)return;const uint16_t length=bth_read_le16(header),cid=bth_read_le16(header+2);
+   if(!length||length>ClassicMtu||cid!=classic_.mediaCid())return;
+   if(!parkClassicPending()||!active_)return;
+  }
+  bth_acl_view_t acl={};acl.handle=peer.handle;acl.pb=pb;acl.bc=bc;acl.payload={packet.bytes+4,size_t(packet.length)-4};
+  bth_l2cap_pdu_t pdu={};const auto result=bth_l2cap_rx_feed(&peer.assembly,&acl,&pdu);
+  if(result==BTH_MORE){bypass_media_active_=true;peer.assembly_deadline=now_+2000;}
+  else {bypass_media_active_=false;peer.assembly_deadline=0;}
+  if(result==BTH_OK){if(pdu.cid!=classic_.mediaCid()||!deliver(0,pdu)){fail("Owned independent media invariant failed");return;}}
+  const auto release=bth_rx_flow_release(&rx_,packet.lease);packet.used=false;
+  if(release!=BTH_OK){fail("Owned independent media lease release failed");return;}
+  if(result<0){++stats_.dropped_packets;closePeer(0,0x13);return;}
+ }
+}
 void OwnedHost::clearClassicControls(uint16_t cid){
  if(!cid){for(auto& p:classic_deferred_)p={};classic_deferred_read_=classic_deferred_count_=0;classic_deferred_owner_=0;return;}
  auto& peer=peers_[0];if(peer.has_pending&&peer.pending.cid==cid){
   if(peer.borrowed_slot>=0){auto& p=packets_[peer.borrowed_slot];bth_rx_flow_release(&rx_,p.lease);p.used=false;}
-  peer.has_pending=false;peer.borrowed_slot=-1;peer.pending={};peer.pending_deadline=0;peer.pending_signal_cursor=0;
+  releaseClassicParked();peer.has_pending=false;peer.borrowed_slot=-1;peer.pending={};peer.pending_deadline=0;peer.pending_signal_cursor=0;
  }
  unsigned kept=0;const unsigned count=classic_deferred_count_;
  for(unsigned k=0;k<count;++k){const unsigned from=(classic_deferred_read_+k)%ClassicDeferredSlots;
@@ -666,9 +749,11 @@ void OwnedHost::processRx(unsigned i){
   bool consumed=false;
   if(i==0&&classic_deferred_count_)consumed=deferClassicControl(peer.pending,peer.pending_deadline,peer.pending_signal_cursor);
   else {consumed=deliver(i,peer.pending,&peer.pending_signal_cursor);if(!consumed&&i==0)consumed=deferClassicControl(peer.pending,peer.pending_deadline,peer.pending_signal_cursor);}
-  if(!consumed){if(due(now_,peer.pending_deadline))closePeer(i,0x13);return;}
+  if(!consumed){if(due(now_,peer.pending_deadline)){closePeer(i,0x13);return;}
+   if(i==0&&bypass_media_active_&&int32_t(now_-peer.assembly_deadline)>=0){++stats_.dropped_packets;closePeer(i,0x13);return;}
+   if(i==0&&mediaBypassAllowed()&&parkClassicPending())processIndependentMedia();return;}
   if(peer.borrowed_slot>=0){auto& packet=packets_[peer.borrowed_slot];bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}
-  peer.has_pending=false;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
+  if(i==0)releaseClassicParked();peer.has_pending=false;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
  }
  for(unsigned limit=0;limit<RxWindow&&active_&&peer.attached;++limit){
   int index=-1;for(unsigned k=0;k<RxSlots;++k)if(packets_[k].used&&packets_[k].charged&&rx_.slots[k].owner==peer.owner&&(index<0||int32_t(packets_[k].order-packets_[index].order)<0))index=int(k);
@@ -685,7 +770,7 @@ void OwnedHost::processRx(unsigned i){
   }
   bth_rx_flow_release(&rx_,packet.lease);packet.used=false;if(result<0){++stats_.dropped_packets;closePeer(i,0x13);break;}
  }
- if(due(now_,peer.assembly_deadline)){++stats_.dropped_packets;closePeer(i,0x13);}
+ if(peer.assembly.active&&int32_t(now_-peer.assembly_deadline)>=0){++stats_.dropped_packets;closePeer(i,0x13);}
 }
 void OwnedHost::synchronizeChannelsImpl(){
  if(!peers_[0].attached)return;auto& peer=peers_[0];
