@@ -27,13 +27,16 @@ typedef struct {
     bth_gap_stage_t stage;
     uint16_t pending_opcode;
     uint8_t error,scan,desired_scan;
-    bool pending,scan_update,initialized;
+    bool pending,scan_update,initialized,synchronous_events;
 } bth_gap_t;
 // Name/UUID storage remains valid until initialization completes. Advertise only
 // service backends that are actually ready; this setup leaves all scans OFF.
 // ESP32's current ROM host-buffer helper requires ACL length >=1021. The packet
 // count must match the actual separately reserved host receive-storage budget.
 bool bth_gap_start(bth_gap_t *gap,const bth_gap_config_t *config);
+// Disconnected setup only, before the event mask is encoded. Does not create
+// a SCO receive pool or imply that controller voice routing is usable.
+bool bth_gap_synchronous_events(bth_gap_t *gap,bool enable);
 bth_status_t bth_gap_next_command(bth_gap_t *gap,bth_hci_flow_t *flow,uint8_t *out,size_t capacity,size_t *written);
 // The central owner updates HCI grants exactly once before dispatching here.
 bth_status_t bth_gap_on_event(bth_gap_t *gap,const bth_h4_frame_t *event);

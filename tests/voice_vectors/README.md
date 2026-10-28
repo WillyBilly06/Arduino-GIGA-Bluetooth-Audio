@@ -1,0 +1,1 @@
+Own generated mono16kHz440+997Hz PCM,32units of120frames. FFmpeg9.0.2 independently produced57-byte mSBC frames and decodedS16 samples. This is a codec oracle, not a phone/controller/I2S/latency test. Generation receipt and exact tool hash are retained outside the export.

@@ -51,3 +51,7 @@ hash before final source export; it is not an assertion of current distributed
 bytes. exported_sha256 and exported_bytes identify each actual file in this
 distribution. Original notices, source provenance and unresolved grants are
 unchanged; these hash fields do not grant additional rights.
+
+## Unpublished voice encoder overlay
+
+The follow-on voice source adds13 owner-supplied Broadcom SBC encoder files, retaining their Apache-2.0 notices, plus original project adapters. The selected implementation supplies mono mSBC for experimental HFP; it is separate from the257-file decoder inventory above. Its input/export hashes and dated modification notices are in `src/vendor/voice/sbc_encoder/manifest.json` and `PORTING.md`. The existing SBC CPU typedef header has an additional documented ARM LP64 correction; its vendor export hash is updated. The other decoder license limitations above remain unchanged. Historical release source-provenance documents retain their original build scope; the voice phase2 source manifest separately identifies this unpublished overlay.

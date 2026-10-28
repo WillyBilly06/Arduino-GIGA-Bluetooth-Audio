@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-dev.15 - experimental candidate, 2026-10-27
+
+- Integrate the frozen opt-in HF/HS voice source, bounded synchronous transport and worker, conditional SDP and a copied microphone-input provider API. Voice remains off by default; no provider means silence.
+- Retain dev.14's mono HE-AAC allocation reduction and all existing codec defaults and notices. The combined candidate passed Receiver and VoiceQualification CM7 builds and static link audits; independent review and hardware qualification remain.
+- Retain six decoder-operation families, eight Codec identities and seven enabled defaults: SBC/SBC-XQ, AAC-LC, HE-AAC v1, aptX/aptX HD, LDAC, LHDC V5 and Opus. SBC-XQ shares the SBC identity. All-codec physical operation remains unqualified.
+- Seventeen combined-source ARM64 CPU fixtures passed with fake radio/I2S and single-thread reentry; focused byte-pacing and HF admission cases also passed. These results do not establish controller or call behavior.
+- Controller routing, phone call interoperability, real microphone input, long calls, acoustic output and the 200 ms total phone-to-DAC target remain unqualified. Existing long-playback PCM shortages remain unresolved; this candidate is not an audio-continuity fix.
+
 ## 0.1.0-dev.14 - experimental development source, 2026-10-27
 
 - Allocate the HE-AAC envelope-dequant tail for the opened channel count in the same owned state block. Mono HE payload/provider requests are 960 bytes lower in paired portable CPU fixtures; LC/stereo bytes, block counts, PCM and framing/arithmetic remain unchanged in those tests. The M7 compiler confirms the geometry and a 56-byte InitSBRState frame; MCU allocation/PCM execution remains unverified.

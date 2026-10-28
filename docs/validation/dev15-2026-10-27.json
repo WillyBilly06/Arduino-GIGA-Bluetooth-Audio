@@ -1,0 +1,40 @@
+{
+  "status": "EXPERIMENTAL_COMBINED_CM7_STATIC_BUILDS_NOT_VOICE_RUNTIME",
+  "base_develop": "fc7c5ab40bb2949941e471fee81d6229fa664835",
+  "compiled_source_pins_sha256": "a1a72445af6405f443c55e30b846df556faae1fe7b28d5e9c19d82a6423dfe68",
+  "stock_platform": "arduino:mbed_giga 4.6.0, Cortex-M7",
+  "default_uart_baud": 2000000,
+  "private_observers": false,
+  "library_translation_units_per_sketch": 191,
+  "compile_rows_per_sketch": 223,
+  "enabled_codec_defaults": 7,
+  "linked_decoder_operation_families": 6,
+  "stock_hcd_sha256": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea",
+  "binary_size_limit": 786432,
+  "receiver": {
+    "returncode": 0,
+    "bin_sha256": "53535287eb83b79827113741ad6f7b90a31aa12a86103513574fad0da17a5e88",
+    "bin_bytes": 538996,
+    "elf_sha256": "8f88f59ce6b1eef94537ef97fe8e75317fae8a14489c33ca4c8195e2dbeedef8"
+  },
+  "voice_qualification": {
+    "returncode": 0,
+    "bin_sha256": "a6a41213d595ef8d36515516b510b3f41ae2581ac286c2986818bcb14b0e9ef1",
+    "bin_bytes": 531172,
+    "elf_sha256": "c688fa54b9f0b1435b337b21bc1bffa8c1f007d37ab7f448f98925dc41d2cf87"
+  },
+  "portable_voice_basis": {
+    "fixtures_passed": 17,
+    "scope": "combined-source ARM64 CPU with fake radio/I2S and single-thread reentry; not hardware voice qualification",
+    "receipt_sha256": "18abd365a315a45ac7253475447bb12549fc9dc1a853431d1b0373760ad3311a",
+    "additional_cpu_evidence": "receive-byte pacing and HF command-admission cases"
+  },
+  "combined_runtime_tested": false,
+  "voice_hardware_tested": false,
+  "acoustic_or_long_call_qualified": false,
+  "playback_shortage_fixed": false,
+  "compiled_source_pins_scope": "production src/, examples/, library.properties",
+  "combined_cpu_candidate_pins_sha256": "66e895e41990e1becb23bf6d9dc38b74145a2929f1c45d5a70ca63936d606861",
+  "combined_cpu_fixtures_passed": true,
+  "paired_cm7_gate_sha256": "a8dda7b631d784adb088ab41621bb04ca8474a2b6967a7831a801e16a4737fc9"
+}

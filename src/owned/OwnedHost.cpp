@@ -63,6 +63,8 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  audio_supply::hostCreditInvalidate(); // Main may invalidate, never publish.
  if(active_||(config.voice_control&&config.voice_control->enabled()))return Status::Busy;
  if(config.voice_control&&!config.callbacks.enable_a2dp)return Status::Unsupported; // Control stage shares the current Classic actor.
+ if(config.voice_audio&&(!config.voice_control||!config.voice_audio->enabled()))return Status::InvalidArgument;
+ if(config.voice_sdp&&!config.voice_audio)return Status::InvalidArgument;
  const OperationModePolicy mode{config.callbacks.enable_a2dp,config.ble.enabled};
  if(!mode.valid()||!config.name||!config.name[0]||(mode.a2dp&&!config.callbacks.configure)||!hooks.txReady||!hooks.sendH4||!hooks.setBaud||!config.firmware||!config.firmwareSize||
     (mode.a2dp&&(!(config.codecMask&codecBit(Codec::Sbc))||(config.codecMask&~AllCodecs)))||
@@ -84,6 +86,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
   classic_.setStreamPolicy(streamPolicy,this);
  }
  result=le_.begin(config.ble,name_,commands_,control_);if(result!=Status::Ok)return result;
+ uuids_[0]=0x110b;uuids_[1]=0x110c;uuids_[2]=0x110e;uuids_[3]=uuids_[4]=0;
  const bth_gap_config_t gapConfig={{reinterpret_cast<const uint8_t*>(name_),name},uuids_,mode.a2dp?0x240414u:0u,AclBytes,RxWindow,mode.classicUuidCount(config.callbacks.volume!=nullptr),false};
  if(!bth_gap_start(&gap_,&gapConfig))return Status::HardwareError;
  memset(&signaling_,0,sizeof signaling_);for(auto& p:packets_) {p.used=p.charged=false;p.length=0;p.order=p.barrier=0;p.lease={};}
@@ -95,6 +98,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  deferred_count_=deferred_read_=0;event_serial_=retired_event_=0;close_media_=close_avrcp_=0;now_=begin_ms_=deadline_=settle_until_=packet_order_=command_deadline_=0;
  qos_last_data_ms_=qos_classic_owner_=qos_le_owner_=0;qos_data_fragments_=qos_data_bytes_=qos_paced_deferrals_=qos_urgent_bypasses_=0;qos_classic_burst_=0;qos_have_data_=qos_audio_active_=false;
  memset(le_features_,0,sizeof le_features_);le_features_known_=false;
+ memset(voice_features_,0,sizeof voice_features_);voice_tx_bytes_=0;voice_tx_packets_=0;
  le_disconnect_owner_=0;le_advertising_held_=false;le_disconnect_advertise_after_=true;
  memset(sent_at_,0,sizeof sent_at_);accept_deadline_=0;next_peer_=le_trace_=0;le_reply_observe_trace_=0;clock_started_=pending_=tx_turn_=last_ack_=was_secure_=false;boot_=Boot::PatchReset;
  if(config_.voice_control){result=config_.voice_control->begin(config_.voice_config,control_);if(result!=Status::Ok)return result;}
@@ -153,6 +157,25 @@ void OwnedHost::bootPoll(){
   if(config_.baud==115200){boot_=Boot::LeHost;break;}
   params[2]=uint8_t(config_.baud);params[3]=uint8_t(config_.baud>>8);params[4]=uint8_t(config_.baud>>16);params[5]=uint8_t(config_.baud>>24);bootCommand(0xfc18,params,6);break;
  case Boot::LeHost:params[0]=config_.ble.enabled?1:0;bootCommand(0x0c6d,params,2);break;
+ case Boot::VoiceSetup:{
+  auto& voice=*config_.voice_audio;
+  if(voice.setupDone()){
+   if(voice.setupRequiresReset()){fail("Owned voice setup requires controller reset");break;}
+   if(!config_.voice_control->setWidebandBackend(voice.wideband())){fail("Owned voice capabilities changed after admission");break;}
+   // Rejected synchronous requests also finish with SyncComplete. Keep those
+   // events enabled even if readback left the audio backend unavailable.
+   if(!bth_gap_synchronous_events(&gap_,true)){fail("Owned synchronous event mask admission failed");break;}
+   if(!voice.ready())config_.voice_control->end();
+   if(voice.ready()&&config_.voice_sdp){
+    if(!config_.voice_sdp->begin(config_.voice_config,voice.wideband())||classic_.installVoiceRecords(config_.voice_sdp->records(),config_.voice_sdp->count())!=Status::Ok){fail("Owned voice SDP registration rejected");break;}
+    unsigned count=gap_.config.uuid_count;if(config_.voice_config.hands_free)uuids_[count++]=0x111e;if(config_.voice_config.headset)uuids_[count++]=0x1108;gap_.config.uuid_count=uint8_t(count);
+   }
+   boot_=Boot::Gap;break;
+  }
+  bth_sco_setup_command_t command{};const auto result=voice.setupNext(now_,command);
+  if(result==BTH_OK&&bootCommand(command.opcode,command.parameters,command.length)&&voice.setupQueued(command.ticket,now_)!=BTH_OK)fail("Owned voice setup command invariant");
+  else if(result<0)fail("Owned voice setup intent rejected");
+  break;}
  case Boot::Gap:{
   if(!hooks_.txReady(hooks_.user))break;size_t n=0;bth_status_t result=bth_gap_next_command(&gap_,&flow_,output_,sizeof output_,&n);
   if(result==BTH_OK){pending_=true;pending_opcode_=gap_.pending_opcode;deadline_=now_+3000;submit(n);}
@@ -164,6 +187,12 @@ void OwnedHost::bootPoll(){
 }
 void OwnedHost::bootEvent(const bth_h4_frame_t& event){
  if(!pending_||event.type!=BTH_H4_EVENT)return;const auto p=event.event.params;
+ if(boot_==Boot::VoiceSetup){
+  const auto result=config_.voice_audio->setupEvent(event,now_);
+  if(result==BTH_OK)pending_=false;
+  if(result<0||config_.voice_audio->setupRequiresReset())fail("Owned voice setup completion requires reset");
+  return;
+ }
  if(event.event.code==0x0f){if(p.len==4&&bth_read_le16(p.data+2)==pending_opcode_&&p.data[0])fail("Owned boot command status rejected");return;}
  if(event.event.code!=0x0e||p.len<3||bth_read_le16(p.data+1)!=pending_opcode_)return;
  if(p.len<4||p.data[3]){fail("Owned boot command rejected");return;}
@@ -177,17 +206,17 @@ void OwnedHost::bootEvent(const bth_h4_frame_t& event){
  case Boot::Version:
   valid=p.len==12;if(valid){stats_.manufacturer=bth_read_le16(p.data+8);stats_.lmp_subversion=bth_read_le16(p.data+10);valid=stats_.manufacturer==15||stats_.manufacturer==305;}boot_=Boot::Features;break;
  case Boot::Features:
-  valid=p.len==12;if(valid){stats_.bredr_supported=(p.data[8]&0x20)==0;valid=stats_.bredr_supported&&(p.data[10]&8)&&(!config_.ble.enabled||(p.data[8]&0x40));}boot_=Boot::AddressWrite;break;
+  valid=p.len==12;if(valid){stats_.bredr_supported=(p.data[8]&0x20)==0;valid=stats_.bredr_supported&&(p.data[10]&8)&&(!config_.ble.enabled||(p.data[8]&0x40));if(config_.voice_audio)memcpy(voice_features_,p.data+4,8);}boot_=Boot::AddressWrite;break;
  case Boot::AddressWrite:valid=p.len==4;boot_=Boot::AddressRead;break;
  case Boot::AddressRead:
   valid=p.len==10;if(valid)for(unsigned i=0;i<6;++i){stats_.address[i]=p.data[9-i];if(stats_.address[i]!=config_.address[i])valid=false;}boot_=Boot::Buffers;break;
  case Boot::Buffers:
-  valid=p.len==11;if(valid){uint16_t length=bth_read_le16(p.data+4);valid=bth_hci_flow_set_buffers(&flow_,length>AclBytes?AclBytes:length,bth_read_le16(p.data+7),0,0);}boot_=config_.ble.enabled?Boot::LeBuffers:Boot::Baud;break;
+  valid=p.len==11;if(valid){uint16_t length=bth_read_le16(p.data+4);valid=bth_hci_flow_set_buffers(&flow_,length>AclBytes?AclBytes:length,bth_read_le16(p.data+7),0,0);if(config_.voice_audio){voice_tx_bytes_=p.data[6];voice_tx_packets_=bth_read_le16(p.data+9);}}boot_=config_.ble.enabled?Boot::LeBuffers:Boot::Baud;break;
  case Boot::LeBuffers:
   valid=p.len==7;if(valid){uint16_t length=bth_read_le16(p.data+4);valid=bth_hci_flow_set_buffers(&flow_,flow_.classic.length,flow_.classic.total,length>AclBytes?AclBytes:length,p.data[6]);}boot_=Boot::LeFeatures;break;
  case Boot::LeFeatures:valid=p.len==12;if(valid){uint8_t any=0;for(unsigned i=4;i<12;++i)any|=p.data[i];valid=any!=0;if(valid){memcpy(le_features_,p.data+4,8);le_features_known_=true;}}boot_=Boot::Baud;break;
  case Boot::Baud:valid=p.len==4&&hooks_.setBaud(config_.baud,hooks_.user);if(valid)stats_.baud_rate=config_.baud;boot_=Boot::LeHost;break;
- case Boot::LeHost:valid=p.len==4;boot_=Boot::Gap;break;
+ case Boot::LeHost:valid=p.len==4;if(config_.voice_audio){config_.voice_audio->controllerInfo(stats_.manufacturer,voice_features_,voice_tx_bytes_,voice_tx_packets_);config_.voice_audio->startSetup();boot_=Boot::VoiceSetup;}else boot_=Boot::Gap;break;
  default:valid=false;break;
  }
  if(!valid){fail("Owned post-patch controller verification failed");return;}pending_=false;
@@ -202,7 +231,8 @@ bool OwnedHost::attach(unsigned i,const bth_peer_link_t& link){
  peer.security_deadline=now_+35000;peer.disconnect_deadline=peer.assembly_deadline=peer.pending_deadline=0;memset(peer.opened,0,sizeof peer.opened);memset(peer.channel_deadlines,0,sizeof peer.channel_deadlines);
  if(!bth_l2cap_rx_init(&peer.assembly,link.handle,peer.bytes,i==0?ClassicAssemblyBytes:sizeof peer.bytes))return false;
  if(i==0){clearClassicControls();const bth_l2cap_service_t services[]={{1,672,false},{0x19,ClassicMtu,true},{0x17,672,true},{3,VoiceProfiles::FrameBytes,true}};
-  if(!bth_l2cap_sig_init(&signaling_,link.handle,services,config_.voice_control?4:3))return false;resetClassic(link.owner);if(config_.voice_control)config_.voice_control->reset(link.owner);clearVoiceRetirement();close_media_=close_avrcp_=0;was_secure_=false;avrcp_at_=0;avrcp_attempts_=0;avrcp_recovering_=false;controller_priority_.attach(link.owner,link.handle);
+  if(!bth_l2cap_sig_init(&signaling_,link.handle,services,config_.voice_control&&config_.voice_control->enabled()?4:3))return false;resetClassic(link.owner);if(config_.voice_control)config_.voice_control->reset(link.owner);clearVoiceRetirement();close_media_=close_avrcp_=0;was_secure_=false;avrcp_at_=0;avrcp_attempts_=0;avrcp_recovering_=false;controller_priority_.attach(link.owner,link.handle);
+  if(config_.voice_audio&&config_.voice_audio->attach(link.owner,link.handle,link.peer)!=Status::Ok)return false;
  }else if(!le_.attach(link.owner,link.handle,link.role,le_features_known_?le_features_:nullptr,now_))return false;
  return true;
 }
@@ -211,7 +241,7 @@ void OwnedHost::detach(unsigned i){
  bth_rx_flow_detach(&rx_,peer.handle,peer.owner);
  for(auto& packet:packets_)if(packet.used&&packet.charged&&rx_.slots[packet.lease.slot].owner==peer.owner){bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}
  bth_control_tx_detach(&control_,uint8_t(i),peer.owner);
- if(i==0){controller_priority_.detach(peer.owner);clearClassicControls();resetClassic(0);if(config_.voice_control)config_.voice_control->reset(0);clearVoiceRetirement();memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
+ if(i==0){if(config_.voice_audio)config_.voice_audio->detach();controller_priority_.detach(peer.owner);clearClassicControls();resetClassic(0);if(config_.voice_control)config_.voice_control->reset(0);clearVoiceRetirement();memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
  peer.attached=peer.has_pending=false;peer.owner=0;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
  if(i==1){le_disconnect_owner_=0;le_disconnect_advertise_after_=true;}
 }
@@ -270,6 +300,22 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
  const uint32_t previous_le_owner=peers_[1].attached?peers_[1].owner:0;
  const uint16_t previous_le_handle=peers_[1].handle;
  const OperationModePolicy mode{config_.callbacks.enable_a2dp,config_.ble.enabled};
+ // Synchronous requests belong to the admitted Classic ACL, not the ACL link
+ // kernel. It otherwise rejects them with the ACL-only command form.
+ if(event.event.code==4&&p.len==10&&(p.data[9]==0||p.data[9]==2)){
+  if(config_.voice_audio&&peers_[0].attached&&!memcmp(p.data,links_.classic.peer,6)){
+   const auto status=config_.voice_audio->event(event,bth_links_secure(&links_,peers_[0].handle),voiceAuthorized(),voiceCodec(),now_,0);
+   if(status==BTH_OK)return true;
+   if(status<0){closePeer(0,0x13);return true;}
+  }
+  // Never overlap another rejection's untagged controller completion. The
+  // existing rejection already covers a repeated request from that peer.
+  bool pending=false;
+  for(unsigned k=0;k<BTH_CMD_QUEUE_LIMIT;++k)if(!(commands_.free_mask&(1u<<k))&&commands_.slots[k].opcode==0x042a)pending=true;
+  for(unsigned k=0;k<commands_.sent_count;++k)if(commands_.sent[k].opcode==0x042a)pending=true;
+  if(!pending){uint8_t reply[7];memcpy(reply,p.data,6);reply[6]=0x0d;bth_cmdq_push(&commands_,0x042a,reply,7,true);}
+  return true;
+ }
  if(event.event.code==4&&p.len==10&&(!mode.a2dp||(links_.classic.state==BTH_PEER_EMPTY&&!mode.admitClassic(reserved_[0])))){
   uint8_t reply[7];memcpy(reply,p.data,6);reply[6]=0x0d;bth_cmdq_push(&commands_,0x040a,reply,7,true);return true;
  }
@@ -285,7 +331,9 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
  unsigned previous_sent=commands_.sent_count,completed_index=BTH_CMD_QUEUE_LIMIT;uint32_t command_owner=0;uint16_t completed_opcode=0,completed_handle=0xffff;
  if((event.event.code==0x0e&&p.len>=3)||(event.event.code==0x0f&&p.len==4)){const uint16_t op=bth_read_le16(p.data+(event.event.code==0x0e?1:2));completed_opcode=op;for(unsigned k=0;k<previous_sent;++k)if(commands_.sent[k].opcode==op){completed_index=k;command_owner=commands_.sent[k].owner;completed_handle=commands_.sent[k].handle;break;}}
  links_.security_now_ms=now_;
- bth_status_t result=bth_links_on_event(&links_,&event);
+ const bool sco_disconnect_reply=config_.voice_audio&&completed_opcode==0x0406&&config_.voice_audio->ownsHandle(completed_handle);
+ uint32_t consumed_owner=0;
+ bth_status_t result=sco_disconnect_reply?bth_cmdq_complete(&commands_,&event,&consumed_owner):bth_links_on_event(&links_,&event);
  if(commands_.sent_count<previous_sent&&completed_index<previous_sent){for(unsigned k=completed_index+1;k<previous_sent;++k)sent_at_[k-1]=sent_at_[k];sent_at_[commands_.sent_count]=0;}
  if(result<0){fail("Owned link/security event rejected");return true;}
  if(links_.classic.state==BTH_PEER_PENDING){if(!accept_deadline_)accept_deadline_=now_+15000;}else accept_deadline_=0;
@@ -301,6 +349,11 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
   snprintf(line,sizeof line,"Owned LE HCI event=%02x op=%04x status=%02x n=%u stage=%u credit=%u",event.event.code,leControl.opcode,status,unsigned(p.len),leControl.stage,flow_.command_credits);diagnose(line);++le_trace_;
  }
  le_.event(event,command_owner);
+ if(config_.voice_audio&&peers_[0].attached){
+  const uint32_t actual_owner=commands_.sent_count<previous_sent?command_owner:0;
+  const auto status=config_.voice_audio->event(event,bth_links_secure(&links_,peers_[0].handle),voiceAuthorized(),voiceCodec(),now_,actual_owner);
+  if(status<0||config_.voice_audio->needsPeerRetirement())closePeer(0,0x13);
+ }
  // CC receipts require the existing preflight and actual owner consumption.
  // Update03 has no sent-owner attribution: local owner/handle is context only.
  const bool reply_cc=event.event.code==0x0e&&(completed_opcode==0x2020||completed_opcode==0x2021)&&
@@ -366,13 +419,20 @@ void OwnedHost::receiveImpl(uint8_t type,const uint8_t* packet,size_t n,uint32_t
    fail(line);return;
   }
   if(boot_==Boot::Ready&&!leCommandPreflight(commands_,event)){le_.malformedEvent();return;}
+  // Validate all SCO entries before the separate ACL pool applies any grant.
+  if(event.event.code==0x13&&config_.voice_audio&&config_.voice_audio->validateCompleted(event)<0){closePeer(0,0x13);return;}
   if(bth_hci_flow_on_event(&flow_,&event)<0){fail("Owned HCI credit inconsistency");return;}
   if(event.event.code==0x10){fail("Owned controller hardware error");return;}
   if(boot_!=Boot::Ready){bootEvent(event);return;}
   // Credit-bearing completions may unblock an older retained security event.
   // Other events stay FIFO behind it so disconnect cannot overtake an SDU owner.
-  if(event.event.code==0x13)return;
+  if(event.event.code==0x13){if(config_.voice_audio&&config_.voice_audio->completed(event)<0)closePeer(0,0x13);return;}
   if(deferred_count_&&!independentCompletion(event))defer(packet,n);else if(!dispatch(event))defer(packet,n);
+ }else if(type==BTH_H4_SCO){
+  if(config_.voice_audio&&boot_==Boot::Ready&&peers_[0].attached){
+   // Copy only. Worker callbacks, codec work and output setup run elsewhere.
+   config_.voice_audio->receive(event.sco,bth_links_secure(&links_,peers_[0].handle)&&voiceAuthorized());
+  }else ++stats_.dropped_packets;
  }else if(type==BTH_H4_ACL){
   if(!stats_.controller_ready){fail("Owned ACL before controller readiness");return;}
   unsigned i=2;for(unsigned k=0;k<2;++k)if(peers_[k].attached&&peers_[k].handle==event.acl.handle)i=k;
@@ -681,7 +741,7 @@ void OwnedHost::avrcpPoll(bool secure,bool allow_open){
  else bth_control_tx_cancel(&control_,slot.token);
 }
 bool OwnedHost::updateAudioPriority(){
- const bool enabled=config_.ble.audio_priority && !deferred_count_ && was_secure_ && peers_[0].attached && bth_links_secure(&links_,peers_[0].handle) && classic_.streaming();
+ const bool enabled=config_.ble.audio_priority && !deferred_count_ && was_secure_ && peers_[0].attached && bth_links_secure(&links_,peers_[0].handle) && (classic_.streaming()||(config_.voice_audio&&config_.voice_audio->preempting()));
  if(!enabled || !qos_audio_active_ || qos_classic_owner_!=peers_[0].owner || qos_le_owner_!=peers_[1].owner){
   qos_last_data_ms_=0;qos_have_data_=false;qos_classic_burst_=0;
  }
@@ -767,9 +827,14 @@ void OwnedHost::runtimePoll(){
   if(le_.closeRequested())closePeer(1,0x13);
  if(le_.stats().status==Status::HardwareError){const auto state=le_.controlState();char line[128];snprintf(line,sizeof line,"Owned LE failure op=%04x stage=%u error=%02x pending=%u now=%lu deadline=%lu",state.opcode,state.stage,state.error,state.pending,(unsigned long)now_,(unsigned long)state.deadline);diagnose(line);fail("Owned LE profile control failure");return;}
  serviceControllerPriority(secure);if(!active_)return;
+ voicePoll();if(!active_)return;
  if(!hooks_.txReady(hooks_.user))return;
  size_t n=0;
  if((!last_ack_||rx_.outstanding>=RxWindow-1)&&bth_rx_flow_next_completed(&rx_,output_,sizeof output_,&n)==BTH_OK){last_ack_=true;submit(n);return;}
+ if(config_.voice_audio){VoiceAudioSubmission receipt{};const auto result=config_.voice_audio->prepareSubmission(output_,sizeof output_,n,receipt);
+  if(result==BTH_OK){if(!submit(n))return;if(config_.voice_audio->commitSubmission(receipt)!=BTH_OK)fail("Owned synchronous copy commit invariant");return;}
+  if(result<0){closePeer(0,0x13);return;}
+ }
  const uint32_t owners[]={peers_[0].owner,peers_[1].owner};
  const bool prioritize=updateAudioPriority();
  const bool le_control_pending=peers_[1].has_pending && (peers_[1].pending.cid==5 || peers_[1].pending.cid==6);
@@ -797,6 +862,35 @@ void OwnedHost::runtimePoll(){
  if(!gap_.pending&&gap_.scan!=scan){const auto result=bth_gap_set_scan(&gap_,&flow_,mode.a2dp,scan,output_,sizeof output_,&n);if(result==BTH_OK){deadline_=now_+3000;last_ack_=false;submit(n);return;}if(result<0){fail("Owned scan admission failed");return;}}
  if(gap_.pending&&due(now_,deadline_)){fail("Owned scan command ACK timeout");return;}
 
+}
+bool OwnedHost::voiceAuthorized()const{
+ if(!config_.voice_control||!config_.voice_control->cid()||config_.voice_control->closeRequested())return false;
+ const auto hf=config_.voice_control->hfpStatus();const auto hs=config_.voice_control->hspStatus();
+ return (hf.slcEstablished&&hf.state==owned::HfpState::Ready)||(hs.connected&&!hs.failed);
+}
+Status OwnedHost::voiceStatus(VoiceStatus& status)const{
+ if(!active_||!config_.voice_audio||!config_.voice_control)return Status::Unsupported;
+ VoiceStatus s;s.enabled=true;s.controller_ready=boot_==Boot::Ready;s.backend_available=config_.voice_audio->ready();s.wideband_available=config_.voice_audio->wideband();s.audio_connected=config_.voice_audio->active();s.generation=config_.voice_audio->generation();s.codec=config_.voice_audio->codec();s.sample_rate_hz=s.codec==owned::VoiceCodec::Msbc?16000:8000;s.setup_reason=config_.voice_audio->setupReason();s.controller_status=config_.voice_audio->controllerStatus();s.hands_free=config_.voice_control->hfpStatus();s.headset=config_.voice_control->hspStatus();s.received_packets=config_.voice_audio->state().rx_packets;s.submitted_packets=config_.voice_audio->state().tx_submitted;s.packet_errors=config_.voice_audio->state().rx_status_errors;status=s;return Status::Ok;
+}
+Status OwnedHost::voiceCommand(HfpCommand command,uint32_t expected,const char* argument){
+ if(!active_||!config_.voice_control)return Status::Unsupported;if(!expected)return Status::InvalidArgument;
+ if(deferred_count_||voice_retiring_)return Status::Busy;
+ if(!peers_[0].attached||!bth_links_secure(&links_,peers_[0].handle)||!voiceAuthorized())return Status::InvalidArgument;
+ const auto status=config_.voice_control->commandHfp(expected,command,argument);return status==BTH_OK?Status::Ok:(status==BTH_MORE||status==BTH_ERR_CAPACITY)?Status::Busy:Status::InvalidArgument;
+}
+owned::VoiceCodec OwnedHost::voiceCodec()const{
+ if(config_.voice_control){const auto hf=config_.voice_control->hfpStatus();if(hf.slcEstablished&&hf.state==owned::HfpState::Ready)return hf.codec;}
+ return owned::VoiceCodec::Cvsd;
+}
+void OwnedHost::voicePoll(){
+ if(!config_.voice_audio||!peers_[0].attached||deferred_count_)return;
+ auto& voice=*config_.voice_audio;voice.poll(bth_links_secure(&links_,peers_[0].handle)&&voiceAuthorized(),now_);
+ const auto hf=config_.voice_control->hfpStatus();const auto hs=config_.voice_control->hspStatus();
+ if(hf.slcEstablished)voice.gains(hf.speakerGain,hf.microphoneGain);else if(hs.connected)voice.gains(hs.speakerGain,hs.microphoneGain);
+ if(voice.needsPeerRetirement()){closePeer(0,0x13);return;}
+ bth_sco_command_t command{};if(bth_cmdq_available(&commands_)<3||voice.nextCommand(command)!=BTH_OK)return;
+ // Leave the existing security reserve and command ownership intact.
+ if(bth_cmdq_push_owned(&commands_,command.opcode,command.parameters,command.length,true,peers_[0].owner)==BTH_OK&&voice.commandQueued(command.ticket,now_)!=BTH_OK)fail("Owned voice command admission invariant");
 }
 void OwnedHost::refreshStats(){stats_.connected=peers_[0].attached;stats_.streaming=!deferred_count_&&was_secure_&&peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle)&&classic_.streaming();stats_.received_packets=classic_.receivedPackets();stats_.received_bytes=classic_.receivedBytes();}
 RadioStats OwnedHost::radioStats()const {RadioStats s=stats_;s.connected=peers_[0].attached;s.streaming=!deferred_count_&&was_secure_&&peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle)&&classic_.streaming();s.received_packets=classic_.receivedPackets();s.received_bytes=classic_.receivedBytes();s.dropped_packets+=classic_.droppedPackets();return s;}

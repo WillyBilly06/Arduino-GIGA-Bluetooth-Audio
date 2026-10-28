@@ -211,6 +211,7 @@ Status radioBegin(const char* name,uint32_t mask,const RadioCallbacks& callbacks
     if(!storage) return Status::OutOfMemory;
     context=new(storage)Context();context->callbacks=callbacks;
     OwnedHostConfig config;config.name=name;config.codecMask=mask;config.callbacks=callbacks;config.ble=ble;
+    config.voice_control=callbacks.voice_control;config.voice_audio=callbacks.voice_audio;config.voice_sdp=callbacks.voice_sdp;if(callbacks.voice_config)config.voice_config=*callbacks.voice_config;
     config.firmware=brcm_patchram_buf;config.firmwareSize=brcm_patch_ram_length;config.baud=GIGA_BREDR_UART_BAUD;
     uint32_t words[]={HAL_GetUIDw0(),HAL_GetUIDw1(),HAL_GetUIDw2()};uint8_t uid[12];
     for(unsigned i=0;i<12;++i) uid[i]=uint8_t(words[i/4]>>(8*(3-i%4)));
@@ -281,6 +282,8 @@ Status radioBleNotify(const uint8_t* data,size_t length) { return context?contex
 bool radioBleReadWrite(BleWrite& value) { return context && context->host.bleReadWrite(value); }
 Status radioBleDisconnect(uint32_t expected,bool advertise_after) { return context?context->host.bleDisconnect(expected,advertise_after):Status::Unsupported; }
 Status radioBleResumeAdvertising() { return context?context->host.bleResumeAdvertising():Status::Unsupported; }
+Status radioVoiceStatus(VoiceStatus& status){return context?context->host.voiceStatus(status):Status::Unsupported;}
+Status radioVoiceCommand(HfpCommand command,uint32_t expected,const char* argument){return context?context->host.voiceCommand(command,expected,argument):Status::Unsupported;}
 Status radioAvrcpInit(const RadioCallbacks&) { return Status::Unsupported; }
 void radioAvrcpPoll() {}
 void radioAvrcpDeinit() {}

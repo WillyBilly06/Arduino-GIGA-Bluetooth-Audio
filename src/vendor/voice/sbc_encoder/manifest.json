@@ -1,0 +1,130 @@
+{
+  "qualification": "UNPUBLISHED_SELECTED_MONO_MSBC_ENCODER_PORT_SOFTWARE_ONLY",
+  "source_selection": "13 owner-supplied Broadcom Apache-2.0 encoder files; no third-party runtime source fetched",
+  "files": [
+    {
+      "source": "decoders/SBC/encoder/include/sbc_dct.h",
+      "destination": "src/vendor/voice/sbc_encoder/include/sbc_dct.h",
+      "source_sha256": "279eb010b757bfab6b09103b2e6da22cba60b741014118726717b797056368c8",
+      "exported_sha256": "279eb010b757bfab6b09103b2e6da22cba60b741014118726717b797056368c8",
+      "exported_bytes": 4742,
+      "modified": false,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/include/sbc_enc_func_declare.h",
+      "destination": "src/vendor/voice/sbc_encoder/include/sbc_enc_func_declare.h",
+      "source_sha256": "dffe67f363413336cfc3161e953dcce37d2d0920a152458b50655aa7eb246324",
+      "exported_sha256": "86329366ed02e45a52e8d5ed5e0701f700a86e7e7881ade7fb198d5e8388bb35",
+      "exported_bytes": 2182,
+      "modified": true,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/include/sbc_encoder.h",
+      "destination": "src/vendor/voice/sbc_encoder/include/sbc_encoder.h",
+      "source_sha256": "eee7708123ac8c9853848237abcb1a4b642f5b8806e4472a9df48534d5ebac8a",
+      "exported_sha256": "7f394c0ff8e0575c3f462fce4ca759d5eeaf79f40c63ab3d381923e7977a96c7",
+      "exported_bytes": 7095,
+      "modified": true,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/include/sbc_if.h",
+      "destination": "src/vendor/voice/sbc_encoder/include/sbc_if.h",
+      "source_sha256": "aeef8ddbec033f9f35c5d5fd1b01e922d15e9bb76faf6af09ae9442103a931bc",
+      "exported_sha256": "aeef8ddbec033f9f35c5d5fd1b01e922d15e9bb76faf6af09ae9442103a931bc",
+      "exported_bytes": 1401,
+      "modified": false,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/include/sbc_types.h",
+      "destination": "src/vendor/voice/sbc_encoder/include/sbc_types.h",
+      "source_sha256": "20e96eab14aec35cc26b1eeb796866d4bd9912ee32df1748f7e0bd1fc1328c4f",
+      "exported_sha256": "287080f138bbfa25756478d4fed6919d0af5494f58766142a2a9f03ccb6542c1",
+      "exported_bytes": 1685,
+      "modified": true,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/srce/sbc_analysis.c",
+      "destination": "src/vendor/voice/sbc_encoder/srce/sbc_analysis.c",
+      "source_sha256": "2366e5423f94bd2fe26f1918e1490b9406089c27f90174f45926b46e5d906d32",
+      "exported_sha256": "fee6ea9be49dc24f7f65d539c7c0441936906d4d109ca8df52a4a4cc3f91e353",
+      "exported_bytes": 54693,
+      "modified": true,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/srce/sbc_dct.c",
+      "destination": "src/vendor/voice/sbc_encoder/srce/sbc_dct.c",
+      "source_sha256": "36c43cb1df265dad5b0cb86adbce384c612f00d86549de33f785447352abc4e4",
+      "exported_sha256": "2588bd1e786f946b38f9ead6d962e5dcd0e476946359f5c8390dd833ac113065",
+      "exported_bytes": 9775,
+      "modified": true,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/srce/sbc_dct_coeffs.c",
+      "destination": "src/vendor/voice/sbc_encoder/srce/sbc_dct_coeffs.c",
+      "source_sha256": "83e4082f7c0acb601ef29956bb42d382833453fad93ac90dafefd87c9ffcac87",
+      "exported_sha256": "184b301dc1ed3c76fb331866d2db604bcfa71d3c8461fd65678e07e5dc831b23",
+      "exported_bytes": 6511,
+      "modified": true,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/srce/sbc_enc_bit_alloc_mono.c",
+      "destination": "src/vendor/voice/sbc_encoder/srce/sbc_enc_bit_alloc_mono.c",
+      "source_sha256": "a6ad99d1030902c22fea19f72d79ad3f79217bd5fc161a51d765e4dfd9069d99",
+      "exported_sha256": "5e8a214cbdd24569539f7c929f8038114edc9a62412efb1922c04e8d283c9f7b",
+      "exported_bytes": 7649,
+      "modified": true,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/srce/sbc_enc_bit_alloc_ste.c",
+      "destination": "src/vendor/voice/sbc_encoder/srce/sbc_enc_bit_alloc_ste.c",
+      "source_sha256": "8ce4aa1698af61e1aa12d54f65326cc996d3175187b91cc417ba161e9eab6ddc",
+      "exported_sha256": "578d17cf1d3753a9189aa4c1c09616efb0039667e9697284a2bfea3293775572",
+      "exported_bytes": 7240,
+      "modified": true,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/srce/sbc_enc_coeffs.c",
+      "destination": "src/vendor/voice/sbc_encoder/srce/sbc_enc_coeffs.c",
+      "source_sha256": "0e66f828fc3b996a159e4acdd1c0560273c1b92d04535178bb7761d2a46bec52",
+      "exported_sha256": "2b434ec4776d365dbcb9af484025db0e4c24b21544b3c5fbbd43fa63985bce3c",
+      "exported_bytes": 12200,
+      "modified": true,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/srce/sbc_encoder.c",
+      "destination": "src/vendor/voice/sbc_encoder/srce/sbc_encoder.c",
+      "source_sha256": "fd58a3b8d6d530cf0c51780f87e6ade5c18261fb522793e8bad19c946a74cb89",
+      "exported_sha256": "7f18057fa34d866bd14f2a3c74798c8227d0074ae737a883f71c116eb76d9a65",
+      "exported_bytes": 8786,
+      "modified": true,
+      "license": "Apache-2.0; original Broadcom header retained"
+    },
+    {
+      "source": "decoders/SBC/encoder/srce/sbc_packing.c",
+      "destination": "src/vendor/voice/sbc_encoder/srce/sbc_packing.c",
+      "source_sha256": "798aa27e36a99e319fb57dc9b2491e08789e5fe79ecf2273b6531edf722af49b",
+      "exported_sha256": "2c16ef19c1b5dcbf04b6d7aeee76d5bd812ebf46acc03f745cbf0e810e27c70f",
+      "exported_bytes": 11359,
+      "modified": true,
+      "license": "Apache-2.0; original Broadcom header retained"
+    }
+  ],
+  "project_helpers": [
+    {
+      "destination": "src/vendor/voice/sbc_encoder/VoiceSbcCompat.h",
+      "sha256": "57f2d678a4d0c0ff3c249147a14ae2d13b3a5633cb1061c093dcb382ac9b1ceb",
+      "license": "Apache-2.0 project adapter"
+    }
+  ]
+}

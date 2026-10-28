@@ -16,6 +16,10 @@
 #include "platform/I2sPins.h"
 #include "platform/SchedulerWitness.h"
 #include "platform/AudioSupplyRuntime.h"
+#include "owned/VoiceAudioWorker.h"
+#include "owned/VoiceDacOutput.h"
+#include "owned/VoiceSdp.h"
+#include "detail/VoiceInputLifetime.h"
 #include <atomic>
 #include <new>
 #include <string.h>
@@ -31,6 +35,8 @@ namespace giga_bredr {
 namespace supply = detail::audio_supply;
 namespace {
 std::atomic<const void*> receiver_owner{nullptr};
+// Written only while receiver_owner is held; no 64-bit atomic or IRQ access.
+uint64_t voice_input_lifetime_counter=0;
 #if defined(ARDUINO)
 using Mutex = rtos::Mutex;
 struct Lock { Mutex& mutex; explicit Lock(Mutex& m):mutex(m) { mutex.lock(); } ~Lock() { mutex.unlock(); } };
@@ -104,6 +110,14 @@ size_t frameCapacity(const CodecConfig& c) {
 struct GigaBredr::Impl {
     ReceiverConfig options;
     Mutex codec_mutex, queue_mutex, event_mutex, radio_mutex;
+    struct VoiceSession {
+        detail::VoiceProfiles profiles;detail::VoiceSdp sdp;detail::OwnedVoiceAudio transport;
+        detail::VoiceAudioWorker worker;detail::VoiceDacOutput dac;detail::VoiceControlConfig control;
+        uint8_t receive[256]{};Mutex music_mutex;CodecConfig saved,pending;bool saved_valid=false,pending_valid=false,suspended=false,output_owned=false;
+        explicit VoiceSession(uint64_t lifetime):worker(lifetime){}
+    };
+    VoiceSession* voice=nullptr;
+    std::atomic<bool> music_intent{false};std::atomic<uint32_t> voice_preempted_packets{0};
     detail::Decoder decoder;
     detail::MediaAssembler media;
     detail::PacketQueue queue;
@@ -568,10 +582,14 @@ struct GigaBredr::Impl {
         counters.buffers = {};
         startup_buffered = false;
     }
-    Status configure(const CodecConfig& c) {
+    Status configure(const CodecConfig& c,bool voice_restore=false) {
+        if(voice&&!voice_restore&&voice->worker.preempting()){
+            TryLock lock(voice->music_mutex);if(!lock)return Status::Busy;
+            voice->pending=c;voice->pending_valid=true;return Status::Ok;
+        }
         Lock lock(codec_mutex);
         if (!options.enable_a2dp) return Status::Unsupported;
-        if (configured && decoder.active() && sameConfiguration(format, c)) return Status::Ok;
+        if (!voice_restore&&configured && decoder.active() && sameConfiguration(format, c)) return Status::Ok;
         releaseCodec();
         if (!(options.codecs & codecBit(c.codec))) return counters.last_error = Status::Unsupported;
         size_t capacity = frameCapacity(c);
@@ -615,6 +633,8 @@ struct GigaBredr::Impl {
     }
     void stream(bool start) {
         if (!options.enable_a2dp) return;
+        music_intent.store(start);
+        if(voice&&voice->worker.preempting())return;
         if (start) {
             CodecConfig selected;
             { Lock lock(codec_mutex); selected = format; }
@@ -627,6 +647,7 @@ struct GigaBredr::Impl {
         }
     }
     void receive(const uint8_t* bytes, size_t n) {
+        if(voice&&voice->worker.preempting()){++voice_preempted_packets;return;}
         supply::receiveEntry(); // Callback entry, BEFORE queue locking; not raw UART/RF arrival.
         if (!playing.load() || !bytes || !n) { ++dropped; return; }
         { Lock lock(queue_mutex);
@@ -655,6 +676,7 @@ struct GigaBredr::Impl {
 #endif
     }
     bool processOne() {
+        if(voice&&voice->worker.preempting())return false;
         supply::markPhase(supply::DecoderPhase::WaitCodec);
         Lock codec_lock(codec_mutex);
         clockFeedback();
@@ -730,6 +752,7 @@ struct GigaBredr::Impl {
                 const uint32_t write_limit_us = write_budget < 0x80000000u ? uint32_t(write_budget) : 0x7fffffffu;
                 size_t sent = 0; uint32_t began = clockUs();
                 while (sent < result.frames) {
+                    if(voice&&voice->worker.preempting())break;
                     supply::markPhase(supply::DecoderPhase::OutputWrite,packet_epoch);
                     sent += detail::i2sWrite(pcm + sent * 2, result.frames - sent);
                     OutputStats output = detail::i2sStats();
@@ -786,8 +809,9 @@ struct GigaBredr::Impl {
     void decoderMain() {
         while (running.load()) {
             supply::markPhase(supply::DecoderPhase::WaitWake);
-            wake.try_acquire_for(10);
+            wake.try_acquire_for(voice&&voice->worker.preempting()?1:10);
             for (unsigned i = 0; i < 64 && running.load(); ++i) {
+                if(processVoice())break;
                 const bool worked=processOne();
                 notifyClockHostAfterWorker(); // processOne has released codec_mutex on every exit.
                 if(!worked) break;
@@ -797,6 +821,51 @@ struct GigaBredr::Impl {
         clockDrainMailbox(true);
     }
 #endif
+    Status setupVoice(uint64_t lifetime){
+        if(!options.voice.enabled())return Status::Ok;
+        void* storage=detail::allocate(sizeof(VoiceSession));if(!storage)return Status::OutOfMemory;voice=new(storage)VoiceSession(lifetime);
+        auto& c=voice->control;const auto& requested=options.voice;c.hands_free=requested.hands_free;c.headset=requested.headset;c.hands_free_channel=requested.hands_free_channel;c.headset_channel=requested.headset_channel;c.speaker_gain=requested.speaker_gain;c.microphone_gain=requested.microphone_gain;
+        detail::VoiceWorkerOutput output;output.user=this;
+        output.prepare=[](VoiceCodec codec,void* p){return static_cast<Impl*>(p)->prepareVoiceOutput(codec);};
+        output.restore=[](void* p){static_cast<Impl*>(p)->restoreVoiceOutput();};
+        output.wake=[](void* p){
+#if defined(ARDUINO)
+            static_cast<Impl*>(p)->wake.release();
+#else
+            (void)p;
+#endif
+        };
+        output.sink={this,[](void* p,const VoicePcmRequest& r,const uint8_t* data,size_t n){auto& self=*static_cast<Impl*>(p);return self.voice->dac.write(r,data,n,self.voice->worker.speakerGain());}};
+        auto result=voice->worker.begin(output);if(result!=Status::Ok)return result;
+        detail::VoiceAudioHostConfig policy;policy.allow_route_configuration=requested.allow_controller_route_configuration;policy.allow_rx_pacing=requested.allow_rx_pacing;policy.wideband=requested.wideband;
+        result=voice->transport.begin(policy,voice->worker.hooks(),voice->receive,sizeof voice->receive);if(result==Status::Ok)voice->transport.gains(c.speaker_gain,c.microphone_gain);return result;
+    }
+    void releaseVoice(){if(!voice)return;voice->worker.end();voice->transport.end();voice->dac.end();voice->~VoiceSession();detail::release(voice);voice=nullptr;}
+    Status prepareVoiceOutput(VoiceCodec codec){
+        if(!voice||!running.load())return Status::Unsupported;
+        // Reserve the selected converter before disturbing A2DP output. On a
+        // subsequent voice generation the old synchronous handle is retired.
+        voice->dac.end();auto result=voice->dac.begin(codec,[](const int32_t* p,size_t n,void*){return detail::i2sWrite(p,n);},this);if(result!=Status::Ok)return result;
+        Lock lock(codec_mutex);
+        if(!voice->suspended){voice->saved=format;voice->saved_valid=format.sample_rate!=0;voice->suspended=true;}
+        playing.store(false);supply::end();clockRetireMailbox(detail::ClockMailReason::LifecycleReset);clockStop();
+        {Lock queue_lock(queue_mutex);queue.clear();token_read=token_write=0;media.reset();startup_buffered=false;}
+        if(output_owned){detail::i2sEnd();output_owned=false;}if(voice->output_owned){detail::i2sEnd();voice->output_owned=false;}
+        result=detail::i2sBegin(16000,options.voice.pcm_buffer_ms,options.i2s,options.voice.startup_buffer_ms);voice->output_owned=result==Status::Ok;return result;
+    }
+    void restoreVoiceOutput(){
+        if(!voice)return;Lock control(voice->music_mutex);voice->dac.end();
+        if(!voice->suspended)return;CodecConfig selected=voice->pending_valid?voice->pending:voice->saved;const bool valid=voice->pending_valid||voice->saved_valid;voice->pending_valid=false;
+        {Lock lock(codec_mutex);if(voice->output_owned){detail::i2sEnd();voice->output_owned=false;}voice->suspended=false;releaseCodec();if(valid)format=selected;}
+        if(running.load()&&music_intent.load()&&valid){const auto result=configure(selected,true);if(result==Status::Ok)playing.store(music_intent.load());else note("A2DP output restore failed after voice");}
+    }
+    bool processVoice(){
+        if(!voice)return false;const bool before=voice->worker.preempting();voice->worker.step();const bool active=voice->worker.preempting();
+        if(before&&!active&&running.load()&&music_intent.load()&&!playing.load()){
+            CodecConfig selected;{Lock lock(codec_mutex);selected=format;}
+            if(selected.sample_rate&&configure(selected,true)==Status::Ok)playing.store(music_intent.load());
+        }return active;
+    }
     static Status onConfigure(const CodecConfig& c, void* p) { return static_cast<Impl*>(p)->configure(c); }
     static void onMedia(const uint8_t* b, size_t n, void* p) { static_cast<Impl*>(p)->receive(b, n); }
     static void onStream(bool play, void* p) { static_cast<Impl*>(p)->stream(play); }
@@ -805,9 +874,27 @@ struct GigaBredr::Impl {
     static void onMetadata(uint8_t a, const char* text, size_t bytes, void* p) { static_cast<Impl*>(p)->metadata(a, text, bytes); }
 };
 uint32_t GigaBredr::availableCodecs() { return detail::compiledCodecs(); }
+Status GigaBredr::setVoiceInput(VoicePcmProvider provider,VoiceInputToken& token){
+    return impl_&&impl_->voice&&impl_->running.load()?impl_->voice->worker.setInput(provider,token):Status::Unsupported;
+}
+Status GigaBredr::detachVoiceInput(VoiceInputToken token){
+    return impl_&&impl_->voice&&impl_->running.load()?impl_->voice->worker.detachInput(token):Status::Unsupported;
+}
+Status GigaBredr::voiceStatus(VoiceStatus& value)const{
+    if(!impl_||!impl_->voice)return Status::Unsupported;TryLock lock(impl_->radio_mutex);if(!lock)return Status::Busy;
+    VoiceStatus result;const auto radio=detail::radioVoiceStatus(result);if(radio!=Status::Ok)return radio;
+    detail::VoiceWorkerSnapshot worker;const auto status=impl_->voice->worker.snapshot(worker);if(status!=Status::Ok)return status;
+    if(worker.generation==result.generation){result.worker_status=worker.status;result.input=worker.input;result.decode_errors=worker.pipeline.decode_errors;result.h2_gaps=worker.pipeline.h2_gaps;result.delivered_pcm_frames=worker.pipeline.delivered_frames;result.concealed_pcm_frames=worker.pipeline.concealed_frames;}
+    result.preempted_a2dp_packets=impl_->voice_preempted_packets.load();value=result;return Status::Ok;
+}
+Status GigaBredr::voiceCommand(HfpCommand command,uint32_t expected,const char* argument){
+    if(!impl_||!impl_->voice)return Status::Unsupported;TryLock lock(impl_->radio_mutex);if(!lock)return Status::Busy;
+    return detail::radioVoiceCommand(command,expected,argument);
+}
 bool GigaBredr::setExternalAllocator(Allocate a, Free f, void* user) { return detail::setMemoryProvider(MemoryKind::External, a, f, user); }
 Status GigaBredr::begin(const ReceiverConfig& input) {
     if (impl_) return Status::Busy;
+    if(lifetime_>=UINT64_MAX-1)return Status::Unsupported;
     const detail::OperationModePolicy mode{input.enable_a2dp,input.ble.enabled};
     if (!mode.valid() || !input.name || !*input.name || input.host_stack_bytes < 4096)
         return Status::InvalidArgument;
@@ -819,6 +906,11 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
             return Status::InvalidArgument;
         for (const auto& profile : input.codec_buffers) if (!validBufferOverride(profile)) return Status::InvalidArgument;
     }
+    if(input.voice.enabled()){
+        const auto& v=input.voice;
+        if(!input.enable_a2dp||!input.enable_i2s)return Status::Unsupported;
+        if(v.speaker_gain>15||v.microphone_gain>15||(v.hands_free&&(!v.hands_free_channel||v.hands_free_channel>30))||(v.headset&&(!v.headset_channel||v.headset_channel>30))||(v.hands_free&&v.headset&&v.hands_free_channel==v.headset_channel)||v.pcm_buffer_ms<12||v.pcm_buffer_ms>200||v.startup_buffer_ms<4||v.startup_buffer_ms+4>v.pcm_buffer_ms)return Status::InvalidArgument;
+    }
     ReceiverConfig config = input;
     if (mode.needsDecoder()) {
         if (!config.codecs) config.codecs = availableCodecs();
@@ -829,17 +921,23 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     }
     const void* expected = nullptr;
     if (!receiver_owner.compare_exchange_strong(expected, this)) return Status::Busy;
+    uint64_t voice_input_lifetime=0;
+    if(config.voice.enabled()&&!detail::reserveVoiceInputLifetime(voice_input_lifetime_counter,voice_input_lifetime)){
+        receiver_owner.store(nullptr);return Status::Unsupported;
+    }
     void* storage = detail::allocate(sizeof(Impl));
     if (!storage) { receiver_owner.store(nullptr); return Status::OutOfMemory; }
     impl_ = new (storage) Impl(config); ++lifetime_; impl_->running.store(true);
+    Status status=impl_->setupVoice(voice_input_lifetime);if(status!=Status::Ok){end();return status;}
     detail::RadioCallbacks callbacks; callbacks.enable_a2dp = config.enable_a2dp;
     callbacks.configure = Impl::onConfigure; callbacks.media = Impl::onMedia;
     callbacks.stream = Impl::onStream; callbacks.diagnostic = Impl::onDiagnostic; callbacks.user = impl_;
     callbacks.volume = Impl::onVolume; callbacks.metadata = Impl::onMetadata;
+    if(impl_->voice){callbacks.voice_audio=&impl_->voice->transport;callbacks.voice_control=&impl_->voice->profiles;callbacks.voice_sdp=&impl_->voice->sdp;callbacks.voice_config=&impl_->voice->control;}
 #if defined(ARDUINO)
     callbacks.owner_wake = Impl::onOwnerWake;
 #endif
-    Status status = detail::radioBegin(config.name, config.codecs, callbacks, config.ble);
+    status = detail::radioBegin(config.name, config.codecs, callbacks, config.ble);
     if (status != Status::Ok) { end(); return status; }
     impl_->radio_owned = true;
 #if defined(ARDUINO)
@@ -869,7 +967,7 @@ void GigaBredr::poll() {
     if (!impl_) return;
     const uint64_t lifetime = lifetime_;
 #if !defined(ARDUINO)
-    detail::radioPoll(); if (impl_->options.enable_a2dp) impl_->processOne();
+    detail::radioPoll(); if (!impl_->processVoice()&&impl_->options.enable_a2dp) impl_->processOne();
 #endif
     char text[128]; bool has_event = false, volume_changed = false; uint8_t kind = 0, text_bytes = 0, selected_volume = 127;
     { Lock lock(impl_->event_mutex); if (impl_->event_count) {
@@ -920,6 +1018,7 @@ void GigaBredr::end() {
     detail::schedulerShutdown(); // Reclaim any report completed while end() waited for workers.
 #endif
     if (impl_->radio_owned) detail::radioEnd();
+    impl_->releaseVoice();
     { Lock lock(impl_->codec_mutex); impl_->releaseCodec(); }
     impl_->~Impl(); detail::release(impl_); impl_ = nullptr;
     receiver_owner.store(nullptr);

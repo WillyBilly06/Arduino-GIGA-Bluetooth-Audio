@@ -2,6 +2,7 @@
 #include <string.h>
 static const uint16_t opcodes[]={0x0c1a,0x0c01,0x2001,0x0c33,0x0c31,0x0c56,0x0c13,0x0c24,0x0c45,0x0c52};
 static void event_bit(uint8_t *mask,unsigned event) { mask[(event-1)/8]|=(uint8_t)(1u<<((event-1)%8)); }
+bool bth_gap_synchronous_events(bth_gap_t* g,bool enable){if(!g||!g->initialized||g->pending||g->stage>BTH_GAP_EVENT_MASK)return false;g->synchronous_events=enable;return true;}
 bool bth_gap_start(bth_gap_t *g,const bth_gap_config_t *c) {
     if (!g || !c || !c->name.data || !c->name.len || c->name.len>248 ||
         c->host_acl_length<1021 || !c->host_acl_packets || c->class_of_device>0xffffff ||
@@ -17,6 +18,7 @@ static size_t parameters(const bth_gap_t *g,uint8_t *p) {
         static const uint8_t events[]={3,4,5,6,7,8,9,0x0b,0x0e,0x0f,0x10,0x12,0x13,0x14,0x16,0x17,0x18,0x1a,0x1b,0x1d,
             0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x3b,0x3c,0x3d,0x3e};
         for (unsigned i=0;i<sizeof(events);++i) event_bit(p,events[i]);
+        if(g->synchronous_events){event_bit(p,0x2c);event_bit(p,0x2d);}
         return 8;
     }
     case BTH_GAP_LE_MASK: {

@@ -49,6 +49,16 @@ public:
   // Short active reads remain explicitly starved; caller chooses concealment policy.
   add(counters_.micStarvedFrames,frames-result.frames);first_+=result.frames;return result;
  }
+ // Deadline-driven TX policy. read() already records missing provider frames;
+ // padding advances the transport's sample timeline without double-counting
+ // that starvation. No-microphone silence remains a separate counter.
+ VoicePcmRead readPadded(uint32_t generation,uint32_t epoch,uint8_t* out,size_t frames){
+  const VoicePcmRead result=read(generation,epoch,out,frames);
+  if(result.result==VoiceIoResult::Stale||result.result==VoiceIoResult::Invalid)return result;
+  const size_t missing=frames-result.frames;
+  for(size_t i=result.frames*2;i<frames*2;++i)out[i]=0;
+  first_+=missing;return {frames,VoiceIoResult::Ready};
+ }
  const VoiceInputCounters& counters()const{return counters_;}
 private:
  static void add(uint32_t& n,size_t d){n=d>UINT32_MAX-n?UINT32_MAX:n+static_cast<uint32_t>(d);}

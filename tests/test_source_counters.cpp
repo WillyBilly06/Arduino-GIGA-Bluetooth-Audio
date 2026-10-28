@@ -1,5 +1,6 @@
 #include "platform/GigaI2s.h"
 #include "platform/I2sBuffer.h"
+#include "platform/AudioSupplyRuntime.h"
 #include <vector>
 #include <cstdio>
 #include <cstdlib>

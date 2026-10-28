@@ -39,6 +39,8 @@ public:
  VoiceControlStats stats()const{return stats_;}
  owned::HfpStatus hfpStatus()const{return hf_.status();}
  owned::HspStatus hspStatus()const{return hs_.status();}
+ // Only before an RFCOMM mux exists; never change advertised BRSF/BAC midway.
+ bool setWidebandBackend(bool ready){if(local_)return false;wideband_=ready;return true;}
  bth_status_t commandHfp(uint32_t expected,owned::HfpCommand command,const char* argument=nullptr){return close_?BTH_IGNORED:hf_.command(expected,command,argument);}
 private:
  struct Rx {uint8_t bytes[InformationBytes];uint16_t length=0;};
@@ -53,6 +55,6 @@ private:
  bth_rfcomm_t mux_{};owned::HfpControl hf_{};owned::HspControl hs_{};Dlc dlcs_[2];Tx transmit_[TransmitSlots];
  uint32_t owner_=0,channel_generation_=0,profile_serial_=0;uint16_t local_=0,remote_=0,mtu_=0;
  uint32_t retired_owner_=0;uint16_t retired_local_=0,retired_remote_=0;bool retirement_authorized_=false;
- uint8_t peer_=0,transmit_read_=0,transmit_count_=0,next_dlc_=0;bool active_=false,close_=false;
+ uint8_t peer_=0,transmit_read_=0,transmit_count_=0,next_dlc_=0;bool active_=false,close_=false,wideband_=false;
 };
 }}

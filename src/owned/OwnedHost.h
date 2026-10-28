@@ -3,6 +3,8 @@
 #include "LeProfiles.h"
 #include "ControllerAudioPriority.h"
 #include "VoiceProfiles.h"
+#include "OwnedVoiceAudio.h"
+#include "VoiceSdp.h"
 #ifndef GIGA_BREDR_PRIVATE_SCHED_WITNESS
 #define GIGA_BREDR_PRIVATE_SCHED_WITNESS 0
 #endif
@@ -22,6 +24,10 @@ struct OwnedHostConfig {
  // Opt-in unadvertised control integration. Caller reserves this object and
  // retains it through end(); only the serialized actor may operate on it.
  VoiceProfiles* voice_control=nullptr;VoiceControlConfig voice_config;
+ // Optional preconfigured caller-owned transport. Hooks only copy bounded
+ // worker mailboxes. The null default performs no SCO setup or extra I/O.
+ OwnedVoiceAudio* voice_audio=nullptr;
+ VoiceSdp* voice_sdp=nullptr;
 };
 struct OwnedHostHooks {
  bool (*txReady)(void*)=nullptr;
@@ -45,6 +51,8 @@ public:
  Status bleNotify(const uint8_t* data,size_t length) {return active_?le_.notify(data,length):Status::Unsupported;}
  Status bleDisconnect(uint32_t expected_generation,bool advertise_after_disconnect=true);
  Status bleResumeAdvertising();
+ Status voiceStatus(VoiceStatus&)const;
+ Status voiceCommand(HfpCommand,uint32_t expected_generation,const char* argument);
  bool bleReadWrite(BleWrite& value) {return active_&&le_.readWrite(value);}
  Status setVolume(uint8_t v) {return active_&&config_.callbacks.enable_a2dp?classic_.setVolume(v):Status::Unsupported;}
  AvrcpStatus avrcpStatus() const {return classic_.avrcpStatus();}
@@ -72,7 +80,7 @@ private:
 #else
  void creditBoundary(uint32_t,bool,uint32_t=0) const {}
 #endif
- enum class Boot:uint8_t {PatchReset,Minidriver,Patch,Settle,Reset,Version,Features,AddressWrite,AddressRead,Buffers,LeBuffers,LeFeatures,Baud,LeHost,Gap,Ready,Failed};
+ enum class Boot:uint8_t {PatchReset,Minidriver,Patch,Settle,Reset,Version,Features,AddressWrite,AddressRead,Buffers,LeBuffers,LeFeatures,Baud,LeHost,VoiceSetup,Gap,Ready,Failed};
  struct Packet {uint8_t bytes[AclBytes+4];uint16_t length=0;uint32_t order=0,barrier=0;bool used=false,charged=false; bth_rx_lease_t lease={};};
  struct Deferred {uint8_t bytes[257];uint16_t length=0;uint32_t serial=0;};
  struct Peer {
@@ -107,6 +115,7 @@ private:
  void synchronizeChannels();bool disconnectChannel(uint16_t);void chargeWaiting(uint32_t);void closePeer(unsigned,uint8_t);
  void avrcpPoll(bool secure,bool allow_open=true);void runtimePoll();void refreshStats();bool admission(unsigned,uint32_t);void cancelAdmission(unsigned);
  bool updateAudioPriority();
+ bool voiceAuthorized()const;owned::VoiceCodec voiceCodec()const;void voicePoll();
  static bool streamPolicy(bool,void*);
  bool requestControllerPriority(bool);void serviceControllerPriority(bool secure);
  bool controllerPriorityCommandPresent(uint32_t owner) const;
@@ -117,8 +126,9 @@ private:
  uint8_t expanded_control_budget_=0;
  DeferredControl classic_deferred_[ClassicDeferredSlots];uint32_t classic_deferred_owner_=0;uint8_t classic_deferred_read_=0,classic_deferred_count_=0;
  Deferred deferred_[8];unsigned deferred_read_=0,deferred_count_=0;
- uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[3]={0x110b,0x110c,0x110e};
+ uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[5]={0x110b,0x110c,0x110e};
  uint8_t le_features_[8]={};bool le_features_known_=false;
+ uint8_t voice_features_[8]={},voice_tx_bytes_=0;uint16_t voice_tx_packets_=0;
  size_t patch_position_=0,patch_pending_bytes_=0;uint16_t pending_opcode_=0;
  uint32_t now_=0,begin_ms_=0,deadline_=0,settle_until_=0,packet_order_=0,command_deadline_=0;
  uint32_t sent_at_[BTH_CMD_QUEUE_LIMIT]={};uint32_t accept_deadline_=0;

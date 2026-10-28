@@ -6,7 +6,7 @@ Status VoiceProfiles::begin(const VoiceControlConfig& c,bth_control_tx_t& q,uint
  if((!c.hands_free&&!c.headset)||!q.initialized||peer>=BTH_CONTROL_PEERS||c.speaker_gain>15||c.microphone_gain>15||
     (c.hands_free&&(!c.hands_free_channel||c.hands_free_channel>30))||(c.headset&&(!c.headset_channel||c.headset_channel>30))||
     (c.hands_free&&c.headset&&c.hands_free_channel==c.headset_channel))return Status::InvalidArgument;
- config_=c;replies_=&q;peer_=peer;owner_=channel_generation_=profile_serial_=retired_owner_=0;retired_local_=retired_remote_=0;retirement_authorized_=false;stats_={};clearChannel();active_=true;return Status::Ok;
+ config_=c;replies_=&q;peer_=peer;owner_=channel_generation_=profile_serial_=retired_owner_=0;retired_local_=retired_remote_=0;retirement_authorized_=false;wideband_=false;stats_={};clearChannel();active_=true;return Status::Ok;
 }
 void VoiceProfiles::clearChannel(){
  bth_rfcomm_close(&mux_);hf_.end();hs_.end();for(auto& d:dlcs_)d=Dlc();
@@ -54,7 +54,7 @@ bool VoiceProfiles::receive(uint16_t cid,const uint8_t* p,size_t n,bool secure,u
   const uint8_t scn=event.dlci>>1;unsigned index=scn==config_.hands_free_channel&&config_.hands_free?0:1;
   if((index==0&&!config_.hands_free)||(index==1&&(!config_.headset||scn!=config_.headset_channel))){requestClose();return true;}
   auto& d=dlcs_[index];d=Dlc();d.dlci=event.dlci;d.generation=++profile_serial_;
-  const bool ok=index==0?hf_.begin(d.generation,false,config_.speaker_gain,config_.microphone_gain):hs_.begin(d.generation,config_.speaker_gain,config_.microphone_gain);
+  const bool ok=index==0?hf_.begin(d.generation,wideband_,config_.speaker_gain,config_.microphone_gain):hs_.begin(d.generation,config_.speaker_gain,config_.microphone_gain);
   if(!ok)requestClose();
  }else if(event.type==BTH_RFCOMM_DLC_CLOSED){
   for(unsigned i=0;i<2;++i)if(dlcs_[i].dlci==event.dlci){dlcs_[i]=Dlc();if(i==0)hf_.end();else hs_.end();}

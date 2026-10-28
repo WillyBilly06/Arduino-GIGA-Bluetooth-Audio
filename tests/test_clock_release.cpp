@@ -16,6 +16,20 @@ enum{DMA1_Stream7_IRQn=1,UART7_IRQn=2,PendSV_IRQn=3};
 static uint32_t NVIC_GetPriorityGrouping(){return hardware.priority_supported?3:4;}
 static uint32_t NVIC_GetPriority(int irq){return irq==DMA1_Stream7_IRQn?0:irq==UART7_IRQn?0:15;}
 static uint32_t NVIC_GetEnableIRQ(int){return 0;}
+// Read-only CMSIS observer boundary used by the verbatim restore adapter.
+// This suite does not enable restore_trace or simulate physical CPU timing.
+struct ReleaseScbModel {uint32_t ICSR=0;};
+struct ReleaseDwtModel {uint32_t CTRL=0,CYCCNT=0;};
+struct ReleaseCoreDebugModel {uint32_t DEMCR=0;};
+static ReleaseScbModel release_scb;
+static ReleaseDwtModel release_dwt;
+static ReleaseCoreDebugModel release_core_debug;
+static ReleaseScbModel* const SCB=&release_scb;
+static ReleaseDwtModel* const DWT=&release_dwt;
+static ReleaseCoreDebugModel* const CoreDebug=&release_core_debug;
+#define CoreDebug_DEMCR_TRCENA_Msk (1u<<24)
+#define DWT_CTRL_CYCCNTENA_Msk 1u
+static uint32_t NVIC_GetPendingIRQ(int){return 0;}
 static uint32_t __get_PRIMASK(){return 0;}static uint32_t __get_FAULTMASK(){return 0;}static uint32_t __get_IPSR(){return 0;}
 static uint32_t __get_BASEPRI(){return hardware.basepri();}
 static void __set_BASEPRI_MAX(uint32_t v){hardware.raiseBasepri(v);}static void __set_BASEPRI(uint32_t v){hardware.restoreBasepri(v);}

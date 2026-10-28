@@ -5,3 +5,7 @@ This project's original code and contributed project-owned protocol kernels
 are licensed under Apache License 2.0. Third-party codec and reference assets
 retain their original terms. See THIRD_PARTY.md and the source provenance
 manifests. This notice does not grant rights in third-party codec patents.
+
+The unpublished voice overlay also retains Broadcom Corporation's1999-2012
+Apache-2.0 SBC encoder notices. Its portable mono mSBC modifications and exact
+source/export inventory are documented alongside that selected encoder.

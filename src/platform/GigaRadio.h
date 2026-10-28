@@ -1,7 +1,9 @@
 #pragma once
 #include "../Types.h"
 #include "../GigaBle.h"
+#include "../GigaVoice.h"
 namespace giga_bredr { namespace detail {
+class VoiceProfiles;class OwnedVoiceAudio;class VoiceSdp;struct VoiceControlConfig;
 struct RadioCallbacks {
     Status (*configure)(const CodecConfig&, void*) = nullptr;
     void (*media)(const uint8_t*, size_t, void*) = nullptr; // unmodified AVDTP packet: RTP except ordinary aptX
@@ -14,6 +16,7 @@ struct RadioCallbacks {
     // user must remain alive until radioEnd has detached both UART IRQs.
     void (*owner_wake)(void*) = nullptr;
     bool enable_a2dp = true; // Internal profile intent; defaults preserve existing callers.
+    VoiceProfiles* voice_control=nullptr;OwnedVoiceAudio* voice_audio=nullptr;VoiceSdp* voice_sdp=nullptr;const VoiceControlConfig* voice_config=nullptr;
 };
 Status radioBegin(const char* local_name, uint32_t codec_mask, const RadioCallbacks& callbacks);
 Status radioBegin(const char* local_name, uint32_t codec_mask, const RadioCallbacks& callbacks, const BleConfig& ble);
@@ -25,4 +28,6 @@ Status radioBleNotify(const uint8_t* data, size_t length);
 bool radioBleReadWrite(BleWrite& value);
 Status radioBleDisconnect(uint32_t expected_generation,bool advertise_after_disconnect);
 Status radioBleResumeAdvertising();
+Status radioVoiceStatus(VoiceStatus&);
+Status radioVoiceCommand(HfpCommand,uint32_t expected_generation,const char* argument);
 }}

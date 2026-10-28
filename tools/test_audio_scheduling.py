@@ -15,6 +15,7 @@ import re
 import shutil
 import subprocess
 import time
+from portable_sources import ACTOR_SOURCES, voice_extra_cpp, voice_sbc_sources, unavailable_voice_boundary
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -88,6 +89,7 @@ def main():
     parser.add_argument('--output', type=Path, default=ROOT / 'build/audio-scheduling-tests')
     parser.add_argument('--compiler', help='clang++ executable; otherwise use CXX, PATH, or the Windows LLVM installation')
     parser.add_argument('--cc', help='clang executable; otherwise use CC, the clang++ directory, or PATH')
+    parser.add_argument('--plan', action='store_true', help='record recipes only; execute no compiler or test')
     args = parser.parse_args()
     out = args.output.resolve()
     if out == ROOT or any(out == ROOT / name or ROOT / name in out.parents for name in ('src', 'tests', 'tools', 'examples')):
@@ -100,7 +102,7 @@ def main():
     flags = ['-O1', '-g', '-Wall', '-Wextra', '-Werror', '-fsanitize=address,undefined', '-fno-sanitize=vptr', '-fno-omit-frame-pointer']
     tests = ['test_owned_host_expanded_control', 'test_owned_host_mtu_update', 'test_output_wait_lifecycle', 'test_output_priming', 'test_output_pipeline']
     test_paths = [ROOT / 'tests' / (name + '.cpp') for name in tests]
-    test_paths += [ROOT / 'tests/test_owned_host.cpp', *sorted((ROOT / 'tests/support/audio_scheduler').glob('*.h')), Path(__file__).resolve()]
+    test_paths += [ROOT / 'tests/test_owned_host.cpp', *sorted((ROOT / 'tests/support/audio_scheduler').glob('*.h')), Path(__file__).resolve(), ROOT / 'tools/portable_sources.py', *unavailable_voice_boundary(ROOT)]
     source_paths = sorted(path for path in (ROOT / 'src').rglob('*') if path.is_file())
     inputs = {path.relative_to(ROOT).as_posix(): digest(path) for path in [*source_paths, *test_paths]}
     (out / 'source-before.json').write_text(json.dumps(inputs, indent=2) + '\n')
@@ -116,6 +118,10 @@ def main():
 
     def run(label, command, timeout=120):
         command = [str(arg) for arg in command]
+        if args.plan:
+            steps.append({'label': label, 'command': command, 'executed': False, 'exit_code': None})
+            persist()
+            return subprocess.CompletedProcess(command, 0, stdout='')
         try:
             result = subprocess.run(command, cwd=ROOT, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
             steps.append({'label': label, 'command': command, 'exit_code': result.returncode, 'output': result.stdout})
@@ -131,9 +137,12 @@ def main():
         return result
 
     try:
-        receipt['compiler_version'] = run('compiler-version', [cxx, '--version']).stdout
-        runtime = Path(run('sanitizer-runtime', [cc, '-print-runtime-dir']).stdout.strip())
-        runtime_paths = [path for path in (runtime, runtime.parent / 'windows', cxx.parent) if path.is_dir()]
+        if not args.plan:
+            receipt['compiler_version'] = run('compiler-version', [cxx, '--version']).stdout
+            runtime = Path(run('sanitizer-runtime', [cc, '-print-runtime-dir']).stdout.strip())
+            runtime_paths = [path for path in (runtime, runtime.parent / 'windows', cxx.parent) if path.is_dir()]
+        else:
+            runtime_paths = []
         env['PATH'] = os.pathsep.join(map(str, runtime_paths)) + os.pathsep + env.get('PATH', '')
         receipt['runtime_paths'] = list(map(str, runtime_paths))
         platform = ROOT / 'src/platform/GigaI2s.cpp'
@@ -148,21 +157,27 @@ def main():
             obj = out / 'objects' / (source.stem + ('.obj' if os.name == 'nt' else '.o'))
             run(source.stem + '-compile', [cc, '-std=c11', *flags, '-I' + str(ROOT / 'src/owned/core'), '-c', source, '-o', obj])
             objects.append(obj)
-        receipt['compiled_c_kernels'] = len(objects)
-        actor = [ROOT / 'src/owned/OwnedHost.cpp', ROOT / 'src/owned/ClassicProfiles.cpp', ROOT / 'src/owned/LeProfiles.cpp', ROOT / 'src/platform/RadioProtocol.cpp']
+        receipt['compiled_c_kernels'] = 0 if args.plan else len(objects)
+        receipt['planned_c_kernels'] = len(objects) if args.plan else 0
+        sbc_objects = []
+        for index, source in enumerate(voice_sbc_sources(ROOT)):
+            obj = out / 'objects' / ('voice-sbc-' + str(index) + '.o')
+            run(source.stem + '-voice-compile', [cc, '-std=c11', *flags, '-I' + str(ROOT / 'src'), '-c', source, '-o', obj])
+            sbc_objects.append(obj)
+        actor = [ROOT / path for path in ACTOR_SOURCES]
         for name in tests[:2]:
             exe = out / (name + ('.exe' if os.name == 'nt' else ''))
             run(name + '-compile', [cxx, '-std=c++17', *flags, '-I' + str(ROOT / 'src'), ROOT / 'tests' / (name + '.cpp'), *actor, *objects, '-o', exe])
             run(name, [exe], timeout=30)
             artifacts.append(exe)
             executed.append(name)
-        frontend = [ROOT / 'src' / name for name in ('detail/Memory.cpp', 'detail/Decoder.cpp', 'detail/Media.cpp', 'detail/PacketQueue.cpp', 'detail/AudioTiming.cpp', 'Types.cpp')]
+        frontend = [*[ROOT / 'src' / name for name in ('detail/Memory.cpp', 'detail/Decoder.cpp', 'detail/Media.cpp', 'detail/PacketQueue.cpp', 'detail/AudioTiming.cpp', 'Types.cpp')], *voice_extra_cpp(ROOT), *unavailable_voice_boundary(ROOT)]
         support = ROOT / 'tests/support/audio_scheduler'
         for name in tests[2:]:
             exe = out / (name + ('.exe' if os.name == 'nt' else ''))
             actual_frontend = name != 'test_output_priming'
             extra_flags = ['-DARDUINO=1', '-I' + str(support), *(['-pthread'] if os.name != 'nt' else [])] if actual_frontend else []
-            run(name + '-compile', [cxx, '-std=c++17', *flags, *extra_flags, '-I' + str(ROOT / 'src'), '-I' + str(out), ROOT / 'tests' / (name + '.cpp'), *(frontend if actual_frontend else []), *([ROOT / 'tests/support/clock_backend_unavailable.cpp'] if actual_frontend else []), '-o', exe])
+            run(name + '-compile', [cxx, '-std=c++17', *flags, *extra_flags, '-I' + str(ROOT / 'src'), '-I' + str(out), ROOT / 'tests' / (name + '.cpp'), *(frontend if actual_frontend else []), *([ROOT / 'tests/support/clock_backend_unavailable.cpp', *objects, *sbc_objects] if actual_frontend else []), '-o', exe])
             artifacts.append(exe)
             if name == 'test_output_wait_lifecycle':
                 for action in ('stop', 'replace', 'same', 'shutdown', 'stall'):
@@ -177,7 +192,7 @@ def main():
             else:
                 run(name, [exe], timeout=30)
                 executed.append(name)
-        receipt['status'] = 'PASS'
+        receipt['status'] = 'PLAN_ONLY_NO_COMMANDS_EXECUTED' if args.plan else 'PASS'
     except Exception as error:
         receipt['status'] = 'FAIL'
         receipt['error'] = str(error)
@@ -185,12 +200,15 @@ def main():
     finally:
         after = {path: digest(ROOT / path) for path in inputs}
         changes = {path: {'before': inputs[path], 'after': after[path]} for path in inputs if inputs[path] != after[path]}
-        receipt.update({'executed_cases': executed, 'passed_cases': len(executed), 'source_files_verified_unchanged': len(inputs), 'source_changes': changes, 'artifact_sha256': {str(path.relative_to(out)): digest(path) for path in artifacts if path.is_file()}, 'elapsed_seconds': time.monotonic() - start})
+        receipt.update({'executed_cases': [] if args.plan else executed, 'passed_cases': 0 if args.plan else len(executed), 'planned_runtime_cases': executed if args.plan else [], 'runtime_or_sanitizers_qualified': not args.plan and receipt['status'] == 'PASS', 'source_files_verified_unchanged': len(inputs), 'source_changes': changes, 'artifact_sha256': {str(path.relative_to(out)): digest(path) for path in artifacts if path.is_file()}, 'elapsed_seconds': time.monotonic() - start})
         if changes:
             receipt['status'] = 'FAIL'
             receipt['error'] = 'Source/test/tool inputs changed during verification'
         (out / 'source-after.json').write_text(json.dumps(after, indent=2) + '\n')
         persist()
+    if args.plan and receipt['status'] == 'PLAN_ONLY_NO_COMMANDS_EXECUTED':
+        print('PLAN_ONLY audio scheduling; no compiler/test/sanitizer execution', flush=True)
+        return
     if receipt['status'] != 'PASS':
         raise RuntimeError(receipt.get('error', 'Audio scheduling verification failed'))
     print(f'PASS audio scheduling: {len(executed)} cases, {len(objects)} portable C kernels; source unchanged', flush=True)

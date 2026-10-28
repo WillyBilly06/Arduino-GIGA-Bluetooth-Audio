@@ -1,6 +1,6 @@
 # HF/HS transport status and integration boundary
 
-The optional [voice control owner stage] included in dev.14(voice-owner-stage1-status.md) now wires an opt-in PSM3/RFCOMM/HF/HS consumer to OwnedHost. Default operation still refuses PSM3, profiles remain unadvertised, and no SCO/voice worker/public microphone path is implemented. The standalone preparation below retains its original scope; consult the new stage record for current source/build evidence.
+The optional [voice control owner stage](voice-owner-stage1-status.md) is included in dev.14. The experimental [phase2 voice source](voice-phase2-source-status.md) adds H4 SCO, a voice worker, an optional microphone provider and conditional SDP. Voice remains disabled by default. Controller routing, M7 voice timing and call interoperability remain unqualified. The standalone preparation below retains its historical scope.
 
 ## Historical standalone preparation
 

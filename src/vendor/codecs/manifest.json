@@ -73,10 +73,11 @@
     "source_sha256": "18e1f78b3fb3289dccd18f8036d5ec29e241af297a553f2b641cd710bc1f3137",
     "patched_sha256": "18e1f78b3fb3289dccd18f8036d5ec29e241af297a553f2b641cd710bc1f3137",
     "patches": [
-      "giga-portable-reviewed-patch-v1"
+      "giga-portable-reviewed-patch-v1",
+      "giga-voice-arm-lp64-widths-20261027"
     ],
-    "exported_sha256": "18e1f78b3fb3289dccd18f8036d5ec29e241af297a553f2b641cd710bc1f3137",
-    "exported_bytes": 25807
+    "exported_sha256": "a302c064e723da5de6916b2674183479325336e42641d4a1355162bc5a48a662",
+    "exported_bytes": 26163
   },
   {
     "source": "decoders/SBC/decoder/include/oi_modules.h",

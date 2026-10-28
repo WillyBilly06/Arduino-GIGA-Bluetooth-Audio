@@ -1,0 +1,19 @@
+#include <atomic>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#define private public
+#include "owned/VoiceAudioWorker.h"
+#undef private
+#include "detail/Memory.h"
+using namespace giga_bredr;using namespace giga_bredr::detail;using namespace giga_bredr::owned;
+struct Context{VoiceAudioWorker* worker=nullptr; bool inject_oom=false,inject_hardware=false;unsigned allocations=0,prepares=0,restores=0;};
+static void* alloc(size_t n,void* p){auto& c=*static_cast<Context*>(p);++c.allocations;if(c.inject_oom){c.inject_oom=false;c.worker->flag_.test_and_set(std::memory_order_acquire);return nullptr;}return std::malloc(n);}
+static void releaseBlock(void* p,void*){std::free(p);}
+static VoiceWorkerOutput output(Context& c){VoiceWorkerOutput o;o.user=&c;o.prepare=[](VoiceCodec,void* p){auto& c=*static_cast<Context*>(p);++c.prepares;if(c.inject_hardware){c.inject_hardware=false;c.worker->flag_.test_and_set(std::memory_order_acquire);return Status::HardwareError;}return Status::Ok;};o.restore=[](void* p){++static_cast<Context*>(p)->restores;};o.wake=[](void*){};o.sink={&c,[](void*,const VoicePcmRequest&,const uint8_t*,size_t n){return VoicePcmRead{n,VoiceIoResult::Ready};}};return o;}
+static bool oom_preserved(){Context c;VoiceAudioWorker w(1201);c.worker=&w;c.inject_oom=true;if(!setMemoryProvider(MemoryKind::Fast,alloc,releaseBlock,&c)||w.begin(output(c))!=Status::Ok)return false;auto h=w.hooks();if(h.prepare(1,VoiceCodec::Cvsd,h.user)!=Status::Busy)return false;w.step();w.flag_.clear(std::memory_order_release);w.step();bool ok=h.prepare(1,VoiceCodec::Cvsd,h.user)==Status::OutOfMemory&&!w.preempting()&&c.allocations==1&&c.prepares==0&&memoryStats().current_blocks==0;w.end();return ok;}
+static bool hardware_preserved(){Context c;VoiceAudioWorker w(1202);c.worker=&w;c.inject_hardware=true;if(!setMemoryProvider(MemoryKind::Fast,alloc,releaseBlock,&c)||w.begin(output(c))!=Status::Ok)return false;auto h=w.hooks();if(h.prepare(1,VoiceCodec::Cvsd,h.user)!=Status::Busy)return false;w.step();w.flag_.clear(std::memory_order_release);w.step();bool ok=h.prepare(1,VoiceCodec::Cvsd,h.user)==Status::HardwareError&&!w.preempting()&&c.allocations==1&&c.prepares==1&&c.restores==1&&memoryStats().current_blocks==0;w.end();return ok;}
+static bool superseded_failure(){Context c;VoiceAudioWorker w(1203);c.worker=&w;c.inject_hardware=true;if(!setMemoryProvider(MemoryKind::Fast,alloc,releaseBlock,&c)||w.begin(output(c))!=Status::Ok)return false;auto h=w.hooks();if(h.prepare(1,VoiceCodec::Cvsd,h.user)!=Status::Busy)return false;w.step();w.flag_.clear(std::memory_order_release);bool ok=h.prepare(2,VoiceCodec::Cvsd,h.user)==Status::Busy;w.step();ok=ok&&h.prepare(2,VoiceCodec::Cvsd,h.user)==Status::Ok&&w.preempting()&&c.prepares==2&&c.restores==1;h.ended(2,h.user);w.step();ok=ok&&!w.preempting()&&c.restores==2&&memoryStats().current_blocks==0;w.end();return ok;}
+static bool cancelled_failure(){Context c;VoiceAudioWorker w(1204);c.worker=&w;c.inject_oom=true;if(!setMemoryProvider(MemoryKind::Fast,alloc,releaseBlock,&c)||w.begin(output(c))!=Status::Ok)return false;auto h=w.hooks();if(h.prepare(1,VoiceCodec::Cvsd,h.user)!=Status::Busy)return false;w.step();w.flag_.clear(std::memory_order_release);h.ended(1,h.user);w.step();bool ok=h.prepare(1,VoiceCodec::Cvsd,h.user)==Status::Unsupported&&!w.preempting()&&c.allocations==1&&c.prepares==0;w.end();return ok&&memoryStats().current_blocks==0;}
+int main(){struct Case{const char* name;bool(*fn)();};const Case cases[]={{"oom_preserved",oom_preserved},{"hardware_preserved",hardware_preserved},{"superseded_failure",superseded_failure},{"cancelled_failure",cancelled_failure}};unsigned failed=0;for(const auto& c:cases){const bool ok=c.fn();std::printf("VOICE_FAILURE_PUBLICATION %s %s\n",c.name,ok?"PASS":"FAIL");failed+=!ok;}std::printf("VOICE_FAILURE_PUBLICATION_SUMMARY total=4 failed=%u\n",failed);return failed?2:0;}

@@ -5,6 +5,7 @@
 #include "AudioDiagnostics.h"
 #include "AudioClock.h"
 #include "I2sConfig.h"
+#include "GigaVoice.h"
 
 namespace giga_bredr {
 // Zero fields inherit globals, then negotiated-codec defaults. A resolved
@@ -49,6 +50,7 @@ struct ReceiverConfig {
     // At least enable_a2dp or ble.enabled must be true. Audio options are unused
     // in BLE-only mode; enable_i2s=false alone still leaves Classic enabled.
     bool enable_a2dp = true;
+    VoiceConfig voice; // Experimental, default disabled; requires Classic+I2S.
 };
 struct ReceiverStats {
     AudioClockStats clock;
@@ -99,6 +101,18 @@ public:
     // transactions still retire (release is retained); this cannot unsend a key.
     // A matching repeated cancellation is idempotent. Stale sessions reject.
     Status avrcpCancel(uint32_t expected_generation,uint32_t request_id);
+    // Nonblocking registration. Ok copies callbacks; only the existing audio
+    // worker invokes them, for the actually selected CVSD/mSBC PCM format.
+    // None is the default and sends silence. Provider callbacks must be bounded,
+    // allocation/logging-free and must not call receiver lifecycle operations.
+    Status setVoiceInput(VoicePcmProvider,VoiceInputToken&);
+    // Ok fences all old callbacks before return. Busy changes nothing: retry
+    // before destroying the provider context. Captured/queued audio is retained.
+    // Tokens are specific to this receiver's begin/end lifetime.
+    Status detachVoiceInput(VoiceInputToken);
+    Status voiceStatus(VoiceStatus&)const;
+    // Copies one explicit typed HF intent; Ok is admission, not phone execution.
+    Status voiceCommand(HfpCommand,uint32_t expected_generation,const char* argument=nullptr);
     // Copies the readable TX value; notifies only while connected/subscribed.
     // Ok is admission, not remote delivery. Busy/OutputFull ask for a retry.
     // Foreground data calls do not wait for the radio owner; contention is Busy.
@@ -126,6 +140,6 @@ public:
 private:
     struct Impl;
     Impl* impl_ = nullptr;
-    uint64_t lifetime_ = 0; // Survives Impl replacement, including address reuse.
+    uint64_t lifetime_ = 0; // Per-object callback invalidation; not voice-token identity.
 };
 }
