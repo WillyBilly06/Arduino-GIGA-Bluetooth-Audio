@@ -1,4 +1,4 @@
-# GigaBredr
+# ARDUINO GIGA R1 BLUETOOTH CLASSIC LIBRARY
 
 Bluetooth Classic A2DP receiver and BLE GATT server for the **Arduino GIGA R1 WiFi, Cortex-M7**, with PCM5102A-compatible I2S playback. GigaBredr owns the host stack; the radio controller uses Infineon ROM and the stock HCD patch, with Arduino Mbed/RTOS scheduling.
 
