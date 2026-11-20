@@ -1,4 +1,36 @@
-# GigaBredr dev.17 develop (experimental)
+# GigaBredr dev.18 develop (experimental)
+
+Bluetooth Classic A2DP receiver with board-pin I2S output, BLE GATT server and
+additional Classic profiles for the Arduino GIGA R1 WiFi (Cortex-M7), using a
+project-owned host stack on the board's Murata 1DX (CYW4343W) radio.
+
+## What is new in dev.18 (2026-11-20)
+
+- **Fast, Linux-compatible connects.** Accepted links no longer race the
+  initiator's authentication (BlueZ previously failed with EBUSY). Idle page
+  and inquiry scan are interlaced at 40 ms. Measured reconnect from Linux:
+  0.56-0.74 s. [Details](docs/validation/connect-speed-2026-11-20.md).
+- **Persistent pairing.** `GigaQspiBondStorage` keeps Classic link keys in the
+  last MiB of QSPI flash, so phones reconnect after resets and sketch uploads.
+  The Receiver and SppEcho examples use it.
+- **Samsung SSC decoder** (44.1/48 kHz, Seamless HiFi 48/24, UHQ 96/24),
+  lazily allocated (22,920 B), verified bit-exact natively and over the air in
+  all three modes. [Details](docs/validation/ssc-integration.md).
+- **SPP (Serial Port Profile) server**, off by default; `sppWrite`/`sppRead`
+  and the `SppEcho` example. [Details](docs/validation/spp.md).
+- **BLE coexistence:** `BleConfig::audio_coexistence_reserve_ms` (default 50)
+  widens the automatic reserve of >=88.2 kHz streams (e.g. LHDC V5 192 kHz)
+  while BLE is enabled. [Measurements and limits](docs/validation/ble-coexistence-2026-11-20.md).
+- **Connectionless Peripheral Broadcast (CSB/CPB):** the radio supports both
+  roles; a diagnostic probe runs the transmitter successfully.
+  [Details](docs/validation/csb-capability-2026-11-20.md).
+
+Codecs: SBC/SBC-XQ, AAC-LC (+ experimental HE-AAC), aptX, aptX HD, LDAC,
+LHDC V5, Opus, Samsung SSC. Each is compiled in by `GBR_ENABLE_*` and its
+memory is allocated only while that codec's stream is configured.
+
+## Earlier dev.17 notes
+
 
 **Current unreleased local source, October 29:** this tree includes the combined
 Service Changed, HF control, codec arithmetic and shared-clock relearning
