@@ -70,6 +70,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  if(config.voice_control&&!config.callbacks.enable_a2dp)return Status::Unsupported; // Control stage shares the current Classic actor.
  if(config.voice_audio&&(!config.voice_control||!config.voice_audio->enabled()))return Status::InvalidArgument;
  if(config.voice_sdp&&!config.voice_audio)return Status::InvalidArgument;
+ if(config.hid&&(!config.hid->enabled()||!config.callbacks.enable_a2dp))return config.hid->enabled()?Status::Unsupported:Status::InvalidArgument;
  const OperationModePolicy mode{config.callbacks.enable_a2dp,config.ble.enabled};
  if(!config.classic_bonds.valid())return Status::InvalidArgument;
  if(config.classic_bonds.configured()&&!mode.a2dp)return Status::Unsupported;
@@ -120,6 +121,13 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
   if(gap_.config.uuid_count>=sizeof uuids_/sizeof uuids_[0]||classic_.installVoiceRecords(config_.voice_config.serial->record(),1)!=Status::Ok){config_.voice_control->end();return Status::InvalidArgument;}
   uuids_[gap_.config.uuid_count]=0x1101;gap_.config.uuid_count=uint8_t(gap_.config.uuid_count+1);
  }
+ // Optional HID Device: immutable records, EIR UUID 0x1124, optional CoD.
+ if(config_.hid){
+  if(gap_.config.uuid_count>=sizeof uuids_/sizeof uuids_[0]||classic_.installHidRecords(config_.hid->records(),config_.hid->recordCount())!=Status::Ok){if(config_.voice_control)config_.voice_control->end();return Status::InvalidArgument;}
+  uuids_[gap_.config.uuid_count]=0x1124;gap_.config.uuid_count=uint8_t(gap_.config.uuid_count+1);
+  if(config_.hid->classOfDevice())gap_.config.class_of_device=config_.hid->classOfDevice();
+  config_.hid->bind(control_);config_.hid->reset(0);
+ }
  uint8_t local_hci[6];for(unsigned i=0;i<6;++i)local_hci[i]=config.address[5-i];
  if(!application_bonds_.begin(config.classic_bonds,local_hci))return Status::Unsupported;
  active_=true;return Status::Ok;
@@ -129,7 +137,7 @@ void OwnedHost::end(){
  audio_supply::hostCreditInvalidate();clearAvrcpRetirement();clearVoiceRetirement();
  le_disconnect_owner_=0;le_advertising_held_=false;le_disconnect_advertise_after_=true;
  if(!active_){application_bonds_.end();config_.classic_bonds={};config_.callbacks.classic_bonds={};return;}active_=false;stats_.controller_ready=stats_.connected=stats_.streaming=false;
- for(unsigned i=0;i<2;++i){detach(i);cancelAdmission(i);}if(config_.callbacks.enable_a2dp)resetClassic(0);if(config_.voice_control)config_.voice_control->end();
+ for(unsigned i=0;i<2;++i){detach(i);cancelAdmission(i);}if(config_.callbacks.enable_a2dp)resetClassic(0);if(config_.voice_control)config_.voice_control->end();if(config_.hid)config_.hid->reset(0);
  for(auto& p:packets_)p.used=false;deferred_count_=0;erase(&commands_,sizeof commands_);bth_cmdq_init(&commands_);bth_control_tx_init(&control_);erase(bonds_,sizeof bonds_);erase(&links_,sizeof links_);erase(output_,sizeof output_);erase(deferred_,sizeof deferred_);application_bonds_.end();config_.classic_bonds={};config_.callbacks.classic_bonds={};
   pending_=false;boot_=Boot::Failed;memset(le_features_,0,sizeof le_features_);le_features_known_=false;
 }
@@ -251,8 +259,10 @@ bool OwnedHost::attach(unsigned i,const bth_peer_link_t& link){
  Peer& peer=peers_[i];peer.owner=link.owner;peer.handle=link.handle;peer.attached=true;peer.has_pending=false;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
  peer.security_deadline=now_+35000;peer.disconnect_deadline=peer.assembly_deadline=peer.pending_deadline=0;memset(peer.opened,0,sizeof peer.opened);memset(peer.channel_deadlines,0,sizeof peer.channel_deadlines);
  if(!bth_l2cap_rx_init(&peer.assembly,link.handle,peer.bytes,i==0?ClassicAssemblyBytes:sizeof peer.bytes))return false;
- if(i==0){clearClassicControls();const bth_l2cap_service_t services[]={{1,672,false},{0x19,ClassicMtu,true},{0x17,672,true},{3,VoiceProfiles::FrameBytes,true}};
-  if(!bth_l2cap_sig_init(&signaling_,link.handle,services,config_.voice_control&&config_.voice_control->enabled()?4:3))return false;resetClassic(link.owner);if(config_.voice_control)config_.voice_control->reset(link.owner);clearVoiceRetirement();close_media_=close_avrcp_=0;was_secure_=false;avrcp_at_=0;avrcp_attempts_=0;avrcp_recovering_=false;controller_priority_.attach(link.owner,link.handle);
+ if(i==0){clearClassicControls();bth_l2cap_service_t services[BTH_SERVICE_LIMIT]={{1,672,false},{0x19,ClassicMtu,true},{0x17,672,true},{3,VoiceProfiles::FrameBytes,true}};
+  size_t service_count=config_.voice_control&&config_.voice_control->enabled()?4:3;
+  if(config_.hid){services[service_count++]={HidDevice::ControlPsm,HidDevice::ReceiveMtu,true};services[service_count++]={HidDevice::InterruptPsm,HidDevice::ReceiveMtu,true};config_.hid->reset(link.owner);}
+  if(!bth_l2cap_sig_init(&signaling_,link.handle,services,service_count))return false;resetClassic(link.owner);if(config_.voice_control)config_.voice_control->reset(link.owner);clearVoiceRetirement();close_media_=close_avrcp_=0;was_secure_=false;avrcp_at_=0;avrcp_attempts_=0;avrcp_recovering_=false;controller_priority_.attach(link.owner,link.handle);
   if(config_.voice_audio&&config_.voice_audio->attach(link.owner,link.handle,link.peer)!=Status::Ok)return false;
  }else if(!le_.attach(link.owner,link.handle,link.role,le_features_known_?le_features_:nullptr,now_))return false;
  return true;
@@ -262,7 +272,7 @@ void OwnedHost::detach(unsigned i){
  bth_rx_flow_detach(&rx_,peer.handle,peer.owner);
  for(auto& packet:packets_)if(packet.used&&packet.charged&&rx_.slots[packet.lease.slot].owner==peer.owner){bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}
  bth_control_tx_detach(&control_,uint8_t(i),peer.owner);
- if(i==0){if(config_.voice_audio)config_.voice_audio->detach();controller_priority_.detach(peer.owner);clearClassicControls();resetClassic(0);if(config_.voice_control)config_.voice_control->reset(0);clearVoiceRetirement();memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
+ if(i==0){if(config_.voice_audio)config_.voice_audio->detach();controller_priority_.detach(peer.owner);clearClassicControls();resetClassic(0);if(config_.voice_control)config_.voice_control->reset(0);if(config_.hid)config_.hid->reset(0);clearVoiceRetirement();memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
  if(i==0)releaseClassicParked();
  peer.attached=peer.has_pending=false;peer.owner=0;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
  if(i==1){le_disconnect_owner_=0;le_disconnect_advertise_after_=true;}
@@ -299,7 +309,7 @@ Status OwnedHost::bleResumeAdvertising(){
  le_advertising_held_=false;return Status::Ok;
 }
 void OwnedHost::closePeer(unsigned i,uint8_t reason){if(!peers_[i].attached)return;if(bth_links_disconnect(&links_,peers_[i].handle,reason)==BTH_ERR_CAPACITY)return;
- if(!peers_[i].disconnect_deadline)peers_[i].disconnect_deadline=now_+5000;if(i==0){clearClassicControls();resetClassic(0);}
+ if(!peers_[i].disconnect_deadline)peers_[i].disconnect_deadline=now_+5000;if(i==0){clearClassicControls();resetClassic(0);if(config_.hid)config_.hid->reset(0);}
 }
 bool OwnedHost::defer(const uint8_t* packet,size_t n){if(deferred_count_==8||n>sizeof deferred_[0].bytes){fail("Owned event backlog exhausted");return false;}
  auto& d=deferred_[(deferred_read_+deferred_count_)%8];memcpy(d.bytes,packet,n);d.length=uint16_t(n);d.serial=++event_serial_;if(!d.serial)d.serial=++event_serial_;++deferred_count_;return true;
@@ -601,6 +611,7 @@ bool OwnedHost::deliverImpl(unsigned i,const bth_l2cap_pdu_t& pdu,uint16_t* sign
  if(pdu.cid!=1){const auto* channel=bth_l2cap_sig_find(&signaling_,pdu.cid);if(!channel||channel->state!=BTH_CHANNEL_OPEN)return true;
   if(pdu.payload.len>channel->local_mtu){closePeer(0,0x13);return true;}
   if(channel->psm==3)return config_.voice_control?config_.voice_control->receive(pdu.cid,pdu.payload.data,pdu.payload.len,secure,now_):true;
+  if(hidPsm(channel->psm))return config_.hid->receive(pdu.cid,pdu.payload.data,pdu.payload.len,secure,now_);
   return classic_.receive(pdu.cid,pdu.payload.data,pdu.payload.len,secure,now_);
  }
  if(!gateAvrcpRetirement(pdu)||!gateVoiceRetirement(pdu))return false;
@@ -647,7 +658,7 @@ bool OwnedHost::deliverImpl(unsigned i,const bth_l2cap_pdu_t& pdu,uint16_t* sign
 bool OwnedHost::safeClassicControl(const bth_l2cap_pdu_t& pdu) const{
  if(!pdu.payload.data||!pdu.payload.len||pdu.payload.len>BTH_CONTROL_BYTES)return false;
  if(pdu.cid!=1){const auto* c=bth_l2cap_sig_find(&signaling_,pdu.cid);
-  return c&&c->state==BTH_CHANNEL_OPEN&&pdu.payload.len<=c->local_mtu&&(c->psm==1||(c->psm==0x17&&pdu.cid==classic_.avrcpCid())||(c->psm==3&&config_.voice_control&&pdu.cid==config_.voice_control->cid()));
+  return c&&c->state==BTH_CHANNEL_OPEN&&pdu.payload.len<=c->local_mtu&&(c->psm==1||(c->psm==0x17&&pdu.cid==classic_.avrcpCid())||(c->psm==3&&config_.voice_control&&pdu.cid==config_.voice_control->cid())||hidPsm(c->psm));
  }
  // AVRCP-only retirement can wait in the existing bounded copied FIFO while
  // media delivery and RX lease release continue on the independent media CID.
@@ -830,18 +841,18 @@ void OwnedHost::synchronizeChannelsImpl(){
  for(unsigned k=0;k<BTH_CHANNEL_LIMIT;++k){auto& c=signaling_.channels[k];
   if(avrcp_retiring_&&avrcp_retire_owner_==peer.owner&&uint16_t(0x40+k)==avrcp_retire_local_)continue;
   if(voice_retiring_&&voice_retire_owner_==peer.owner&&uint16_t(0x40+k)==voice_retire_local_)continue;
-  if(peer.opened[k]&&c.state!=BTH_CHANNEL_OPEN){clearClassicControls(uint16_t(0x40+k));if(config_.voice_control&&config_.voice_control->cid()==uint16_t(0x40+k))config_.voice_control->channelClosed(uint16_t(0x40+k));else classic_.channelClosed(uint16_t(0x40+k));peer.opened[k]=false;}
+  if(peer.opened[k]&&c.state!=BTH_CHANNEL_OPEN){clearClassicControls(uint16_t(0x40+k));if(config_.hid)config_.hid->channelClosed(uint16_t(0x40+k));if(config_.voice_control&&config_.voice_control->cid()==uint16_t(0x40+k))config_.voice_control->channelClosed(uint16_t(0x40+k));else classic_.channelClosed(uint16_t(0x40+k));peer.opened[k]=false;}
   if(c.state==BTH_CHANNEL_OPEN&&peer.opened[k]&&(c.psm==1||bth_links_secure(&links_,peer.handle))&&
-     !(c.psm==3?(config_.voice_control&&config_.voice_control->channelMtuUpdated(peer.owner,c.local_cid,c.remote_cid,c.remote_mtu)):classic_.channelMtuUpdated(peer.owner,c.psm,c.local_cid,c.remote_cid,c.remote_mtu))){
+     !(c.psm==3?(config_.voice_control&&config_.voice_control->channelMtuUpdated(peer.owner,c.local_cid,c.remote_cid,c.remote_mtu)):hidPsm(c.psm)?config_.hid->channelMtuUpdated(peer.owner,c.psm,c.local_cid,c.remote_cid,c.remote_mtu):classic_.channelMtuUpdated(peer.owner,c.psm,c.local_cid,c.remote_cid,c.remote_mtu))){
    closePeer(0,0x13);return;
   }
   if(c.state==BTH_CHANNEL_OPEN&&!peer.opened[k]&&(c.psm==1||bth_links_secure(&links_,peer.handle))){
 #if GIGA_BREDR_CONNECT_TRACE
    {char t[64];snprintf(t,sizeof t,"CT ms=%lu l2cap_open psm=%04x",(unsigned long)now_,c.psm);diagnose(t);}
 #endif
-   if(c.psm==3?(config_.voice_control&&config_.voice_control->channelOpened(peer.owner,c.local_cid,c.remote_cid,c.remote_mtu)):classic_.channelOpened(c.psm,c.local_cid,c.remote_cid,c.remote_mtu)){peer.opened[k]=true;peer.channel_deadlines[k]=0;}
+   if(c.psm==3?(config_.voice_control&&config_.voice_control->channelOpened(peer.owner,c.local_cid,c.remote_cid,c.remote_mtu)):hidPsm(c.psm)?config_.hid->channelOpened(peer.owner,c.psm,c.local_cid,c.remote_cid,c.remote_mtu):classic_.channelOpened(c.psm,c.local_cid,c.remote_cid,c.remote_mtu)){peer.opened[k]=true;peer.channel_deadlines[k]=0;}
    else disconnectChannel(c.local_cid);
-  }else if(c.state==BTH_CHANNEL_CLOSED){if(peer.opened[k]){if(config_.voice_control&&config_.voice_control->cid()==uint16_t(0x40+k))config_.voice_control->channelClosed(uint16_t(0x40+k));else classic_.channelClosed(uint16_t(0x40+k));}peer.opened[k]=false;peer.channel_deadlines[k]=0;}
+  }else if(c.state==BTH_CHANNEL_CLOSED){if(peer.opened[k]){if(config_.hid)config_.hid->channelClosed(uint16_t(0x40+k));if(config_.voice_control&&config_.voice_control->cid()==uint16_t(0x40+k))config_.voice_control->channelClosed(uint16_t(0x40+k));else classic_.channelClosed(uint16_t(0x40+k));}peer.opened[k]=false;peer.channel_deadlines[k]=0;}
   else if(c.state!=BTH_CHANNEL_OPEN){if(!peer.channel_deadlines[k])peer.channel_deadlines[k]=now_+10000;if(due(now_,peer.channel_deadlines[k]))closePeer(0,0x13);}
  }
 }
@@ -963,6 +974,7 @@ void OwnedHost::runtimePoll(){
     config_.voice_control->poll(true,now_,!input_waiting);
     if(config_.voice_control->closeRequested()&&!config_.voice_control->pendingOutput())disconnectChannel(config_.voice_control->cid());}
   }
+  if(config_.hid&&config_.hid->linked()&&hidPoll(secure,classic_ready,!input_waiting))return;
   synchronizeChannels();avrcpPoll(classic_ready,!classic_deferred_count_&&!peers_[0].has_pending);
   if(classic_.takeCloseMedia())close_media_=classic_.mediaCid();if(classic_.takeCloseAvrcp())close_avrcp_=classic_.avrcpCid();
   if(close_media_&&disconnectChannel(close_media_))close_media_=0;if(close_avrcp_&&disconnectChannel(close_avrcp_))close_avrcp_=0;
@@ -1021,6 +1033,16 @@ void OwnedHost::runtimePoll(){
  if(!gap_.pending&&gap_.scan!=scan){const auto result=bth_gap_set_scan(&gap_,&flow_,mode.a2dp,scan,output_,sizeof output_,&n);if(result==BTH_OK){deadline_=now_+3000;last_ack_=false;submit(n);return;}if(result<0){fail("Owned scan admission failed");return;}}
  if(gap_.pending&&due(now_,deadline_)){fail("Owned scan command ACK timeout");return;}
 
+}
+// True when the Classic peer was closed this turn.
+bool OwnedHost::hidPoll(bool secure,bool ready,bool allow_transmit){
+ auto& hid=*config_.hid;
+ if(!secure){hid.requestClose();closePeer(0,5);return true;} // Retire HID admission in the same turn.
+ if(!ready)return false;hid.poll(allow_transmit);
+ // Virtual cable unplug: forget this host, then drop the baseband link.
+ if(hid.takeUnplug()){removeBond(this,links_.classic.peer);closePeer(0,0x13);return true;}
+ if(const uint16_t cid=hid.closingCid())disconnectChannel(cid);
+ return false;
 }
 bool OwnedHost::voiceAuthorized()const{
  if(!config_.voice_control||!config_.voice_control->cid()||config_.voice_control->closeRequested())return false;

@@ -20,6 +20,7 @@
 #include "owned/VoiceDacOutput.h"
 #include "owned/VoiceSdp.h"
 #include "owned/SppPort.h"
+#include "owned/HidDevice.h"
 #include "detail/VoiceInputLifetime.h"
 #include "RadioBuildConfig.h"
 #include <atomic>
@@ -153,6 +154,7 @@ struct GigaBredr::Impl {
         detail::VoiceProfiles* profiles=nullptr;uint8_t* rings=nullptr;
     };
     SerialSession* serial=nullptr;
+    detail::HidDevice* hid=nullptr; // Allocated only for config.hid.enabled.
     std::atomic<bool> music_intent{false};std::atomic<uint32_t> voice_preempted_packets{0};
     detail::Decoder decoder;
     detail::MediaAssembler media;
@@ -899,6 +901,19 @@ struct GigaBredr::Impl {
         if(serial->rings)detail::release(serial->rings);
         serial->~SerialSession();detail::release(serial);serial=nullptr;
     }
+    Status setupHid(){
+        if(!options.hid.enabled)return Status::Ok;
+        void* storage=detail::allocate(sizeof(detail::HidDevice));if(!storage)return Status::OutOfMemory;hid=new(storage)detail::HidDevice();
+        return hid->begin(options.hid)?Status::Ok:Status::InvalidArgument;
+    }
+    void releaseHid(){if(!hid)return;hid->end();hid->~HidDevice();detail::release(hid);hid=nullptr;}
+    // Loop context: copy one pending output report, then call outside the lock.
+    void deliverHidOutput(){
+        if(!hid||!options.hid.output_report)return;
+        HidReportType type=HidReportType::Output;uint8_t id=0,data[detail::HidDevice::ReportBytes];size_t length=0;
+        {TryLock lock(radio_mutex);if(!lock||!hid->takeOutput(type,id,data,length))return;}
+        options.hid.output_report(type,id,data,length,options.hid.user);
+    }
     Status prepareVoiceOutput(VoiceCodec codec){
         if(!voice||!running.load())return Status::Unsupported;
         // Reserve the selected converter before disturbing A2DP output. On a
@@ -995,6 +1010,10 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
            s.tx_buffer_bytes<detail::SppPort::MinimumRing||s.tx_buffer_bytes>detail::SppPort::MaximumRing||
            (v.hands_free&&s.channel==v.hands_free_channel)||(v.headset&&s.channel==v.headset_channel))return Status::InvalidArgument;
     }
+    if(input.hid.enabled){
+        if(!input.enable_a2dp||GIGA_BREDR_USE_BTSTACK)return Status::Unsupported;
+        if(!detail::HidDevice::validate(input.hid))return Status::InvalidArgument;
+    }
     ReceiverConfig config = input;
     if (mode.needsDecoder()) {
         if (!config.codecs) config.codecs = availableCodecs();
@@ -1014,6 +1033,7 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     impl_ = new (storage) Impl(config); ++lifetime_; impl_->running.store(true);
     Status status=impl_->setupVoice(voice_input_lifetime);if(status!=Status::Ok){end();return status;}
     status=impl_->setupSerial();if(status!=Status::Ok){end();return status;}
+    status=impl_->setupHid();if(status!=Status::Ok){end();return status;}
     detail::RadioCallbacks callbacks; callbacks.enable_a2dp = config.enable_a2dp;
     callbacks.configure = Impl::onConfigure; callbacks.media = Impl::onMedia;
     callbacks.stream = Impl::onStream; callbacks.diagnostic = Impl::onDiagnostic; callbacks.user = impl_;
@@ -1021,6 +1041,7 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     if(config.classic_bonds.configured())callbacks.classic_bonds={impl_,Impl::loadClassicBond,Impl::saveClassicBond,Impl::removeClassicBond};
     if(impl_->voice){callbacks.voice_audio=&impl_->voice->transport;callbacks.voice_control=&impl_->voice->profiles;callbacks.voice_sdp=&impl_->voice->sdp;callbacks.voice_config=&impl_->voice->control;}
     else if(impl_->serial){callbacks.voice_control=impl_->serial->profiles;callbacks.voice_config=&impl_->serial->control;}
+    callbacks.hid=impl_->hid;
 #if defined(ARDUINO)
     callbacks.owner_wake = Impl::onOwnerWake;
 #endif
@@ -1075,6 +1096,8 @@ void GigaBredr::poll() {
     if (changed && impl_->options.configuration_changed) impl_->options.configuration_changed(selected, impl_->options.user);
     if (lifetime_ != lifetime || !impl_) return;
     if (volume_changed && impl_->options.volume_changed) impl_->options.volume_changed(selected_volume, impl_->options.user);
+    if (lifetime_ != lifetime || !impl_) return;
+    impl_->deliverHidOutput();
 #if GIGA_BREDR_PRIVATE_SCHED_WITNESS
     if (lifetime_ != lifetime || !impl_) return;
     char scheduler_row[76]; uint32_t scheduler_ordinal=0;
@@ -1110,6 +1133,7 @@ void GigaBredr::end() {
     impl_->options.classic_bonds={};
     impl_->releaseVoice();
     impl_->releaseSerial(); // The radio actor ended above; nothing retains its rings.
+    impl_->releaseHid();
     { Lock lock(impl_->codec_mutex); impl_->releaseCodec(); }
     impl_->~Impl(); detail::release(impl_); impl_ = nullptr;
     receiver_owner.store(nullptr);
@@ -1238,6 +1262,29 @@ Status GigaBredr::sppStats(SppStats& value) const {
     if (!impl_ || !impl_->serial) return Status::Unsupported;
     Lock lock(impl_->radio_mutex);
     value = impl_->serial->port.stats();
+    return Status::Ok;
+}
+Status GigaBredr::hidSend(uint8_t report_id,const uint8_t* data,size_t length) {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->hid) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->hid->send(report_id,data,length); }
+#if defined(ARDUINO)
+    if (result == Status::Ok) impl_->host_events.set(1); // Send on the next host turn.
+#endif
+    return result;
+}
+bool GigaBredr::hidConnected() const {
+    if(providerReentry())return false;
+    return impl_ && impl_->hid && impl_->hid->connected();
+}
+Status GigaBredr::hidStats(HidStats& value) const {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->hid) return Status::Unsupported;
+    Lock lock(impl_->radio_mutex);
+    value = impl_->hid->stats();
     return Status::Ok;
 }
 Status GigaBredr::bleResumeAdvertising() {

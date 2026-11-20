@@ -5,6 +5,7 @@
 #include "VoiceProfiles.h"
 #include "OwnedVoiceAudio.h"
 #include "VoiceSdp.h"
+#include "HidDevice.h"
 #include "../detail/ClassicBondStore.h"
 #ifndef GIGA_BREDR_PRIVATE_SCHED_WITNESS
 #define GIGA_BREDR_PRIVATE_SCHED_WITNESS 0
@@ -30,6 +31,8 @@ struct OwnedHostConfig {
  OwnedVoiceAudio* voice_audio=nullptr;
  VoiceSdp* voice_sdp=nullptr;
  ClassicBondStorage classic_bonds;
+ // Optional caller-owned HID Device endpoint (begun, retained through end()).
+ HidDevice* hid=nullptr;
 };
 struct OwnedHostHooks {
  bool (*txReady)(void*)=nullptr;
@@ -120,6 +123,7 @@ private:
  bool copiedVoiceRetirement(const bth_l2cap_pdu_t&)const;
  bool voiceRetirementReady()const;void clearVoiceRetirement();
  bool deferClassicControl(const bth_l2cap_pdu_t&,uint32_t,uint16_t signal_cursor=0);bool retryClassicControls();void clearClassicControls(uint16_t cid=0);
+ bool hidPsm(uint16_t psm)const{return config_.hid&&config_.hid->owns(psm);}bool hidPoll(bool secure,bool ready,bool allow_transmit);
  void synchronizeChannels();bool disconnectChannel(uint16_t);void chargeWaiting(uint32_t);void closePeer(unsigned,uint8_t);
  void avrcpPoll(bool secure,bool allow_open=true);void runtimePoll();void refreshStats();bool admission(unsigned,uint32_t);void cancelAdmission(unsigned);
  bool updateAudioPriority();
@@ -137,7 +141,7 @@ private:
  int classic_parked_slot_=-1;uint32_t classic_parked_owner_=0;bool bypass_media_active_=false;
  DeferredControl classic_deferred_[ClassicDeferredSlots];uint32_t classic_deferred_owner_=0;uint8_t classic_deferred_read_=0,classic_deferred_count_=0;
  Deferred deferred_[8];unsigned deferred_read_=0,deferred_count_=0;
- uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[6]={0x110b,0x110c,0x110e};
+ uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[8]={0x110b,0x110c,0x110e};
  uint8_t le_features_[8]={};bool le_features_known_=false;
  uint8_t voice_features_[8]={},voice_tx_bytes_=0;uint16_t voice_tx_packets_=0;
  size_t patch_position_=0,patch_pending_bytes_=0;uint16_t pending_opcode_=0;

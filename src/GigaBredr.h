@@ -7,6 +7,7 @@
 #include "I2sConfig.h"
 #include "GigaVoice.h"
 #include "GigaSpp.h"
+#include "GigaHid.h"
 #include "BondStorage.h"
 
 namespace giga_bredr {
@@ -55,6 +56,7 @@ struct ReceiverConfig {
     VoiceConfig voice; // Experimental, default disabled; requires Classic+I2S.
     ClassicBondStorage classic_bonds; // Optional application-owned store; default RAM-only.
     SppConfig spp; // Default disabled Serial Port Profile server; requires enable_a2dp.
+    HidConfig hid; // Default disabled HID Device (keyboard/mouse/gamepad); requires enable_a2dp.
 };
 struct ReceiverStats {
     AudioClockStats clock;
@@ -155,6 +157,16 @@ public:
     bool sppConnected() const;
     // Copied counters; Unsupported unless SPP is enabled for this begin().
     Status sppStats(SppStats& value) const;
+    // HID Device (config.hid.enabled). hidSend copies one input report (the
+    // descriptor's exact length; report_id 0 without report IDs) into a fixed
+    // 8-report queue without waiting for the radio owner: Busy on contention,
+    // OutputFull when the queue is full, InvalidArgument when no host is
+    // connected or the ID/length is not an input report. Ok is admission, not
+    // delivery; reports go out behind Classic control. Output reports (LEDs)
+    // reach config.hid.output_report from poll().
+    Status hidSend(uint8_t report_id,const uint8_t* data,size_t length);
+    bool hidConnected() const;
+    Status hidStats(HidStats& value) const;
     static uint32_t availableCodecs();
     using Allocate = void* (*)(size_t bytes, void* user);
     using Free = void (*)(void* pointer, void* user);
