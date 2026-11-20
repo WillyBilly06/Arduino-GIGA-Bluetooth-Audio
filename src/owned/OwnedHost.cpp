@@ -128,6 +128,14 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
   if(config_.hid->classOfDevice())gap_.config.class_of_device=config_.hid->classOfDevice();
   config_.hid->bind(control_);config_.hid->reset(0);
  }
+ // Optional OBEX (OPP server / PBAP client) shares the same RFCOMM owner; its
+ // records and EIR UUIDs are likewise added only when enabled.
+ obex_sdp_cid_=obex_rfcomm_cid_=0;
+ if(config_.voice_control&&config_.voice_config.obex){
+  auto& obex=*config_.voice_config.obex;uint16_t ids[2];const size_t added=obex.uuids(ids,2);
+  if(!obex.enabled()||gap_.config.uuid_count+added>sizeof uuids_/sizeof uuids_[0]||(obex.recordCount()&&classic_.installVoiceRecords(obex.records(),obex.recordCount())!=Status::Ok)){config_.voice_control->end();return Status::InvalidArgument;}
+  for(size_t i=0;i<added;++i){uuids_[gap_.config.uuid_count]=ids[i];gap_.config.uuid_count=uint8_t(gap_.config.uuid_count+1);}
+ }
  uint8_t local_hci[6];for(unsigned i=0;i<6;++i)local_hci[i]=config.address[5-i];
  if(!application_bonds_.begin(config.classic_bonds,local_hci))return Status::Unsupported;
  active_=true;return Status::Ok;
@@ -262,7 +270,7 @@ bool OwnedHost::attach(unsigned i,const bth_peer_link_t& link){
  if(i==0){clearClassicControls();bth_l2cap_service_t services[BTH_SERVICE_LIMIT]={{1,672,false},{0x19,ClassicMtu,true},{0x17,672,true},{3,VoiceProfiles::FrameBytes,true}};
   size_t service_count=config_.voice_control&&config_.voice_control->enabled()?4:3;
   if(config_.hid){services[service_count++]={HidDevice::ControlPsm,HidDevice::ReceiveMtu,true};services[service_count++]={HidDevice::InterruptPsm,HidDevice::ReceiveMtu,true};config_.hid->reset(link.owner);}
-  if(!bth_l2cap_sig_init(&signaling_,link.handle,services,service_count))return false;resetClassic(link.owner);if(config_.voice_control)config_.voice_control->reset(link.owner);clearVoiceRetirement();close_media_=close_avrcp_=0;was_secure_=false;avrcp_at_=0;avrcp_attempts_=0;avrcp_recovering_=false;controller_priority_.attach(link.owner,link.handle);
+  if(!bth_l2cap_sig_init(&signaling_,link.handle,services,service_count))return false;resetClassic(link.owner);if(config_.voice_control)config_.voice_control->reset(link.owner);obex_sdp_cid_=obex_rfcomm_cid_=0;clearVoiceRetirement();close_media_=close_avrcp_=0;was_secure_=false;avrcp_at_=0;avrcp_attempts_=0;avrcp_recovering_=false;controller_priority_.attach(link.owner,link.handle);
   if(config_.voice_audio&&config_.voice_audio->attach(link.owner,link.handle,link.peer)!=Status::Ok)return false;
  }else if(!le_.attach(link.owner,link.handle,link.role,le_features_known_?le_features_:nullptr,now_))return false;
  return true;
@@ -272,7 +280,7 @@ void OwnedHost::detach(unsigned i){
  bth_rx_flow_detach(&rx_,peer.handle,peer.owner);
  for(auto& packet:packets_)if(packet.used&&packet.charged&&rx_.slots[packet.lease.slot].owner==peer.owner){bth_rx_flow_release(&rx_,packet.lease);packet.used=false;}
  bth_control_tx_detach(&control_,uint8_t(i),peer.owner);
- if(i==0){if(config_.voice_audio)config_.voice_audio->detach();controller_priority_.detach(peer.owner);clearClassicControls();resetClassic(0);if(config_.voice_control)config_.voice_control->reset(0);if(config_.hid)config_.hid->reset(0);clearVoiceRetirement();memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
+ if(i==0){if(config_.voice_audio)config_.voice_audio->detach();controller_priority_.detach(peer.owner);clearClassicControls();resetClassic(0);if(config_.voice_control)config_.voice_control->reset(0);if(config_.hid)config_.hid->reset(0);obex_sdp_cid_=obex_rfcomm_cid_=0;clearVoiceRetirement();memset(&signaling_,0,sizeof signaling_);was_secure_=false;}else le_.detach(peer.owner);
  if(i==0)releaseClassicParked();
  peer.attached=peer.has_pending=false;peer.owner=0;peer.borrowed_slot=-1;peer.pending_signal_cursor=0;
  if(i==1){le_disconnect_owner_=0;le_disconnect_advertise_after_=true;}
@@ -610,6 +618,7 @@ bool OwnedHost::deliverImpl(unsigned i,const bth_l2cap_pdu_t& pdu,uint16_t* sign
  const bool secure=bth_links_secure(&links_,peers_[0].handle);
  if(pdu.cid!=1){const auto* channel=bth_l2cap_sig_find(&signaling_,pdu.cid);if(!channel||channel->state!=BTH_CHANNEL_OPEN)return true;
   if(pdu.payload.len>channel->local_mtu){closePeer(0,0x13);return true;}
+  if(obex_sdp_cid_&&pdu.cid==obex_sdp_cid_){if(config_.voice_control&&config_.voice_config.obex)config_.voice_config.obex->sdpReceive(pdu.payload.data,pdu.payload.len);return true;}
   if(channel->psm==3)return config_.voice_control?config_.voice_control->receive(pdu.cid,pdu.payload.data,pdu.payload.len,secure,now_):true;
   if(hidPsm(channel->psm))return config_.hid->receive(pdu.cid,pdu.payload.data,pdu.payload.len,secure,now_);
   return classic_.receive(pdu.cid,pdu.payload.data,pdu.payload.len,secure,now_);
@@ -841,6 +850,15 @@ void OwnedHost::synchronizeChannelsImpl(){
  for(unsigned k=0;k<BTH_CHANNEL_LIMIT;++k){auto& c=signaling_.channels[k];
   if(avrcp_retiring_&&avrcp_retire_owner_==peer.owner&&uint16_t(0x40+k)==avrcp_retire_local_)continue;
   if(voice_retiring_&&voice_retire_owner_==peer.owner&&uint16_t(0x40+k)==voice_retire_local_)continue;
+  if(obex_sdp_cid_&&uint16_t(0x40+k)==obex_sdp_cid_){
+   // The outgoing OBEX SDP-client channel never reaches the Classic SDP server.
+   auto* obex=config_.voice_control?config_.voice_config.obex:nullptr;
+   if(c.state==BTH_CHANNEL_OPEN){if(!peer.opened[k]){peer.opened[k]=true;peer.channel_deadlines[k]=0;if(obex)obex->sdpOpened(c.remote_mtu);}}
+   else if(c.state==BTH_CHANNEL_CLOSED){if(peer.opened[k])clearClassicControls(obex_sdp_cid_);peer.opened[k]=false;peer.channel_deadlines[k]=0;obex_sdp_cid_=0;if(obex)obex->sdpClosed();}
+   else{if(peer.opened[k])clearClassicControls(obex_sdp_cid_);peer.opened[k]=false;if(!peer.channel_deadlines[k])peer.channel_deadlines[k]=now_+10000;
+    if(due(now_,peer.channel_deadlines[k])){peer.channel_deadlines[k]=0;disconnectChannel(obex_sdp_cid_);}}
+   continue;
+  }
   if(peer.opened[k]&&c.state!=BTH_CHANNEL_OPEN){clearClassicControls(uint16_t(0x40+k));if(config_.hid)config_.hid->channelClosed(uint16_t(0x40+k));if(config_.voice_control&&config_.voice_control->cid()==uint16_t(0x40+k))config_.voice_control->channelClosed(uint16_t(0x40+k));else classic_.channelClosed(uint16_t(0x40+k));peer.opened[k]=false;}
   if(c.state==BTH_CHANNEL_OPEN&&peer.opened[k]&&(c.psm==1||bth_links_secure(&links_,peer.handle))&&
      !(c.psm==3?(config_.voice_control&&config_.voice_control->channelMtuUpdated(peer.owner,c.local_cid,c.remote_cid,c.remote_mtu)):hidPsm(c.psm)?config_.hid->channelMtuUpdated(peer.owner,c.psm,c.local_cid,c.remote_cid,c.remote_mtu):classic_.channelMtuUpdated(peer.owner,c.psm,c.local_cid,c.remote_cid,c.remote_mtu))){
@@ -850,7 +868,7 @@ void OwnedHost::synchronizeChannelsImpl(){
 #if GIGA_BREDR_CONNECT_TRACE
    {char t[64];snprintf(t,sizeof t,"CT ms=%lu l2cap_open psm=%04x",(unsigned long)now_,c.psm);diagnose(t);}
 #endif
-   if(c.psm==3?(config_.voice_control&&config_.voice_control->channelOpened(peer.owner,c.local_cid,c.remote_cid,c.remote_mtu)):hidPsm(c.psm)?config_.hid->channelOpened(peer.owner,c.psm,c.local_cid,c.remote_cid,c.remote_mtu):classic_.channelOpened(c.psm,c.local_cid,c.remote_cid,c.remote_mtu)){peer.opened[k]=true;peer.channel_deadlines[k]=0;}
+   if(c.psm==3?(config_.voice_control&&config_.voice_control->channelOpened(peer.owner,c.local_cid,c.remote_cid,c.remote_mtu,obex_rfcomm_cid_&&c.local_cid==obex_rfcomm_cid_)):hidPsm(c.psm)?config_.hid->channelOpened(peer.owner,c.psm,c.local_cid,c.remote_cid,c.remote_mtu):classic_.channelOpened(c.psm,c.local_cid,c.remote_cid,c.remote_mtu)){peer.opened[k]=true;peer.channel_deadlines[k]=0;}
    else disconnectChannel(c.local_cid);
   }else if(c.state==BTH_CHANNEL_CLOSED){if(peer.opened[k]){if(config_.hid)config_.hid->channelClosed(uint16_t(0x40+k));if(config_.voice_control&&config_.voice_control->cid()==uint16_t(0x40+k))config_.voice_control->channelClosed(uint16_t(0x40+k));else classic_.channelClosed(uint16_t(0x40+k));}peer.opened[k]=false;peer.channel_deadlines[k]=0;}
   else if(c.state!=BTH_CHANNEL_OPEN){if(!peer.channel_deadlines[k])peer.channel_deadlines[k]=now_+10000;if(due(now_,peer.channel_deadlines[k]))closePeer(0,0x13);}
@@ -958,6 +976,7 @@ void OwnedHost::runtimePoll(){
   // Ordered events gate new profile work, not verified Classic security.
  const bool secure=peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle);
  const bool classic_ready=!deferred_count_&&secure;
+ if(!peers_[0].attached&&config_.voice_control&&config_.voice_config.obex)config_.voice_config.obex->linkLost();
  if(peers_[0].attached){
   if(!secure&&was_secure_){controller_priority_.request(false);peers_[0].security_deadline=now_+35000;notifyStream(false);was_secure_=false;}
   if(classic_ready&&!was_secure_&&(!classic_.streaming()||requestControllerPriority(true))){bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)==BTH_OK){size_t n=0;const auto result=bth_l2cap_sig_security_ready(&signaling_,slot.data,slot.capacity,&n);
@@ -970,11 +989,12 @@ void OwnedHost::runtimePoll(){
   if(classic_ready)pollClassic(true,now_,!input_waiting);
   if(config_.voice_control&&config_.voice_control->cid()){
    if(!secure){config_.voice_control->poll(false,now_,false);closePeer(0,5);return;} // Retire RFCOMM/SPP admission now.
-   if(classic_ready){config_.voice_control->setBulkInterval(config_.voice_config.serial&&classic_.streaming()?config_.voice_config.serial->streamingIntervalMs():0);
+   if(classic_ready){{uint8_t interval=config_.voice_config.serial?config_.voice_config.serial->streamingIntervalMs():0;if(config_.voice_config.obex&&config_.voice_config.obex->streamingIntervalMs()>interval)interval=config_.voice_config.obex->streamingIntervalMs();config_.voice_control->setBulkInterval(classic_.streaming()?interval:0);}
     config_.voice_control->poll(true,now_,!input_waiting);
     if(config_.voice_control->closeRequested()&&!config_.voice_control->pendingOutput())disconnectChannel(config_.voice_control->cid());}
   }
   if(config_.hid&&config_.hid->linked()&&hidPoll(secure,classic_ready,!input_waiting))return;
+  obexPoll(classic_ready,!input_waiting);if(!active_)return;
   synchronizeChannels();avrcpPoll(classic_ready,!classic_deferred_count_&&!peers_[0].has_pending);
   if(classic_.takeCloseMedia())close_media_=classic_.mediaCid();if(classic_.takeCloseAvrcp())close_avrcp_=classic_.avrcpCid();
   if(close_media_&&disconnectChannel(close_media_))close_media_=0;if(close_avrcp_&&disconnectChannel(close_avrcp_))close_avrcp_=0;
@@ -1043,6 +1063,40 @@ bool OwnedHost::hidPoll(bool secure,bool ready,bool allow_transmit){
  if(hid.takeUnplug()){removeBond(this,links_.classic.peer);closePeer(0,0x13);return true;}
  if(const uint16_t cid=hid.closingCid())disconnectChannel(cid);
  return false;
+}
+// Optional OBEX transport work (PBAP client): the PSE SDP lookup on an
+// outgoing PSM 1 channel and, when no RFCOMM mux exists, an outgoing PSM 3
+// channel that the RFCOMM owner starts as initiator. Same reservation and
+// security discipline as the AVRCP controller connection.
+void OwnedHost::obexPoll(bool secure,bool allow){
+ auto* obex=config_.voice_control?config_.voice_config.obex:nullptr;if(!obex||!obex->enabled())return;
+ obex->service(now_);
+ if(obex_sdp_cid_){
+  const auto* c=bth_l2cap_sig_find(&signaling_,obex_sdp_cid_);
+  if(!c){obex_sdp_cid_=0;obex->sdpClosed();}
+  else if(c->state==BTH_CHANNEL_OPEN&&obex->sdpFinished())disconnectChannel(obex_sdp_cid_);
+  else if(c->state==BTH_CHANNEL_OPEN&&allow){
+   bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)!=BTH_OK)return;
+   size_t n=0;const size_t capacity=slot.capacity<c->remote_mtu?slot.capacity:c->remote_mtu;
+   if(obex->sdpRequest(slot.data,capacity,n)&&n){if(bth_control_tx_commit(&control_,slot.token,c->remote_cid,n,c->remote_mtu)!=BTH_OK){bth_control_tx_cancel(&control_,slot.token);disconnectChannel(obex_sdp_cid_);}}
+   else bth_control_tx_cancel(&control_,slot.token);
+  }
+ }else if(secure&&allow&&obex->sdpWanted()){
+  bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)!=BTH_OK)return;size_t n=0;uint16_t cid=0;
+  const auto result=bth_l2cap_sig_connect(&signaling_,1,false,slot.data,slot.capacity,&n,&cid);
+  if(result==BTH_OK&&n){bth_control_tx_commit(&control_,slot.token,1,n,BTH_SIGNAL_MTU);obex_sdp_cid_=cid;obex->sdpConnecting();}
+  else{bth_control_tx_cancel(&control_,slot.token);if(result<0&&result!=BTH_ERR_CAPACITY)obex->sdpRefused();}
+  return;
+ }
+ if(obex_rfcomm_cid_&&(!bth_l2cap_sig_find(&signaling_,obex_rfcomm_cid_)||(config_.voice_control->cid()&&config_.voice_control->cid()!=obex_rfcomm_cid_))){obex_rfcomm_cid_=0;obex->transportRefused();}
+ if(obex_rfcomm_cid_||!secure||!allow||!obex->wantsTransport()||config_.voice_control->cid()||voice_retiring_)return;
+ // A retired mux's tombstone admits a new one only once none of its frames remain queued.
+ if(config_.voice_control->retiringRemote()&&!config_.voice_control->authorizeRetirement(peers_[0].owner,config_.voice_control->retiringLocal(),config_.voice_control->retiringRemote()))return;
+ for(const auto& c:signaling_.channels)if(c.state!=BTH_CHANNEL_CLOSED&&c.psm==3)return; // A peer-opened mux is still configuring.
+ bth_control_reservation_t slot;if(bth_control_tx_reserve(&control_,0,&slot)!=BTH_OK)return;size_t n=0;uint16_t cid=0;
+ const auto result=bth_l2cap_sig_connect(&signaling_,3,true,slot.data,slot.capacity,&n,&cid);
+ if(result==BTH_OK&&n){bth_control_tx_commit(&control_,slot.token,1,n,BTH_SIGNAL_MTU);obex_rfcomm_cid_=cid;}
+ else{bth_control_tx_cancel(&control_,slot.token);if(result<0&&result!=BTH_ERR_CAPACITY)obex->transportRefused();}
 }
 bool OwnedHost::voiceAuthorized()const{
  if(!config_.voice_control||!config_.voice_control->cid()||config_.voice_control->closeRequested())return false;

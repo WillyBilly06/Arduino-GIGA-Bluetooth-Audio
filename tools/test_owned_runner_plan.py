@@ -75,6 +75,18 @@ class OwnedRunnerPlanTests(unittest.TestCase):
         self.assertIn('src/owned/OwnedHost.cpp',recipes['test_spp_facade'])
         self.assertIn('-fsanitize=address',recipes['test_spp_facade'])
 
+    def test_obex_suites_are_in_full_runner(self):
+        value=self.plan('--asan')
+        recipes={row['case']:row['command']for row in value['commands']if row.get('case')and row['kind']=='compile'}
+        for name in ('test_obex_codec','test_obex_profiles','test_obex_actor','test_obex_facade'):
+            self.assertIn(name,recipes)
+            sources=[arg for arg in recipes[name]if arg.endswith(('.cpp','.c'))]
+            self.assertEqual(len(sources),len(set(sources)),sources)
+            self.assertIn('-fsanitize=address',recipes[name])
+        self.assertIn('src/owned/VoiceProfiles.cpp',recipes['test_obex_profiles'])
+        self.assertNotIn('src/owned/OwnedHost.cpp',recipes['test_obex_actor']) # Included by the test itself.
+        self.assertIn('src/owned/OwnedHost.cpp',recipes['test_obex_facade'])
+
     def test_bond_and_status_regressions_are_in_full_runner(self):
         value=self.plan('--asan')
         recipes={row['case']:row['command']for row in value['commands']if row.get('case')and row['kind']=='compile'}

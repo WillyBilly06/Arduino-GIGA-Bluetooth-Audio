@@ -2,6 +2,9 @@
 #define SPEAKER_BTH_SDP_H
 #include "bth_packet.h"
 #include <stdbool.h>
+// Records the server can hold: A2DP sink, AVRCP TG/CT, HF, HS, SPP, OPP,
+// PBAP PCE, HID and Device ID.
+enum { BTH_SDP_RECORD_LIMIT=10 };
 #ifdef __cplusplus
 extern "C" {
 #endif

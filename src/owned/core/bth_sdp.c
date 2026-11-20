@@ -53,7 +53,7 @@ bool bth_sdp_init_empty(bth_sdp_t *s,uint32_t token) {
 bool bth_sdp_init(bth_sdp_t *s,const bth_sdp_record_t *records,size_t count,uint32_t token) {
     if (!s) return false;
     memset(s,0,sizeof *s);
-    if (!records || !count || count>8) return false;
+    if (!records || !count || count>BTH_SDP_RECORD_LIMIT) return false;
     uint32_t hash=2166136261u^token;
     for (size_t n=0;n<count;++n) {
         bth_span_t p;
@@ -242,7 +242,7 @@ static bth_status_t process(const bth_sdp_t *s,bth_sdp_cursor_t *cursor,const ui
     size_t offset;
     if (!continuation(p,fingerprint,cursor,&offset)) return error_response(tid,5,out,cap,written);
     if (search) {
-        const bth_sdp_record_t *found[8]; size_t count=0;
+        const bth_sdp_record_t *found[BTH_SDP_RECORD_LIMIT]; size_t count=0;
         for (size_t n=0;n<s->count && count<maximum;++n) if (matches(&s->records[n],pattern)) found[count++]=&s->records[n];
         if (offset>count || (offset==count && offset)) return error_response(tid,5,out,cap,written);
         if (cap<10) return BTH_ERR_CAPACITY;
@@ -256,7 +256,7 @@ static bth_status_t process(const bth_sdp_t *s,bth_sdp_cursor_t *cursor,const ui
         for (size_t n=0;n<send;++n) put32(out+9+4*n,found[offset+n]->handle);
         finish(out,3,tid,9+4*send,offset+send<count?offset+send:0,fingerprint,cursor,written); return BTH_OK;
     }
-    size_t lengths[8]={0}, total=0;
+    size_t lengths[BTH_SDP_RECORD_LIMIT]={0}, total=0;
     for (size_t n=0;n<s->count;++n) {
         const bth_sdp_record_t *r=&s->records[n];
         if (r==single || (combined && matches(r,pattern))) {

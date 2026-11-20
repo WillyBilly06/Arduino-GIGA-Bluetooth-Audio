@@ -64,7 +64,7 @@ Status ClassicProfiles::begin(uint32_t mask,const RadioCallbacks& cb,bth_control
  records_[record_count_++]=records[2];reset(0);return Status::Ok;
 }
 Status ClassicProfiles::installVoiceRecords(const bth_sdp_record_t* records,size_t count){
- if(!active_||generation_||!records||!count||count>2||record_count_-hid_record_count_+count>6)return Status::InvalidArgument;
+ if(!active_||generation_||!records||!count||count>2||record_count_-hid_record_count_+count>8)return Status::InvalidArgument;
  bth_sdp_t checked{};if(!bth_sdp_init(&checked,records,count,1))return Status::InvalidArgument;
  for(size_t i=0;i<count;++i)records_[record_count_++]=records[i];bth_sdp_init(&sdp_,records_,record_count_,0);return Status::Ok;
 }

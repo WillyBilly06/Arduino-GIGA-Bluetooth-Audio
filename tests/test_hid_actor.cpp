@@ -223,11 +223,14 @@ static void coexistence_channel_limit(){
  f.channel(1,0x80);f.channel(0x19,0x81);f.channel(3,0x82);f.channel(0x11,0x83);f.channel(0x13,0x84);f.channel(1,0x85);f.channel(1,0x86);
  unsigned open=0;for(const auto& c:f.host.signaling_.channels)open+=c.state==BTH_CHANNEL_OPEN;CHECK(open==7&&hid.connected()&&rfcomm.cid());
  f.host.end();CHECK(!hid.connected()&&!hid.linked());
- // Full table: speaker 2 + SPP + HID + Device ID + HF + HS = 8 records.
+ // Full table: speaker 3 + SPP + HF + HS + HID + Device ID + OPP + PCE = 10 records.
  ClassicProfiles c;bth_control_tx_t q{};bth_control_tx_init(&q);RadioCallbacks cb;cb.configure=[](const CodecConfig&,void*){return Status::Ok;};cb.volume=[](uint8_t,void*){};
  CHECK(c.begin(codecBit(Codec::Sbc),cb,q)==Status::Ok&&c.installHidRecords(hid.records(),hid.recordCount())==Status::Ok&&c.installHidRecords(hid.records(),1)==Status::InvalidArgument);
  VoiceSdp voice;VoiceControlConfig vc;vc.hands_free=vc.headset=true;CHECK(voice.begin(vc,true));
  CHECK(c.installVoiceRecords(port.record(),1)==Status::Ok&&c.installVoiceRecords(voice.records(),voice.count())==Status::Ok&&c.record_count_==8);
+ // OBEX OPP + PBAP PCE occupy the last two non-HID slots (10 total). Limit check
+ // only: the reused record's duplicate handle is not a real SDP configuration.
+ CHECK(c.installVoiceRecords(port.record(),1)==Status::Ok&&c.installVoiceRecords(port.record(),1)==Status::Ok&&c.record_count_==10);
  CHECK(c.installVoiceRecords(port.record(),1)==Status::InvalidArgument);
 }
 int main(){setvbuf(stdout,nullptr,_IONBF,0);default_disabled_identical();enabled_sdp_eir_cod();security_gating();hidp_transactions();queue_and_classic_priority();lifecycle();virtual_cable_unplug();coexistence_channel_limit();

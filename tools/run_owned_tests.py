@@ -50,10 +50,12 @@ def main():
  # rate/cohort checks, not a physical clock or decoder qualification.
  for n in ('test_clock_relearn','test_clock_drift_plant'):
   exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,'-O2','tests/'+n+'.cpp','-o',exe],n);run([exe],n)
- for n in ['test_rfcomm','test_hfp_control','test_profile_expiry','test_voice_profiles','test_spp']:
+ for n in ['test_rfcomm','test_hfp_control','test_profile_expiry','test_voice_profiles','test_spp','test_obex_profiles']:
   exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,'-DGIGA_BREDR_PORTABLE_TEST_MAIN=1','tests/'+n+'.cpp','src/owned/VoiceProfiles.cpp','src/owned/HfpControl.cpp','src/owned/HspControl.cpp',*objects,'-o',exe],n);run([exe],n)
  # HID Device endpoint: exact SDP records, descriptor layouts, channel/queue state.
  n='test_hid';exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,'tests/'+n+'.cpp',*objects,'-o',exe],n);run([exe],n)
+ # Portable OBEX packet codec and SDP-client parser: the C core alone.
+ n='test_obex_codec';exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,'tests/'+n+'.cpp',*objects,'-o',exe],n);run([exe],n)
  n='test_hfp_gain_error';exe=out/(n+'.exe')
  run([cxx,'-std=c++17',*flags,'tests/'+n+'.cpp','src/owned/HfpControl.cpp','src/owned/HspControl.cpp','-o',exe],n);run([exe],n)
  actor=list(ACTOR_SOURCES)
@@ -72,9 +74,9 @@ def main():
    wrapper.write_text('#include <stdio.h>\nunsigned '+stem+'Selftest(void);\nunsigned '+stem+'Checks(void);\nint main(void){unsigned r='+stem+'Selftest();printf("'+n+' failure=%u checks=%u\\n",r,'+stem+'Checks());return (int)r;}\n')
    extra=[wrapper]
   run([cc,'-std=c11',*flags,'tests/owned_core/'+n+'.c',*extra,*objects,'-o',exe],n);run([exe],n)
- units=['test_hsp_actor','test_spp_actor','test_hid_actor','test_owned_voice','test_avrcp_controls','test_avrcp_channel_retirement','test_avrcp_owner_retirement','test_avrcp_stale_disconnect','test_owned_classic','test_owned_ble','test_owned_host','test_classic_bond_provider_host','test_normal_ssp_host','test_owned_host_review','test_owned_host_bootstrap','test_owned_host_ble_large','test_owned_host_service','test_owned_host_single_hnc','test_owned_host_hnc','test_owned_host_benign','test_owned_host_le_requests','test_owned_host_signaling','test_owned_host_ble_commands','test_owned_host_ble_unsubscribe','test_owned_host_config_reject','test_owned_host_abort','test_owned_host_scheduling','test_owned_host_classic_combined','test_owned_host_mixed_att','test_uart_tx_mailbox','test_ble_audio_qos','test_ble_connection_preference','test_owned_ble_lifecycle','test_owned_voice_transport']
+ units=['test_hsp_actor','test_spp_actor','test_hid_actor','test_obex_actor','test_owned_voice','test_avrcp_controls','test_avrcp_channel_retirement','test_avrcp_owner_retirement','test_avrcp_stale_disconnect','test_owned_classic','test_owned_ble','test_owned_host','test_classic_bond_provider_host','test_normal_ssp_host','test_owned_host_review','test_owned_host_bootstrap','test_owned_host_ble_large','test_owned_host_service','test_owned_host_single_hnc','test_owned_host_hnc','test_owned_host_benign','test_owned_host_le_requests','test_owned_host_signaling','test_owned_host_ble_commands','test_owned_host_ble_unsubscribe','test_owned_host_config_reject','test_owned_host_abort','test_owned_host_scheduling','test_owned_host_classic_combined','test_owned_host_mixed_att','test_uart_tx_mailbox','test_ble_audio_qos','test_ble_connection_preference','test_owned_ble_lifecycle','test_owned_voice_transport']
  for n in units:
-  sources=actor[1:]if n in ('test_hsp_actor','test_spp_actor','test_hid_actor','test_owned_voice','test_avrcp_stale_disconnect','test_owned_host_scheduling','test_owned_host_classic_combined')else actor
+  sources=actor[1:]if n in ('test_hsp_actor','test_spp_actor','test_hid_actor','test_obex_actor','test_owned_voice','test_avrcp_stale_disconnect','test_owned_host_scheduling','test_owned_host_classic_combined')else actor
   extra=['-DGBR_QOS_CANDIDATE=1']if n=='test_ble_audio_qos'else[]
   arguments=['all']if n in ('test_ble_audio_qos','test_ble_connection_preference')else[]
   exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,*extra,'-Itests','tests/'+n+'.cpp',*sources,*objects,'-o',exe],n);run([exe,*arguments],n)
@@ -108,6 +110,8 @@ def main():
  exe=out/'test_spp_facade.exe';run([cxx,'-std=c++17',*flags,*(['-pthread']if os.name!='nt'else[]),'tests/test_spp_facade.cpp',*unique([*facade,*actor]),*voice_objects,'-o',exe],'test_spp_facade');run([exe],'test_spp_facade')
  # Public HID facade over the real actor (TryLock, lazy storage, poll() callback).
  exe=out/'test_hid_facade.exe';run([cxx,'-std=c++17',*flags,*(['-pthread']if os.name!='nt'else[]),'tests/test_hid_facade.cpp',*unique([*facade,*actor]),*voice_objects,'-o',exe],'test_hid_facade');run([exe],'test_hid_facade')
+ # Public OBEX (OPP/PBAP) facade over the real actor/RFCOMM owner.
+ exe=out/'test_obex_facade.exe';run([cxx,'-std=c++17',*flags,*(['-pthread']if os.name!='nt'else[]),'tests/test_obex_facade.cpp',*unique([*facade,*actor]),*voice_objects,'-o',exe],'test_obex_facade');run([exe],'test_obex_facade')
  n='test_classic_bond_provider_facade';exe=out/(n+'.exe')
  run([cxx,'-std=c++17',*flags,*(['-pthread']if os.name!='nt'else[]),'-Itests','tests/'+n+'.cpp',*unique([*facade,*actor]),*voice_objects,'-o',exe],n);run([exe],n)
  # Feature fakes declare their own voice radio; never link Unsupported here.

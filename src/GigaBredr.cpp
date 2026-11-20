@@ -21,6 +21,7 @@
 #include "owned/VoiceSdp.h"
 #include "owned/SppPort.h"
 #include "owned/HidDevice.h"
+#include "owned/ObexPort.h"
 #include "detail/VoiceInputLifetime.h"
 #include "RadioBuildConfig.h"
 #include <atomic>
@@ -155,6 +156,13 @@ struct GigaBredr::Impl {
     };
     SerialSession* serial=nullptr;
     detail::HidDevice* hid=nullptr; // Allocated only for config.hid.enabled.
+    // Allocated only for config.obex OPP/PBAP. Shares the voice or SPP RFCOMM
+    // owner when one exists (one mux per peer); otherwise owns profiles.
+    struct ObexSession {
+        detail::ObexPort port;detail::VoiceControlConfig control;
+        detail::VoiceProfiles* profiles=nullptr;uint8_t* ring=nullptr;
+    };
+    ObexSession* obex=nullptr;
     std::atomic<bool> music_intent{false};std::atomic<uint32_t> voice_preempted_packets{0};
     detail::Decoder decoder;
     detail::MediaAssembler media;
@@ -914,6 +922,22 @@ struct GigaBredr::Impl {
         {TryLock lock(radio_mutex);if(!lock||!hid->takeOutput(type,id,data,length))return;}
         options.hid.output_report(type,id,data,length,options.hid.user);
     }
+    Status setupObex(){
+        const auto& o=options.obex;if(!o.opp_enabled&&!o.pbap_enabled)return Status::Ok;
+        void* storage=detail::allocate(sizeof(ObexSession));if(!storage)return Status::OutOfMemory;obex=new(storage)ObexSession();
+        obex->ring=static_cast<uint8_t*>(detail::allocate(o.event_buffer_bytes,MemoryKind::Fast));if(!obex->ring)return Status::OutOfMemory;
+        if(!obex->port.begin(o,obex->ring,o.event_buffer_bytes))return Status::InvalidArgument;
+        if(voice){voice->control.obex=&obex->port;return Status::Ok;}
+        if(serial){serial->control.obex=&obex->port;return Status::Ok;} // serial owns profiles without voice.
+        storage=detail::allocate(sizeof(detail::VoiceProfiles));if(!storage)return Status::OutOfMemory;
+        obex->profiles=new(storage)detail::VoiceProfiles();obex->control.obex=&obex->port;return Status::Ok;
+    }
+    void releaseObex(){
+        if(!obex)return;obex->port.end();
+        if(obex->profiles){obex->profiles->~VoiceProfiles();detail::release(obex->profiles);}
+        if(obex->ring)detail::release(obex->ring);
+        obex->~ObexSession();detail::release(obex);obex=nullptr;
+    }
     Status prepareVoiceOutput(VoiceCodec codec){
         if(!voice||!running.load())return Status::Unsupported;
         // Reserve the selected converter before disturbing A2DP output. On a
@@ -1014,6 +1038,14 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
         if(!input.enable_a2dp||GIGA_BREDR_USE_BTSTACK)return Status::Unsupported;
         if(!detail::HidDevice::validate(input.hid))return Status::InvalidArgument;
     }
+    if(input.obex.opp_enabled||input.obex.pbap_enabled){
+        const auto& o=input.obex;const auto& v=input.voice;const auto& s=input.spp;
+        if(!input.enable_a2dp||GIGA_BREDR_USE_BTSTACK)return Status::Unsupported;
+        if(o.event_buffer_bytes<detail::ObexPort::MinimumRing||o.event_buffer_bytes>detail::ObexPort::MaximumRing||
+           (o.opp_enabled&&(!detail::ObexPort::nameLength(o.opp_service_name)||!o.opp_channel||o.opp_channel>30||(v.hands_free&&o.opp_channel==v.hands_free_channel)||
+            (v.headset&&o.opp_channel==v.headset_channel)||(s.enabled&&o.opp_channel==s.channel)))||
+           (o.pbap_enabled&&!detail::ObexPort::nameLength(o.pbap_service_name)))return Status::InvalidArgument;
+    }
     ReceiverConfig config = input;
     if (mode.needsDecoder()) {
         if (!config.codecs) config.codecs = availableCodecs();
@@ -1034,6 +1066,7 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     Status status=impl_->setupVoice(voice_input_lifetime);if(status!=Status::Ok){end();return status;}
     status=impl_->setupSerial();if(status!=Status::Ok){end();return status;}
     status=impl_->setupHid();if(status!=Status::Ok){end();return status;}
+    status=impl_->setupObex();if(status!=Status::Ok){end();return status;}
     detail::RadioCallbacks callbacks; callbacks.enable_a2dp = config.enable_a2dp;
     callbacks.configure = Impl::onConfigure; callbacks.media = Impl::onMedia;
     callbacks.stream = Impl::onStream; callbacks.diagnostic = Impl::onDiagnostic; callbacks.user = impl_;
@@ -1041,6 +1074,7 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     if(config.classic_bonds.configured())callbacks.classic_bonds={impl_,Impl::loadClassicBond,Impl::saveClassicBond,Impl::removeClassicBond};
     if(impl_->voice){callbacks.voice_audio=&impl_->voice->transport;callbacks.voice_control=&impl_->voice->profiles;callbacks.voice_sdp=&impl_->voice->sdp;callbacks.voice_config=&impl_->voice->control;}
     else if(impl_->serial){callbacks.voice_control=impl_->serial->profiles;callbacks.voice_config=&impl_->serial->control;}
+    else if(impl_->obex){callbacks.voice_control=impl_->obex->profiles;callbacks.voice_config=&impl_->obex->control;}
     callbacks.hid=impl_->hid;
 #if defined(ARDUINO)
     callbacks.owner_wake = Impl::onOwnerWake;
@@ -1098,6 +1132,24 @@ void GigaBredr::poll() {
     if (volume_changed && impl_->options.volume_changed) impl_->options.volume_changed(selected_volume, impl_->options.user);
     if (lifetime_ != lifetime || !impl_) return;
     impl_->deliverHidOutput();
+    if (impl_->obex) {
+        // OBEX records were copied by the actor; deliver a bounded batch here,
+        // outside the radio lock. Freed ring space lets the actor answer the peer.
+        bool drained = false;
+        for (unsigned i = 0; i < 16; ++i) {
+            uint8_t kind = 0, data[detail::ObexPort::ChunkBytes]; size_t n = 0;
+            { TryLock lock(impl_->radio_mutex);
+              if (!lock || !impl_->obex->port.pop(kind, data, sizeof data, n)) break; }
+            drained = true;
+            detail::ObexPort::deliver(impl_->options.obex, kind, data, n);
+            if (lifetime_ != lifetime || !impl_) return;
+        }
+#if defined(ARDUINO)
+        if (drained) impl_->host_events.set(1);
+#else
+        (void)drained;
+#endif
+    }
 #if GIGA_BREDR_PRIVATE_SCHED_WITNESS
     if (lifetime_ != lifetime || !impl_) return;
     char scheduler_row[76]; uint32_t scheduler_ordinal=0;
@@ -1134,6 +1186,7 @@ void GigaBredr::end() {
     impl_->releaseVoice();
     impl_->releaseSerial(); // The radio actor ended above; nothing retains its rings.
     impl_->releaseHid();
+    impl_->releaseObex();
     { Lock lock(impl_->codec_mutex); impl_->releaseCodec(); }
     impl_->~Impl(); detail::release(impl_); impl_ = nullptr;
     receiver_owner.store(nullptr);
@@ -1285,6 +1338,49 @@ Status GigaBredr::hidStats(HidStats& value) const {
     if (!impl_ || !impl_->hid) return Status::Unsupported;
     Lock lock(impl_->radio_mutex);
     value = impl_->hid->stats();
+    return Status::Ok;
+}
+Status GigaBredr::pbapPullPhonebook(const char* path,uint16_t max_count,uint16_t offset) {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->obex) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->obex->port.request(PbapOperation::PullPhonebook,path,max_count,offset); }
+#if defined(ARDUINO)
+    if (result == Status::Ok) impl_->host_events.set(1);
+#endif
+    return result;
+}
+Status GigaBredr::pbapPullVcardListing(const char* folder,uint16_t max_count,uint16_t offset) {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->obex) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->obex->port.request(PbapOperation::PullVcardListing,folder,max_count,offset); }
+#if defined(ARDUINO)
+    if (result == Status::Ok) impl_->host_events.set(1);
+#endif
+    return result;
+}
+Status GigaBredr::pbapAbort() {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->obex) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->obex->port.abort(); }
+#if defined(ARDUINO)
+    if (result == Status::Ok) impl_->host_events.set(1);
+#endif
+    return result;
+}
+Status GigaBredr::obexStats(ObexStats& value) const {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->obex) return Status::Unsupported;
+    Lock lock(impl_->radio_mutex);
+    value = impl_->obex->port.stats();
     return Status::Ok;
 }
 Status GigaBredr::bleResumeAdvertising() {

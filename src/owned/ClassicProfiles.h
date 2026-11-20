@@ -101,7 +101,7 @@ private:
  bth_avdtp_t avdtp_={};
  uint8_t avdtp_assembly_[256]={};
  bth_sdp_t sdp_={};
- bth_sdp_record_t records_[8]={}; // Sink, AVRCP target/controller, HF, HS, SPP, HID, Device ID.
+ bth_sdp_record_t records_[10]={}; // Sink, AVRCP TG/CT, HF, HS, SPP, HID, Device ID, OPP, PBAP PCE.
  size_t record_count_=0,hid_record_count_=0;
  Channel channels_[6];
  bth_avrcp_t target_={};

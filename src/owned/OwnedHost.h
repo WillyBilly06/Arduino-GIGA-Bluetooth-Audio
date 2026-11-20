@@ -125,7 +125,7 @@ private:
  bool deferClassicControl(const bth_l2cap_pdu_t&,uint32_t,uint16_t signal_cursor=0);bool retryClassicControls();void clearClassicControls(uint16_t cid=0);
  bool hidPsm(uint16_t psm)const{return config_.hid&&config_.hid->owns(psm);}bool hidPoll(bool secure,bool ready,bool allow_transmit);
  void synchronizeChannels();bool disconnectChannel(uint16_t);void chargeWaiting(uint32_t);void closePeer(unsigned,uint8_t);
- void avrcpPoll(bool secure,bool allow_open=true);void runtimePoll();void refreshStats();bool admission(unsigned,uint32_t);void cancelAdmission(unsigned);
+ void avrcpPoll(bool secure,bool allow_open=true);void obexPoll(bool secure,bool allow_open);void runtimePoll();void refreshStats();bool admission(unsigned,uint32_t);void cancelAdmission(unsigned);
  bool updateAudioPriority();
  bool voiceAuthorized()const;owned::VoiceCodec voiceCodec()const;void voicePoll();
  static bool streamPolicy(bool,void*);
@@ -141,7 +141,7 @@ private:
  int classic_parked_slot_=-1;uint32_t classic_parked_owner_=0;bool bypass_media_active_=false;
  DeferredControl classic_deferred_[ClassicDeferredSlots];uint32_t classic_deferred_owner_=0;uint8_t classic_deferred_read_=0,classic_deferred_count_=0;
  Deferred deferred_[8];unsigned deferred_read_=0,deferred_count_=0;
- uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[8]={0x110b,0x110c,0x110e};
+ uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[10]={0x110b,0x110c,0x110e};
  uint8_t le_features_[8]={};bool le_features_known_=false;
  uint8_t voice_features_[8]={},voice_tx_bytes_=0;uint16_t voice_tx_packets_=0;
  size_t patch_position_=0,patch_pending_bytes_=0;uint16_t pending_opcode_=0;
@@ -153,6 +153,7 @@ private:
  uint32_t avrcp_retire_owner_=0,avrcp_retire_deadline_=0;
  uint16_t avrcp_retire_local_=0,avrcp_retire_remote_=0;bool avrcp_retiring_=false;
  uint32_t voice_retire_owner_=0,voice_retire_deadline_=0;
+ uint16_t obex_sdp_cid_=0,obex_rfcomm_cid_=0; // Outgoing OBEX SDP-client / PBAP RFCOMM channels.
  uint16_t voice_retire_local_=0,voice_retire_remote_=0;bool voice_retiring_=false;
  unsigned next_peer_=0,bond_cursor_=0,le_trace_=0;Boot boot_=Boot::Failed;
  uint8_t le_reply_observe_trace_=0; // Shared peer-reply CC/update quota, separate from GAP.
