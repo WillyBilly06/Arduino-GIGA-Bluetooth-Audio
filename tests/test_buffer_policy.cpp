@@ -12,7 +12,7 @@ static_assert(ReceiverConfig{}.queue_packets==0,"default queue is configuration-
 static_assert(ReceiverConfig{}.startup_packets==0,"default startup uses real PCM");
 static_assert(ReceiverConfig{}.pcm_buffer_ms==0,"default PCM capacity follows real reserve");
 constexpr bool automatic_lhdc() {
-    ReceiverConfig r;CodecConfig c;c.codec=Codec::LhdcV5;c.sample_rate=192000;
+    ReceiverConfig r;r.ble.enabled=false;CodecConfig c;c.codec=Codec::LhdcV5;c.sample_rate=192000;
     AudioBufferConfig b;
     if(!resolveAudioBuffers(r,c,960,b))return false;
     if(b.maximum_packet_bytes!=2048 || b.maximum_access_unit_bytes!=8192)return false;
@@ -20,6 +20,21 @@ constexpr bool automatic_lhdc() {
     return b.startup_buffer_ms==80 && b.pcm_buffer_ms==90;
 }
 static_assert(automatic_lhdc(),"selected LHDC192 actual-PCM policy");
+constexpr bool ble_coexistence_reserve() {
+    ReceiverConfig r;CodecConfig c;c.codec=Codec::LhdcV5;c.sample_rate=192000;AudioBufferConfig b;
+    if(!r.ble.enabled || r.ble.audio_coexistence_reserve_ms!=50)return false;
+    if(!resolveAudioBuffers(r,c,960,b) || b.startup_buffer_ms!=130 || b.pcm_buffer_ms!=140)return false;
+    c.codec=Codec::Ldac;c.sample_rate=96000;
+    if(!resolveAudioBuffers(r,c,256,b) || b.startup_buffer_ms!=100 || b.pcm_buffer_ms!=110)return false;
+    c.codec=Codec::LhdcV5;c.sample_rate=48000; // Normal-rate streams keep their reserve.
+    if(!resolveAudioBuffers(r,c,240,b) || b.startup_buffer_ms!=80)return false;
+    c.sample_rate=192000;r.ble.audio_coexistence_reserve_ms=0;
+    if(!resolveAudioBuffers(r,c,960,b) || b.startup_buffer_ms!=80)return false;
+    r.ble.audio_coexistence_reserve_ms=50; // Explicit settings stay authoritative.
+    r.codec_buffers[static_cast<unsigned>(Codec::LhdcV5)].startup_buffer_ms=60;
+    return resolveAudioBuffers(r,c,960,b) && b.startup_buffer_ms==60 && b.pcm_buffer_ms==70;
+}
+static_assert(ble_coexistence_reserve(),"BLE adds automatic reserve only for >=88.2 kHz automatic profiles");
 constexpr bool lhdc_explicit_reserve_compatibility() {
     ReceiverConfig r;CodecConfig c;c.codec=Codec::LhdcV5;c.sample_rate=192000;
     AudioBufferConfig b;
@@ -74,7 +89,7 @@ constexpr bool no_output() {
 static_assert(no_output(),"decode-only mode needs no PCM playback reserve");
 constexpr bool all_modes() {
     ReceiverConfig r;AudioBufferConfig b;CodecConfig c;
-    const uint32_t frames[]={128,1024,512,512,256,240,960,2048};
+    const uint32_t frames[]={128,1024,512,512,256,240,960,2048,864};
     for(unsigned i=0;i<static_cast<unsigned>(Codec::Count);++i) {
         c.codec=static_cast<Codec>(i);c.sample_rate=48000;
         if(!resolveAudioBuffers(r,c,frames[i],b))return false;

@@ -5,7 +5,7 @@ const char* statusName(Status s) {
     unsigned i = static_cast<unsigned>(s); return i < sizeof(names)/sizeof(*names) ? names[i] : "unknown";
 }
 const char* codecName(Codec c) {
-    static const char* const names[] = {"SBC/SBC-XQ", "AAC-LC", "aptX", "aptX HD", "LDAC", "LHDC V5", "Opus", "HE-AAC"};
+    static const char* const names[] = {"SBC/SBC-XQ", "AAC-LC", "aptX", "aptX HD", "LDAC", "LHDC V5", "Opus", "HE-AAC", "SSC"};
     unsigned i = static_cast<unsigned>(c); return i < sizeof(names)/sizeof(*names) ? names[i] : "unknown";
 }
 }

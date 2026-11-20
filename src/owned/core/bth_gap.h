@@ -12,7 +12,8 @@ enum { BTH_GAP_SYNC_BYTES=64, BTH_GAP_SYNC_PACKETS=1 };
 typedef enum {
     BTH_GAP_SCAN_OFF, BTH_GAP_EVENT_MASK, BTH_GAP_LE_MASK, BTH_GAP_HOST_BUFFERS,
     BTH_GAP_RX_FLOW, BTH_GAP_SSP, BTH_GAP_NAME, BTH_GAP_CLASS,
-    BTH_GAP_INQUIRY_MODE, BTH_GAP_EIR, BTH_GAP_READY, BTH_GAP_FAILED
+    BTH_GAP_INQUIRY_MODE, BTH_GAP_EIR, BTH_GAP_PAGE_ACTIVITY, BTH_GAP_PAGE_TYPE,
+    BTH_GAP_INQUIRY_TYPE, BTH_GAP_READY, BTH_GAP_FAILED
 } bth_gap_stage_t;
 typedef struct {
     bth_span_t name;
@@ -21,6 +22,12 @@ typedef struct {
     uint16_t host_acl_length,host_acl_packets;
     uint8_t uuid_count;
     bool le_ecc_events;
+    // Optional fast-connectable scan timing (0.625 ms units). A zero interval
+    // keeps the controller default (1.28 s interval: ~0.64 s mean page delay).
+    // Interlaced scans cover both page/inquiry trains every interval. Scans
+    // are only enabled while no Classic peer is attached.
+    uint16_t page_scan_interval,page_scan_window;
+    bool interlaced_scan;
 } bth_gap_config_t;
 typedef struct {
     bth_gap_config_t config;

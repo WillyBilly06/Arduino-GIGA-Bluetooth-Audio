@@ -27,6 +27,10 @@ static void close(void* p){realOps->close(p);}
 static DecodeResult decode(void* state,const uint8_t* in,size_t n,int32_t* pcm,size_t cap){auto result=realOps->decode(state,in,n,pcm,cap);if(result.status==Status::Ok&&result.frames){unsigned unit=0;if(result.consumed==sizeof FRAME_A&&!std::memcmp(in,FRAME_A,sizeof FRAME_A))unit=1;else if(result.consumed==sizeof FRAME_B&&!std::memcmp(in,FRAME_B,sizeof FRAME_B))unit=2;decoded_units.push_back(unit);}return result;}
 const DecoderOps* codecOperations(Codec c){if(c!=Codec::Aac)return nullptr;static DecoderOps ops={open,decode,close};return &ops;}
 Status radioBegin(const char*,uint32_t,const RadioCallbacks&c,const BleConfig&){callbacks=c;return Status::Ok;}Status radioBegin(const char*n,uint32_t m,const RadioCallbacks&c){return radioBegin(n,m,c,{});}void radioPoll(){}void radioEnd(){}RadioStats radioStats(){return{};}BleStats radioBleStats(){return{};}Status radioBleNotify(const uint8_t*,size_t){return Status::Unsupported;}bool radioBleReadWrite(BleWrite&){return false;}
+// This AAC frontend fixture has no AVRCP peer; real AVRCP suites use the host.
+AvrcpStatus radioAvrcpStatus(){return{};}AvrcpMetadata radioAvrcpMetadata(){return{};}
+Status radioAvrcpCommand(AvrcpCommand,uint32_t,uint32_t&){return Status::Unsupported;}
+Status radioAvrcpCancel(uint32_t,uint32_t){return Status::Unsupported;}
 Status i2sBegin(uint32_t rate,uint16_t,const I2sPins&){source={};source.output_epoch=++backend_epoch;source.sample_rate=rate;source.ring_capacity=mock_ring_capacity;source.half_frames=(((rate+999u)/1000u+3u)&~3u);source.initialized=true;return Status::Ok;}Status i2sBegin(uint32_t r,uint16_t m){return i2sBegin(r,m,{});}Status i2sBegin(uint32_t r){return i2sBegin(r,20,{});}
 Status i2sBegin(uint32_t rate,uint16_t ms,const I2sPins& pins,uint16_t){return i2sBegin(rate,ms,pins);}
 size_t i2sWrite(const int32_t*,size_t n){CHECK(!receiver||!receiver->impl_->options.clock.enabled||receiver->impl_->counters.clock.decoded_frames>=source.prepared+n);if(stall)return 0;source.prepared+=n;source.running=true;return n;}

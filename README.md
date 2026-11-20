@@ -1,8 +1,78 @@
 # GigaBredr dev.17 develop (experimental)
 
+**Current unreleased local source, October 29:** this tree includes the combined
+Service Changed, HF control, codec arithmetic and shared-clock relearning
+candidates. The combined source passed native synthetic tests and a default
+Cortex-M7 Receiver build/static audit; it has not been deployed or field
+qualified. RX-derived SCO pacing is disabled, even if its legacy opt-in is set.
+See [current local source scope and limits](docs/validation/current-local-source-2026-10-29.md).
+The published dev.17 ZIP linked below is the earlier release and does not
+contain this unreleased source; no stable release is implied.
+
+**Evidence links:** historical validation pages may link to workspace-only
+`build/dev...` receipts outside this library. Those local artifacts are not
+included in a copied source package; their absence does not create a pass.
+
+**Earlier admission-aware logging source, October 29:** profile snapshots now retry after rejected
+console admission and recover current copied metadata values. Volume range
+checks use explicit `*_in_range` names. The console rejects truncated records.
+The exact source passes103 native runtime invocations, eight child suites and
+both official CM7 builds/static audits; this admission-aware successor is not
+yet flashed. See the [current source and hardware report](docs/validation/current-profile-logging-2026-10-29.md).
+
+**Earlier deployed logging evidence:** the Receiver logs escaped metadata,
+0–127 volume, named received AVRCP playback status and separate A2DP/output
+state. LE counters are aggregated. Reviewed fresh-SSP responder completion
+and late-authentication handling are integrated; security requirements remain
+unchanged. Both combined CM7 builds/static audits pass, along with103 native
+runtime invocations and eight child suites. Evidence is recorded in the
+[ongoing LE and profile logging report](docs/validation/continuous-le-and-profile-logging-2026-10-29.md).
+In that earlier test the private UART3M image was flashed and readback-verified. It has
+received metadata, paused/playing status and volume64 then55; normal volume-down
+moved the phone index75 to65. The recorded window included LDAC96k music and verified512-byte LE echoes
+together. The client has no run/transaction cap; real firmware-restart and
+pairing gaps are retained. These finite observations are not long-term or
+all-codec qualification. That later admission-aware logging source was unflashed in this record.
+
+**Previous local source:** bounded AVRCP status/metadata reconciliation and an
+optional application-owned Classic bond store and normal setup-response validation
+are now integrated. All99 native
+runtime invocations/eight child suites pass, and the exact426-file production
+snapshot passes the stock GIGA4.6.0 M7 build/static audit at the default UART2M.
+These changes are not deployed or physically qualified. Default bonds remain
+RAM-only; the storage interface chooses no NV backend or automatic flash writes.
+See [the integration evidence and storage contract](docs/validation/bond-storage-avrcp-2026-10-28.md).
+The [latest parser validation and build](docs/validation/sco-response-validation-2026-10-28.md)
+preserves the controller capability and default-off gates.
+
+**Earlier field evidence:** the private e1 probe, before those new changes,
+completed30min of MUSIC plus1294 verified512-byte BLE exchanges in each direction
+with zero recorded audio faults; its clock gate failed with52 overruns. Four
+basic AVRCP metadata attributes were received. Transport controls and voice
+remain under physical qualification. The original firmware is restored, but
+the later normal pairing was approved and the phone is now bonded/connected.
+The earlier logging workload is described above. See the
+[feature-by-feature status](docs/validation/all-feature-status-2026-10-28.md).
+
+**Local LHDC correction:** AOSP encoder comparisons exposed incorrect synthesis
+windows and empirical output scaling. The corrected source passed eight
+synthetic rate/depth configurations with level error below 0.011 dB. See the
+[source comparison, tests and limits](docs/validation/lhdc-aosp-synthesis-2026-10-28.md).
+An [actual M7 CPU test](docs/validation/lhdc-aosp-m7-2026-10-28.md) passed
+512 calls with no observed deadline misses or decode-time allocation. The full
+default Receiver settings remain untested on hardware. The private field probe
+used UART3M and100/110ms reserve; ARM numerical parity and broader field
+continuity remain open.
+
+**Earlier local AAC successor:** this source also contains the reviewed AAC selected-element storage and transactional SBR initialization changes. The source passed native sanitizer checks and an official Cortex-M7 Receiver build/static audit. An earlier private feature probe using these decoder changes supplies the finite LHDC field evidence above; AAC peer qualification remains open. See [AAC allocation evidence and limits](docs/validation/aac-selected-storage-2026-10-28.md). The published dev.17 ZIP linked below retains its earlier source.
+
+Subsequent [current-source M7 decoder execution](docs/validation/current-codec-m7-2026-10-28.md) passed 28 safety checks and 26 numerical comparisons, retaining two LHDC quality failures. It confirmed an 866-byte HE-mono saving and 38-byte stereo overhead. The prior field application and phone settings were restored afterward; the successor Receiver still awaits field qualification.
+
+The local [AvrcpRemote](examples/AvrcpRemote/AvrcpRemote.ino) and experimental [HfpReceiver](examples/HfpReceiver/HfpReceiver.ino) examples also passed official GIGA builds and static audits. They expose playback controls/metadata and opt-in HF/HS readiness respectively; [their hardware and interoperability limits](docs/validation/profile-examples-2026-10-28.md) remain explicit.
+
 Bluetooth Classic A2DP receiver and public BLE GATT server for Arduino GIGA R1 Cortex-M7, with all supplied codec decoders and PCM5102A-compatible I2S playback. The project owns the host stack; the radio controller uses Infineon ROM plus the stock HCD patch, and scheduling uses Arduino Mbed/RTOS.
 
-**Experimental; not stable.** Dev.17 fixes a reproducible host-stack stall: accepted A2DP media can now continue in order while an eligible completed read-only Classic control waits for transmit/reply capacity. The host reuses bounded existing packet storage without adding per-frame heap allocation. All 84 exported progress/response/boundary CPU cases passed, along with the focused existing actor suites; Receiver and VoiceQualification passed fresh official Cortex-M7 builds. The fix has not been flashed or field-tested, and it is not established as the cause or cure of the separate rare playback shortages. See [dev.17 validation](docs/validation/dev17-2026-10-28.md). Earlier AAC and voice evidence remains under [dev.16](docs/validation/dev16-2026-10-28.md) and [dev.15](docs/validation/dev15-2026-10-27.md).
+**Experimental; not stable.** Dev.17 fixes a reproducible host-stack stall: accepted A2DP media can now continue in order while an eligible completed read-only Classic control waits for transmit/reply capacity. The host reuses bounded existing packet storage without adding per-frame heap allocation. All 84 exported progress/response/boundary CPU cases passed, along with the focused existing actor suites; Receiver and VoiceQualification passed fresh official Cortex-M7 builds. That release's validation was native/build evidence; the local successor's finite private field result is identified above. Neither establishes the cause or cure of the separate rare playback shortages. See [dev.17 validation](docs/validation/dev17-2026-10-28.md). Earlier AAC and voice evidence remains under [dev.16](docs/validation/dev16-2026-10-28.md) and [dev.15](docs/validation/dev15-2026-10-27.md).
 
 The existing LHDC automatic reserve remains 80 ms with a 90 ms ring. Earlier finite BLE/A2DP windows had zero recorded audio faults, but longer listening subsequently produced brief PCM shortages. The root cause and a complete continuity fix remain unresolved. No all-codec stability, numerical-fidelity, acoustic or 200 ms total phone-to-DAC latency claim is made.
 
@@ -91,10 +161,11 @@ Immutable tables remain in flash; selected decoder/buffers release on reconfigur
 ## Codecs and unfinished features
 
 All six supplied decoder-operation families, eight Codec identities and seven enabled build defaults remain: SBC/SBC-XQ, AAC-LC, HE-AAC v1, aptX/aptX HD, LDAC, LHDC V5 and Opus. SBC-XQ shares the SBC identity. One selected codec runs at a time. Compiled support and valid-vector execution do not make a phone offer a mode or qualify every rate/depth/transport.
+Samsung SSC (`Codec::Ssc`, `GBR_ENABLE_SSC`, A2DP vendor 0x75/0x0103: 44.1/48 kHz, HiFi 48 kHz/24, UHQ v2 96 kHz/24) is an additional, host-verified decoder only; no phone, M7 timing or acoustic evidence. See [SSC integration](docs/validation/ssc-integration.md).
 
 Experimental voice is off unless `ReceiverConfig.voice.hands_free` or `.headset` is enabled. `setVoiceInput` accepts a copied `VoicePcmProvider`; with no provider, the voice input is silence, not a physical microphone. `detachVoiceInput` returning Ok fences old callbacks; on Busy, retry before destroying the provider context. Conditional voice registration requires successful controller setup and an available worker. These source paths are not yet qualified on the GIGA/controller or with a phone call. Voice takes exclusive I2S ownership and may preempt media; see [voice source and limits](docs/voice-phase2-source-status.md).
 
-The existing AVRCP volume and bounded metadata callback paths are retained. Typed Play/Pause/Stop/Next/Previous taps, copied metadata/playback-status snapshots and scoped channel retirement are implemented; target interoperability remains unverified. See [AVRCP API and completion limits](docs/avrcp.md). HSP's public button facade and advanced HF procedures, AVRCP browsing and cover art remain unfinished. PCM5102A is playback output, not a microphone path. HE-AACv2/PS, xHE-AAC and BLE Audio are not implemented.
+The existing AVRCP volume and bounded metadata callback paths are retained. Typed Play/Pause/Stop/Next/Previous taps, copied metadata/playback-status snapshots and scoped channel retirement are implemented; target interoperability remains unverified. See [AVRCP API and completion limits](docs/avrcp.md). HSP's public button facade is implemented and passes native/M7 checks; controlled-call interoperability remains unqualified. Advanced HF procedures, AVRCP browsing and cover art remain unfinished. PCM5102A is playback output, not a microphone path. HE-AACv2/PS, xHE-AAC and BLE Audio are not implemented.
 
 ## BLE server and coexistence
 
@@ -103,6 +174,10 @@ BLE is an unencrypted peripheral/GATT server, not a central/client or encrypted 
 The base preference is 80-120 ms; Receiver requests 120 ms (96 units), latency 2 and 5 s supervision timeout. Actual parameters remain peer/controller observed facts, separate from requests. Existing 1 s connection-age/cooldown rules remain. During secure Classic audio the host prioritizes Classic receive work and paces ATT fragments. This is not an RF airtime reservation.
 
 `bleDisconnect(generation,false)` queues an owner-bound asynchronous LE disconnect and holds later advertising; `bleResumeAdvertising()` releases that hold through normal GAP processing. Observe actual disconnected/advertising/new-generation events; Ok is admission. Discard saved origins/generations after `end()`/`begin()`.
+
+## Serial Port Profile (SPP) server
+
+Off by default: `ReceiverConfig.spp.enabled=true` adds one SDP Serial Port record (UUID 0x1101, L2CAP+RFCOMM channel `spp.channel`, default 3, public browse group, profile 1.2, `spp.service_name`, default "GIGA Serial"), EIR UUID 0x1101 and an RFCOMM listener on the existing Classic RFCOMM owner. It requires `enable_a2dp=true` and an encrypted link; one SPP connection at a time. `sppWrite(data,length,accepted)` copies into a fixed TX ring and may accept fewer bytes (`OutputFull` when full, `Busy` when the radio owner holds the lock, `InvalidArgument` when disconnected); `sppRead()` drains a fixed RX ring and freed space returns RFCOMM credits; `sppConnected()` and `sppStats()` report state and byte/drop counters. Rings (512..16384 bytes each, default 2 KiB) are allocated only when enabled. Frames carry at most 127 bytes, use credit flow control (MSC flow control for RFCOMM 1.0 peers), enter the shared Classic control FIFO only when it is otherwise empty, at most one per host turn and spaced by `streaming_frame_interval_ms` (default 4 ms) while A2DP streams. See [SppEcho](examples/SppEcho/SppEcho.ino) and [SPP validation](docs/validation/spp.md): native synthetic checks only, no over-the-air test yet.
 
 ## Validation and known limits
 

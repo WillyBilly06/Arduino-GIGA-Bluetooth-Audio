@@ -27,7 +27,7 @@ bth_status_t bth_sco_reconfigure(bth_sco_t* s,const bth_sco_config_t* c,uint8_t*
 bool bth_sco_backend_ready(const bth_sco_t* s){
  if(!s||!s->initialized)return false;const bth_sco_config_t* c=&s->config;
  return c->route_confirmed&&c->rx_slots&&c->rx_bytes&&c->controller_tx_bytes&&
-  ((c->controller_tx_flow&&c->controller_tx_packets)||(!c->controller_tx_flow&&c->allow_rx_pacing))&&
+  c->controller_tx_flow&&c->controller_tx_packets&&
   // CVSD uses linear16 PCM; host-encoded mSBC is an8-bit transparent stream.
   // Broadcom PCM/I2S wideband settings are a different backend, not this HCI path.
   c->voice_setting==(c->codec==BTH_SCO_CVSD?0x0060:0x0043)&&c->max_latency>=4&&c->packet_types;
@@ -114,24 +114,11 @@ bth_status_t bth_sco_completed(bth_sco_t* s,uint16_t handle,uint16_t count){
 bth_status_t bth_sco_receive(bth_sco_t* s,uint32_t owner,const bth_sco_view_t* packet){
  if(!s||!s->initialized||!packet)return BTH_ERR_PARAM;if(!link_present(s)||owner!=s->config.owner||packet->handle!=s->handle)return BTH_IGNORED;
  if(packet->packet_status>3||packet->payload.len>s->config.rx_bytes||(packet->payload.len&&!packet->payload.data)||(s->config.codec==BTH_SCO_CVSD&&!packet->packet_status&&(packet->payload.len&1)))return BTH_ERR_LENGTH;
- const bool pacing=!s->config.controller_tx_flow&&s->config.allow_rx_pacing;
- // This selected host pipeline consumes complete S16 samples. A malformed
- // odd error payload is not permission to invent half-sample TX progress.
- if(pacing&&s->config.codec==BTH_SCO_CVSD&&(packet->payload.len&1))return BTH_ERR_LENGTH;
  if(s->state==BTH_SCO_DISCONNECTING){if(s->config.host_rx_flow){if(s->pending_completed==UINT16_MAX){s->state=BTH_SCO_FAILED;return BTH_ERR_STATE;}++s->pending_completed;}return BTH_OK;}
  if(s->rx_count==s->config.rx_slots){++s->rx_overflows;return BTH_ERR_CAPACITY;}
- if(pacing){
-  const size_t limit=(size_t)s->config.rx_slots*s->config.rx_bytes+BTH_SCO_HOST_UNIT_BYTES-1;
-  if(packet->payload.len>limit-s->rx_pacing_bytes){
-   if(s->rx_pacing_overflows!=UINT32_MAX)++s->rx_pacing_overflows;
-   const uint32_t rejected=(uint32_t)packet->payload.len;
-   s->rx_pacing_rejected_bytes=rejected>UINT32_MAX-s->rx_pacing_rejected_bytes?UINT32_MAX:s->rx_pacing_rejected_bytes+rejected;
-   return BTH_ERR_CAPACITY; // Outer owner retires voice; no accepted grant is lost.
-  }
- }
  const unsigned slot=(s->rx_read+s->rx_count)%s->config.rx_slots;const size_t n=packet->payload.len;bth_sco_token_t ticket;if(!token(s,0,&ticket))return BTH_ERR_STATE;
  if(n)memcpy(s->receive_storage+slot*s->config.rx_bytes,packet->payload.data,n);s->receive[slot]=(bth_sco_rx_slot_t){(uint16_t)n,packet->packet_status,ticket};++s->rx_count;++s->rx_packets;if(packet->packet_status)++s->rx_status_errors;
- if(pacing)s->rx_pacing_bytes=(uint16_t)(s->rx_pacing_bytes+n);return BTH_OK;
+ return BTH_OK;
 }
 bth_status_t bth_sco_peek_rx(const bth_sco_t* s,uint32_t owner,uint32_t generation,bth_sco_rx_view_t* out){
  if(out)memset(out,0,sizeof *out);if(!s||!s->initialized||!out)return BTH_ERR_PARAM;if(!connected(s)||owner!=s->config.owner||generation!=s->generation)return BTH_IGNORED;if(!s->rx_count)return BTH_MORE;
@@ -144,14 +131,14 @@ bth_status_t bth_sco_consume_rx(bth_sco_t* s,bth_sco_token_t ticket){
 bth_status_t bth_sco_prepare_tx(bth_sco_t* s,uint32_t owner,uint32_t generation,const uint8_t* data,size_t n,uint8_t* out,size_t capacity,size_t* written,bth_sco_token_t* ticket){
  if(written)*written=0;if(ticket)*ticket=(bth_sco_token_t){0};if(!s||!s->initialized||!data||!n||!out||!written||!ticket)return BTH_ERR_PARAM;
  if(!connected(s)||owner!=s->config.owner||generation!=s->generation)return BTH_IGNORED;
+ if(!s->config.controller_tx_flow)return BTH_ERR_STATE;
  if(n>s->config.controller_tx_bytes||(s->config.codec==BTH_SCO_CVSD&&(n&1)))return BTH_ERR_LENGTH;if(capacity<n+4)return BTH_ERR_CAPACITY;
- if(s->tx_reserved||(s->config.controller_tx_flow?!s->tx_available:n>s->rx_pacing_bytes))return BTH_MORE;
+ if(s->tx_reserved||!s->tx_available)return BTH_MORE;
  if(!token(s,(uint16_t)n,&s->tx_ticket))return BTH_ERR_STATE;out[0]=3;put16(out+1,s->handle);out[3]=(uint8_t)n;memcpy(out+4,data,n);*written=n+4;*ticket=s->tx_ticket;s->tx_reserved=true;return BTH_OK;
 }
 bth_status_t bth_sco_commit_tx(bth_sco_t* s,bth_sco_token_t ticket){
  if(!connected(s)||!s->tx_reserved||!same(ticket,s->tx_ticket))return BTH_IGNORED;
- if(s->config.controller_tx_flow){if(!s->tx_available)return BTH_ERR_STATE;--s->tx_available;++s->tx_outstanding;}
- else {if(ticket.count>s->rx_pacing_bytes)return BTH_ERR_STATE;s->rx_pacing_bytes=(uint16_t)(s->rx_pacing_bytes-ticket.count);}
+ if(!s->config.controller_tx_flow||!s->tx_available)return BTH_ERR_STATE;--s->tx_available;++s->tx_outstanding;
  s->tx_reserved=false;++s->tx_submitted;return BTH_OK;
 }
 bth_status_t bth_sco_prepare_completed(bth_sco_t* s,uint8_t* out,size_t capacity,size_t* written,bth_sco_token_t* ticket){

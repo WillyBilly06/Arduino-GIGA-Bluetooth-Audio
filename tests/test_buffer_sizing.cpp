@@ -23,6 +23,9 @@ static_assert(defaultBufferSizing(Codec::Opus,48000,960).pcm_ms==50,"Opus20 capa
 static_assert(defaultBufferSizing(Codec::Opus,48000,1920).startup_ms==52,"Opus40 quantum");
 static_assert(defaultBufferSizing(Codec::Opus,48000,2880).pcm_ms==82,"Opus60 quantum");
 static_assert(defaultBufferSizing(Codec::Opus,12000,120).valid,"accepted Opus12 geometry");
+static_assert(defaultBufferSizing(Codec::Ssc,44100,864).startup_ms==60&&defaultBufferSizing(Codec::Ssc,44100,864).pcm_ms==70,"SSC 19.6 ms frame reserve");
+static_assert(defaultBufferSizing(Codec::Ssc,48000,864).queue_packets==11,"SSC48 one frame per packet");
+static_assert(defaultBufferSizing(Codec::Ssc,96000,864).startup_ms==60&&defaultBufferSizing(Codec::Ssc,96000,864).queue_packets==18,"SSC96 9 ms frames, up to two per packet");
 static_assert(!defaultBufferSizing(Codec::Count,48000,128).valid,"invalid codec");
 static_assert(!defaultBufferSizing(Codec::Sbc,0,128).valid,"zero rate");
 static_assert(!defaultBufferSizing(Codec::Sbc,48000,0).valid,"zero block");

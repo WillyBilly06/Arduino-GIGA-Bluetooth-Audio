@@ -1,4 +1,5 @@
-/* GigaBredr voice port, 2026-10-27: portable exact-width arithmetic,
+/* GigaBredr voice port, 2026-10-29: define IDCT signed shift wrap.
+ * 2026-10-27: portable exact-width arithmetic,
  * selected mono mSBC geometry and instance-owned analysis state.
  * Original Apache-2.0 terms and Broadcom notices below are retained. */
 /******************************************************************************
@@ -31,6 +32,12 @@
 
 
 #if (defined(SBC_ENC_INCLUDED) && SBC_ENC_INCLUDED == TRUE)
+
+/* Interpret a 32-bit wrap result without implementation-defined conversion. */
+static inline SINT32 giga_voice_i32_bits(UINT32 bits)
+{
+    return bits <= 0x7fffffffu ? (SINT32)bits : -1 - (SINT32)(~bits);
+}
 
 /*******************************************************************************
 **
@@ -109,7 +116,7 @@ void SBC_FastIDCT8(SINT32 *pInVect, SINT32 *pOutVect)
 
     /* rearrangement of x2 and x6 as in (15) */
     x2 -= x6;
-    x6 <<= 1 ;
+    x6 = giga_voice_i32_bits((UINT32)x6 << 1);
 
     /* 2-point IDCT of x2 and x6 and post-multiplication as in (15) */
     SBC_IDCT_MULT(SBC_COS_PI_SUR_4, x6, x6); /*x6 = x6 * cos(1*pi/4) ; */
@@ -125,9 +132,9 @@ void SBC_FastIDCT8(SINT32 *pInVect, SINT32 *pOutVect)
 
 
     /* rearrangement of x1,x3,x5,x7 as in (15) */
-    x7 <<= 1 ;
-    x5 = ( x5 << 1 ) - x7 ;
-    x3 = ( x3 << 1 ) - x5 ;
+    x7 = giga_voice_i32_bits((UINT32)x7 << 1);
+    x5 = giga_voice_i32_bits(((UINT32)x5 << 1) - (UINT32)x7);
+    x3 = giga_voice_i32_bits(((UINT32)x3 << 1) - (UINT32)x5);
     x1 -= x3 >> 1 ;
 
     /* two-dimensional IDCT of x1 and x5 */
@@ -138,7 +145,7 @@ void SBC_FastIDCT8(SINT32 *pInVect, SINT32 *pOutVect)
 
     /* rearrangement of x3 and x7 as in (15) */
     x3 -= x7;
-    x7 <<= 1 ;
+    x7 = giga_voice_i32_bits((UINT32)x7 << 1);
     SBC_IDCT_MULT(SBC_COS_PI_SUR_4, x7, x7);          /*x7 = x7 * cos(1*pi/4) ; */
 
     /* 2-point IDCT of x3 and x7 and post-multiplication as in (15) */

@@ -12,6 +12,7 @@ allocation and PCM interface. The decoder implementations are under
 | LDAC | `../vendor/codecs/ldac/` |
 | LHDC V5 | `../vendor/codecs/lhdc/` |
 | Opus | `../vendor/codecs/opus/` |
+| Samsung SSC (`GBR_ENABLE_SSC`) | `../vendor/codecs/ssc/` |
 
 The full source profile uses `CodecBuildConfig.h` to select the separately
 compiled decoders. An implementation being present does not prove phone

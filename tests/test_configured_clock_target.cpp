@@ -103,11 +103,12 @@ constexpr bool configuredDisabledAndRefusal() {
     if(off.snapshot().tracking||off.snapshot().decisions) return false;
     AudioClockControl c;
     if(!beginTarget(c,192000,13440,11136,0)) return false;
-    for(uint32_t us=0;us<=2000000;us+=100000) {
+    for(uint32_t us=0;us<=2200000;us+=100000) {
         auto d=c.observe(targetSample(us));
         if(!d.update) continue;
         auto stale=d;++stale.serial;
         if(c.acknowledge(stale,true,0)||c.acknowledge(d,true,11*65536)||!c.acknowledge(d,false,0))return false;
+        break;
     }
     if(!c.snapshot().suspended||c.snapshot().refused!=1)return false;
     // Refusal recovery must relearn filtering without replacing the target.

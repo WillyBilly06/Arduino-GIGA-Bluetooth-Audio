@@ -178,7 +178,8 @@ bth_status_t bth_le_transport_expire(bth_le_transport_t *t,uint32_t now) {
 }
 bth_status_t bth_le_transport_peer_reply(const bth_le_transport_t *t,uint32_t owner,const bth_h4_frame_t *e,
                                         bool enforce,uint8_t *out,size_t cap,size_t *written,uint16_t *opcode) {
-    if (written) *written=0;if (opcode) *opcode=0;
+    if (written) *written=0;
+    if (opcode) *opcode=0;
     if (!t || !e || !out || !written || !opcode) return BTH_ERR_PARAM;
     if (!owner || owner!=t->owner || e->type!=BTH_H4_EVENT || e->event.code!=0x3e) return BTH_IGNORED;
     const bth_span_t p=e->event.params;

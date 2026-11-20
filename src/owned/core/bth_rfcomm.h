@@ -5,7 +5,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum { BTH_RFCOMM_PSM=3, BTH_RFCOMM_DLC_LIMIT=2, BTH_RFCOMM_MTU_LIMIT=512,
+enum { BTH_RFCOMM_PSM=3, BTH_RFCOMM_DLC_LIMIT=3, BTH_RFCOMM_MTU_LIMIT=512,
  BTH_RFCOMM_SABM=0x2f, BTH_RFCOMM_UA=0x63, BTH_RFCOMM_DM=0x0f,
  BTH_RFCOMM_DISC=0x43, BTH_RFCOMM_UIH=0xef };
 typedef enum { BTH_RFCOMM_CLOSED=0,BTH_RFCOMM_CONNECTING,BTH_RFCOMM_OPEN,BTH_RFCOMM_DISCONNECTING } bth_rfcomm_state_t;
@@ -13,13 +13,15 @@ typedef enum { BTH_RFCOMM_NONE=0,BTH_RFCOMM_DLC_OPENED,BTH_RFCOMM_DLC_CLOSED,BTH
 typedef struct { uint8_t dlci,control,credit;bool cr,pf,has_credit;bth_span_t payload; } bth_rfcomm_frame_t;
 typedef struct { bth_rfcomm_event_type_t type;uint32_t generation;uint8_t dlci,status;bth_span_t payload; } bth_rfcomm_event_t;
 typedef struct {
- uint32_t deadline;uint16_t mtu,tx_credits;uint8_t dlci,state,rx_credits,grant_pending;
+ uint32_t deadline;uint16_t mtu,tx_credits;uint8_t dlci,state,rx_credits,grant_pending,window;
  bool credit,msc_received,msc_sent,msc_acked,peer_flow_off,local_flow_off;
 } bth_rfcomm_dlc_t;
 typedef struct {
  uint32_t generation,deadline,listener_mask;uint16_t mtu;uint8_t server_channel,window,mode;
  bool initialized,initiator,peer_flow_off;bth_rfcomm_state_t mux;
  bth_rfcomm_dlc_t dlc[BTH_RFCOMM_DLC_LIMIT];
+ // Optional per-incoming-SCN credit windows; zero entries use window.
+ uint8_t listener_scn[BTH_RFCOMM_DLC_LIMIT],listener_window[BTH_RFCOMM_DLC_LIMIT];
 } bth_rfcomm_t;
 // Exactly one RFCOMM frame per L2CAP SDU. Views borrow input only for this call.
 // No parser callback, allocation, clock, HCI, security or transport registration.
@@ -29,9 +31,13 @@ bth_status_t bth_rfcomm_encode(uint8_t dlci,bool cr,uint8_t control,bool pf,bool
 // Reserve window*mtu application RX bytes per admitted DLC before init (window1..7).
 // mtu127..512; server_channel0 means no incoming service. All actor calls serialized.
 bool bth_rfcomm_init(bth_rfcomm_t*,uint32_t,bool initiator,uint8_t server_channel,uint16_t mtu,uint8_t window);
-// Configure at most two distinct incoming SCNs before opening the mux. This
+// Configure at most DLC_LIMIT distinct incoming SCNs before opening the mux. This
 // does not allocate another mux or change its negotiated flow-control mode.
 bth_status_t bth_rfcomm_add_listener(bth_rfcomm_t*,uint32_t,uint8_t server_channel);
+// Before opening the mux: incoming DLCs on this listener use window1..7 as
+// their initial/maximum outstanding RX credits instead of the mux window.
+// The owner must reserve window*mtu application RX bytes for that DLC.
+bth_status_t bth_rfcomm_set_listener_window(bth_rfcomm_t*,uint32_t,uint8_t server_channel,uint8_t window);
 void bth_rfcomm_close(bth_rfcomm_t*);
 bth_status_t bth_rfcomm_start(bth_rfcomm_t*,uint32_t,uint32_t now_ms,uint8_t*,size_t,size_t*);
 // Production RFCOMM1.2 initiators must try_credit=true; false supports legacy-peer fixtures.

@@ -1,7 +1,11 @@
-/* GigaBredr modification notice, 2026-10-21: portable decoder port;
+/* GigaBredr modification notice, 2026-10-29: force inline local wrap helpers
+ * on GCC/Clang to avoid conversion calls in the decoder hot path; define wrap in DCT
+ * butterfly and multiply scaling without signed left shifts.
+ * 2026-10-21: portable decoder port;
  * build guards, relative includes, tracked allocation and bounds/ARM fixes.
  * Original copyright and license notices remain below unchanged.
- * Per-file original/port SHA-256: docs/source-provenance.json. */
+ * Previous source hashes: docs/source-provenance.json. Candidate adaptation:
+ * docs/sbc-defined-arithmetic-2026-10-29.json. */
 #include "../../CodecPlatform.h"
 #if GBR_ENABLE_SBC
 #if defined(__GNUC__) && !defined(__clang__)
@@ -58,7 +62,7 @@
 /** Scales x by y bits to the right, adding a rounding factor.
  */
 #ifndef SCALE
-#define SCALE(x, y) (((x) + (1 <<((y)-1))) >> (y))
+#define SCALE(x, y) (giga_sbc_i32_bits((OI_UINT32)(x) + (1u << ((y)-1))) >> (y))
 #endif
 
 /**
@@ -71,6 +75,26 @@
  * @return  A signed 32-bit value corresponding to the 32 most significant bits
  * of the 64-bit product of u and v.
  */
+/* The original fixed-point port requires 32-bit modulo arithmetic. */
+typedef char giga_sbc_int32_width_check[(sizeof(OI_INT32)==4 && sizeof(OI_UINT32)==4)?1:-1];
+#if defined(__GNUC__) || defined(__clang__)
+#define GBR_SBC_LOCAL_INLINE static inline __attribute__((always_inline))
+#else
+#define GBR_SBC_LOCAL_INLINE static inline
+#endif
+GBR_SBC_LOCAL_INLINE OI_INT32 giga_sbc_i32_bits(OI_UINT32 bits)
+{
+    return bits <= 0x7fffffffu ? (OI_INT32)bits : -1 - (OI_INT32)(~bits);
+}
+GBR_SBC_LOCAL_INLINE OI_INT32 giga_sbc_add(OI_INT32 x, OI_INT32 y)
+{
+    return giga_sbc_i32_bits((OI_UINT32)x + (OI_UINT32)y);
+}
+GBR_SBC_LOCAL_INLINE OI_INT32 giga_sbc_sub(OI_INT32 x, OI_INT32 y)
+{
+    return giga_sbc_i32_bits((OI_UINT32)x - (OI_UINT32)y);
+}
+#undef GBR_SBC_LOCAL_INLINE
 static INLINE OI_INT32 default_mul_32s_32s_hi(OI_INT32 u, OI_INT32 v)
 {
     OI_UINT32 u0, v0;
@@ -78,11 +102,11 @@ static INLINE OI_INT32 default_mul_32s_32s_hi(OI_INT32 u, OI_INT32 v)
 
     u0 = u & 0xFFFF; u1 = u >> 16;
     v0 = v & 0xFFFF; v1 = v >> 16;
-    t = u0 * v0;
-    t = u1 * v0 + ((OI_UINT32)t >> 16);
+    t = giga_sbc_i32_bits(u0 * v0);
+    t = giga_sbc_i32_bits((OI_UINT32)u1 * v0 + ((OI_UINT32)t >> 16));
     w1 = t & 0xFFFF;
     w2 = t >> 16;
-    w1 = u0 * v1 + w1;
+    w1 = giga_sbc_i32_bits(u0 * (OI_UINT32)v1 + (OI_UINT32)w1);
     return u1 * v1 + w2 + (w1 >> 16);
 }
 
@@ -219,8 +243,12 @@ PRIVATE void float_dct2_8(float *RESTRICT out, OI_INT32 const *RESTRICT in)
  */
 PRIVATE void dct2_8(SBC_BUFFER_T *RESTRICT out, OI_INT32 const *RESTRICT in)
 {
-#define BUTTERFLY(x,y) x += y; y = x - (y<<1);
-#define FIX_MULT_DCT(K, x) (MUL_32S_32S_HI(K,x)<<2)
+#define BUTTERFLY(x,y) do { \
+    OI_UINT32 old_y = (OI_UINT32)(y); \
+    (x) = giga_sbc_i32_bits((OI_UINT32)(x) + old_y); \
+    (y) = giga_sbc_i32_bits((OI_UINT32)(x) - (old_y << 1)); \
+} while (0)
+#define FIX_MULT_DCT(K, x) giga_sbc_i32_bits((OI_UINT32)MUL_32S_32S_HI(K,x) << 2)
 
     OI_INT32 L00, L01, L02, L03, L04, L05, L06, L07;
     OI_INT32 L25;
@@ -248,20 +276,20 @@ PRIVATE void dct2_8(SBC_BUFFER_T *RESTRICT out, OI_INT32 const *RESTRICT in)
     in7 = in[7];
 #endif
 
-    L00 = in0 + in7;
-    L01 = in1 + in6;
-    L02 = in2 + in5;
-    L03 = in3 + in4;
+    L00 = giga_sbc_add(in0,in7);
+    L01 = giga_sbc_add(in1,in6);
+    L02 = giga_sbc_add(in2,in5);
+    L03 = giga_sbc_add(in3,in4);
 
-    L04 = in3 - in4;
-    L05 = in2 - in5;
-    L06 = in1 - in6;
-    L07 = in0 - in7;
+    L04 = giga_sbc_sub(in3,in4);
+    L05 = giga_sbc_sub(in2,in5);
+    L06 = giga_sbc_sub(in1,in6);
+    L07 = giga_sbc_sub(in0,in7);
 
     BUTTERFLY(L00, L03);
     BUTTERFLY(L01, L02);
 
-    L02 += L03;
+    L02 = giga_sbc_add(L02,L03);
 
     L02 = FIX_MULT_DCT(AAN_C4_FIX, L02);
 
@@ -274,9 +302,9 @@ PRIVATE void dct2_8(SBC_BUFFER_T *RESTRICT out, OI_INT32 const *RESTRICT in)
     out[6] = (OI_INT16)SCALE(L02, DCTII_8_SHIFT_6);
     out[2] = (OI_INT16)SCALE(L03, DCTII_8_SHIFT_2);
 
-    L04 += L05;
-    L05 += L06;
-    L06 += L07;
+    L04 = giga_sbc_add(L04,L05);
+    L05 = giga_sbc_add(L05,L06);
+    L06 = giga_sbc_add(L06,L07);
 
     L04 /= 2;
     L05 /= 2;
@@ -285,14 +313,14 @@ PRIVATE void dct2_8(SBC_BUFFER_T *RESTRICT out, OI_INT32 const *RESTRICT in)
 
     L05 = FIX_MULT_DCT(AAN_C4_FIX, L05);
 
-    L25 = L06 - L04;
+    L25 = giga_sbc_sub(L06,L04);
     L25 = FIX_MULT_DCT(AAN_C6_FIX, L25);
 
     L04 = FIX_MULT_DCT(AAN_Q0_FIX, L04);
-    L04 -= L25;
+    L04 = giga_sbc_sub(L04,L25);
 
     L06 = FIX_MULT_DCT(AAN_Q1_FIX, L06);
-    L06 -= L25;
+    L06 = giga_sbc_sub(L06,L25);
 
     BUTTERFLY(L07, L05);
 

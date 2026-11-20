@@ -4,6 +4,7 @@
 #include <string.h>
 #include <string>
 #include <vector>
+#include <algorithm>
 using namespace giga_bredr;
 using namespace giga_bredr::detail;
 struct App {
@@ -159,7 +160,8 @@ static void all_endpoint_formats_are_bound_to_their_seid() {
   {6,255,{0x2d,1,0,0,0xaa,0,4,1},Codec::Ldac,96000},
   {7,255,{0x3a,5,0,0,0x35,0x4c,1,2,0x11,0,0},Codec::LhdcV5,192000},
   {8,255,{0xe0,0,0,0,1,0,0x92},Codec::Opus,48000},
-  {9,255,{0xf1,5,0,0,5,0x10,2,1,3,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0},Codec::Opus,48000}
+  {9,255,{0xf1,5,0,0,5,0x10,2,1,3,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0},Codec::Opus,48000},
+  {10,255,{0x75,0,0,0,3,1,0x0a},Codec::Ssc,96000}
  };
  for(const auto& s:selections){
   Fixture f;std::vector<uint8_t> packet={0x10,3,uint8_t(s.seid<<2),40,1,0,7,uint8_t(s.cie.size()+2),0,s.type};packet.insert(packet.end(),s.cie.begin(),s.cie.end());
@@ -168,6 +170,30 @@ static void all_endpoint_formats_are_bound_to_their_seid() {
  }
  Fixture mismatch;mismatch.expect({0x10,3,8,12,1,0,7,8,0,2,8,0,0x84,0x80,0,0},{0x13,3,7,0x29});assert(mismatch.app.configured==0);
  mismatch.expect({0x20,3,32,12,1,0,7,26,0,255,0xf1,5,0,0,5,0x10,2,1,3,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0},{0x23,3,7,0x29});assert(mismatch.app.configured==0);
+}
+static void ssc_capability_and_configuration_rules() {
+ Fixture f;f.rx({0x10,1});auto endpoints=f.pop();assert(endpoints.size()==2+2*10&&endpoints[20]==(10<<2)&&endpoints[21]==8);
+ f.rx({0x20,2,10<<2});auto caps=f.pop();const uint8_t element[]={7,9,0,255,0x75,0,0,0,3,1,0x3e};
+ assert(caps[0]==0x22&&caps[1]==2&&std::search(caps.begin(),caps.end(),element,element+sizeof element)!=caps.end());
+ Fixture none(AllCodecs&~codecBit(Codec::Ssc));none.rx({0x10,1});assert(none.pop().size()==2+2*9);
+ // Galaxy configurations: 44.1k, 48k, HiFi 48k/24 and UHQ v2 96k/24, each with or without 0x08.
+ struct Mode {uint8_t flags;uint32_t rate;uint8_t bits;};
+ const Mode accepted[]={{0x20,44100,16},{0x28,44100,16},{0x10,48000,16},{0x18,48000,16},{0x04,48000,24},{0x0c,48000,24},{0x02,96000,24},{0x0a,96000,24}};
+ for(const auto& m:accepted){
+  Fixture a;a.expect({0x10,3,10<<2,8,1,0,7,9,0,255,0x75,0,0,0,3,1,m.flags},{0x12,3});
+  assert(a.app.configured==1&&a.app.config.codec==Codec::Ssc&&a.app.config.sample_rate==m.rate&&a.app.config.bits_per_sample==m.bits&&a.app.config.channels==2);
+  assert(a.app.config.codec_info_size==7&&a.app.config.codec_info[6]==m.flags);
+ }
+ // Legacy UHQ 0x80 is decodable but not advertised; 32k, the 0x01 capability-only bit,
+ // two modes at once, no mode, and malformed vendor elements are rejected.
+ const uint8_t rejected[]={0x80,0x88,0x40,0x01,0x09,0x06,0x0e,0x30,0x24,0x22,0x08,0x00,0x3e};
+ for(uint8_t flags:rejected){
+  Fixture r;r.expect({0x10,3,10<<2,8,1,0,7,9,0,255,0x75,0,0,0,3,1,flags},{0x13,3,7,0x29});assert(r.app.configured==0);
+ }
+ Fixture length;length.expect({0x10,3,10<<2,8,1,0,7,10,0,255,0x75,0,0,0,3,1,0x0c,0},{0x13,3,7,0x29});assert(length.app.configured==0);
+ Fixture id;id.expect({0x10,3,10<<2,8,1,0,7,9,0,255,0x75,0,0,0,4,1,0x0c},{0x13,3,7,0x29});assert(id.app.configured==0);
+ Fixture vendor;vendor.expect({0x10,3,10<<2,8,1,0,7,9,0,255,0x76,0,0,0,3,1,0x0c},{0x13,3,7,0x29});assert(vendor.app.configured==0);
+ Fixture other;other.expect({0x10,3,8<<2,8,1,0,7,9,0,255,0x75,0,0,0,3,1,0x0c},{0x13,3,7,0x29});assert(other.app.configured==0); // Opus SEID.
 }
 static void avctp_fragmented_status_and_utf8_metadata_bounds() {
  Fixture f;assert(f.profiles.channelOpened(0x17,0x43,0x83,672));f.profiles.poll(true,1);auto caps=f.pop(0x83);f.rx(vendorResponse(caps,0x10,{3,0}),0x43,true,2);
@@ -221,7 +247,7 @@ int main(int argc,char** argv) {
   return 2;
  }
  malformed_avrcp_fragment_retires_assembly();
- configuration_transaction_and_lifecycle();validation_and_reconfigure();reconfigure_and_disabled_endpoint();backpressure_and_generation();sdp_and_avrcp_volume();avrcp_metadata_and_status();custom_labels_are_not_duplicated_by_track_change();malformed_fragment_retires_assembly();custom_response_requires_matching_pdu_even_for_reject();all_endpoint_formats_are_bound_to_their_seid();avctp_fragmented_status_and_utf8_metadata_bounds();
+ configuration_transaction_and_lifecycle();validation_and_reconfigure();reconfigure_and_disabled_endpoint();backpressure_and_generation();sdp_and_avrcp_volume();avrcp_metadata_and_status();custom_labels_are_not_duplicated_by_track_change();malformed_fragment_retires_assembly();custom_response_requires_matching_pdu_even_for_reject();all_endpoint_formats_are_bound_to_their_seid();ssc_capability_and_configuration_rules();avctp_fragmented_status_and_utf8_metadata_bounds();
  unrelated_timeout_preserves_metadata_continuation();blocked_metadata_continuation_expires_to_abort();
- puts("PASS owned Classic transactions, lifecycle, 9 endpoints, queues, SDP, volume, status and bounded metadata");
+ puts("PASS owned Classic transactions, lifecycle, 10 endpoints, queues, SDP, volume, status and bounded metadata");
 }

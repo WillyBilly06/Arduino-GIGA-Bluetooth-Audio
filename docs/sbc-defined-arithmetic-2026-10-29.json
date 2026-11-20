@@ -1,0 +1,46 @@
+{
+  "scope": "isolated dev394 ARM-inline donor; historical source-provenance.json is a previous snapshot",
+  "files": [
+    {
+      "destination": "src/vendor/codecs/sbc/srce/synthesis-8-generated.c",
+      "upstream_source": "decoders/SBC/decoder/srce/synthesis-8-generated.c",
+      "upstream_sha256": "a3be662f21808f4cd585038e5add666a0a4d072e681c245ac07112a75139bad5",
+      "prior_port_sha256": "159d4b27875587520cc74ada5b070bdd96abf93ba51c047be2de213c2861da65",
+      "candidate_sha256": "b45821953801a41ebb8cd0504f7fc8a28d0eedc0ab0e956b141f92eacea14c77",
+      "license": "Apache-2.0; Android/OI notices retained",
+      "prior_historical_provenance_unchanged": true,
+      "dev386_candidate_sha256": "e0bbd3227b9c4df6835e5f12b0aca2e314435721047893588c385a6e3339286e",
+      "dev394_adaptation": "GCC/Clang guarded always_inline on local wrap helpers; arithmetic unchanged"
+    },
+    {
+      "destination": "src/vendor/codecs/sbc/srce/synthesis-dct8.c",
+      "upstream_source": "decoders/SBC/decoder/srce/synthesis-dct8.c",
+      "upstream_sha256": "48594579f5fd8dffc7b11b67a130e356395d78e671d4cdc0d13f1ab6f268d3e7",
+      "prior_port_sha256": "e3f1dc25418edfa9a5a2b2a47b1dd652cc7c97637558b0e1ab316e9349c42786",
+      "candidate_sha256": "e77a90080ef7772724a85126bc7bda3180de562d921c9a57b144b82b59540139",
+      "license": "Apache-2.0; Android/OI notices retained",
+      "prior_historical_provenance_unchanged": true,
+      "dev386_candidate_sha256": "df268dd9143923902369739907e8888eb79a54b6f43d9ce50a5f9ac6c5312f79",
+      "dev394_adaptation": "GCC/Clang guarded always_inline on local wrap helpers; arithmetic unchanged"
+    },
+    {
+      "destination": "src/vendor/voice/sbc_encoder/srce/sbc_dct.c",
+      "upstream_source": "decoders/SBC/encoder/srce/sbc_dct.c",
+      "upstream_sha256": "36c43cb1df265dad5b0cb86adbce384c612f00d86549de33f785447352abc4e4",
+      "prior_port_sha256": "2588bd1e786f946b38f9ead6d962e5dcd0e476946359f5c8390dd833ac113065",
+      "candidate_sha256": "60bb90d7d4c1086a65101e7b008735a8f9666b9416dba9eda9f0c1ac02ef83b9",
+      "license": "Apache-2.0; original Broadcom header retained",
+      "prior_historical_provenance_unchanged": true
+    },
+    {
+      "destination": "src/vendor/voice/sbc_encoder/srce/sbc_packing.c",
+      "upstream_source": "decoders/SBC/encoder/srce/sbc_packing.c",
+      "upstream_sha256": "798aa27e36a99e319fb57dc9b2491e08789e5fe79ecf2273b6531edf722af49b",
+      "prior_port_sha256": "2c16ef19c1b5dcbf04b6d7aeee76d5bd812ebf46acc03f745cbf0e810e27c70f",
+      "candidate_sha256": "65814fecf5e2028316f6c9141ea382a64d04c81e1235cf48be6434a0355c6d12",
+      "license": "Apache-2.0; original Broadcom header retained",
+      "prior_historical_provenance_unchanged": true
+    }
+  ],
+  "generator": "upstream synthesis-gen.pl unavailable; retain equivalent patch upon regeneration"
+}

@@ -18,6 +18,10 @@
 #ifndef GBR_ENABLE_OPUS
 #define GBR_ENABLE_OPUS 1
 #endif
+// Samsung SSC (A2DP vendor 0x75/0x0103); decoder state is allocated only for an SSC stream.
+#ifndef GBR_ENABLE_SSC
+#define GBR_ENABLE_SSC 1
+#endif
 
 // Experimental HE-AAC v1 core; requires independent vector/sender validation.
 #ifndef GBR_ENABLE_AAC_HE

@@ -1,4 +1,5 @@
 #include "GigaBredr.cpp"
+#include <initializer_list>
 #include <cstdio>
 #include <cstdlib>
 using namespace giga_bredr;

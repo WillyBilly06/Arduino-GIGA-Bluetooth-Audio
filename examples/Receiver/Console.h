@@ -10,14 +10,17 @@ class ReceiverConsole {
     size_t read_ = 0, write_ = 0, used_ = 0;
 public:
     unsigned dropped = 0;
-    void print(const char* format, ...) {
+    bool print(const char* format, ...) {
         char line[1024]; va_list args; va_start(args, format);
         int count = vsnprintf(line, sizeof(line), format, args); va_end(args);
-        if (count <= 0) return;
-        size_t bytes = size_t(count) < sizeof(line) ? size_t(count) : sizeof(line) - 1;
-        if (bytes > sizeof(ring_) - used_) { ++dropped; return; }
+        if (count <= 0) { ++dropped; return false; }
+        // Never enqueue a silently truncated or partial record.
+        if (size_t(count) >= sizeof(line)) { ++dropped; return false; }
+        size_t bytes = size_t(count);
+        if (bytes > sizeof(ring_) - used_) { ++dropped; return false; }
         for (size_t i = 0; i < bytes; ++i) { ring_[write_] = line[i]; write_ = (write_ + 1) % sizeof(ring_); }
         used_ += bytes;
+        return true; // Ring admission only: not USB or peer delivery.
     }
     void pump() {
         if (!::_SerialUSB.connected() || !used_) return;

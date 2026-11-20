@@ -1,4 +1,14 @@
 #pragma once
+// Build-property switch: timestamped HCI security and AVDTP signaling events
+// for connection-latency measurement. Off by default.
+// Broadcom VSC 0xFD1A {handle, priority, direction}: 1=data source,
+// 2=data sink (Infineon wiced_bt_l2cap_set_acl_priority_ext semantics).
+#ifndef GIGA_BREDR_ACL_PRIORITY_DIRECTION
+#define GIGA_BREDR_ACL_PRIORITY_DIRECTION 1
+#endif
+#ifndef GIGA_BREDR_CONNECT_TRACE
+#define GIGA_BREDR_CONNECT_TRACE 0
+#endif
 #include "../platform/GigaRadio.h"
 #include "../platform/GigaAvrcp.h"
 extern "C" {
@@ -68,7 +78,7 @@ private:
  bool commandActive() const;
  void disconnectControl();
  bool transmitTap(Channel&,uint32_t);
- void completeTap();
+ void completeTap(uint32_t now_ms);
  void expireControl(uint32_t now_ms);
  RadioCallbacks callbacks_;
  bool(*stream_policy_)(bool,void*)=nullptr;void* stream_policy_user_=nullptr;
@@ -79,12 +89,12 @@ private:
  uint16_t signal_=0,media_=0,avrcp_=0;
  uint16_t retired_avrcp_local_=0,retired_avrcp_remote_=0;uint32_t retired_avrcp_owner_=0;
  CodecConfig accepted_;
- bth_avdtp_endpoint_t endpoints_[9]={};
+ bth_avdtp_endpoint_t endpoints_[10]={};
  size_t endpoint_count_=0;
  bth_avdtp_t avdtp_={};
  uint8_t avdtp_assembly_[256]={};
  bth_sdp_t sdp_={};
- bth_sdp_record_t records_[5]={};
+ bth_sdp_record_t records_[6]={}; // Sink, AVRCP target/controller, HF, HS, SPP.
  size_t record_count_=0;
  Channel channels_[6];
  bth_avrcp_t target_={};
@@ -95,6 +105,12 @@ private:
  uint8_t press_label_=0,release_label_=0;
  bool press_done_=false,release_done_=false,tap_timed_out_=false;
  bool metadata_obsolete_=false,status_obsolete_=false;
+ // Accepted keys are asynchronous target work, not playback/metadata values.
+ // Reconcile only from real replies, under the current channel and tap.
+ bool status_refresh_active_=false,metadata_refresh_pending_=false;
+ uint8_t status_refresh_reads_=0;
+ uint32_t status_refresh_at_=0,status_refresh_until_=0;
+ uint32_t metadata_refresh_at_=0,metadata_refresh_until_=0;
  uint32_t avdtp_deadline_=0,target_deadline_=0,controller_deadline_=0,custom_deadline_=0,metadata_deadline_=0;
  uint8_t work_=0;
  bool capabilities_sent_=false,metadata_active_=false,metadata_continue_=false,metadata_abort_=false;

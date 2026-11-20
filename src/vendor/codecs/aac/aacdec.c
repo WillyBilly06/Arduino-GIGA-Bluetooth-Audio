@@ -392,6 +392,10 @@ int AACDecode(HAACDecoder hAACDecoder, unsigned char **inbuf, int *bytesLeft, sh
 			return err;
 		
 		elementChans = elementNumChans[aacDecInfo->currBlockID];
+        /* Reject excess frame channels before any PCM or overlap write. */
+        if (elementChans > 0 && (baseChan >= aacDecInfo->nChans ||
+            elementChans > aacDecInfo->nChans - baseChan))
+            return ERR_AAC_NCHANS_TOO_HIGH;
         if(elementChans>0) {
             if(aacDecInfo->currInstTag<0 || aacDecInfo->currInstTag>15) return ERR_AAC_INVALID_FRAME;
             unsigned short *seen=aacDecInfo->currBlockID==AAC_ID_SCE?&seenSCE:
@@ -512,9 +516,13 @@ int AACEnableSBR(HAACDecoder h) {
     if(!info || !info->psInfoBase) return ERR_AAC_NULL_POINTER;
     PSInfoBase *psi=(PSInfoBase*)info->psInfoBase;
     if(info->psInfoSBR) return 0;
-    psi->sbrWorkBuf=(int(*)[AAC_MAX_NSAMPS])gbr_calloc(psi->allocatedChannels,sizeof(*psi->sbrWorkBuf));
-    if(!psi->sbrWorkBuf) return ERR_AAC_SBR_INIT;
-    return InitSBRChannels(info,psi->allocatedChannels);
+    if(psi->sbrWorkBuf) return ERR_AAC_SBR_INIT;
+    int (*work)[AAC_MAX_NSAMPS]=(int(*)[AAC_MAX_NSAMPS])gbr_calloc(psi->allocatedChannels,sizeof(*psi->sbrWorkBuf));
+    if(!work) return ERR_AAC_SBR_INIT;
+    int status=InitSBRChannels(info,psi->allocatedChannels);
+    if(status){gbr_free(work);return status;}
+    psi->sbrWorkBuf=work;
+    return 0;
 #else
     return ERR_AAC_MPEG4_UNSUPPORTED;
 #endif

@@ -1,6 +1,7 @@
 // Real OwnedHost H4/L2CAP input, synthetic copied transport only.
 // Breaks caught: a compound CLOSE+CONNECT can accept a reused remote CID while
 // old key SDUs remain queued, or while their accepted H4 copy still owns TX.
+#include <cstddef>
 #define private public
 #include "../src/owned/OwnedHost.h"
 #undef private

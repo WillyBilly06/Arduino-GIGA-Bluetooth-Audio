@@ -40,6 +40,8 @@ constexpr BufferDefaults defaultBufferSizing(Codec codec,uint32_t rate,uint32_t 
         case Codec::LhdcV5: base=80;break;
         case Codec::AptxHd: base=55;break;
         case Codec::AacHe: case Codec::Opus: base=40;break;
+        // 864-sample frames (9-19.6 ms), sent every 10-20 ms; 96 kHz may pack two per packet.
+        case Codec::Ssc: base=60;break;
         default:return {};
     }
     const uint64_t quantum_ms=(uint64_t(block_frames)*1000u+rate-1u)/rate;

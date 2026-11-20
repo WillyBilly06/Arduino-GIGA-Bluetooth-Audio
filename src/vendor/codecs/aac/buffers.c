@@ -110,11 +110,35 @@ AACDecInfo *AllocateBuffersChannelsPrograms(int channels, int programs) {
     if(channels<1 || channels>2 || programs<1 || programs>MAX_NUM_PCE_ADIF) return 0;
     AACDecInfo *info=(AACDecInfo*)gbr_calloc(1,sizeof(AACDecInfo));
     if(!info) return 0;
-    /* Keep selected program records in this same owned allocation. */
-    PSInfoBase *psi=(PSInfoBase*)gbr_calloc(1,sizeof(PSInfoBase)+(size_t)programs*sizeof(ProgConfigElement));
+    /* Program records and all selected element planes share one allocation.
+     * Every plane keeps full legal per-element capacity, with independently
+     * aligned starts and contiguous channel entries (including gbCurrent). */
+    size_t bytes=sizeof(PSInfoBase), pceOffset, icsOffset, scaleOffset, bookOffset;
+    size_t pnsOffset, intensityOffset, pulseOffset, tnsOffset, gainOffset, gbOffset;
+#define RESERVE(offset,type,count) do { \
+        const size_t align=__alignof__(type); \
+        bytes=(bytes+align-1)/align*align; (offset)=bytes; \
+        bytes+=(size_t)(count)*sizeof(type); \
+    } while(0)
+    RESERVE(pceOffset,ProgConfigElement,programs);
+    RESERVE(icsOffset,ICSInfo,channels);
+    RESERVE(scaleOffset,short[MAX_SF_BANDS],channels);
+    RESERVE(bookOffset,unsigned char[MAX_SF_BANDS],channels);
+    RESERVE(pnsOffset,int,channels); RESERVE(intensityOffset,int,channels);
+    RESERVE(pulseOffset,PulseInfo,channels); RESERVE(tnsOffset,TNSInfo,channels);
+    RESERVE(gainOffset,GainControlInfo,channels); RESERVE(gbOffset,int,channels);
+#undef RESERVE
+    PSInfoBase *psi=(PSInfoBase*)gbr_calloc(1,bytes);
     info->psInfoBase=psi;
     if(!psi) { FreeBuffers(info); return 0; }
-    psi->pce=(ProgConfigElement*)(psi+1);
+    unsigned char *storage=(unsigned char*)psi;
+    psi->pce=(ProgConfigElement*)(storage+pceOffset);
+    psi->icsInfo=(ICSInfo*)(storage+icsOffset);
+    psi->scaleFactors=(short(*)[MAX_SF_BANDS])(storage+scaleOffset);
+    psi->sfbCodeBook=(unsigned char(*)[MAX_SF_BANDS])(storage+bookOffset);
+    psi->pnsUsed=(int*)(storage+pnsOffset); psi->intensityUsed=(int*)(storage+intensityOffset);
+    psi->pulseInfo=(PulseInfo*)(storage+pulseOffset); psi->tnsInfo=(TNSInfo*)(storage+tnsOffset);
+    psi->gainControlInfo=(GainControlInfo*)(storage+gainOffset); psi->gbCurrent=(int*)(storage+gbOffset);
     psi->allocatedPces=programs;
     psi->allocatedChannels=channels;
     psi->coef=(int(*)[AAC_MAX_NSAMPS])gbr_calloc(channels,sizeof(*psi->coef));

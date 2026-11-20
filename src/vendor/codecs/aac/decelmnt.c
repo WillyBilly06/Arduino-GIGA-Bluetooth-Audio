@@ -403,6 +403,8 @@ int DecodeNextElement(AACDecInfo *aacDecInfo, unsigned char **buf, int *bitOffse
 		err = DecodeSingleChannelElement(aacDecInfo, &bsi);
 		break;
 	case AAC_ID_CPE:
+        /* Reject before parsing any CPE state when only one plane exists. */
+        if (psi->allocatedChannels < 2) return ERR_AAC_NCHANS_TOO_HIGH;
 		err = DecodeChannelPairElement(aacDecInfo, &bsi);
 		break;
 	case AAC_ID_CCE:

@@ -3,6 +3,7 @@
 #include "core/bth_packet.h"
 #include "HfpAt.h"
 namespace giga_bredr { namespace owned {
+enum class HspCommand:uint8_t { Button };
 struct HspStatus { uint32_t generation=0,rings=0,completedCommands=0;uint8_t speakerGain=0,microphoneGain=0;bool connected=false,failed=false,lastCommandOk=false; };
 // HS control: button is AG/state dependent, never silently mapped to answer.
 class HspControl {
@@ -10,6 +11,7 @@ public:
  bool begin(uint32_t generation,uint8_t speakerGain,uint8_t microphoneGain);
  void end();bool ready()const{return status_.connected&&!status_.failed;}
  bth_status_t button(uint32_t generation);
+ bth_status_t command(uint32_t generation,HspCommand command){return command==HspCommand::Button?button(generation):BTH_ERR_PARAM;}
  bth_status_t setGain(uint32_t generation,bool speaker,uint8_t value);
  bth_status_t next(uint32_t generation,uint32_t now_ms,char*,size_t,size_t&);
  bth_status_t receive(uint32_t generation,const uint8_t*,size_t,uint32_t now_ms);

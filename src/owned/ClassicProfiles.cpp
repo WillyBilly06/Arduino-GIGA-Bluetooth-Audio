@@ -9,6 +9,8 @@ constexpr uint8_t CustomStatus=0x80,CustomMetadata=0x81,CustomAbort=0x82;
 // label allocator and expiry/retirement table, so late replies cannot match a
 // newer metadata/status transaction after a timeout.
 constexpr uint8_t WorkStatus=1,WorkMetadata=2;
+constexpr uint32_t StatusRefreshMs=250,StatusReconcileMs=3000;
+constexpr uint8_t StatusRefreshReads=12;
 constexpr uint8_t UnsupportedConfiguration=0x29,BadState=0x31;
 const uint8_t sbc[]={0,0,0x3f,0xff,2,250};
 const uint8_t aac[]={0,2,0xc0,0x01,0x8c,0x80,0,0};
@@ -18,12 +20,15 @@ const uint8_t hd[]={0,255,0xd7,0,0,0,0x24,0,0x32,0,0,0,0};
 const uint8_t ldac[]={0,255,0x2d,1,0,0,0xaa,0,0x3c,1};
 const uint8_t lhdc[]={0,255,0x3a,5,0,0,0x35,0x4c,0x35,6,0x11,0,0};
 const uint8_t android_opus[]={0,255,0xe0,0,0,0,1,0,0x92};
+// SSC 0x3e: 44.1/48k, unlimited bitrate, HiFi 48k/24 and UHQ v2 96k/24; legacy 0x80 is not offered.
+const uint8_t ssc[]={0,255,0x75,0,0,0,3,1,0x3e};
 const uint8_t pipewire_opus[]={0,255,0xf1,5,0,0,5,0x10,2,1,3,0,0,0,0x1c,0,0,0,0,0,0,0,0,0,0,0};
 struct Definition {Codec codec;const uint8_t* caps;size_t length;};
 const Definition definitions[]={
  {Codec::Sbc,sbc,sizeof sbc},{Codec::Aac,aac,sizeof aac},{Codec::AacHe,he,sizeof he},
  {Codec::Aptx,aptx,sizeof aptx},{Codec::AptxHd,hd,sizeof hd},{Codec::Ldac,ldac,sizeof ldac},
- {Codec::LhdcV5,lhdc,sizeof lhdc},{Codec::Opus,android_opus,sizeof android_opus},{Codec::Opus,pipewire_opus,sizeof pipewire_opus}
+ {Codec::LhdcV5,lhdc,sizeof lhdc},{Codec::Opus,android_opus,sizeof android_opus},{Codec::Opus,pipewire_opus,sizeof pipewire_opus},
+ {Codec::Ssc,ssc,sizeof ssc} // Appended: existing SEIDs 1..9 stay stable.
 };
 uint8_t validate(bth_span_t selected,bth_span_t capabilities) {
  if(!selected.data||!capabilities.data||selected.len!=capabilities.len||selected.len<2||selected.data[0]!=0) return UnsupportedConfiguration;
@@ -59,7 +64,7 @@ Status ClassicProfiles::begin(uint32_t mask,const RadioCallbacks& cb,bth_control
  records_[record_count_++]=records[2];reset(0);return Status::Ok;
 }
 Status ClassicProfiles::installVoiceRecords(const bth_sdp_record_t* records,size_t count){
- if(!active_||generation_||!records||!count||count>2||record_count_+count>5)return Status::InvalidArgument;
+ if(!active_||generation_||!records||!count||count>2||record_count_+count>sizeof records_/sizeof records_[0])return Status::InvalidArgument;
  bth_sdp_t checked{};if(!bth_sdp_init(&checked,records,count,1))return Status::InvalidArgument;
  for(size_t i=0;i<count;++i)records_[record_count_++]=records[i];bth_sdp_init(&sdp_,records_,record_count_,0);return Status::Ok;
 }
@@ -125,6 +130,9 @@ bool ClassicProfiles::finish(const Channel& c,bth_control_reservation_t& r,bth_s
 }
 bool ClassicProfiles::signaling(Channel& c,const uint8_t* p,size_t n,bool secure,uint32_t now,bth_control_reservation_t& r){
  bth_avdtp_t next=avdtp_;uint32_t actions=0;size_t written=0;
+#if GIGA_BREDR_CONNECT_TRACE
+ if(n>=2){char t[64];snprintf(t,sizeof t,"CT avdtp sig=%02x type=%u secure=%u",p[1]&0x3f,unsigned(p[0]&3),unsigned(secure));diagnose(t);}
+#endif
  bth_status_t status=bth_avdtp_receive(&next,p,n,secure,r.data,minimum(r.capacity,c.mtu),&written,&actions);
  if(status>=0){
   if(actions&BTH_AVDTP_CONFIGURED_ACTION){
@@ -247,6 +255,7 @@ void ClassicProfiles::disconnectControl(){
  control_status_.connected=false;control_status_.generation=0;control_status_.playback_status=0xff;
  control_status_.song_length_ms=control_status_.song_position_ms=0xffffffffu;
  metadata_={};metadata_obsolete_=status_obsolete_=false;
+ status_refresh_active_=metadata_refresh_pending_=false;status_refresh_reads_=0;
 }
 Status ClassicProfiles::avrcpCommand(AvrcpCommand command,uint32_t expected,bool secure,uint32_t now,uint32_t& id){
  const uint8_t operation=static_cast<uint8_t>(command);
@@ -257,6 +266,8 @@ Status ClassicProfiles::avrcpCommand(AvrcpCommand command,uint32_t expected,bool
  control_status_.command=command;control_status_.command_generation=expected;control_status_.command_id=++command_serial_;
  control_status_.command_state=AvrcpCommandState::Queued;control_status_.cancel_requested=false;
  control_status_.press_response=control_status_.release_response=0xff;
+ // A newer admitted tap retires the previous tap's optional read schedule.
+ status_refresh_active_=metadata_refresh_pending_=false;
  press_done_=release_done_=tap_timed_out_=false;tap_deadline_=now+3000;id=command_serial_;return Status::Ok;
 }
 Status ClassicProfiles::avrcpCancel(uint32_t expected,uint32_t id){
@@ -267,11 +278,23 @@ Status ClassicProfiles::avrcpCancel(uint32_t expected,uint32_t id){
  if(control_status_.command_state==AvrcpCommandState::Queued)control_status_.command_state=AvrcpCommandState::Cancelled;
  return Status::Ok;
 }
-void ClassicProfiles::completeTap(){
+void ClassicProfiles::completeTap(uint32_t now){
  if(control_status_.command_state!=AvrcpCommandState::Pending||!press_done_||!release_done_)return;
  control_status_.command_state=tap_timed_out_?AvrcpCommandState::TimedOut:
   control_status_.press_response!=9||control_status_.release_response!=9?AvrcpCommandState::Rejected:
   control_status_.cancel_requested?AvrcpCommandState::Cancelled:AvrcpCommandState::Completed;
+ if(control_status_.command_state==AvrcpCommandState::Completed||control_status_.command_state==AvrcpCommandState::Cancelled){
+  // ACCEPTED is not a new player state. Dispatch can be asynchronous and a
+  // target can omit notifications. Never predict state or replay a key.
+  status_obsolete_=true;status_refresh_active_=true;status_refresh_reads_=0;
+  status_refresh_at_=now;status_refresh_until_=now+StatusReconcileMs;
+  if(callbacks_.metadata&&(control_status_.command==AvrcpCommand::Next||control_status_.command==AvrcpCommand::Previous)){
+   // One copied metadata read after the reconciliation interval, with its own
+   // finite opportunity. Existing notification/continuation work retains priority.
+   metadata_refresh_pending_=true;metadata_refresh_at_=now+StatusReconcileMs;
+   metadata_refresh_until_=now+2*StatusReconcileMs;
+  }
+ }
 }
 bool ClassicProfiles::transmitTap(Channel& c,uint32_t now){
  // Reserve BOTH transport slots and labels before committing either edge.
@@ -300,6 +323,9 @@ bool ClassicProfiles::transmitTap(Channel& c,uint32_t now){
   controller_.retired_labels|=uint16_t((1u<<press_label_)|(1u<<release_label_));
   control_status_.command_state=AvrcpCommandState::TransportError;close_avrcp_=true;return true;
  }
+ // Pre-key reads cannot become authoritative for this committed pair.
+ status_obsolete_=true;
+ if(control_status_.command==AvrcpCommand::Next||control_status_.command==AvrcpCommand::Previous){metadata_obsolete_=true;metadata_={};metadata_.generation=control_status_.generation;}
  control_status_.command_state=AvrcpCommandState::Pending;tap_deadline_=now+3000;return true;
 }
 uint32_t ClassicProfiles::receivedPackets()const{return received_;}
@@ -333,7 +359,7 @@ void ClassicProfiles::expireControl(uint32_t now){
  if(control_status_.command_state==AvrcpCommandState::Pending){
   if(expired&(1u<<press_label_)){press_done_=true;tap_timed_out_=true;}
   if(expired&(1u<<release_label_)){release_done_=true;tap_timed_out_=true;}
-  completeTap();
+  completeTap(now);
  }
  if(expired&metadata_labels){metadata_abort_=metadata_active_;metadata_active_=metadata_continue_=false;metadata_used_=0;}
  if(metadata_active_&&int32_t(now-metadata_deadline_)>=0){
@@ -351,6 +377,10 @@ void ClassicProfiles::poll(bool secure,uint32_t now,bool allow_transmit){
  if(avdtp_.rx_active&&due(now,avdtp_deadline_)){uint32_t actions;bth_avdtp_expire(&avdtp_,BTH_AVDTP_EXPIRE_ASSEMBLY,&actions);}
  if(target_.rx_active&&due(now,target_deadline_))bth_avrcp_expire(&target_);
  expireControl(now);if(close_avrcp_)return;
+ if(status_refresh_active_&&(int32_t(now-status_refresh_until_)>=0||status_refresh_reads_>=StatusRefreshReads))status_refresh_active_=false;
+ if(metadata_refresh_pending_&&int32_t(now-metadata_refresh_until_)>=0)metadata_refresh_pending_=false;
+ const bool refresh_due=status_refresh_active_&&int32_t(now-status_refresh_at_)>=0;
+ const bool metadata_due=metadata_refresh_pending_&&int32_t(now-metadata_refresh_at_)>=0&&!metadata_active_&&!metadata_continue_&&!metadata_abort_;
  auto* c=channel(avrcp_);if(!allow_transmit||!secure||!c||close_avrcp_)return;
  if(control_status_.command_state==AvrcpCommandState::Queued){transmitTap(*c,now);return;}
  bth_control_reservation_t r;if(bth_control_tx_reserve(replies_,peer_,&r)!=BTH_OK)return;
@@ -359,8 +389,8 @@ void ClassicProfiles::poll(bool secure,uint32_t now,bool allow_transmit){
  else if(metadata_abort_){if(customRequest(CustomAbort,0x41,now,r,cap,n)){metadata_abort_=false;status=BTH_OK;}}
  else if(metadata_continue_){if(customRequest(CustomMetadata,0x40,now,r,cap,n)){metadata_continue_=false;status=BTH_OK;}}
  else if(!capabilities_sent_){status=bth_avrcp_ct_capabilities(&controller_,true,now,r.data,cap,&n);if(status==BTH_OK)capabilities_sent_=true;}
- else if(work_&WorkStatus){if(customRequest(CustomStatus,0x30,now,r,cap,n)){status_obsolete_=false;work_&=uint8_t(~WorkStatus);status=BTH_OK;}}
- else if(work_&WorkMetadata){if(customRequest(CustomMetadata,0x20,now,r,cap,n)){metadata_obsolete_=false;work_&=uint8_t(~WorkMetadata);metadata_active_=false;metadata_used_=0;metadata_fragments_=0;status=BTH_OK;}}
+ else if((work_&WorkStatus)||refresh_due){if(customRequest(CustomStatus,0x30,now,r,cap,n)){status_obsolete_=false;work_&=uint8_t(~WorkStatus);if(status_refresh_active_){++status_refresh_reads_;status_refresh_at_=now+StatusRefreshMs;}status=BTH_OK;}}
+ else if((work_&WorkMetadata)||metadata_due){if(customRequest(CustomMetadata,0x20,now,r,cap,n)){metadata_obsolete_=false;work_&=uint8_t(~WorkMetadata);if(metadata_due)metadata_refresh_pending_=false;metadata_active_=false;metadata_used_=0;metadata_fragments_=0;status=BTH_OK;}}
  else if(controller_.capabilities_known){
   const uint8_t events[]={1,2};for(uint8_t event:events)if((controller_.supported_events&(1u<<event))&&!((controller_.disabled_events|controller_.registered_events)&(1u<<event))){status=bth_avrcp_ct_register(&controller_,true,event,0,now,r.data,cap,&n);break;}
  }
@@ -419,7 +449,7 @@ void ClassicProfiles::controllerResponse(const uint8_t* p,size_t n,bool secure,u
   if((event.actions&BTH_AVRCP_CT_KEY)&&control_status_.command_state==AvrcpCommandState::Pending){
    if(event.label==press_label_&&!event.released){press_done_=true;control_status_.press_response=event.response;}
    if(event.label==release_label_&&event.released){release_done_=true;control_status_.release_response=event.response;}
-   completeTap();
+   completeTap(now);
   }
   if(controller_.protocol_rejected&&commandActive()){control_status_.command_state=AvrcpCommandState::Rejected;close_avrcp_=true;}
   if((event.actions&BTH_AVRCP_CT_NOTIFICATION)&&!(event.actions&BTH_AVRCP_CT_REJECTED)){

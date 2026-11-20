@@ -99,6 +99,11 @@ Status MediaAssembler::feed(const uint8_t* packet, size_t length, MediaView& vie
         if (bytes % 6 || bytes > capacity_) return Status::CorruptFrame;
         view = {data, bytes}; return Status::Ok;
     }
+    if (codec_ == Codec::Ssc) {
+        // No codec payload header: one or two self-delimiting SSC frames follow RTP.
+        if (bytes < 6 || bytes > capacity_) return Status::CorruptFrame;
+        view = {data, bytes}; return Status::Ok;
+    }
     if (bytes < 2) { consumed(); return Status::CorruptFrame; }
     uint8_t header = *data++; --bytes;
     unsigned count = header & 15;

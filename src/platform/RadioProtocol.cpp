@@ -6,6 +6,7 @@ bool radioEndpointAccepts(const CodecConfig& c,Codec expected,uint8_t type,const
  if(c.codec!=expected || !capabilities || c.codec_info_size!=size) return false;
  uint8_t expected_type=expected==Codec::Sbc?0:(expected==Codec::Aac || expected==Codec::AacHe)?2:255;
  if(type!=expected_type) return false;
+ if(type==255 && expected==Codec::Ssc && (size!=7 || (c.codec_info[6]&~capabilities[6]))) return false; // Selected mode must be advertised.
  return type!=255 || (size>=6 && !memcmp(c.codec_info,capabilities,6));
 }
 Status prototypeBdAddrFromUid(const uint8_t* uid,size_t length,uint8_t address[6]) {
@@ -52,6 +53,12 @@ Status parseRadioCodec(uint8_t t,const uint8_t* p,size_t n,CodecConfig& out) {
   } else if(v==0xe0 && id==1) {
    if(n!=7 || p[6]!=0x92) return Status::Unsupported;
    c.codec=Codec::Opus; c.sample_rate=48000; c.frame_duration_us=20000;
+  } else if(v==0x75 && id==0x103) {
+   // Samsung SSC configuration: HiFi 48k/24 (0x04), UHQ v2 96k/24 (0x02) or one rate bit
+   // (0x80 legacy 96k, 0x20 44.1k, 0x10 48k; 32k is not decodable), plus optional 0x08.
+   unsigned mode=p[6]&~8u;
+   if(n!=7 || !one(mode) || !(mode&0xb6)) return Status::Unsupported;
+   c.codec=Codec::Ssc; c.sample_rate=mode==0x20?44100:(mode==0x10||mode==4)?48000:96000; c.bits_per_sample=(mode&0x30)?16:24;
   } else if(v==0x5f1 && id==0x1005) {
    if(n!=24 || p[6]!=2 || p[7]!=1 || le32(p+8)!=3 || !one(p[12]) || !(p[12]&0x1c) || p[15] || p[16] || le32(p+17) || p[21] || p[22] || p[23]) return Status::Unsupported;
    c.codec=Codec::Opus; c.sample_rate=48000; c.frame_duration_us=p[12]==4?10000:p[12]==8?20000:40000;

@@ -4,4 +4,5 @@
 namespace giga_bredr { namespace detail {
 Status radioVoiceStatus(VoiceStatus&){return Status::Unsupported;}
 Status radioVoiceCommand(HfpCommand,uint32_t,const char*){return Status::Unsupported;}
+Status radioHeadsetCommand(HspCommand,uint32_t){return Status::Unsupported;}
 }}

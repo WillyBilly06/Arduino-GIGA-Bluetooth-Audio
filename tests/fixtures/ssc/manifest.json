@@ -1,0 +1,202 @@
+{
+ "scope": "First frames of samsung-ssc-decoder test_vectors/ssc (Samsung libScalable_Encoder.so output, upstream commit b9425314ccf961599ac16d14a14d907e679eb559, BSD-3-Clause). Reference digests: upstream standalone ssc_decode_s32, -O2 -ffp-contract=off, same frame order. Host decode only; no phone interoperability, M7 timing or acoustic claim.",
+ "format": "One SSC frame per line, base64; the first frames of each upstream [u16 length][frame] file, unmodified",
+ "upstream": "https://github.com/WillyBilly06/samsung-ssc-decoder",
+ "upstream_commit": "b9425314ccf961599ac16d14a14d907e679eb559",
+ "files": {
+  "mix_192000.b64": {
+   "upstream": "test_vectors/ssc/mix_192000.ssc",
+   "upstream_sha256": "9665f3859d656646ed194724c5c8a2edd73dfd3d719e871c6c60db0e3c5e62e1",
+   "frames": 24,
+   "frame_bytes": [
+    484
+   ],
+   "bytes": 15576,
+   "sha256": "fe4f034c2b9e049fce1a54fc08c67f81273d9fb002309eb9182be7e7fbd6d1ee"
+  },
+  "mix_128000.b64": {
+   "upstream": "test_vectors/ssc/mix_128000.ssc",
+   "upstream_sha256": "a887df6c197b59e3dd02fbf2ac6536bb3acdc495f0bd2b5f3c42608fc61bf346",
+   "frames": 24,
+   "frame_bytes": [
+    324
+   ],
+   "bytes": 10392,
+   "sha256": "953ec115b509cbabedda686eb065763e78ce34600a60b8f1772e5cc652788e2e"
+  },
+  "mix_88000.b64": {
+   "upstream": "test_vectors/ssc/mix_88000.ssc",
+   "upstream_sha256": "a933dee9d12f8dab23cd06c06b9f1a8a31220f1831e868020f3c3beee39155e3",
+   "frames": 24,
+   "frame_bytes": [
+    224
+   ],
+   "bytes": 7224,
+   "sha256": "c8ad9ee2c3ab5ae88b79b36c4d6e88183e1c5e5c807df0cd9c2ada1c7be88213"
+  },
+  "mix24_152000.b64": {
+   "upstream": "test_vectors/ssc/mix24_152000.ssc",
+   "upstream_sha256": "9a69adb084159d5ef71121b9a348116e052d372d4caae9b021cf9cd3d535a976",
+   "frames": 24,
+   "frame_bytes": [
+    376
+   ],
+   "bytes": 12120,
+   "sha256": "cfb5aaca27d2911d9722a30e61d6552f8112269b4d5147f3cf77b4c2e658977f"
+  },
+  "hifi48_192000.b64": {
+   "upstream": "test_vectors/ssc/hifi48_192000.ssc",
+   "upstream_sha256": "f3c58fbc58a2ec6d3a1627739e849b03fb7091ae8a0d7702ecae3b8e32ed331e",
+   "frames": 24,
+   "frame_bytes": [
+    484
+   ],
+   "bytes": 15576,
+   "sha256": "a6233e7f1181bf76727e9dbfb06973fb5141e23f67f25b3e34b2ea3aef7b42ba"
+  },
+  "mix96_192000.b64": {
+   "upstream": "test_vectors/ssc/mix96_192000.ssc",
+   "upstream_sha256": "cee3c7a30a0485fb38008c4378bf5040db6f81a17e67491362bf2c7fa5d6b710",
+   "frames": 24,
+   "frame_bytes": [
+    224
+   ],
+   "bytes": 7224,
+   "sha256": "57935c05a2258079a5bcba844a5f9610b71f780501ba49dcd078fecdf6d44bf8"
+  },
+  "uhq96_291000.b64": {
+   "upstream": "test_vectors/ssc/uhq96_291000.ssc",
+   "upstream_sha256": "03de9c662824f97237fa2ae707f2269c042127a00ca5690ee89f4d6c39196739",
+   "frames": 48,
+   "frame_bytes": [
+    330
+   ],
+   "bytes": 21168,
+   "sha256": "3f9191428926d839e1c562aa0f32b4c2def720e289c988785d7922b7c98af075"
+  },
+  "uhq96_584000.b64": {
+   "upstream": "test_vectors/ssc/uhq96_584000.ssc",
+   "upstream_sha256": "1c866ecb43473364fbf5fde32b387aa6a05cc3d4b473086ca1eee6c4be5b1a1b",
+   "frames": 24,
+   "frame_bytes": [
+    660
+   ],
+   "bytes": 21144,
+   "sha256": "6c016e93d3a0f491022cd44d30cec49075b183b7e42d003dbc92b6d4f001dd22"
+  }
+ },
+ "cases": [
+  {
+   "name": "ssc44_192k_one_per_packet",
+   "rate": 44100,
+   "bits": 16,
+   "packets": 24,
+   "pattern": [
+    [
+     "mix_192000.b64"
+    ]
+   ],
+   "malformed": true,
+   "reference_s32_sha256": "7fd439168d837ed5a23f5b37980663d2d6ba97ad4dabbd5699892c6a8b118d00"
+  },
+  {
+   "name": "hifi48_24bit_192k",
+   "rate": 48000,
+   "bits": 24,
+   "packets": 24,
+   "pattern": [
+    [
+     "hifi48_192000.b64"
+    ]
+   ],
+   "reference_s32_sha256": "b42bd5a3369b201fa6ca658105856b501fe3d41211c65ce3b7da23bd043dce6c"
+  },
+  {
+   "name": "uhq96_291k_two_per_packet",
+   "rate": 96000,
+   "bits": 24,
+   "packets": 24,
+   "pattern": [
+    [
+     "uhq96_291000.b64",
+     "uhq96_291000.b64"
+    ]
+   ],
+   "malformed": true,
+   "reference_s32_sha256": "9ed42c71bfef81978314e8ac513bfc0e3dc0ae32cffbabf4e5874ff8d0f61ff0"
+  },
+  {
+   "name": "uhq96_584k_one_per_packet",
+   "rate": 96000,
+   "bits": 24,
+   "packets": 24,
+   "pattern": [
+    [
+     "uhq96_584000.b64"
+    ]
+   ],
+   "reference_s32_sha256": "f43d5fc78ab1ef33212eafe593ccb62bd66d8c0d1ea56ab1617f2174dc5d6c28"
+  },
+  {
+   "name": "ssc44_bitrate_switch_192_128_88_152",
+   "rate": 44100,
+   "bits": 16,
+   "packets": 24,
+   "pattern": [
+    [
+     "mix_192000.b64"
+    ],
+    [
+     "mix_192000.b64"
+    ],
+    [
+     "mix_128000.b64"
+    ],
+    [
+     "mix_88000.b64"
+    ],
+    [
+     "mix24_152000.b64"
+    ],
+    [
+     "mix_128000.b64"
+    ]
+   ],
+   "malformed": true,
+   "reference_s32_sha256": "e2983dafe4cbb59462ed8bc535640d0420bf8d177081b70cca81c6a0cc04dfec"
+  },
+  {
+   "name": "uhq96_bitrate_switch_584_291",
+   "rate": 96000,
+   "bits": 24,
+   "packets": 12,
+   "pattern": [
+    [
+     "uhq96_584000.b64"
+    ],
+    [
+     "uhq96_291000.b64",
+     "uhq96_291000.b64"
+    ],
+    [
+     "uhq96_291000.b64",
+     "uhq96_584000.b64"
+    ]
+   ],
+   "reference_s32_sha256": "f84b65dba4d690c2eb61171b24da24291b470b5ece18e1683592f0861cb25a33"
+  },
+  {
+   "name": "mode96_192k_two_per_packet",
+   "rate": 96000,
+   "bits": 24,
+   "packets": 12,
+   "pattern": [
+    [
+     "mix96_192000.b64",
+     "mix96_192000.b64"
+    ]
+   ],
+   "reference_s32_sha256": "080e7563604dda4c14ded627d8931b8f63267995ee778a44a0b6c6137c01a337"
+  }
+ ]
+}

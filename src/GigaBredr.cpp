@@ -19,7 +19,9 @@
 #include "owned/VoiceAudioWorker.h"
 #include "owned/VoiceDacOutput.h"
 #include "owned/VoiceSdp.h"
+#include "owned/SppPort.h"
 #include "detail/VoiceInputLifetime.h"
+#include "RadioBuildConfig.h"
 #include <atomic>
 #include <new>
 #include <string.h>
@@ -29,6 +31,7 @@
 #else
 #include <mutex>
 #include <chrono>
+#include <thread>
 #endif
 
 namespace giga_bredr {
@@ -50,6 +53,27 @@ uint32_t clockUs() {
 }
 void waitOne() {}
 #endif
+// Provider callbacks must not relock the facade or join their own host thread.
+#if defined(ARDUINO)
+using BondThread=decltype(rtos::ThisThread::get_id());
+BondThread currentBondThread(){return rtos::ThisThread::get_id();}
+#else
+using BondThread=std::thread::id;
+BondThread currentBondThread(){return std::this_thread::get_id();}
+#endif
+std::atomic<BondThread> bond_callback_thread{};
+std::atomic<bool> bond_callback_violation{false};
+bool providerReentry(){
+ const auto owner=bond_callback_thread.load(std::memory_order_acquire);
+ if(owner==BondThread{}||owner!=currentBondThread())return false;
+ bond_callback_violation.store(true,std::memory_order_release);return true;
+}
+struct BondProviderScope {
+ bool entered=false;
+ BondProviderScope(){auto empty=BondThread{};const auto current=currentBondThread();if(current!=BondThread{}&&bond_callback_thread.compare_exchange_strong(empty,current)){bond_callback_violation.store(false);entered=true;}else bond_callback_violation.store(true);}
+ ~BondProviderScope(){if(entered)bond_callback_thread.store(BondThread{},std::memory_order_release);}
+ bool valid()const{return entered&&!bond_callback_violation.load(std::memory_order_acquire);}
+};
 // Foreground BLE data calls never wait for the radio actor's ownership lock.
 // Lifecycle and snapshot access retain their original synchronization.
 struct TryLock {
@@ -98,6 +122,7 @@ size_t frameCapacity(const CodecConfig& c) {
         // LHDC's 44.1/48 kHz modes both use a 240-sample transform hop.
         // Its nominal 5-ms enum is not an exact wall-clock duration at44.1 kHz.
         case Codec::LhdcV5: return c.sample_rate > 48000 ? c.sample_rate / 200 : 240;
+        case Codec::Ssc: return 864; // SSC_FRAME_SAMPLES; one frame per decode call at every rate.
         case Codec::Opus: {
             uint32_t duration = c.frame_duration_us ? c.frame_duration_us : 20000;
             if (duration > 120000 || c.sample_rate > 192000) return 0;
@@ -109,14 +134,25 @@ size_t frameCapacity(const CodecConfig& c) {
 }
 struct GigaBredr::Impl {
     ReceiverConfig options;
+    static BondStorageResult loadClassicBond(void* p,const ClassicBondIdentity& id,ClassicBondRecord& out){auto& self=*static_cast<Impl*>(p);BondProviderScope scope;if(!scope.entered)return BondStorageResult::Error;const auto& provider=self.options.classic_bonds;const auto result=provider.load(provider.context,id,out);return scope.valid()?result:BondStorageResult::Error;}
+    static BondStorageResult saveClassicBond(void* p,const ClassicBondRecord& record){auto& self=*static_cast<Impl*>(p);BondProviderScope scope;if(!scope.entered)return BondStorageResult::Error;const auto& provider=self.options.classic_bonds;const auto result=provider.save(provider.context,record);return scope.valid()?result:BondStorageResult::Error;}
+    static BondStorageResult removeClassicBond(void* p,const ClassicBondIdentity& id){auto& self=*static_cast<Impl*>(p);BondProviderScope scope;if(!scope.entered)return BondStorageResult::Error;const auto& provider=self.options.classic_bonds;const auto result=provider.remove(provider.context,id);return scope.valid()?result:BondStorageResult::Error;}
     Mutex codec_mutex, queue_mutex, event_mutex, radio_mutex;
     struct VoiceSession {
         detail::VoiceProfiles profiles;detail::VoiceSdp sdp;detail::OwnedVoiceAudio transport;
+        const uint64_t command_lifetime;
         detail::VoiceAudioWorker worker;detail::VoiceDacOutput dac;detail::VoiceControlConfig control;
         uint8_t receive[256]{};Mutex music_mutex;CodecConfig saved,pending;bool saved_valid=false,pending_valid=false,suspended=false,output_owned=false;
-        explicit VoiceSession(uint64_t lifetime):worker(lifetime){}
+        explicit VoiceSession(uint64_t lifetime):command_lifetime(lifetime),worker(lifetime){}
     };
     VoiceSession* voice=nullptr;
+    // Allocated only for config.spp.enabled. With voice enabled the SPP DLC
+    // shares voice->profiles (one RFCOMM mux); otherwise it owns profiles.
+    struct SerialSession {
+        detail::SppPort port;detail::VoiceControlConfig control;
+        detail::VoiceProfiles* profiles=nullptr;uint8_t* rings=nullptr;
+    };
+    SerialSession* serial=nullptr;
     std::atomic<bool> music_intent{false};std::atomic<uint32_t> voice_preempted_packets{0};
     detail::Decoder decoder;
     detail::MediaAssembler media;
@@ -847,6 +883,22 @@ struct GigaBredr::Impl {
         result=voice->transport.begin(policy,voice->worker.hooks(),voice->receive,sizeof voice->receive);if(result==Status::Ok)voice->transport.gains(c.speaker_gain,c.microphone_gain);return result;
     }
     void releaseVoice(){if(!voice)return;voice->worker.end();voice->transport.end();voice->dac.end();voice->~VoiceSession();detail::release(voice);voice=nullptr;}
+    Status setupSerial(){
+        if(!options.spp.enabled)return Status::Ok;
+        void* storage=detail::allocate(sizeof(SerialSession));if(!storage)return Status::OutOfMemory;serial=new(storage)SerialSession();
+        const size_t rx=options.spp.rx_buffer_bytes,tx=options.spp.tx_buffer_bytes;
+        serial->rings=static_cast<uint8_t*>(detail::allocate(rx+tx,MemoryKind::Fast));if(!serial->rings)return Status::OutOfMemory;
+        if(!serial->port.begin(options.spp.service_name,options.spp.channel,serial->rings,rx,serial->rings+rx,tx,options.spp.streaming_frame_interval_ms))return Status::InvalidArgument;
+        if(voice){voice->control.serial=&serial->port;return Status::Ok;}
+        storage=detail::allocate(sizeof(detail::VoiceProfiles));if(!storage)return Status::OutOfMemory;
+        serial->profiles=new(storage)detail::VoiceProfiles();serial->control.serial=&serial->port;return Status::Ok;
+    }
+    void releaseSerial(){
+        if(!serial)return;serial->port.end();
+        if(serial->profiles){serial->profiles->~VoiceProfiles();detail::release(serial->profiles);}
+        if(serial->rings)detail::release(serial->rings);
+        serial->~SerialSession();detail::release(serial);serial=nullptr;
+    }
     Status prepareVoiceOutput(VoiceCodec codec){
         if(!voice||!running.load())return Status::Unsupported;
         // Reserve the selected converter before disturbing A2DP output. On a
@@ -881,27 +933,44 @@ struct GigaBredr::Impl {
 };
 uint32_t GigaBredr::availableCodecs() { return detail::compiledCodecs(); }
 Status GigaBredr::setVoiceInput(VoicePcmProvider provider,VoiceInputToken& token){
+    if(providerReentry())return Status::Busy;
     return impl_&&impl_->voice&&impl_->running.load()?impl_->voice->worker.setInput(provider,token):Status::Unsupported;
 }
 Status GigaBredr::detachVoiceInput(VoiceInputToken token){
+    if(providerReentry())return Status::Busy;
     return impl_&&impl_->voice&&impl_->running.load()?impl_->voice->worker.detachInput(token):Status::Unsupported;
 }
 Status GigaBredr::voiceStatus(VoiceStatus& value)const{
+    if(providerReentry())return Status::Busy;
     if(!impl_||!impl_->voice)return Status::Unsupported;TryLock lock(impl_->radio_mutex);if(!lock)return Status::Busy;
     VoiceStatus result;const auto radio=detail::radioVoiceStatus(result);if(radio!=Status::Ok)return radio;
     detail::VoiceWorkerSnapshot worker;const auto status=impl_->voice->worker.snapshot(worker);if(status!=Status::Ok)return status;
     if(worker.generation==result.generation){result.worker_status=worker.status;result.input=worker.input;result.decode_errors=worker.pipeline.decode_errors;result.h2_gaps=worker.pipeline.h2_gaps;result.delivered_pcm_frames=worker.pipeline.delivered_frames;result.concealed_pcm_frames=worker.pipeline.concealed_frames;}
+    if(impl_->options.voice.headset&&result.headset.connected&&!result.headset.failed&&result.headset.generation)
+        result.headset_command_token={impl_->voice->command_lifetime,result.headset.generation};
     result.preempted_a2dp_packets=impl_->voice_preempted_packets.load();value=result;return Status::Ok;
 }
 Status GigaBredr::voiceCommand(HfpCommand command,uint32_t expected,const char* argument){
+    if(providerReentry())return Status::Busy;
     if(!impl_||!impl_->voice)return Status::Unsupported;TryLock lock(impl_->radio_mutex);if(!lock)return Status::Busy;
     return detail::radioVoiceCommand(command,expected,argument);
 }
-bool GigaBredr::setExternalAllocator(Allocate a, Free f, void* user) { return detail::setMemoryProvider(MemoryKind::External, a, f, user); }
+Status GigaBredr::headsetCommand(HspCommand command,HspCommandToken expected){
+    if(providerReentry())return Status::Busy;
+    if(!impl_||!impl_->voice||!impl_->running.load()||!impl_->options.voice.headset)return Status::Unsupported;
+    TryLock lock(impl_->radio_mutex);if(!lock)return Status::Busy;
+    if(command!=HspCommand::Button||!expected.lifetime||expected.lifetime!=impl_->voice->command_lifetime||!expected.generation)return Status::InvalidArgument;
+    return detail::radioHeadsetCommand(command,expected.generation);
+}
+bool GigaBredr::setExternalAllocator(Allocate a, Free f, void* user) {
+    if(providerReentry())return false; return detail::setMemoryProvider(MemoryKind::External, a, f, user); }
 Status GigaBredr::begin(const ReceiverConfig& input) {
+    if(providerReentry())return Status::Busy;
     if (impl_) return Status::Busy;
     if(lifetime_>=UINT64_MAX-1)return Status::Unsupported;
     const detail::OperationModePolicy mode{input.enable_a2dp,input.ble.enabled};
+    if(!input.classic_bonds.valid())return Status::InvalidArgument;
+    if(input.classic_bonds.configured()&&(!mode.a2dp||GIGA_BREDR_USE_BTSTACK))return Status::Unsupported;
     if (!mode.valid() || !input.name || !*input.name || input.host_stack_bytes < 4096)
         return Status::InvalidArgument;
     if (mode.needsDecoder()) {
@@ -916,6 +985,15 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
         const auto& v=input.voice;
         if(!input.enable_a2dp||!input.enable_i2s)return Status::Unsupported;
         if(v.speaker_gain>15||v.microphone_gain>15||(v.hands_free&&(!v.hands_free_channel||v.hands_free_channel>30))||(v.headset&&(!v.headset_channel||v.headset_channel>30))||(v.hands_free&&v.headset&&v.hands_free_channel==v.headset_channel)||v.pcm_buffer_ms<12||v.pcm_buffer_ms>200||v.startup_buffer_ms<4||v.startup_buffer_ms+4>v.pcm_buffer_ms)return Status::InvalidArgument;
+    }
+    if(input.spp.enabled){
+        const auto& s=input.spp;const auto& v=input.voice;
+        if(!input.enable_a2dp||GIGA_BREDR_USE_BTSTACK)return Status::Unsupported;
+        size_t name=0;if(s.service_name)while(name<=detail::SppPort::NameLimit&&s.service_name[name])++name;
+        if(!name||name>detail::SppPort::NameLimit||!s.channel||s.channel>30||
+           s.rx_buffer_bytes<detail::SppPort::MinimumRing||s.rx_buffer_bytes>detail::SppPort::MaximumRing||
+           s.tx_buffer_bytes<detail::SppPort::MinimumRing||s.tx_buffer_bytes>detail::SppPort::MaximumRing||
+           (v.hands_free&&s.channel==v.hands_free_channel)||(v.headset&&s.channel==v.headset_channel))return Status::InvalidArgument;
     }
     ReceiverConfig config = input;
     if (mode.needsDecoder()) {
@@ -935,11 +1013,14 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     if (!storage) { receiver_owner.store(nullptr); return Status::OutOfMemory; }
     impl_ = new (storage) Impl(config); ++lifetime_; impl_->running.store(true);
     Status status=impl_->setupVoice(voice_input_lifetime);if(status!=Status::Ok){end();return status;}
+    status=impl_->setupSerial();if(status!=Status::Ok){end();return status;}
     detail::RadioCallbacks callbacks; callbacks.enable_a2dp = config.enable_a2dp;
     callbacks.configure = Impl::onConfigure; callbacks.media = Impl::onMedia;
     callbacks.stream = Impl::onStream; callbacks.diagnostic = Impl::onDiagnostic; callbacks.user = impl_;
     callbacks.volume = Impl::onVolume; callbacks.metadata = Impl::onMetadata;
+    if(config.classic_bonds.configured())callbacks.classic_bonds={impl_,Impl::loadClassicBond,Impl::saveClassicBond,Impl::removeClassicBond};
     if(impl_->voice){callbacks.voice_audio=&impl_->voice->transport;callbacks.voice_control=&impl_->voice->profiles;callbacks.voice_sdp=&impl_->voice->sdp;callbacks.voice_config=&impl_->voice->control;}
+    else if(impl_->serial){callbacks.voice_control=impl_->serial->profiles;callbacks.voice_config=&impl_->serial->control;}
 #if defined(ARDUINO)
     callbacks.owner_wake = Impl::onOwnerWake;
 #endif
@@ -970,6 +1051,7 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     return Status::Ok;
 }
 void GigaBredr::poll() {
+    if(providerReentry())return;
     if (!impl_) return;
     const uint64_t lifetime = lifetime_;
 #if !defined(ARDUINO)
@@ -1007,6 +1089,7 @@ void GigaBredr::poll() {
 #endif
 }
 void GigaBredr::end() {
+    if(providerReentry())return;
     if (!impl_) return;
     supply::end();
 #if GIGA_BREDR_PRIVATE_SCHED_WITNESS
@@ -1024,12 +1107,15 @@ void GigaBredr::end() {
     detail::schedulerShutdown(); // Reclaim any report completed while end() waited for workers.
 #endif
     if (impl_->radio_owned) detail::radioEnd();
+    impl_->options.classic_bonds={};
     impl_->releaseVoice();
+    impl_->releaseSerial(); // The radio actor ended above; nothing retains its rings.
     { Lock lock(impl_->codec_mutex); impl_->releaseCodec(); }
     impl_->~Impl(); detail::release(impl_); impl_ = nullptr;
     receiver_owner.store(nullptr);
 }
 ReceiverStats GigaBredr::stats() const {
+    if(providerReentry())return {};
     ReceiverStats result;
     if (impl_) {
         Lock lock(impl_->codec_mutex);
@@ -1044,33 +1130,39 @@ ReceiverStats GigaBredr::stats() const {
     return result;
 }
 AvrcpStatus GigaBredr::avrcpStatus() const {
+    if(providerReentry())return {};
     if (!impl_ || !impl_->options.enable_a2dp) return {};
     Lock lock(impl_->radio_mutex);
     return detail::radioAvrcpStatus();
 }
 AvrcpMetadata GigaBredr::avrcpMetadata() const {
+    if(providerReentry())return {};
     if (!impl_ || !impl_->options.enable_a2dp) return {};
     Lock lock(impl_->radio_mutex);
     return detail::radioAvrcpMetadata();
 }
 Status GigaBredr::avrcpCommand(AvrcpCommand command,uint32_t expected,uint32_t& request_id) {
+    if(providerReentry())return Status::Busy;
     if (!impl_ || !impl_->options.enable_a2dp) return Status::Unsupported;
     TryLock lock(impl_->radio_mutex);
     if (!lock) return Status::Busy;
     return detail::radioAvrcpCommand(command,expected,request_id);
 }
 Status GigaBredr::avrcpCancel(uint32_t expected,uint32_t request_id) {
+    if(providerReentry())return Status::Busy;
     if (!impl_ || !impl_->options.enable_a2dp) return Status::Unsupported;
     TryLock lock(impl_->radio_mutex);
     if (!lock) return Status::Busy;
     return detail::radioAvrcpCancel(expected,request_id);
 }
 BleStats GigaBredr::bleStats() const {
+    if(providerReentry())return {};
     if (!impl_) return {};
     Lock lock(impl_->radio_mutex);
     return detail::radioBleStats();
 }
 AudioDiagnostics GigaBredr::audioDiagnostics() const {
+    if(providerReentry())return {};
     AudioDiagnostics out;
     if (impl_) {
         Lock codec_lock(impl_->codec_mutex);
@@ -1082,12 +1174,14 @@ AudioDiagnostics GigaBredr::audioDiagnostics() const {
     return out;
 }
 Status GigaBredr::bleNotify(const uint8_t* data, size_t length) {
+    if(providerReentry())return Status::Busy;
     if (!impl_) return Status::Unsupported;
     TryLock lock(impl_->radio_mutex);
     if (!lock) return Status::Busy;
     return detail::radioBleNotify(data, length);
 }
 Status GigaBredr::bleNotify(const BleWrite& origin) {
+    if(providerReentry())return Status::Busy;
     if (!impl_) return Status::Unsupported;
     TryLock lock(impl_->radio_mutex);
     if (!lock) return Status::Busy;
@@ -1097,18 +1191,57 @@ Status GigaBredr::bleNotify(const BleWrite& origin) {
     return detail::radioBleNotify(origin.data, origin.length);
 }
 bool GigaBredr::bleReadWrite(BleWrite& value) {
+    if(providerReentry())return false;
     if (!impl_) return false;
     TryLock lock(impl_->radio_mutex);
     if (!lock) return false;
     return detail::radioBleReadWrite(value);
 }
 Status GigaBredr::bleDisconnect(uint32_t expected,bool advertise_after) {
+    if(providerReentry())return Status::Busy;
     if (!impl_) return Status::Unsupported;
     TryLock lock(impl_->radio_mutex);
     if (!lock) return Status::Busy;
     return detail::radioBleDisconnect(expected,advertise_after);
 }
+Status GigaBredr::sppWrite(const uint8_t* data,size_t length,size_t& accepted) {
+    accepted = 0;
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->serial) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->serial->port.write(data,length,accepted); }
+#if defined(ARDUINO)
+    if (accepted) impl_->host_events.set(1); // Frame on the next host turn.
+#endif
+    return result;
+}
+size_t GigaBredr::sppRead(uint8_t* data,size_t capacity) {
+    if(providerReentry())return 0;
+    if (!impl_ || !impl_->serial) return 0;
+    size_t n = 0;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return 0;
+      n = impl_->serial->port.read(data,capacity); }
+#if defined(ARDUINO)
+    if (n) impl_->host_events.set(1); // Return credits for the freed space.
+#endif
+    return n;
+}
+bool GigaBredr::sppConnected() const {
+    if(providerReentry())return false;
+    return impl_ && impl_->serial && impl_->serial->port.connected();
+}
+Status GigaBredr::sppStats(SppStats& value) const {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->serial) return Status::Unsupported;
+    Lock lock(impl_->radio_mutex);
+    value = impl_->serial->port.stats();
+    return Status::Ok;
+}
 Status GigaBredr::bleResumeAdvertising() {
+    if(providerReentry())return Status::Busy;
     if (!impl_) return Status::Unsupported;
     TryLock lock(impl_->radio_mutex);
     if (!lock) return Status::Busy;

@@ -9,3 +9,13 @@ manifests. This notice does not grant rights in third-party codec patents.
 The unpublished voice overlay also retains Broadcom Corporation's1999-2012
 Apache-2.0 SBC encoder notices. Its portable mono mSBC modifications and exact
 source/export inventory are documented alongside that selected encoder.
+
+The LHDC synthesis-window correction includes numerical tables generated from
+the Android Open Source Project's LHDC V5 encoder analysis-window routine.
+Copyright (C) 2025 The Android Open Source Project. Licensed under Apache-2.0;
+see the root LICENSE and tests/lhdc_aosp for the pinned source and provenance.
+
+The optional Samsung SSC decoder (src/vendor/codecs/ssc) is Copyright (c) 2026 William Ho,
+BSD-3-Clause, with parts derived from libopus 1.1 (Xiph.Org Foundation, Skype Limited,
+Octasic, Jean-Marc Valin, Timothy B. Terriberry, CSIRO, Gregory Maxwell, Mark Borgerding,
+Erik de Castro Lopo; BSD-3-Clause). See the LICENSE and COPYING.opus files in that folder.

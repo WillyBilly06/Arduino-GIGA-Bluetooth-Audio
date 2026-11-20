@@ -1,0 +1,10 @@
+{
+  "scope": "isolated dev397 candidate, source-provenance.json remains historical",
+  "destination": "src/vendor/codecs/aac/huffman.c",
+  "upstream_source": "decoders/AAC-LC/libhelix_aac/huffman.c",
+  "upstream_sha256": "c04fa2d9918f500bb5cb16073c65ff59efbfefe2e687a6ee925663b3c8734855",
+  "prior_port_sha256": "3b3a61eca4b9b1558ccb654458ccaa01543010cd17c9bbbfdd85573fdeb9c0de",
+  "candidate_sha256": "dbf811d909536345b89edc439a5a40886f4e6f59c0751c58a7bc269bd5de6621",
+  "license": "RealNetworks notices retained; consult repository licensing documentation",
+  "change": "unsigned extraction and explicit small-range sign extension for packed 3, 5, and 6-bit Huffman coefficients"
+}

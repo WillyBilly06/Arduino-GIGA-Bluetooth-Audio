@@ -10,7 +10,7 @@ unsigned checks;
 #define REQUIRE(x) do{++checks;if(!(x)){std::fprintf(stderr,"VOICE CHECK line%d: %s\n",__LINE__,#x);std::abort();}}while(0)
 struct Harness {
  VoiceProfiles voice;bth_control_tx_t queue{};bth_hci_flow_t flow{};bth_rfcomm_t peer{};
- uint32_t now=100;uint8_t wire[1100]{},reply[160]{};std::string at,pending;size_t pending_cursor=0;unsigned brsf=0;bool auto_answer=true;
+ uint32_t now=100;uint8_t wire[1100]{},reply[160]{};std::string at,pending;size_t pending_cursor=0;unsigned brsf=0;bool auto_answer=true;unsigned gain_mode=0;
  Harness(){
   bth_control_tx_init(&queue);REQUIRE(bth_control_tx_attach(&queue,0,0x25,7));
   bth_hci_flow_init(&flow);REQUIRE(bth_hci_flow_set_buffers(&flow,1021,8,251,4));REQUIRE(bth_hci_flow_attach(&flow,0x25,BTH_LINK_CLASSIC));
@@ -27,7 +27,9 @@ struct Harness {
    if(row=="AT+BRSF=16\r"){++brsf;pending+="\r\n+BRSF: 0\r\nOK\r\n";}
    else if(row=="AT+CIND=?\r")pending+="\r\n+CIND: (\"service\",(0,1)),(\"call\",(0,1)),(\"callsetup\",(0-3)),(\"callheld\",(0-2)),(\"signal\",(0-5)),(\"roam\",(0,1)),(\"battchg\",(0-5))\r\nOK\r\n";
    else if(row=="AT+CIND?\r")pending+="\r\n+CIND: 1,0,0,0,5,0,5\r\nOK\r\n";
-   else if(row=="AT+CMER=3,0,0,1\r"||row=="AT+VGS=15\r"||row=="AT+VGM=15\r")pending+="\r\nOK\r\n";
+   else if(row=="AT+CMER=3,0,0,1\r")pending+="\r\nOK\r\n";
+   else if(row=="AT+VGS=15\r")pending+=gain_mode==1?"\r\nERROR\r\n":gain_mode==2?"\r\n+CME ERROR:\r\n":"\r\nOK\r\n";
+   else if(row=="AT+VGM=15\r")pending+=gain_mode==1?"\r\n+CME ERROR: 3\r\n":"\r\nOK\r\n";
    else REQUIRE(false);
   }
  }
@@ -61,6 +63,14 @@ void dual_listener_and_slc(){Harness h;h.open(1);for(unsigned k=0;k<300&&!h.voic
  h.open(2);for(unsigned k=0;k<10;++k)h.tick();REQUIRE(h.voice.hspStatus().connected);REQUIRE(!h.voice.closeRequested());
  REQUIRE(h.voice.stats().received_frames==h.voice.stats().consumed_frames);
 }
+void gain_results_owner(){
+ Harness h;h.gain_mode=1;h.open(1);for(unsigned k=0;k<300&&h.voice.hfpStatus().state!=owned::HfpState::Ready;++k)h.tick();
+ REQUIRE(h.voice.hfpStatus().slcEstablished&&h.voice.hfpStatus().state==owned::HfpState::Ready&&!h.voice.closeRequested());
+ REQUIRE(h.voice.hfpStatus().speakerGainRejected&&h.voice.hfpStatus().microphoneGainRejected);
+ Harness bad;bad.gain_mode=2;bad.open(1);for(unsigned k=0;k<300&&!bad.voice.closeRequested();++k)bad.tick();
+ REQUIRE(bad.voice.closeRequested()&&!bad.voice.hfpStatus().slcEstablished&&bad.voice.hfpStatus().state==owned::HfpState::Failed);
+ REQUIRE(!bad.voice.hfpStatus().speakerGainRejected&&!bad.voice.hfpStatus().microphoneGainRejected);
+}
 void copied_queue_pressure(){Harness h;for(unsigned k=0;k<3;++k){bth_control_reservation_t s{};REQUIRE(bth_control_tx_reserve(&h.queue,0,&s)==BTH_OK);s.data[0]=uint8_t(k);REQUIRE(bth_control_tx_commit(&h.queue,s.token,0x90,1,672)==BTH_OK);}
  size_t n=0;REQUIRE(bth_rfcomm_start(&h.peer,19,h.now,h.reply,sizeof h.reply,&n)==BTH_OK);h.send(h.reply,n);
  REQUIRE(h.voice.pendingOutput());const auto old=h.voice.stats();for(unsigned k=0;k<20;++k)h.voice.poll(true,++h.now);REQUIRE(h.voice.pendingOutput());REQUIRE(h.voice.stats().transmitted_frames==old.transmitted_frames);
@@ -75,4 +85,4 @@ void stale_and_expiry(){Harness h;h.auto_answer=false;h.open(1);for(unsigned k=0
  REQUIRE(!h.voice.channelOpened(8,0x41,0x81,672));
 }
 }
-int main(int argc,char** argv){std::string which=argc>1?argv[1]:"all";if(which=="all"||which=="slc")dual_listener_and_slc();if(which=="all"||which=="pressure")copied_queue_pressure();if(which=="all"||which=="expiry")stale_and_expiry();std::printf("VOICE_OWNER_PROTOCOL checks=%u\n",checks);return 0;}
+int main(int argc,char** argv){std::string which=argc>1?argv[1]:"all";if(which=="all"||which=="slc")dual_listener_and_slc();if(which=="all"||which=="gain")gain_results_owner();if(which=="all"||which=="pressure")copied_queue_pressure();if(which=="all"||which=="expiry")stale_and_expiry();std::printf("VOICE_OWNER_PROTOCOL checks=%u\n",checks);return 0;}

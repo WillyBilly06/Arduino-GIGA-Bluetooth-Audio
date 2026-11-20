@@ -12,6 +12,7 @@ struct HfpStatus {
  HfpState state=HfpState::Closed;VoiceCodec codec=VoiceCodec::Cvsd;
  uint8_t indicatorCount=0,indicators[16]{},speakerGain=0,microphoneGain=0;
  bool slcEstablished=false,lastCommandOk=false,inBandRing=false;
+ bool speakerGainRejected=false,microphoneGainRejected=false;
 };
 // HF control only; caller admits/queues complete RFCOMM data and owns its security.
 // No profile registration, HCI, clock, callback, implicit reconnect or call is started.

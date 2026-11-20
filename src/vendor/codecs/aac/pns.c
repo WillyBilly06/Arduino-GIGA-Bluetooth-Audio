@@ -1,7 +1,9 @@
-/* GigaBredr modification notice, 2026-10-21: portable decoder port;
+/* GigaBredr modification notice, 2026-10-29: defined signed PNS scaling;
+ * 2026-10-21: portable decoder port;
  * build guards, relative includes, tracked allocation and bounds/ARM fixes.
  * Original copyright and license notices remain below unchanged.
- * Per-file original/port SHA-256: docs/source-provenance.json. */
+ * Prior source hashes: docs/source-provenance.json. Candidate adaptation:
+ * docs/aac-signed-arithmetic-2026-10-29.json. */
 #include "../CodecPlatform.h"
 #if GBR_ENABLE_AAC
 #if defined(__GNUC__) && !defined(__clang__)
@@ -84,7 +86,7 @@ static unsigned int Get32BitVal(unsigned int *last)
 
 #define NUM_ITER_INVSQRT	4
 
-#define X0_COEF_2	0xc0000000	/* Q29: -2.0 */
+#define X0_COEF_2	(-1073741824)	/* Q29: -2.0 */
 #define X0_OFF_2	0x60000000	/* Q29:  3.0 */
 #define Q26_3		0x0c000000	/* Q26:  3.0 */
 
@@ -119,12 +121,12 @@ static int InvRootR(int r)
 	 * x0 = -2*r + 3 (so x0 always >= correct answer in range [0.25, 1))
 	 * xn = Q29 (at every step)
 	 */
-	xn = (MULSHIFT32(r, X0_COEF_2) << 2) + X0_OFF_2;
+	xn = (int)((int64_t)MULSHIFT32(r, X0_COEF_2) * 4 + X0_OFF_2);
 
 	for (i = 0; i < NUM_ITER_INVSQRT; i++) {
 		t = MULSHIFT32(xn, xn);					/* Q26 = Q29*Q29 */
-		t = Q26_3 - (MULSHIFT32(r, t) << 2);	/* Q26 = Q26 - (Q31*Q26 << 1) */
-		xn = MULSHIFT32(xn, t) << (6 - 1);		/* Q29 = (Q29*Q26 << 6), and -1 for division by 2 */
+		t = (int)((int64_t)Q26_3 - (int64_t)MULSHIFT32(r, t) * 4);	/* Q26 */
+		xn = (int)((int64_t)MULSHIFT32(xn, t) * 32);		/* Q29, including division by 2 */
 	}
 
 	/* clip to range (1.0, 2.0) 
@@ -215,7 +217,8 @@ static const int pow14[4] PROGMEM = {
 		if (scalei > 16)
 			scalei = 16;
 		for (i = 0; i < nVals; i++) {
-			c = MULSHIFT32(coef[i] << scalei, scalef);
+			/* Noise coefficients are [-2^15,2^15), scalei is at most 16. */
+			c = MULSHIFT32((int)((int64_t)coef[i] * (INT64_C(1) << scalei)), scalef);
 			coef[i] = c;
 			gbMask |= FASTABS(c);
 		}
@@ -295,6 +298,7 @@ int PNS(AACDecInfo *aacDecInfo, int ch)
 	if (!aacDecInfo || !aacDecInfo->psInfoBase)
 		return -1;
 	psi = (PSInfoBase *)(aacDecInfo->psInfoBase);
+    if (ch < 0 || ch >= psi->allocatedChannels || (aacDecInfo->currBlockID == AAC_ID_CPE && psi->allocatedChannels < 2)) return -1;
 	icsInfo = (ch == 1 && psi->commonWin == 1) ? &(psi->icsInfo[0]) : &(psi->icsInfo[ch]);
 	
 	if (!psi->pnsUsed[ch])

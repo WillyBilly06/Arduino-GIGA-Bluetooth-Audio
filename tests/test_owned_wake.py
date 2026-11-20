@@ -15,7 +15,7 @@ def main():
     args=ap.parse_args()
     root=Path(__file__).resolve().parents[1]
     out=(args.output or root/'build'/'owned-wake').resolve();out.mkdir(parents=True,exist_ok=True)
-    flags=['-Wall','-Wextra','-Werror','-DARDUINO=1','-DGIGA_BREDR_USE_BTSTACK=0',
+    flags=['-Wall','-Wextra','-Werror','-D_CRT_SECURE_NO_WARNINGS','-DARDUINO=1','-DGIGA_BREDR_USE_BTSTACK=0',
            '-I'+str(root/'src'),'-I'+str(root/'tests/support/owned_radio')]
     if args.sanitize:flags+=['-fsanitize=undefined','-fno-sanitize=vptr','-fsanitize-trap=all']
     if args.asan:flags+=['-fsanitize=address','-fno-omit-frame-pointer']

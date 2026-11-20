@@ -1,7 +1,9 @@
-/* GigaBredr modification notice, 2026-10-21: portable decoder port;
+/* GigaBredr modification notice, 2026-10-29: defined stereo scaling of
+ * clipped signed coefficients; 2026-10-21: portable decoder port;
  * build guards, relative includes, tracked allocation and bounds/ARM fixes.
  * Original copyright and license notices remain below unchanged.
- * Per-file original/port SHA-256: docs/source-provenance.json. */
+ * Prior source hashes: docs/source-provenance.json. Candidate adaptation:
+ * docs/aac-signed-arithmetic-2026-10-29.json. */
 #include "../CodecPlatform.h"
 #if GBR_ENABLE_AAC
 #if defined(__GNUC__) && !defined(__clang__)
@@ -125,7 +127,8 @@ static const int pow14[2][4] PROGMEM = {
 				do {
 					cr = MULSHIFT32(*coefL++, scalef);
 					CLIP_2N(cr, 31-scalei);
-					cr <<= scalei;
+					/* CLIP_2N bounds cr so the scaled result fits int32. */
+					cr = (int)((int64_t)cr * (INT64_C(1) << scalei));
 					gbMaskR |= FASTABS(cr);
 					*coefR++ = cr;
 				} while (--width);
@@ -148,8 +151,8 @@ static const int pow14[2][4] PROGMEM = {
 				if ( (FASTABS(cl) | FASTABS(cr)) >> 30 ) {
 					/* avoid overflow (rare) */
 					cl >>= 1;
-					sf = cl + (cr >> 1);	CLIP_2N(sf, 30); 	sf <<= 1;
-					cl = cl - (cr >> 1);	CLIP_2N(cl, 30); 	cl <<= 1;
+					sf = cl + (cr >> 1);	CLIP_2N(sf, 30); 	sf *= 2;
+					cl = cl - (cr >> 1);	CLIP_2N(cl, 30); 	cl *= 2;
 				} else {
 					/* usual case */
 					sf = cl + cr;
@@ -212,6 +215,7 @@ int StereoProcess(AACDecInfo *aacDecInfo)
 	if (!aacDecInfo || !aacDecInfo->psInfoBase)
 		return -1;
 	psi = (PSInfoBase *)(aacDecInfo->psInfoBase);
+    if (aacDecInfo->currBlockID == AAC_ID_CPE && psi->allocatedChannels < 2) return -1;
 
 	/* mid-side and intensity stereo require common_window == 1 (see MPEG4 spec, Correction 2, 2004) */
 	if (psi->commonWin != 1 || aacDecInfo->currBlockID != AAC_ID_CPE)

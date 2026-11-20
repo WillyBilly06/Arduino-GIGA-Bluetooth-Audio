@@ -39,6 +39,11 @@ void HfpControl::finish(bool ok){
  Transaction t=transaction_;transaction_=Transaction::None;deadline_=0;
  if(t==Transaction::None)return;
  if(t==Transaction::Slc){
+  // Gain synchronization follows an established SLC. A received ERROR is
+  // a failed gain command, not evidence that the SLC was released. Still
+  // send both mandatory initial notifications and retain each result.
+  if(status_.slcEstablished&&status_.state==HfpState::SpeakerGain){status_.speakerGainRejected=!ok;status_.state=HfpState::MicrophoneGain;return;}
+  if(status_.slcEstablished&&status_.state==HfpState::MicrophoneGain){status_.microphoneGainRejected=!ok;status_.state=HfpState::Ready;return;}
   const bool needsResult=status_.state==HfpState::Features||status_.state==HfpState::IndicatorNames||status_.state==HfpState::IndicatorValues;
   if(!ok||(needsResult&&!seen_)){status_.state=HfpState::Failed;status_.slcEstablished=false;return;}
   switch(status_.state){
@@ -78,7 +83,11 @@ bool HfpControl::values(const char* p){uint8_t values[16]{};if(!status_.indicato
 bth_status_t HfpControl::line(const char* row){
  using namespace hfp_at;const char* p;uint32_t n;
  if(!std::strcmp(row,"OK")){finish(true);return BTH_OK;}
- if(!std::strcmp(row,"ERROR")||prefix(row,"+CME ERROR:",p)){finish(false);return BTH_OK;}
+ if(!std::strcmp(row,"ERROR")){finish(false);return BTH_OK;}
+ // HFP uses the numeric CMEE=1 result grammar. The general 3GPP verbose
+ // CMEE=2 form is not negotiated here; unknown or incomplete text must not
+ // be attributed as a completed rejection or advance the gain transaction.
+ if(prefix(row,"+CME ERROR:",p)){if(!scalar(p,n))return BTH_ERR_PARAM;finish(false);return BTH_OK;}
  if(prefix(row,"+BRSF:",p)){if(status_.state!=HfpState::Features||transaction_!=Transaction::Slc)return BTH_IGNORED;if(seen_||!scalar(p,n))return BTH_ERR_PARAM;status_.agFeatures=n;status_.inBandRing=(n&(1u<<3))!=0;seen_=true;return BTH_OK;}
  if(prefix(row,"+CIND:",p)){if(transaction_!=Transaction::Slc)return BTH_IGNORED;if(seen_)return BTH_ERR_STATE;bool valid=false;if(status_.state==HfpState::IndicatorNames)valid=names(p);else if(status_.state==HfpState::IndicatorValues)valid=values(p);else return BTH_IGNORED;if(!valid)return BTH_ERR_PARAM;seen_=true;return BTH_OK;}
  if(prefix(row,"+CIEV:",p)){uint32_t value;if(!number(p,n)||!token(p,',')||!number(p,value)||!hfp_at::end(p)||!n||n>status_.indicatorCount||!allows(indicatorAllowed_[n-1],value))return BTH_ERR_PARAM;status_.indicators[n-1]=static_cast<uint8_t>(value);return BTH_OK;}
@@ -108,5 +117,9 @@ bth_status_t HfpControl::command(uint32_t g,HfpCommand command,const char* arg){
  row[used]=0;std::memcpy(user_,row,used+1);status_.lastCommandOk=false;return BTH_OK;
 }
 bool HfpControl::indicator(HfpIndicator kind,uint8_t& value)const{const uint8_t raw=static_cast<uint8_t>(kind);if(raw>=7)return false;const uint8_t wanted=static_cast<uint8_t>(raw+1);if(!status_.slcEstablished)return false;for(uint8_t i=0;i<status_.indicatorCount;++i)if(indicatorKinds_[i]==wanted){value=status_.indicators[i];return true;}return false;}
-bth_status_t HfpControl::expire(uint32_t g,uint32_t now){if(!live(g))return BTH_IGNORED;if(transaction_==Transaction::None||static_cast<int32_t>(now-deadline_)<0)return BTH_MORE;finish(false);status_.state=HfpState::Failed;status_.slcEstablished=false;lines_.reset();return BTH_OK;}
+bth_status_t HfpControl::expire(uint32_t g,uint32_t now){if(!live(g))return BTH_IGNORED;if(transaction_==Transaction::None||static_cast<int32_t>(now-deadline_)<0)return BTH_MORE;
+ // A timeout is not a received rejection; a late result would also be
+ // ambiguous, so retire the channel rather than advancing to another AT.
+ if(transaction_==Transaction::Slc&&status_.slcEstablished&&(status_.state==HfpState::SpeakerGain||status_.state==HfpState::MicrophoneGain)){transaction_=Transaction::None;deadline_=0;}else finish(false);
+ status_.state=HfpState::Failed;status_.slcEstablished=false;lines_.reset();return BTH_OK;}
 }}

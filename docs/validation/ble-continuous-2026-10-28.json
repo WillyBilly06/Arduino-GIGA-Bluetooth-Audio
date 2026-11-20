@@ -1,0 +1,73 @@
+{
+  "status": "INDEPENDENT_FINITE_BLE30_RAW_AND_CLIENT_REVIEW_PASS_CLOCK_UNQUALIFIED",
+  "observed_utc": "2026-10-28T11:37:00.013813+00:00",
+  "image_sha256": "ad1d2f5e9ff2743fcab45582027f31aa5180cee74abb9c13d5d09b7fd8c1242f",
+  "receipt_sha256": "fac775dbee6722962181a91bc464844ae5b8d1132bf293144743b81ef5e9dfc0",
+  "receiver_sha256": "2446400de2a63324f37dfdcdaff3d245026c93ad2ce1da33f4cf74dd248d74d5",
+  "client_sha256": "a6d81fd6e4d4ba4382724d90506ebe93d8c532d388136e7e06c7dedaf31fb8ba",
+  "raw_start": 16671724,
+  "raw_end": 20179327,
+  "completed": 1354,
+  "bytes_per_direction": 693248,
+  "MTU": 517,
+  "active_window_ms": 1800000,
+  "active_elapsed_ms": 1800418,
+  "exact_full_notification_integrity_required_by_pinned_helper": true,
+  "source_and_output_epoch": 3,
+  "physical_LE_generation": 6,
+  "physical_LE_parameters": "96/2/500",
+  "actual_interval_ms": 120,
+  "complete_counts": {
+    "GBR_HEAP": 895,
+    "GBR_BUFFERS": 895,
+    "GBR_CLOCK": 895,
+    "GBR_CLOCK_FRAMES": 895,
+    "GBR_CLOCK_WORK": 895,
+    "GBR_CLOCK_SUM": 895,
+    "GBR_CLOCK_WORST": 895,
+    "GBR_CLOCK_RESTORE": 895,
+    "GBR_STATUS": 895,
+    "GBR_LHDC_CONCEAL": 895,
+    "GBR_BLE_QOS": 895,
+    "GBR_BLE_CONN": 895,
+    "GBR_TIMING": 895,
+    "GBR_RTP": 895,
+    "GBR_RECOVERY": 895,
+    "GBR_RECOVERY_FRAMES": 895,
+    "GBR_PCM_TRANSITION": 895,
+    "GBR_IRQ_PRIORITY": 895,
+    "GBR_UART_HW": 895,
+    "GBR_EVENT": 8,
+    "GBR_BLE_RX": 1354,
+    "GBR_METADATA": 72,
+    "GBR_BLE_CONTROL": 2
+  },
+  "enumerated_counter_faults": [],
+  "new_console_drops": 0,
+  "startup_console_drops": 254,
+  "heap_current_bytes": [
+    389097
+  ],
+  "heap_allocation_counts": [
+    29
+  ],
+  "tracked_library_bytes": [
+    343700
+  ],
+  "metadata_events_by_attribute": {
+    "1": 18,
+    "2": 18,
+    "3": 18,
+    "7": 18
+  },
+  "helper_dex_sha256": "ba8d176d0fcebe00bcce0774822e8360514284b4b7e7b35f80d16fc4384ae4ee",
+  "clock_overrun_total_first": 109,
+  "clock_overrun_total_last": 178,
+  "native_helper_quiescent_and_absent": true,
+  "physical_disconnect_and_advertising_observed": true,
+  "clock_gate_qualified": false,
+  "acoustics_qualified": false,
+  "total_latency_qualified": false,
+  "RF_saturation_proven": false,
+  "current_local_successor_firmware_deployed": false
+}

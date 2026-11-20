@@ -209,6 +209,7 @@ int TNSFilter(AACDecInfo *aacDecInfo, int ch)
 	if (!aacDecInfo || !aacDecInfo->psInfoBase)
 		return -1;
 	psi = (PSInfoBase *)(aacDecInfo->psInfoBase);
+    if (ch < 0 || ch >= psi->allocatedChannels || (aacDecInfo->currBlockID == AAC_ID_CPE && psi->allocatedChannels < 2)) return -1;
 	icsInfo = (ch == 1 && psi->commonWin == 1) ? &(psi->icsInfo[0]) : &(psi->icsInfo[ch]);
 	ti = &psi->tnsInfo[ch];
 

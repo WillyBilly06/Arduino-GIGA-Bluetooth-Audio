@@ -1,11 +1,13 @@
 #include "bth_gap.h"
 #include <string.h>
-static const uint16_t opcodes[]={0x0c1a,0x0c01,0x2001,0x0c33,0x0c31,0x0c56,0x0c13,0x0c24,0x0c45,0x0c52};
+static const uint16_t opcodes[]={0x0c1a,0x0c01,0x2001,0x0c33,0x0c31,0x0c56,0x0c13,0x0c24,0x0c45,0x0c52,0x0c1c,0x0c47,0x0c43};
 static void event_bit(uint8_t *mask,unsigned event) { mask[(event-1)/8]|=(uint8_t)(1u<<((event-1)%8)); }
 bool bth_gap_synchronous_events(bth_gap_t* g,bool enable){if(!g||!g->initialized||g->pending||g->stage>BTH_GAP_EVENT_MASK)return false;g->synchronous_events=enable;return true;}
 bool bth_gap_start(bth_gap_t *g,const bth_gap_config_t *c) {
     if (!g || !c || !c->name.data || !c->name.len || c->name.len>248 ||
         c->host_acl_length<1021 || !c->host_acl_packets || c->class_of_device>0xffffff ||
+        (c->page_scan_interval && (c->page_scan_interval<0x12 || c->page_scan_interval>0x1000 ||
+         c->page_scan_window<0x11 || c->page_scan_window>c->page_scan_interval)) ||
         (c->class_of_device&3) || c->uuid_count>BTH_GAP_UUID_LIMIT || (c->uuid_count && !c->service_uuids)) return false;
     memset(g,0,sizeof(*g)); g->config=*c; g->initialized=true; return true;
 }
@@ -54,6 +56,10 @@ static size_t parameters(const bth_gap_t *g,uint8_t *p) {
         p[pos++]=(uint8_t)(n+1); p[pos++]=n==c->name.len?9:8;
         memcpy(p+pos,c->name.data,n); return 241;
     }
+    case BTH_GAP_PAGE_ACTIVITY:
+        p[0]=(uint8_t)c->page_scan_interval; p[1]=(uint8_t)(c->page_scan_interval>>8);
+        p[2]=(uint8_t)c->page_scan_window; p[3]=(uint8_t)(c->page_scan_window>>8); return 4;
+    case BTH_GAP_PAGE_TYPE: case BTH_GAP_INQUIRY_TYPE: p[0]=1; return 1;
     default: return 0;
     }
 }
@@ -97,7 +103,11 @@ bth_status_t bth_gap_on_event(bth_gap_t *g,const bth_h4_frame_t *event) {
     if (p.data[3]) return fail(g,p.data[3],BTH_ERR_STATE);
     g->pending=false;
     if (g->scan_update) { g->scan=g->desired_scan; g->scan_update=false; }
-    else g->stage=(bth_gap_stage_t)(g->stage+1);
+    else {
+        g->stage=(bth_gap_stage_t)(g->stage+1);
+        if (g->stage==BTH_GAP_PAGE_ACTIVITY && !g->config.page_scan_interval) g->stage=BTH_GAP_PAGE_TYPE;
+        if (g->stage==BTH_GAP_PAGE_TYPE && !g->config.interlaced_scan) g->stage=BTH_GAP_READY;
+    }
     return BTH_OK;
 }
 bth_status_t bth_gap_set_scan(bth_gap_t *g,bth_hci_flow_t *flow,bool ready,uint8_t scan,

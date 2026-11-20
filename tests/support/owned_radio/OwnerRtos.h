@@ -2,6 +2,7 @@
 // Single-thread native schedule boundary for the actual Arduino owner loop.
 // This does not model RTOS execution time or prove hardware interrupt latency.
 #include "mbed.h"
+#include <thread>
 
 constexpr int osPriorityAboveNormal=1,osPriorityNormal=0,osOK=0;
 constexpr uint32_t osFlagsError=0x80000000u;
@@ -60,6 +61,8 @@ public:
     }
 };
 namespace ThisThread {
+inline std::thread::id get_id(){return std::this_thread::get_id();}
+
 inline void sleep_for(uint32_t ms){
     ++owner_wake_test::sleeps;
     if(owner_wake_test::wait_hook)owner_wake_test::wait_hook(ms,nullptr);

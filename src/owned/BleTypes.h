@@ -32,6 +32,12 @@ struct BleConfig {
     // One optional preference chain per connection after audio starts and the
     // connection is at least1s old (intentional experimental timing). This does not impose a controller RF floor.
     BleConnectionPreference audio_connection_preference;
+    // Extra automatic PCM reserve for >=88.2 kHz streams while BLE is enabled.
+    // High-rate codecs (LHDC 192k, LDAC 96k) leave little spare BR/EDR airtime;
+    // LE connection events then delay media packets past the normal reserve.
+    // Costs rate*8 bytes per ms (1.5 KB/ms at 192 kHz) and adds that latency.
+    // Explicit buffer settings are not changed. 0 disables; at most 200.
+    uint16_t audio_coexistence_reserve_ms = 50;
 };
 struct BleWrite {
     uint32_t generation = 0;

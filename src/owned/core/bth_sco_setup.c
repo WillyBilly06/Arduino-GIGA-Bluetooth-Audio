@@ -3,7 +3,14 @@
 enum {READ_COMMANDS=0,READ_ROUTE,WRITE_ROUTE,VERIFY_ROUTE,READ_FLOW,WRITE_FLOW,VERIFY_FLOW,DONE};
 static uint16_t opcode(uint8_t step){switch(step){case READ_COMMANDS:return 0x1002;case READ_ROUTE:case VERIFY_ROUTE:return 0xfc1d;case WRITE_ROUTE:return 0xfc1c;case READ_FLOW:case VERIFY_FLOW:return 0x0c2e;case WRITE_FLOW:return 0x0c2f;default:return 0;}}
 static void finish(bth_sco_setup_t* s,bth_sco_setup_reason_t reason){s->done=true;s->step=DONE;s->pending=false;s->reason=reason;}
-static void no_flow(bth_sco_setup_t* s){s->controller_flow=false;s->rx_paced=s->config.allow_rx_pacing;s->available=s->rx_paced&&s->config.tx_bytes;finish(s,s->available?BTH_SCO_SETUP_NONE:BTH_SCO_SETUP_FLOW_UNAVAILABLE);}
+// RX progress is not a known retirement signal for the controller TX buffer.
+// Fail closed even when the legacy opt-in is set until a qualified backend exists.
+static void no_flow(bth_sco_setup_t* s){s->controller_flow=false;s->rx_paced=false;s->available=false;finish(s,BTH_SCO_SETUP_FLOW_UNAVAILABLE);}
+static void malformed_result(bth_sco_setup_t* s){
+ if(s->step==WRITE_ROUTE||s->step==VERIFY_ROUTE||s->step==WRITE_FLOW||s->step==VERIFY_FLOW)s->requires_reset=true;
+ s->available=s->controller_flow=s->rx_paced=false;finish(s,BTH_SCO_SETUP_MALFORMED);
+}
+static size_t result_size(uint8_t step){switch(step){case READ_COMMANDS:return 65;case READ_ROUTE:case VERIFY_ROUTE:return 6;case READ_FLOW:case VERIFY_FLOW:return 2;case WRITE_ROUTE:case WRITE_FLOW:return 1;default:return 0;}}
 bool bth_sco_setup_init(bth_sco_setup_t* s,const bth_sco_setup_config_t* c){
  if(!s||!c)return false;memset(s,0,sizeof *s);s->config=*c;s->initialized=true;
  if(c->manufacturer!=15)finish(s,BTH_SCO_SETUP_CONTROLLER);else if(!c->tx_bytes)finish(s,BTH_SCO_SETUP_BUFFERS);return true;
@@ -28,8 +35,14 @@ bth_status_t bth_sco_setup_queued(bth_sco_setup_t* s,bth_sco_setup_ticket_t tick
  s->pending=true;s->deadline=now+5000;return BTH_OK;
 }
 static void result(bth_sco_setup_t* s,const uint8_t* p,size_t n){
- if(!n){s->requires_reset=s->step==WRITE_ROUTE||s->step==VERIFY_ROUTE;finish(s,BTH_SCO_SETUP_MALFORMED);return;}
+ if(!n){malformed_result(s);return;}
  s->last_status=p[0];
+ // Validate the command-specific result shape before an error can select a
+ // fallback. Read failures may carry only status or their fixed result size;
+ // write results are status-only for every status. Nonzero CommandStatus is
+ // separately validated by on_event and passes exactly its one status byte.
+ const size_t expected=result_size(s->step);
+ if(!expected||(n!=expected&&!(p[0]&&n==1))){malformed_result(s);return;}
  if(p[0]){
   if(s->step==READ_COMMANDS){s->flow_write_supported=false;s->step=READ_ROUTE;return;}
   if(s->step==READ_ROUTE){finish(s,BTH_SCO_SETUP_ROUTE_QUERY);return;}
@@ -49,7 +62,7 @@ static void result(bth_sco_setup_t* s,const uint8_t* p,size_t n){
  case VERIFY_ROUTE:
   if(n!=6||p[1]!=1||memcmp(p+2,s->baseline_route+1,4)){s->requires_reset=true;finish(s,BTH_SCO_SETUP_ROUTE_MISMATCH);break;}s->step=READ_FLOW;break;
  case READ_FLOW:case VERIFY_FLOW:
-  if(n!=2||p[1]>1){finish(s,BTH_SCO_SETUP_MALFORMED);break;}
+  if(n!=2||p[1]>1){malformed_result(s);break;}
   if(p[1]&&s->config.tx_packets){s->controller_flow=true;s->available=true;finish(s,BTH_SCO_SETUP_NONE);}
   else if(p[1])finish(s,BTH_SCO_SETUP_BUFFERS);
   else if(s->step==READ_FLOW&&s->flow_write_supported)s->step=WRITE_FLOW;else no_flow(s);break;
@@ -63,6 +76,6 @@ bth_status_t bth_sco_setup_on_event(bth_sco_setup_t* s,const bth_h4_frame_t* eve
  if(s->done||!s->pending||event->type!=BTH_H4_EVENT)return BTH_IGNORED;
  const bth_span_t p=event->event.params;
  if(event->event.code==0x0e){if(p.len<3||bth_read_le16(p.data+1)!=s->ticket.opcode)return BTH_IGNORED;s->pending=false;result(s,p.data+3,p.len-3);return BTH_OK;}
- if(event->event.code==0x0f){if(p.len!=4||bth_read_le16(p.data+2)!=s->ticket.opcode)return BTH_IGNORED;if(!p.data[0])return BTH_IGNORED;s->pending=false;result(s,p.data,1);return BTH_OK;}
+ if(event->event.code==0x0f){if(p.len<4||bth_read_le16(p.data+2)!=s->ticket.opcode)return BTH_IGNORED;if(p.len!=4){malformed_result(s);return BTH_OK;}if(!p.data[0])return BTH_IGNORED;s->pending=false;result(s,p.data,1);return BTH_OK;}
  return BTH_IGNORED;
 }

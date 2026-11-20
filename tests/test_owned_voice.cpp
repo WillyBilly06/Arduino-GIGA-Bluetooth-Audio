@@ -3,6 +3,9 @@
 #define private public
 #include "../src/owned/OwnedHost.h"
 #undef private
+// Keep private-test declarations and definitions in one translation unit;
+// the MSVC ABI includes member access in decorated method names.
+#include "../src/owned/OwnedHost.cpp"
 #define main original_owned_actor_fixture_main
 #include "test_owned_host.cpp"
 #undef main

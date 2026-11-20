@@ -1,0 +1,10 @@
+{
+  "scope": "isolated candidate; previous source-provenance.json retains historical snapshot",
+  "destination": "src/vendor/codecs/aac/bitstream.c",
+  "upstream_source": "decoders/AAC-LC/libhelix_aac/bitstream.c",
+  "upstream_sha256": "38bc9e7ea926776cc5c01751024bf1ef60efa825214a5ebb4208aa440134176f",
+  "prior_port_sha256": "4fe5f81bce3aed4c8645046b8e20276f93b72746cdac74ba9df22cee82a44f5a",
+  "candidate_sha256": "f901829cca12ca6d6c2c651cfb7915d036a753328a2a2f24ba53f949c569f10d",
+  "license": "RealNetworks notices retained; consult repository licensing documentation",
+  "change": "promote input bytes to unsigned int before 24/16/8-bit cache shifts"
+}

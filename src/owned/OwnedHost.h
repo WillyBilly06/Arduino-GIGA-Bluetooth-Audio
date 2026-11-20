@@ -5,6 +5,7 @@
 #include "VoiceProfiles.h"
 #include "OwnedVoiceAudio.h"
 #include "VoiceSdp.h"
+#include "../detail/ClassicBondStore.h"
 #ifndef GIGA_BREDR_PRIVATE_SCHED_WITNESS
 #define GIGA_BREDR_PRIVATE_SCHED_WITNESS 0
 #endif
@@ -28,6 +29,7 @@ struct OwnedHostConfig {
  // worker mailboxes. The null default performs no SCO setup or extra I/O.
  OwnedVoiceAudio* voice_audio=nullptr;
  VoiceSdp* voice_sdp=nullptr;
+ ClassicBondStorage classic_bonds;
 };
 struct OwnedHostHooks {
  bool (*txReady)(void*)=nullptr;
@@ -47,23 +49,27 @@ public:
  void receive(uint8_t type,const uint8_t* packetWithoutType,size_t length,uint32_t nowMs);
  void end();
  RadioStats radioStats() const;
- BleStats bleStats() const {BleStats s=le_.stats();s.qos_data_fragments=qos_data_fragments_;s.qos_data_bytes=qos_data_bytes_;s.qos_paced_deferrals=qos_paced_deferrals_;s.qos_urgent_bypasses=qos_urgent_bypasses_;if(!active_){s.advertising=s.connected=s.notify_enabled=s.encrypted=false;s.generation=0;s.connection_handle=0;}return s;}
- Status bleNotify(const uint8_t* data,size_t length) {return active_?le_.notify(data,length):Status::Unsupported;}
+ BleStats bleStats() const {if(application_bonds_.rejectReentry())return {};BleStats s=le_.stats();s.qos_data_fragments=qos_data_fragments_;s.qos_data_bytes=qos_data_bytes_;s.qos_paced_deferrals=qos_paced_deferrals_;s.qos_urgent_bypasses=qos_urgent_bypasses_;if(!active_){s.advertising=s.connected=s.notify_enabled=s.encrypted=false;s.generation=0;s.connection_handle=0;}return s;}
+ Status bleNotify(const uint8_t* data,size_t length) {return application_bonds_.rejectReentry()?Status::Busy:active_?le_.notify(data,length):Status::Unsupported;}
+ // Host-owner API only; callers must run on the same serialized owner as ATT.
+ bool bleSetVendorDescription(uint32_t generation,bool present) {return !application_bonds_.rejectReentry()&&active_&&le_.setVendorDescription(generation,present);}
  Status bleDisconnect(uint32_t expected_generation,bool advertise_after_disconnect=true);
  Status bleResumeAdvertising();
  Status voiceStatus(VoiceStatus&)const;
  Status voiceCommand(HfpCommand,uint32_t expected_generation,const char* argument);
- bool bleReadWrite(BleWrite& value) {return active_&&le_.readWrite(value);}
- Status setVolume(uint8_t v) {return active_&&config_.callbacks.enable_a2dp?classic_.setVolume(v):Status::Unsupported;}
- AvrcpStatus avrcpStatus() const {return classic_.avrcpStatus();}
- AvrcpMetadata avrcpMetadata() const {return classic_.avrcpMetadata();}
+ Status headsetCommand(HspCommand,uint32_t expected_generation);
+ bool bleReadWrite(BleWrite& value) {return !application_bonds_.rejectReentry()&&active_&&le_.readWrite(value);}
+ Status setVolume(uint8_t v) {return application_bonds_.rejectReentry()?Status::Busy:active_&&config_.callbacks.enable_a2dp?classic_.setVolume(v):Status::Unsupported;}
+ AvrcpStatus avrcpStatus() const {return application_bonds_.rejectReentry()?AvrcpStatus{}:classic_.avrcpStatus();}
+ AvrcpMetadata avrcpMetadata() const {return application_bonds_.rejectReentry()?AvrcpMetadata{}:classic_.avrcpMetadata();}
  Status avrcpCommand(AvrcpCommand command,uint32_t expected,uint32_t& id){
+  if(application_bonds_.rejectReentry())return Status::Busy;
   if(!active_||!config_.callbacks.enable_a2dp)return Status::Unsupported;
   if(avrcp_retiring_)return Status::Busy;
   const bool secure=!deferred_count_&&was_secure_&&peers_[0].attached&&bth_links_secure(&links_,peers_[0].handle);
   return classic_.avrcpCommand(command,expected,secure,now_,id);
  }
- Status avrcpCancel(uint32_t expected,uint32_t id){return active_&&config_.callbacks.enable_a2dp?classic_.avrcpCancel(expected,id):Status::Unsupported;}
+ Status avrcpCancel(uint32_t expected,uint32_t id){return application_bonds_.rejectReentry()?Status::Busy:active_&&config_.callbacks.enable_a2dp?classic_.avrcpCancel(expected,id):Status::Unsupported;}
  static constexpr unsigned AclBytes=1021,RxSlots=8,RxWindow=4,SduBytes=4096;
 private:
  void receiveImpl(uint8_t,const uint8_t*,size_t,uint32_t);
@@ -125,12 +131,13 @@ private:
  ClassicProfiles classic_;LeProfiles le_;ControllerAudioPriority controller_priority_;bth_hci_flow_t flow_={};bth_cmdq_t commands_={};bth_links_t links_={};
  bth_control_tx_t control_={};bth_rx_flow_t rx_={};bth_gap_t gap_={};bth_l2cap_sig_t signaling_={};
  Packet packets_[RxSlots];Peer peers_[2];Bond bonds_[4];bth_rx_admission_t admissions_[2]={};bool reserved_[2]={};
+ ClassicBondStore application_bonds_;
  uint8_t expanded_control_budget_=0;
  // A reserved physical packet buffer owns a blocked safe control, never an RX lease.
  int classic_parked_slot_=-1;uint32_t classic_parked_owner_=0;bool bypass_media_active_=false;
  DeferredControl classic_deferred_[ClassicDeferredSlots];uint32_t classic_deferred_owner_=0;uint8_t classic_deferred_read_=0,classic_deferred_count_=0;
  Deferred deferred_[8];unsigned deferred_read_=0,deferred_count_=0;
- uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[5]={0x110b,0x110c,0x110e};
+ uint8_t output_[1030]={};char name_[64]={};uint16_t uuids_[6]={0x110b,0x110c,0x110e};
  uint8_t le_features_[8]={};bool le_features_known_=false;
  uint8_t voice_features_[8]={},voice_tx_bytes_=0;uint16_t voice_tx_packets_=0;
  size_t patch_position_=0,patch_pending_bytes_=0;uint16_t pending_opcode_=0;
@@ -146,6 +153,10 @@ private:
  unsigned next_peer_=0,bond_cursor_=0,le_trace_=0;Boot boot_=Boot::Failed;
  uint8_t le_reply_observe_trace_=0; // Shared peer-reply CC/update quota, separate from GAP.
  uint32_t qos_last_data_ms_=0,qos_classic_owner_=0,qos_le_owner_=0;
+#if GIGA_BREDR_CONNECT_TRACE
+ bool capability_query_sent_=false; // GIGA_BREDR_CONNECT_TRACE diagnostic only.
+ uint32_t capability_printed_ms_=0;char capability_lines_[3][200]={};
+#endif
  uint32_t qos_data_fragments_=0,qos_data_bytes_=0,qos_paced_deferrals_=0,qos_urgent_bypasses_=0;
  uint8_t qos_classic_burst_=0;bool qos_have_data_=false,qos_audio_active_=false;
  bool active_=false,clock_started_=false,pending_=false,tx_turn_=false,last_ack_=false,was_secure_=false;

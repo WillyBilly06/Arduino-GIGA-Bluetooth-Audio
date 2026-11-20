@@ -71,8 +71,7 @@ bth_status_t OwnedVoiceAudio::receive(const bth_sco_view_t& p,bool secure){
  if(!core_.initialized)return BTH_IGNORED;if(!secure){bth_sco_request_close(&core_,core_.config.owner,core_.generation,5,now_);return BTH_IGNORED;}
  const auto result=bth_sco_receive(&core_,core_.config.owner,&p);
  if(result<0){bth_sco_request_close(&core_,core_.config.owner,core_.generation,0x13,now_);return result;}
- // RX contributes only bounded host-byte entitlement in the core. Worker
- // demand follows committed complete TX units, never rounded RX packet counts.
+ // RX data does not authorize TX; only controller completion returns a slot.
  return result;
 }
 bth_status_t OwnedVoiceAudio::validateCompleted(const bth_h4_frame_t& e)const{
@@ -91,7 +90,7 @@ bth_status_t OwnedVoiceAudio::completed(const bth_h4_frame_t& e){
 bth_status_t OwnedVoiceAudio::prepareSubmission(uint8_t* out,size_t capacity,size_t& written,VoiceAudioSubmission& submission){
  written=0;submission={};if(!core_.initialized)return BTH_IGNORED;bth_sco_token_t ticket{};
  const auto completed=bth_sco_prepare_completed(&core_,out,capacity,&written,&ticket);if(completed==BTH_OK){submission.token=ticket;submission.generation=core_.generation;submission.kind=1;return BTH_OK;}if(completed<0)return completed;
- if(!active()||!fragment_bytes_||pending_consume_.kind||prepared_tx_.kind)return BTH_MORE;const unsigned lead=(60u+fragment_bytes_-1)/fragment_bytes_;if(core_.config.controller_tx_flow&&submitted_count_>=lead)return BTH_MORE;
+ if(!active()||!fragment_bytes_||pending_consume_.kind||prepared_tx_.kind)return BTH_MORE;if(!core_.config.controller_tx_flow)return BTH_ERR_STATE;const unsigned lead=(60u+fragment_bytes_-1)/fragment_bytes_;if(submitted_count_>=lead)return BTH_MORE;
  size_t available=0;uint32_t unit=0;if(!hooks_.copy_tx(core_.generation,copy_,sizeof copy_,available,unit,hooks_.user))return BTH_MORE;if(!available||available>60||!unit)return BTH_ERR_STATE;
  const size_t take=available<fragment_bytes_?available:fragment_bytes_;const auto result=bth_sco_prepare_tx(&core_,core_.config.owner,core_.generation,copy_,take,out,capacity,&written,&ticket);
  if(result==BTH_OK){submission.token=ticket;submission.generation=core_.generation;submission.unit_ticket=unit;submission.bytes=uint16_t(take);submission.kind=2;prepared_tx_=submission;}return result;
@@ -102,15 +101,10 @@ bth_status_t OwnedVoiceAudio::commitSubmission(const VoiceAudioSubmission& submi
  if(submission.bytes!=prepared_tx_.bytes||submission.bytes!=submission.token.count||submission.unit_ticket!=prepared_tx_.unit_ticket)return BTH_ERR_PARAM;
  const auto status=bth_sco_commit_tx(&core_,submission.token);if(status!=BTH_OK)return status;
  prepared_tx_={};
- if(core_.config.controller_tx_flow){if(submitted_count_==8)return BTH_ERR_STATE;submitted_lengths_[(submitted_read_+submitted_count_)%8]=submission.bytes;++submitted_count_;}
+ if(submitted_count_==8)return BTH_ERR_STATE;submitted_lengths_[(submitted_read_+submitted_count_)%8]=submission.bytes;++submitted_count_;
  // UART copy is already admitted. Worker queue retirement can briefly contend
  // with publication; retain its exact receipt and retry without resending H4.
  if(!hooks_.consume_tx(core_.generation,submission.unit_ticket,submission.bytes,hooks_.user)){pending_consume_=submission;consume_deadline_=now_+5000;}
- if(!core_.config.controller_tx_flow){
-  const unsigned progress=unsigned(committed_unit_bytes_)+submission.bytes;
-  committed_unit_bytes_=uint16_t(progress%BTH_SCO_HOST_UNIT_BYTES);
-  const unsigned units=progress/BTH_SCO_HOST_UNIT_BYTES;if(units&&active())hooks_.request_tx(core_.generation,units,hooks_.user);
- }
  return BTH_OK;
 }
 }}

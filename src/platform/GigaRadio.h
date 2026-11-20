@@ -2,6 +2,7 @@
 #include "../Types.h"
 #include "../GigaBle.h"
 #include "../GigaVoice.h"
+#include "../BondStorage.h"
 namespace giga_bredr { namespace detail {
 class VoiceProfiles;class OwnedVoiceAudio;class VoiceSdp;struct VoiceControlConfig;
 struct RadioCallbacks {
@@ -17,6 +18,7 @@ struct RadioCallbacks {
     void (*owner_wake)(void*) = nullptr;
     bool enable_a2dp = true; // Internal profile intent; defaults preserve existing callers.
     VoiceProfiles* voice_control=nullptr;OwnedVoiceAudio* voice_audio=nullptr;VoiceSdp* voice_sdp=nullptr;const VoiceControlConfig* voice_config=nullptr;
+    ClassicBondStorage classic_bonds;
 };
 Status radioBegin(const char* local_name, uint32_t codec_mask, const RadioCallbacks& callbacks);
 Status radioBegin(const char* local_name, uint32_t codec_mask, const RadioCallbacks& callbacks, const BleConfig& ble);
@@ -30,4 +32,5 @@ Status radioBleDisconnect(uint32_t expected_generation,bool advertise_after_disc
 Status radioBleResumeAdvertising();
 Status radioVoiceStatus(VoiceStatus&);
 Status radioVoiceCommand(HfpCommand,uint32_t expected_generation,const char* argument);
+Status radioHeadsetCommand(HspCommand,uint32_t expected_generation);
 }}

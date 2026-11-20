@@ -7,7 +7,7 @@
 static unsigned writes_at_media=9999;
 static void observed_media(const uint8_t*p,size_t n,void*u){auto&f=*static_cast<Fixture*>(u);++f.media;f.last_media.assign(p,p+n);writes_at_media=f.host.bleStats().writes;}
 static uint16_t start(Fixture&f){f.boot();f.classicConnect();auto signal=f.channel(0x19,0x81);f.acl(0x25,signal,{0x10,3,4,8,1,0,7,6,0,0,0x21,0x15,2,53});f.settle();f.acl(0x25,signal,{0x20,6,4});f.settle();auto cid=f.channel(0x19,0x82);f.acl(0x25,signal,{0x30,7,4});f.settle();CHECK(f.playing&&f.host.radioStats().streaming);return cid;}
-static void ble(Fixture&f){f.leConnect();f.acl(0x26,4,{2,5,2});f.settle();f.acl(0x26,4,{0x12,12,0,1,0});f.settle();CHECK(f.host.bleStats().att_mtu==517&&f.host.bleStats().notify_enabled);f.output.clear();}
+static void ble(Fixture&f){f.leConnect();/* Steady-state load starts after an actual parameter update. */f.event(0x3e,{3,0,0x26,0,96,0,2,0,0xf4,1});f.settle();f.acl(0x26,4,{2,5,2});f.settle();f.acl(0x26,4,{0x12,12,0,1,0});f.settle();CHECK(f.host.bleStats().att_mtu==517&&f.host.bleStats().notify_enabled);f.output.clear();}
 static void media(Fixture&f,uint16_t cid,unsigned seq){f.acl(0x25,cid,{0x80,0x60,uint8_t(seq>>8),uint8_t(seq),1,2,3,4,5,6,7,8,1,0xaa});}
 struct Wire {
  Fixture&f;bth_l2cap_rx_t rx[2];uint8_t bytes[2][1024]={};
@@ -17,6 +17,17 @@ struct Wire {
  void poll(unsigned ms=1){f.poll(ms);collect();}
  void drain(unsigned max=2500){for(unsigned k=0;k<max;++k){poll();if(!f.host.control_.used&&!f.host.le_.notify_pending_&&!f.host.commands_.used)return;}CHECK(false);}
 };
+static void initial_notification_gate(){
+ Fixture f;start(f);f.leConnect();f.acl(0x26,4,{2,5,2});f.settle();f.acl(0x26,4,{0x12,12,0,1,0});f.settle();
+ CHECK(!f.host.bleStats().connection.matches_preference);Wire wire(f);Bytes v(512,0x6b);CHECK(f.host.bleNotify(v.data(),v.size())==Status::Ok);
+ for(unsigned i=0;i<50;++i)wire.poll();CHECK(f.host.le_.notify_pending_&&wire.pdus.empty());
+ // Reliable ATT response traffic must progress while optional notifications wait.
+ f.acl(0x26,4,{0x12,9,0,0x5a});for(unsigned i=0;i<20;++i)wire.poll();
+ bool ack=false;for(const auto&p:wire.pdus){ack|=p.cid==4&&p.bytes==Bytes{0x13};CHECK(p.bytes.empty()||p.bytes[0]!=0x1b);}CHECK(ack&&f.host.le_.notify_pending_);
+ f.event(0x3e,{3,0,0x26,0,96,0,2,0,0xf4,1});wire.drain();unsigned echoes=0;
+ for(const auto&p:wire.pdus)if(p.cid==4&&!p.bytes.empty()&&p.bytes[0]==0x1b){++echoes;CHECK(p.bytes.size()==515&&!memcmp(p.bytes.data()+3,v.data(),512));}
+ CHECK(echoes==1&&!f.host.le_.notify_pending_&&!f.host.radioStats().transport_errors);puts("INITIAL_NOTIFICATION_HOLD_ATT_PROGRESS_AND_MATCH_RELEASE_PASS");
+}
 static void rx_priority(){Fixture f;f.host.end();f.config.callbacks.media=observed_media;CHECK(f.host.begin(f.config,f.hooks)==Status::Ok);auto cid=start(f);ble(f);f.acl(0x26,4,{0x12,9,0,0xa1});f.settle();f.acl(0x26,4,{0x12,9,0,0xb2});f.settle();CHECK(f.host.le_.pendingAtt());BleWrite w;CHECK(f.host.bleReadWrite(w));writes_at_media=9999;media(f,cid,1);f.poll();printf("RX_ORDER writes_at_media=%u expected=1 writes_after=%lu\n",writes_at_media,(unsigned long)f.host.bleStats().writes);CHECK(writes_at_media==1&&f.host.bleStats().writes==2);for(auto&s:f.host.rx_.slots)CHECK(!s.busy);f.settle();CHECK(!f.host.rx_.outstanding);}
 static void limits(){Fixture f;start(f);ble(f);Wire wire(f);Bytes value(512);for(unsigned i=0;i<512;++i)value[i]=uint8_t(i*37+9);CHECK(f.host.bleNotify(value.data(),value.size())==Status::Ok);wire.drain();CHECK(wire.pdus.size()==1&&wire.pdus[0].cid==4&&wire.pdus[0].bytes.size()==515&&wire.pdus[0].bytes[0]==0x1b&&!memcmp(wire.pdus[0].bytes.data()+3,value.data(),512));unsigned count=0,maximum=0;uint32_t previous=0;bool have=false;for(auto&s:wire.sent)if(s.handle==0x26){maximum=std::max(maximum,unsigned(s.payload));if(have)CHECK(uint32_t(s.at-previous)>=10);previous=s.at;have=true;++count;}printf("LE_LIMIT fragments=%u maximum=%u expected=20/27\n",count,maximum);CHECK(count==20&&maximum<=27);}
 #ifdef GBR_QOS_CANDIDATE
@@ -37,7 +48,7 @@ static void urgent_full(){Fixture f;start(f);ble(f);Wire wire(f);queue(f,1,4,80)
 #endif
 int main(int argc,char**argv){setvbuf(stdout,nullptr,_IONBF,0);CHECK(argc==2);if(!strcmp(argv[1],"rx"))rx_priority();else if(!strcmp(argv[1],"limit"))limits();else{
 #ifdef GBR_QOS_CANDIDATE
- if(!strcmp(argv[1],"urgent_full"))urgent_full();else{defaults_validation();rx_priority();limits();quota_and_credit();paused_invariants_and_urgent();urgent_full();media_echo();wrap_off_generation();compatibility();failed_submit();}
+ if(!strcmp(argv[1],"urgent_full"))urgent_full();else{defaults_validation();initial_notification_gate();rx_priority();limits();quota_and_credit();paused_invariants_and_urgent();urgent_full();media_echo();wrap_off_generation();compatibility();failed_submit();}
 #else
  CHECK(false);
 #endif

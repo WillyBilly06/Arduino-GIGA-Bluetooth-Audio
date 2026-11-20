@@ -1,6 +1,7 @@
 #include "platform/I2sClockTrim.h"
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <vector>

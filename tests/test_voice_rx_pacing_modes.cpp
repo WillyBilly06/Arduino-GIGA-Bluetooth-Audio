@@ -33,6 +33,7 @@ struct Session {
    if(command.opcode==0x1002)n=65;else if(command.opcode==0xfc1d){parameters[1]=1;n=6;}else if(command.opcode==0x0c2e){parameters[1]=ncp?1:0;n=2;}else assert(false);
    wire[2]=uint8_t(n+3);std::memcpy(wire+6,parameters,n);assert(audio.setupEvent(frame(wire,n+6),++now)==BTH_OK);
   }
+  if(!ncp){assert(audio.setupDone()&&!audio.ready()&&audio.setupReason()==BTH_SCO_SETUP_FLOW_UNAVAILABLE);return;}
   assert(audio.ready());const uint8_t peer[]={1,2,3,4,5,6};assert(audio.attach(7,0x25,peer)==Status::Ok);
   const uint8_t request[]={4,4,10,1,2,3,4,5,6,0,0,0,2};assert(audio.event(frame(request,sizeof request),true,true,codec,++now,0)==BTH_OK);
   audio.poll(true,++now);worker.step();audio.poll(true,++now);bth_sco_command_t accept{};assert(audio.nextCommand(accept)==BTH_OK&&accept.opcode==0x0429);assert(bth_read_le16(accept.parameters+16)==(codec==VoiceCodec::Cvsd?0x0060:0x0043));assert(audio.commandQueued(accept.ticket,now)==BTH_OK);
@@ -50,12 +51,12 @@ struct Session {
  }
 };
 int main(int argc,char** argv){
- const char* selector=argc>1?argv[1]:"cvsd_fragmented";const bool ncp=std::strcmp(selector,"ncp_fragmented")==0;const bool msbc=std::strcmp(selector,"msbc_fragmented")==0;const bool unfragmented=std::strcmp(selector,"cvsd_unfragmented")==0;
- assert(ncp||msbc||unfragmented||std::strcmp(selector,"cvsd_fragmented")==0);const uint8_t maximum=unfragmented?64:30;const uint32_t period_us=msbc?7500:3750,host_bytes_per_second=msbc?8000:16000;constexpr unsigned windows=64;
+ const char* selector=argc>1?argv[1]:"cvsd_fragmented";const bool noflow=std::strcmp(selector,"disabled_no_flow")==0;const bool ncp=!noflow;const bool msbc=std::strcmp(selector,"msbc_fragmented")==0;const bool unfragmented=std::strcmp(selector,"cvsd_unfragmented")==0;
+ assert(noflow||msbc||unfragmented||std::strcmp(selector,"ncp_fragmented")==0||std::strcmp(selector,"cvsd_fragmented")==0);if(noflow){Session s(64,false,VoiceCodec::Cvsd);assert(!s.audio.active());std::puts("RX fallback unavailable despite explicit opt-in");return 0;}const uint8_t maximum=unfragmented?64:30;const uint32_t period_us=msbc?7500:3750,host_bytes_per_second=msbc?8000:16000;constexpr unsigned windows=64;
  {
   Session s(maximum,ncp,msbc?VoiceCodec::Msbc:VoiceCodec::Cvsd);for(unsigned i=0;i<windows;++i)s.window(i,period_us);const uint64_t duration=uint64_t(windows)*period_us;const unsigned expected=unsigned(duration*host_bytes_per_second/1000000);
   std::printf("VOICE_RX_PACING case=%s codec=%s hci_tx_max=%u rx_payload=60 air_tx=30 interval_slots=6 windows=%u duration_us=%llu expected_host_bytes_per_second=%u actual_payload_bytes=%u expected_payload_bytes=%u actual_hci_packets=%u ncp_events=%u no_mic_pcm_frames_rendered=%u\n",selector,msbc?"MSBC":"CVSD",maximum,windows,(unsigned long long)duration,host_bytes_per_second,s.tx_bytes,expected,s.tx_packets,s.ncp_events,s.worker.pipeline.inputCounters().noMicSilenceFrames);std::fflush(stdout);
-  assert(s.tx_bytes==expected&&"fragmented RX pacing must preserve the nominal host byte rate without NCP grants");
+  assert(s.tx_bytes==expected&&"completion pacing must preserve the nominal host byte rate");
  }
  assert(memoryStats().current_blocks==0&&memoryStats().current_bytes==0);return 0;
 }

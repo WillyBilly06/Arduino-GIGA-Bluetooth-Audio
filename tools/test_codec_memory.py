@@ -25,7 +25,7 @@ def main():
   r=subprocess.run(cmd,cwd=ROOT,env=env,text=True,capture_output=True);print(r.stdout+r.stderr,end='',flush=True);logs.append(dict(command=cmd,exit_code=r.returncode,output=r.stdout+r.stderr));(out/'commands.json').write_text(json.dumps(logs,indent=2)+'\n');assert r.returncode==0,(r.returncode,cmd[0])
  groups={}
  for codec in ('sbc','opus'):
-  selected=['-DGBR_ENABLE_'+name.upper()+'='+str(int(name==codec)) for name in ('sbc','aac','aac_he','aptx','ldac','lhdc','opus')];current=flags+selected;objects=[]
+  selected=['-DGBR_ENABLE_'+name.upper()+'='+str(int(name==codec)) for name in ('sbc','aac','aac_he','aptx','ldac','lhdc','opus','ssc')];current=flags+selected;objects=[]
   sources=sorted((source/'src/vendor/codecs'/codec).rglob('*.c'))
   if codec=='opus':sources=[s for s in sources if s.name!='CNG.c']+[ROOT/'tests/test_opus_cng_storage.c']
   for index,s in enumerate(sources):

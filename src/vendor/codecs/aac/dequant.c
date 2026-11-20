@@ -314,6 +314,7 @@ int Dequantize(AACDecInfo *aacDecInfo, int ch)
 	if (!aacDecInfo || !aacDecInfo->psInfoBase)
 		return ERR_AAC_NULL_POINTER;
 	psi = (PSInfoBase *)(aacDecInfo->psInfoBase);
+    if (ch < 0 || ch >= psi->allocatedChannels || (aacDecInfo->currBlockID == AAC_ID_CPE && psi->allocatedChannels < 2)) return -1;
 	icsInfo = (ch == 1 && psi->commonWin == 1) ? &(psi->icsInfo[0]) : &(psi->icsInfo[ch]);
 		
 	if (icsInfo->winSequence == 2) {

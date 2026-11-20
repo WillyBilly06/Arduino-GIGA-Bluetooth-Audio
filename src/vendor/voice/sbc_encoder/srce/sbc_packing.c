@@ -1,4 +1,5 @@
-/* GigaBredr voice port, 2026-10-27: portable exact-width arithmetic,
+/* GigaBredr voice port, 2026-10-29: define quantizer product bit shifts.
+ * 2026-10-27: portable exact-width arithmetic,
  * selected mono mSBC geometry and instance-owned analysis state.
  * Original Apache-2.0 terms and Broadcom notices below are retained. */
 /******************************************************************************
@@ -30,6 +31,11 @@
 
 #if (defined(SBC_ENC_INCLUDED) && SBC_ENC_INCLUDED == TRUE)
 
+static inline SINT32 giga_voice_packing_i32_bits(UINT32 bits)
+{
+    return bits <= 0x7fffffffu ? (SINT32)bits : -1 - (SINT32)(~bits);
+}
+
 #if (SBC_ARM_ASM_OPT==TRUE)
 #define Mult32(s32In1,s32In2,s32OutLow)                                                 \
 {                                                                                       \
@@ -53,7 +59,7 @@
     s32TempVal2 = (SINT32)((s32In1 >> 16) * (UINT16)s32In2);                            \
     s32Carry    = ( (((UINT32)(s32OutLow)>>16)&0xFFFF) +                                \
                                         + (s32TempVal2 & 0xFFFF) ) >> 16;               \
-    s32OutLow   += (s32TempVal2 << 16);                                                 \
+    s32OutLow   = giga_voice_packing_i32_bits((UINT32)s32OutLow + ((UINT32)s32TempVal2 << 16)); \
     s32OutHi     = (s32TempVal2 >> 16) + s32Carry;                                      \
 }
 #endif
@@ -161,7 +167,7 @@ void EncPacking(SBC_ENC_PARAMS *pstrEncParams)
 
                 s32Low1   = s32Low >> ((*ps16ScfPtr) + 2);
                 s32Low1  &= ((UINT32)1 << (32 - ((*ps16ScfPtr) + 2))) - 1;
-                s32Hi1    = s32Hi << (32 - ((*ps16ScfPtr) + 2));
+                s32Hi1    = giga_voice_packing_i32_bits((UINT32)s32Hi << (32 - ((*ps16ScfPtr) + 2)));
 
                 u32QuantizedSbValue0 = (UINT16)((s32Low1 | s32Hi1) >> 12);
 #else

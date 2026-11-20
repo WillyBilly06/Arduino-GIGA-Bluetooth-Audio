@@ -76,7 +76,9 @@ static void transactional_capacity_and_fifo(){
 }
 static void lifecycle_barrier_and_auto_close(){
  Fixture f;f.boot();f.leConnect();auto old=f.host.bleStats().generation;f.ready=false;fill(f,1);
- f.event(5,{0,0x26,0,0x13});CHECK(f.host.deferred_count_==1&&f.host.bleStats().generation==old);
+ // An older conservative event must still fence the zero-budget LE detach.
+ f.event(8,{0,0x27,0,0});CHECK(f.host.deferred_count_==1);
+ f.event(5,{0,0x26,0,0x13});CHECK(f.host.deferred_count_==2&&f.host.bleStats().generation==old);
  auto q=snapshot(&f.host.commands_,sizeof f.host.commands_);
  CHECK(f.host.bleDisconnect(old,false)==Status::Busy&&f.host.bleResumeAdvertising()==Status::Busy);
  CHECK(!f.host.le_advertising_held_&&snapshot(&f.host.commands_,sizeof f.host.commands_)==q);

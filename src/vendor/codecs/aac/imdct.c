@@ -540,6 +540,9 @@ int IMDCT(AACDecInfo *aacDecInfo, int ch, int chOut, short *outbuf)
 	if (!aacDecInfo || !aacDecInfo->psInfoBase)
 		return -1;
 	psi = (PSInfoBase *)(aacDecInfo->psInfoBase);
+    if (ch < 0 || ch >= psi->allocatedChannels || (aacDecInfo->currBlockID == AAC_ID_CPE && psi->allocatedChannels < 2)) return -1;
+    if (aacDecInfo->nChans < 1 || aacDecInfo->nChans > psi->allocatedChannels ||
+        chOut < 0 || chOut >= aacDecInfo->nChans) return -1;
 	icsInfo = (ch == 1 && psi->commonWin == 1) ? &(psi->icsInfo[0]) : &(psi->icsInfo[ch]);
 	outbuf += chOut;
 

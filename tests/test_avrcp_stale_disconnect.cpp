@@ -3,6 +3,7 @@
 #define private public
 #include "../src/owned/OwnedHost.h"
 #undef private
+#include "../src/owned/OwnedHost.cpp"
 #define main existing_owned_host_fixture_main
 #include "test_owned_host.cpp"
 #undef main

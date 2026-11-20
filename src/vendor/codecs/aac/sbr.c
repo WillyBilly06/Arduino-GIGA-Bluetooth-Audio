@@ -127,22 +127,31 @@ static void InitSBRState(PSInfoSBR *psi)
  *
  * Note:        memory allocation for SBR is only done here
  **************************************************************************************/
+static void FreeSBRState(PSInfoSBR *psi) {
+    if(!psi)return;
+    gbr_free(psi->sbrHdr); gbr_free(psi->sbrGrid); gbr_free(psi->sbrFreq);
+    gbr_free(psi->sbrChan); gbr_free(psi->delayIdxQMFA); gbr_free(psi->delayQMFA);
+    gbr_free(psi->delayIdxQMFS); gbr_free(psi->delayQMFS); gbr_free(psi->XBufDelay);
+    gbr_free(psi);
+}
 int InitSBRChannels(AACDecInfo *info,int channels) {
     const size_t storageBytes=SBRStorageBytes(channels);
-    if(!storageBytes)return ERR_AAC_SBR_INIT;
+    if(!info || info->psInfoSBR || !storageBytes)return ERR_AAC_SBR_INIT;
     PSInfoSBR *psi=(PSInfoSBR*)gbr_calloc(1,storageBytes);
     if(!psi)return ERR_AAC_SBR_INIT;
-    info->psInfoSBR=psi; psi->allocatedChannels=channels;
-    psi->sbrHdr=(SBRHeader*)gbr_calloc(channels,sizeof(*psi->sbrHdr)); if(!psi->sbrHdr)return ERR_AAC_SBR_INIT;
-    psi->sbrGrid=(SBRGrid*)gbr_calloc(channels,sizeof(*psi->sbrGrid)); if(!psi->sbrGrid)return ERR_AAC_SBR_INIT;
-    psi->sbrFreq=(SBRFreq*)gbr_calloc(channels,sizeof(*psi->sbrFreq)); if(!psi->sbrFreq)return ERR_AAC_SBR_INIT;
-    psi->sbrChan=(SBRChan*)gbr_calloc(channels,sizeof(*psi->sbrChan)); if(!psi->sbrChan)return ERR_AAC_SBR_INIT;
-    psi->delayIdxQMFA=(int*)gbr_calloc(channels,sizeof(*psi->delayIdxQMFA)); if(!psi->delayIdxQMFA)return ERR_AAC_SBR_INIT;
-    psi->delayQMFA=(int(*)[DELAY_SAMPS_QMFA])gbr_calloc(channels,sizeof(*psi->delayQMFA)); if(!psi->delayQMFA)return ERR_AAC_SBR_INIT;
-    psi->delayIdxQMFS=(int*)gbr_calloc(channels,sizeof(*psi->delayIdxQMFS)); if(!psi->delayIdxQMFS)return ERR_AAC_SBR_INIT;
-    psi->delayQMFS=(int(*)[DELAY_SAMPS_QMFS])gbr_calloc(channels,sizeof(*psi->delayQMFS)); if(!psi->delayQMFS)return ERR_AAC_SBR_INIT;
-    psi->XBufDelay=(int(*)[HF_GEN][64][2])gbr_calloc(channels,sizeof(*psi->XBufDelay)); if(!psi->XBufDelay)return ERR_AAC_SBR_INIT;
-    InitSBRState(psi); return 0;
+    psi->allocatedChannels=channels;
+    psi->sbrHdr=(SBRHeader*)gbr_calloc(channels,sizeof(*psi->sbrHdr)); if(!psi->sbrHdr)goto fail;
+    psi->sbrGrid=(SBRGrid*)gbr_calloc(channels,sizeof(*psi->sbrGrid)); if(!psi->sbrGrid)goto fail;
+    psi->sbrFreq=(SBRFreq*)gbr_calloc(channels,sizeof(*psi->sbrFreq)); if(!psi->sbrFreq)goto fail;
+    psi->sbrChan=(SBRChan*)gbr_calloc(channels,sizeof(*psi->sbrChan)); if(!psi->sbrChan)goto fail;
+    psi->delayIdxQMFA=(int*)gbr_calloc(channels,sizeof(*psi->delayIdxQMFA)); if(!psi->delayIdxQMFA)goto fail;
+    psi->delayQMFA=(int(*)[DELAY_SAMPS_QMFA])gbr_calloc(channels,sizeof(*psi->delayQMFA)); if(!psi->delayQMFA)goto fail;
+    psi->delayIdxQMFS=(int*)gbr_calloc(channels,sizeof(*psi->delayIdxQMFS)); if(!psi->delayIdxQMFS)goto fail;
+    psi->delayQMFS=(int(*)[DELAY_SAMPS_QMFS])gbr_calloc(channels,sizeof(*psi->delayQMFS)); if(!psi->delayQMFS)goto fail;
+    psi->XBufDelay=(int(*)[HF_GEN][64][2])gbr_calloc(channels,sizeof(*psi->XBufDelay)); if(!psi->XBufDelay)goto fail;
+    InitSBRState(psi); info->psInfoSBR=psi; return 0;
+fail:
+    FreeSBRState(psi); return ERR_AAC_SBR_INIT;
 }
 int InitSBR(AACDecInfo *info) { return InitSBRChannels(info,2); }
 int InitSBRPre(AACDecInfo *info,void **p,int *sz) { return ERR_AAC_SBR_INIT; }
@@ -160,17 +169,8 @@ int InitSBRPre(AACDecInfo *info,void **p,int *sz) { return ERR_AAC_SBR_INIT; }
  * Note:        memory deallocation for SBR is only done here
  **************************************************************************************/
 void FreeSBR(AACDecInfo *info) {
-    if(!info || !info->psInfoSBR)return; PSInfoSBR *psi=(PSInfoSBR*)info->psInfoSBR;
-    gbr_free(psi->sbrHdr);
-    gbr_free(psi->sbrGrid);
-    gbr_free(psi->sbrFreq);
-    gbr_free(psi->sbrChan);
-    gbr_free(psi->delayIdxQMFA);
-    gbr_free(psi->delayQMFA);
-    gbr_free(psi->delayIdxQMFS);
-    gbr_free(psi->delayQMFS);
-    gbr_free(psi->XBufDelay);
-    gbr_free(psi); info->psInfoSBR=0;
+    if(!info || !info->psInfoSBR)return;
+    FreeSBRState((PSInfoSBR*)info->psInfoSBR); info->psInfoSBR=0;
 }
 /**************************************************************************************
  * Function:    DecodeSBRBitstream

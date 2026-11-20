@@ -7,7 +7,7 @@ enum class Status : uint8_t {
     Ok, InvalidArgument, Unsupported, OutOfMemory, NeedMoreData,
     CorruptFrame, OutputFull, Busy, HardwareError, FirmwareMismatch
 };
-enum class Codec : uint8_t { Sbc, Aac, Aptx, AptxHd, Ldac, LhdcV5, Opus, AacHe, Count };
+enum class Codec : uint8_t { Sbc, Aac, Aptx, AptxHd, Ldac, LhdcV5, Opus, AacHe, Ssc, Count };
 constexpr uint32_t codecBit(Codec c) { return static_cast<uint8_t>(c) < static_cast<uint8_t>(Codec::Count) ? uint32_t(1) << static_cast<uint8_t>(c) : 0; }
 constexpr uint32_t AllCodecs = (uint32_t(1) << static_cast<uint8_t>(Codec::Count)) - 1;
 enum class MemoryKind : uint8_t { Fast, Dma, External };

@@ -63,12 +63,70 @@ class OwnedRunnerPlanTests(unittest.TestCase):
         sources=[argument for argument in recipe if argument.endswith(('.cpp','.c'))]
         self.assertEqual(len(sources),len(set(sources)),sources)
 
+    def test_spp_suites_are_in_full_runner(self):
+        value=self.plan('--asan')
+        recipes={row['case']:row['command']for row in value['commands']if row.get('case')and row['kind']=='compile'}
+        for name in ('test_spp','test_spp_actor','test_spp_facade'):
+            self.assertIn(name,recipes)
+            sources=[arg for arg in recipes[name]if arg.endswith(('.cpp','.c'))]
+            self.assertEqual(len(sources),len(set(sources)),sources)
+        self.assertIn('src/owned/VoiceProfiles.cpp',recipes['test_spp'])
+        self.assertNotIn('src/owned/OwnedHost.cpp',recipes['test_spp_actor']) # Included by the test itself.
+        self.assertIn('src/owned/OwnedHost.cpp',recipes['test_spp_facade'])
+        self.assertIn('-fsanitize=address',recipes['test_spp_facade'])
+
+    def test_bond_and_status_regressions_are_in_full_runner(self):
+        value=self.plan('--asan')
+        recipes={row['case']:row['command']for row in value['commands']if row.get('case')and row['kind']=='compile'}
+        for name in ('test_classic_bond_provider_host','test_classic_bond_provider_facade','test_classic_bond_public_header','test_classic_bond_store_noalloc','test_avrcp_status_reconcile'):
+            self.assertIn(name,recipes)
+            sources=[arg for arg in recipes[name]if arg.endswith(('.cpp','.c'))]
+            self.assertEqual(len(sources),len(set(sources)))
+            self.assertIn('tests/'+name+'.cpp',sources)
+        self.assertIn('src/owned/OwnedHost.cpp',recipes['test_classic_bond_provider_host'])
+        self.assertIn('src/owned/OwnedHost.cpp',recipes['test_classic_bond_provider_facade'])
+        self.assertNotIn('src/GigaBredr.cpp',recipes['test_classic_bond_provider_facade'])
+
+    def test_normal_sco_response_validation_is_in_full_runner(self):
+        value=self.plan('--asan')
+        rows=[row for row in value['commands']if row.get('case')=='test_sco_response_validation']
+        self.assertEqual({row['kind']for row in rows},{'compile','project-runtime'})
+        command=next(row['command']for row in rows if row['kind']=='compile')
+        self.assertIn('tests/owned_core/test_sco_response_validation.c',command)
+        self.assertIn('-fsanitize=address',command)
+
+    def test_combined_gatt_and_codec_regressions_are_registered(self):
+        value=self.plan('--asan','--sanitize')
+        rows=value['commands']
+        for name in ('test_gatt_service_changed_integrated','test_gatt_service_changed_review',
+                     'test_actor_service_changed','test_gatt_voice_coexistence','test_sbc_boundaries','test_msbc_pcm',
+                     'test_bitreader_valid','test_huffman_fields','test_stereo_pns_numeric','test_aac_valid_pcm'):
+            compiled=[r for r in rows if r.get('case')==name and r['kind']=='compile']
+            self.assertEqual(len(compiled),1,name)
+            self.assertIn('-fsanitize=address',compiled[0]['command'])
+            self.assertIn('-fsanitize=undefined',compiled[0]['command'])
+            self.assertTrue(any(r['kind']=='project-runtime' and str(r.get('case','')).startswith(name) for r in rows),name)
+        actor=next(r['command'] for r in rows if r.get('case')=='test_actor_service_changed' and r['kind']=='compile')
+        self.assertIn('src/owned/OwnedHost.cpp',actor)
+        for mode in ('encode','decode','boundary-encode'):
+            self.assertTrue(any(r.get('case')=='test_msbc_pcm:'+mode+'-baseline-digest' for r in rows))
+        self.assertTrue(any(r.get('case')=='test_sbc_boundaries:baseline-digest' for r in rows))
+
+    def test_clock_relearn_and_drift_model_are_registered(self):
+        value=self.plan('--asan','--sanitize')
+        for name in ('test_clock_relearn','test_clock_drift_plant'):
+            rows=[r for r in value['commands'] if r.get('case')==name]
+            self.assertEqual({r['kind'] for r in rows},{'compile','project-runtime'})
+            cmd=next(r['command'] for r in rows if r['kind']=='compile')
+            self.assertIn('tests/'+name+'.cpp',cmd)
+            self.assertIn('-fsanitize=address',cmd);self.assertIn('-fsanitize=undefined',cmd)
+
     def test_all_historical_children_remain_planned_and_sanitizer_plan_is_pure(self):
         value=self.plan('--asan','--sanitize')
         children=[row['command']for row in value['commands']if row['kind']=='child-suite']
         names={Path(command[1]).name for command in children}
         self.assertEqual(names,{'test_adts_retained_prefix.py','test_audio_clock.py','test_owned_wake.py',
-                               'test_codec_memory.py','test_audio_scheduling.py','test_owned_runner_plan.py'})
+                               'test_codec_memory.py','test_aac_allocations.py','test_audio_scheduling.py','test_owned_runner_plan.py','test_lhdc_aosp.py','test_ssc.py'})
         self.assertIn('test_voice_preemption',[row['case']for row in value['commands']if row.get('case')])
 
     def test_historical_children_have_pure_plan_mode_and_real_dependencies(self):
@@ -102,6 +160,27 @@ class OwnedRunnerPlanTests(unittest.TestCase):
                     sources=[str(s)for s in cmd if str(s).endswith(('.cpp','.c'))]
                     self.assertEqual(len(sources),len(set(sources)))
 
+    def test_aac_child_plan_is_pure_and_retains_real_decoder_cases(self):
+        spec=importlib.util.spec_from_file_location('aac_allocation_plan',ROOT/'tools/test_aac_allocations.py')
+        child=importlib.util.module_from_spec(spec);spec.loader.exec_module(child)
+        with tempfile.TemporaryDirectory(prefix='giga-aac-plan-')as directory:
+            argv=['test_aac_allocations.py','--plan','--asan','--ubsan','--output',directory,
+                  '--cc',sys.executable,'--cxx',sys.executable]
+            with patch.object(sys,'argv',argv),contextlib.redirect_stdout(io.StringIO()),\
+                 patch('subprocess.run',side_effect=AssertionError('AAC plan launched a command')),\
+                 patch('subprocess.check_output',side_effect=AssertionError('AAC plan queried compiler')):
+                child.main()
+            receipt=json.loads((Path(directory)/'receipt.json').read_text())
+            self.assertEqual(receipt['status'],'PLAN_ONLY_NO_COMMANDS_EXECUTED')
+            self.assertFalse(receipt['runtime_or_sanitizers_qualified'])
+            rows=receipt['commands'];self.assertTrue(all(row['executed']is False for row in rows))
+            cases=[row for row in rows if row['kind']=='test'];self.assertEqual(len(cases),14)
+            self.assertTrue(any(row['case']=='retry:sweep'for row in cases))
+            self.assertTrue(any(row['case']=='output:two'for row in cases))
+            compiles=[row['command']for row in rows if row['kind']=='compile']
+            self.assertTrue(any(any(str(arg).replace('\\','/').endswith('/aac/aacdec.c')for arg in cmd)for cmd in compiles))
+            self.assertTrue(all('-fsanitize=address'in cmd and '-fsanitize=undefined'in cmd for cmd in compiles))
+
     def test_classic_progress_batches_are_registered_with_owned_actor(self):
         value=self.plan();rows=value['commands']
         for name,args in [('test_classic_progress_batch',['all']),('test_classic_ct_batch',[]),('test_classic_review_batch',[])]:
@@ -118,7 +197,7 @@ class OwnedRunnerPlanTests(unittest.TestCase):
         for row in value['commands']:
             target=compiled if row['kind']=='compile'else executed if row['kind']=='project-runtime'else None
             if target is not None and row.get('case'):target.setdefault(row['case'],[]).append(row['command'])
-        simple=['test_voice_failure_publication','test_voice_preemption','test_voice_token_owner',
+        simple=['test_hsp_actor','test_hsp_facade','test_voice_failure_publication','test_voice_preemption','test_voice_token_owner',
                 'test_voice_failed_begin_identity','test_voice_input_lifetime','test_voice_admission_busy',
                 'test_sco_byte_pacing','test_voice_rx_byte_progress']
         for name in simple:

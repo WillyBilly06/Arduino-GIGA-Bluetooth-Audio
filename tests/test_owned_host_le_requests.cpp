@@ -26,5 +26,26 @@ static void bounds(){for(uint8_t code:{uint8_t(5),uint8_t(6)}){auto good=request
  RequestPressure p;auto e=good;e[1]=0x27;p.f.event(0x3e,e);p.f.poll();p.unchanged();CHECK(!p.f.host.le_.ltk_pending_&&!p.f.host.le_.parameters_pending_);
  RequestPressure broken;Bytes wire={0x3e,uint8_t(good.size())};wire.insert(wire.end(),good.begin(),good.end()-1);broken.f.host.receive(4,wire.data(),wire.size(),broken.f.now);CHECK(broken.f.host.radioStats().transport_errors==1);
 }}
-static void lifecycle_fifo(){for(uint8_t code:{uint8_t(5),uint8_t(6)})for(unsigned kind=0;kind<3;++kind){RequestPressure p;auto& f=p.f;f.event(kind<2?5:8,kind<2?Bytes{0,uint8_t(kind?0x26:0x25),0,0x13}:Bytes{0,0x25,0,0});CHECK(f.host.deferred_count_==1);auto serial=f.host.deferred_[f.host.deferred_read_].serial;f.event(0x3e,request(code));CHECK(f.host.deferred_count_==2&&f.host.deferred_[f.host.deferred_read_].serial==serial);CHECK(!f.host.le_.ltk_pending_&&!f.host.le_.parameters_pending_);f.poll();CHECK(!f.playing&&f.host.deferred_count_==2);f.complete(0x1001,f.response(0x1001));f.poll();f.poll();CHECK(f.host.deferred_count_==0&&f.host.radioStats().transport_errors==0);if(kind==1)CHECK(!f.host.peers_[1].attached&&!f.host.le_.ltk_pending_&&!f.host.le_.parameters_pending_);else CHECK(!f.playing);}}
+static void lifecycle_fifo(){
+ for(uint8_t code:{uint8_t(5),uint8_t(6)})for(unsigned kind=0;kind<3;++kind){
+  RequestPressure p;auto& f=p.f;
+  f.event(kind<2?5:8,kind<2?Bytes{0,uint8_t(kind?0x26:0x25),0,0x13}:Bytes{0,0x25,0,0});
+  if(kind==1){
+   // A validated normal LE detach requires no command reservation. Later
+   // requests for that retired handle must not create pending response state.
+   CHECK(f.host.deferred_count_==0&&!f.host.peers_[1].attached&&f.playing);
+   f.event(0x3e,request(code));f.poll();
+   CHECK(f.host.deferred_count_==0&&!f.host.le_.ltk_pending_&&!f.host.le_.parameters_pending_);
+   CHECK(f.playing&&f.host.peers_[0].owner==p.owner&&bth_links_secure(&f.host.links_,0x25));
+   CHECK(f.host.radioStats().transport_errors==0);continue;
+  }
+  CHECK(f.host.deferred_count_==1);auto serial=f.host.deferred_[f.host.deferred_read_].serial;
+  f.event(0x3e,request(code));
+  CHECK(f.host.deferred_count_==2&&f.host.deferred_[f.host.deferred_read_].serial==serial);
+  CHECK(!f.host.le_.ltk_pending_&&!f.host.le_.parameters_pending_);f.poll();
+  CHECK(f.playing&&f.stops==p.stops&&f.host.deferred_count_==2);
+  f.complete(0x1001,f.response(0x1001));f.poll();f.poll();
+  CHECK(f.host.deferred_count_==0&&f.host.radioStats().transport_errors==0&&!f.playing);
+ }
+}
 int main(){copy_and_progress();bounds();lifecycle_fifo();printf("PASS public LE05/06 copied-admission/pressure/media/HNC/FIFO %u checks\n",checks);}

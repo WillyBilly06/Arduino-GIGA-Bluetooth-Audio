@@ -1,7 +1,9 @@
-/* GigaBredr modification notice, 2026-10-21: portable decoder port;
+/* GigaBredr modification notice, 2026-10-29: extract signed Huffman fields
+ * without signed left shifts; 2026-10-21: portable decoder port;
  * build guards, relative includes, tracked allocation and bounds/ARM fixes.
  * Original copyright and license notices remain below unchanged.
- * Per-file original/port SHA-256: docs/source-provenance.json. */
+ * Prior source hashes: docs/source-provenance.json. Candidate adaptation:
+ * docs/aac-huffman-fields-2026-10-29.json. */
 #include "../CodecPlatform.h"
 #if GBR_ENABLE_AAC
 #if defined(__GNUC__) && !defined(__clang__)
@@ -100,19 +102,34 @@
 
 #define APPLY_SIGN(v, s)		{(v) ^= ((signed int)(s) >> 31); (v) -= ((signed int)(s) >> 31);}
 
+/* A packed Huffman value contains a 3-, 5-, or 6-bit two's-complement
+ * coefficient. Extract using unsigned shifts, then convert within the small
+ * signed range; no signed shift or out-of-range signed conversion is needed. */
+#if defined(__GNUC__) || defined(__clang__)
+#define GBR_AAC_LOCAL_INLINE static inline __attribute__((always_inline))
+#else
+#define GBR_AAC_LOCAL_INLINE static inline
+#endif
+GBR_AAC_LOCAL_INLINE int giga_aac_signed_field(unsigned int value, unsigned int shift, unsigned int width)
+{
+	unsigned int field = (value >> shift) & ((1u << width) - 1u);
+	return (int)field - ((field & (1u << (width - 1))) ? (int)(1u << width) : 0);
+}
+#undef GBR_AAC_LOCAL_INLINE
+
 #define GET_QUAD_SIGNBITS(v)	(((unsigned int)(v) << 17) >> 29)	/* bits 14-12, unsigned */
-#define GET_QUAD_W(v)			(((signed int)(v) << 20) >>   29)	/* bits 11-9, sign-extend */
-#define GET_QUAD_X(v)			(((signed int)(v) << 23) >>   29)	/* bits  8-6, sign-extend */
-#define GET_QUAD_Y(v)			(((signed int)(v) << 26) >>   29)	/* bits  5-3, sign-extend */
-#define GET_QUAD_Z(v)			(((signed int)(v) << 29) >>   29)	/* bits  2-0, sign-extend */
+#define GET_QUAD_W(v)			giga_aac_signed_field((unsigned int)(v), 9, 3)
+#define GET_QUAD_X(v)			giga_aac_signed_field((unsigned int)(v), 6, 3)
+#define GET_QUAD_Y(v)			giga_aac_signed_field((unsigned int)(v), 3, 3)
+#define GET_QUAD_Z(v)			giga_aac_signed_field((unsigned int)(v), 0, 3)
 
 #define GET_PAIR_SIGNBITS(v)	(((unsigned int)(v) << 20) >> 30)	/* bits 11-10, unsigned */
-#define GET_PAIR_Y(v)			(((signed int)(v) << 22) >>   27)	/* bits  9-5, sign-extend */
-#define GET_PAIR_Z(v)			(((signed int)(v) << 27) >>   27)	/* bits  4-0, sign-extend */
+#define GET_PAIR_Y(v)			giga_aac_signed_field((unsigned int)(v), 5, 5)
+#define GET_PAIR_Z(v)			giga_aac_signed_field((unsigned int)(v), 0, 5)
 
 #define GET_ESC_SIGNBITS(v)		(((unsigned int)(v) << 18) >> 30)	/* bits 13-12, unsigned */
-#define GET_ESC_Y(v)			(((signed int)(v) << 20) >>   26)	/* bits 11-6, sign-extend */
-#define GET_ESC_Z(v)			(((signed int)(v) << 26) >>   26)	/* bits  5-0, sign-extend */
+#define GET_ESC_Y(v)			giga_aac_signed_field((unsigned int)(v), 6, 6)
+#define GET_ESC_Z(v)			giga_aac_signed_field((unsigned int)(v), 0, 6)
 
 /**************************************************************************************
  * Function:    UnpackZeros

@@ -6,9 +6,11 @@ namespace {
 const uint8_t primary[]={0,0x28},declaration[]={3,0x28},cccd[]={2,0x29};
 const uint8_t gapService[]={0,0x18},gattService[]={1,0x18},service[]={BLE_UUID(1)};
 const uint8_t nameType[]={0,0x2a},appearanceType[]={1,0x2a};
+const uint8_t changedType[]={5,0x2a};
 const uint8_t rxType[]={BLE_UUID(2)},txType[]={BLE_UUID(3)},descriptionType[]={1,0x29};
 const uint8_t nameDeclaration[]={2,3,0,0,0x2a},appearanceDeclaration[]={2,5,0,1,0x2a};
 const uint8_t rxDeclaration[]={0x0c,9,0,BLE_UUID(2)},txDeclaration[]={0x12,11,0,BLE_UUID(3)};
+const uint8_t changedDeclaration[]={0x20,16,0,5,0x2a};
 const uint8_t appearance[]={0,0},description[]={'G','I','G','A',' ','d','a','t','a'};
 #undef BLE_UUID
 template<size_t N> bth_span_t span(const uint8_t (&data)[N]) { return {data,N}; }
@@ -23,22 +25,30 @@ bool LeProfiles::initDatabase() {
     attributes_[2].maximum_length=63;
     attributes_[3]=attribute(4,span(declaration),span(appearanceDeclaration));
     attributes_[4]=attribute(5,span(appearanceType),span(appearance));
-    attributes_[5]=attribute(6,span(primary),span(gattService)); attributes_[5].group_end=6;
-    attributes_[6]=attribute(7,span(primary),span(service)); attributes_[6].group_end=13;
-    attributes_[7]=attribute(8,span(declaration),span(rxDeclaration));
-    attributes_[8]=attribute(RxHandle,span(rxType),{nullptr,0});
-    attributes_[8].kind=BTH_ATT_APPLICATION;
-    attributes_[8].permissions=BTH_ATT_WRITE|BTH_ATT_WRITE_COMMAND;
-    attributes_[8].maximum_length=BleValueCapacity;
-    attributes_[9]=attribute(10,span(declaration),span(txDeclaration));
-    attributes_[10]=attribute(TxHandle,span(txType),{tx_value_,tx_length_});
-    attributes_[10].kind=BTH_ATT_APPLICATION; attributes_[10].maximum_length=BleValueCapacity;
-    attributes_[11]=attribute(TxCccdHandle,span(cccd),{nullptr,0});
-    attributes_[11].kind=BTH_ATT_CCCD; attributes_[11].related_handle=TxHandle;
-    attributes_[11].permissions=BTH_ATT_READ|BTH_ATT_WRITE|BTH_ATT_WRITE_COMMAND;
-    attributes_[11].maximum_length=2; attributes_[11].cccd_mask=1;
-    attributes_[12]=attribute(13,span(descriptionType),span(description));
-    return bth_att_init(&att_,attributes_,13,config_.maximum_mtu);
+    attributes_[5]=attribute(7,span(primary),span(service)); attributes_[5].group_end=13;
+    attributes_[6]=attribute(8,span(declaration),span(rxDeclaration));
+    attributes_[7]=attribute(RxHandle,span(rxType),{nullptr,0});
+    attributes_[7].kind=BTH_ATT_APPLICATION;
+    attributes_[7].permissions=BTH_ATT_WRITE|BTH_ATT_WRITE_COMMAND;
+    attributes_[7].maximum_length=BleValueCapacity;
+    attributes_[8]=attribute(10,span(declaration),span(txDeclaration));
+    attributes_[9]=attribute(TxHandle,span(txType),{tx_value_,tx_length_});
+    attributes_[9].kind=BTH_ATT_APPLICATION; attributes_[9].maximum_length=BleValueCapacity;
+    attributes_[10]=attribute(TxCccdHandle,span(cccd),{nullptr,0});
+    attributes_[10].kind=BTH_ATT_CCCD; attributes_[10].related_handle=TxHandle;
+    attributes_[10].permissions=BTH_ATT_READ|BTH_ATT_WRITE|BTH_ATT_WRITE_COMMAND;
+    attributes_[10].maximum_length=2; attributes_[10].cccd_mask=1;
+    size_t n=11;
+    if (description_present_) attributes_[n++]=attribute(13,span(descriptionType),span(description));
+    attributes_[n]=attribute(14,span(primary),span(gattService)); attributes_[n++].group_end=17;
+    attributes_[n++]=attribute(15,span(declaration),span(changedDeclaration));
+    attributes_[n]=attribute(ChangedHandle,span(changedType),{nullptr,0});
+    attributes_[n].permissions=0; attributes_[n++].maximum_length=4;
+    attributes_[n]=attribute(ChangedCccdHandle,span(cccd),{nullptr,0});
+    attributes_[n].kind=BTH_ATT_CCCD; attributes_[n].related_handle=ChangedHandle;
+    attributes_[n].permissions=BTH_ATT_READ|BTH_ATT_WRITE; attributes_[n].maximum_length=2;
+    attributes_[n].cccd_index=1; attributes_[n++].cccd_mask=2;
+    return bth_att_init(&att_,attributes_,n,config_.maximum_mtu);
 }
 Status LeProfiles::begin(const BleConfig& config,const char* name,bth_cmdq_t& commands,bth_control_tx_t& replies) {
     if (initialized_) return Status::Busy;
@@ -96,6 +106,7 @@ bool LeProfiles::attach(uint32_t generation,uint16_t handle,uint8_t role,const u
     stats_.generation=generation; stats_.connection_handle=handle; stats_.att_mtu=23;
     stats_.connected=true; stats_.advertising=false; stats_.notify_enabled=false;
     pending_request_length_=0; pending_response_=false;
+    change_pending_=change_queued_=change_started_=change_complete_=false; change_first_=change_last_=0;
     bth_le_gap_connection(&gap_,true);syncTransportStats();return true;
 }
 void LeProfiles::detach(uint32_t generation) {
@@ -108,6 +119,7 @@ void LeProfiles::detach(uint32_t generation) {
     stats_.att_mtu=23; stats_.notify_enabled=false; write_pending_=notify_pending_=false;
     ltk_pending_=parameters_pending_=false;
     pending_request_length_=0; pending_response_=false;
+    change_pending_=change_queued_=change_started_=change_complete_=false; change_first_=change_last_=0;
     write_=BleWrite{}; bth_le_gap_connection(&gap_,false);syncTransportStats();
 }
 void LeProfiles::syncTransportStats() {
@@ -167,8 +179,62 @@ void LeProfiles::commandSubmitted(uint32_t owner,uint16_t opcode,const uint8_t* 
         s.submitted_latency=bth_read_le16(p+6);s.submitted_timeout=bth_read_le16(p+8);
     }
 }
+bool LeProfiles::setVendorDescription(uint32_t generation,bool present) {
+    if (!initialized_ || !stats_.connected || !generation || generation!=stats_.generation || close_requested_) return false;
+    if (present==description_present_) return true;
+    // Only handle 13 is added/removed; all other attributes keep their handles.
+    // The actor serializes this with ATT requests and does not borrow these entries.
+    if (present) {
+        memmove(attributes_+12,attributes_+11,4*sizeof attributes_[0]);
+        attributes_[11]=attribute(13,span(descriptionType),span(description)); ++att_.count;
+    } else {
+        memmove(attributes_+11,attributes_+12,4*sizeof attributes_[0]); --att_.count;
+    }
+    description_present_=present;
+    if (att_.cccd[1]&2) { change_pending_=true; change_first_=7; change_last_=13; }
+    return true;
+}
+void LeProfiles::queueServiceChanged() {
+    if (!change_pending_ || change_queued_ || !(att_.cccd[1]&2)) return;
+    bth_control_reservation_t slot={};
+    const auto reservation=bth_control_tx_reserve(replies_,1,&slot);
+    if (reservation==BTH_ERR_CAPACITY) return;
+    if (reservation!=BTH_OK) {
+        // Exhausted token identity or a broken queue cannot safely notify this
+        // client. Stop ATT until the owner retires the connection.
+        (void)bth_control_tx_block_att(replies_,1,stats_.generation); close_requested_=true; return;
+    }
+    const uint8_t range[]={uint8_t(change_first_),uint8_t(change_first_>>8),uint8_t(change_last_),uint8_t(change_last_>>8)};
+    size_t written=0;
+    const auto status=bth_att_notify(&att_,ChangedHandle,ChangedCccdHandle,range,sizeof range,true,
+                                     bth_att_security_t{},slot.data,slot.capacity,&written);
+    if (status!=BTH_OK || written!=7) {
+        bth_control_tx_cancel(replies_,slot.token);
+        (void)bth_control_tx_block_att(replies_,1,stats_.generation); close_requested_=true; return;
+    }
+    if (bth_control_tx_commit(replies_,slot.token,4,written,att_.mtu)!=BTH_OK) {
+        // No other indication producer exists on this single bearer.
+        att_.indication_handle=0; bth_control_tx_cancel(replies_,slot.token);
+        (void)bth_control_tx_block_att(replies_,1,stats_.generation); close_requested_=true; return;
+    }
+    change_token_=slot.token; change_queued_=true; change_started_=change_complete_=false;
+    change_pending_=false; change_first_=change_last_=0;
+}
+void LeProfiles::controlSubmitted(const bth_control_tx_info_t& info,uint32_t now) {
+    if (!stats_.connected || !change_queued_ || info.peer!=1 || info.owner!=stats_.generation ||
+        info.token.serial!=change_token_.serial || info.token.slot!=change_token_.slot) return;
+    if (info.first_fragment && !change_started_) { change_started_=true; indication_started_=now; }
+    if (info.final_fragment && change_started_) change_complete_=true;
+}
+void LeProfiles::expireIndication(uint32_t now) {
+    if (!stats_.connected || !change_queued_ || !change_started_ || uint32_t(now-indication_started_)<30000) return;
+    bth_att_expire_indication(&att_);
+    (void)bth_control_tx_block_att(replies_,1,stats_.generation);
+    close_requested_=true;
+}
 bool LeProfiles::receive(uint32_t generation,uint16_t cid,const uint8_t* data,size_t length,uint32_t now) {
     if (!initialized_ || !stats_.connected || generation!=stats_.generation) return true;
+    expireIndication(now);
     if (close_requested_) return true;
     if (!data || !length) { ++stats_.malformed_pdus; return true; }
     if (cid!=4) {
@@ -217,8 +283,9 @@ bool LeProfiles::receive(uint32_t generation,uint16_t cid,const uint8_t* data,si
     return true; // Immutable ATT ownership exists before physical RX retirement.
 }
 void LeProfiles::servicePendingAtt(uint32_t generation,uint32_t now) {
-    if (!initialized_ || !stats_.connected || generation!=stats_.generation ||
-        !pendingAtt() || pendingAttExpired(now)) return;
+    if (!initialized_ || !stats_.connected || generation!=stats_.generation) return;
+    expireIndication(now);
+    if (close_requested_ || !pendingAtt() || pendingAttExpired(now)) return;
     if (pending_response_) {
         bth_control_reservation_t slot;
         if (bth_control_tx_reserve(replies_,1,&slot)!=BTH_OK) { ++stats_.capacity_retries; return; }
@@ -229,6 +296,7 @@ void LeProfiles::servicePendingAtt(uint32_t generation,uint32_t now) {
     pending_request_length_=0; pending_response_=false;
 }
 bool LeProfiles::processAtt(uint32_t generation,const uint8_t* data,size_t length) {
+    if (data[0]==0x1e && (!change_queued_ || !change_complete_)) return true;
     const bool request=!(data[0]&0x41) && data[0]!=0x1e;
     const bool command=data[0]==0x52;
     const bool possibleWrite=((data[0]==0x12 || data[0]==0x52) && length>=3 && bth_read_le16(data+1)==RxHandle) ||
@@ -256,6 +324,9 @@ bool LeProfiles::processAtt(uint32_t generation,const uint8_t* data,size_t lengt
             if (action.prepared) bth_att_execute_release(&att_);
         }
     }
+    if (action.kind==BTH_ATT_ACTION_CONFIRMED && action.handle==ChangedHandle && change_queued_ && change_complete_) {
+        change_queued_=change_started_=change_complete_=false;
+    }
     stats_.att_mtu=att_.mtu; stats_.notify_enabled=(att_.cccd[0]&1)!=0;
     // Unsubscribe cancels only the pending application update, preserving TX reads.
     if (status==BTH_OK && action.kind==BTH_ATT_ACTION_CCCD && action.handle==TxCccdHandle && !stats_.notify_enabled) notify_pending_=false;
@@ -268,6 +339,8 @@ bool LeProfiles::processAtt(uint32_t generation,const uint8_t* data,size_t lengt
 }
 void LeProfiles::poll(uint32_t now,bool mayAdvertise,bool audioActive) {
     if (!initialized_ || !config_.enabled) return;
+    expireIndication(now);
+    if (stats_.connected && !close_requested_) queueServiceChanged();
     const bool prefer=audioActive && config_.audio_connection_preference.enabled;
     if (stats_.connected) {
         // Clocks and cancellation must run even with fewer than three command
@@ -328,7 +401,7 @@ void LeProfiles::poll(uint32_t now,bool mayAdvertise,bool audioActive) {
         }
         syncTransportStats();
     }
-    if (!stats_.connected || !notify_pending_) return;
+    if (!stats_.connected || close_requested_ || !notify_pending_) return;
     if (!notification_startup_.allow(stats_.generation,now,prefer,stats_.connection.known&&stats_.connection.matches_preference)) return;
     bth_control_reservation_t slot;
     if (bth_control_tx_reserve(replies_,1,&slot)!=BTH_OK) return;
@@ -372,7 +445,7 @@ Status LeProfiles::notify(const uint8_t* value,size_t length) {
         (stats_.connected && stats_.notify_enabled && length>att_.mtu-3u)) return Status::InvalidArgument;
     if (notify_pending_) return Status::Busy;
     if (length) memcpy(tx_value_,value,length);
-    tx_length_=static_cast<uint16_t>(length); attributes_[10].value.len=length;
+    tx_length_=static_cast<uint16_t>(length); attributes_[9].value.len=length;
     notify_pending_=stats_.connected && stats_.notify_enabled;
     return Status::Ok;
 }

@@ -1,6 +1,7 @@
 // Private, unexecuted expected-RED fixture. Actual host/profiles/core, fake wire.
 // No radio, phone, serial, decoder, I2S or wall-clock API is used.
 #include <algorithm>
+#include <cstring>
 #include <new>
 #define private public
 #include "../../src/owned/OwnedHost.cpp"

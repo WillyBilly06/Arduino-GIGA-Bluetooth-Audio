@@ -1,4 +1,5 @@
-/* GigaBredr modification notice, 2026-10-21: portable decoder port;
+/* GigaBredr modification notice, 2026-10-29: promote cache bytes before shifts;
+ * 2026-10-21: portable decoder port;
  * build guards, relative includes, tracked allocation and bounds/ARM fixes.
  * Original copyright and license notices remain below unchanged.
  * Per-file original/port SHA-256: docs/source-provenance.json. */
@@ -97,9 +98,9 @@ static __inline void RefillBitstreamCache(BitStreamInfo *bsi)
 	int nBytes = bsi->nBytes;	
 	if (nBytes >= 4) {
 		/* optimize for common case, independent of machine endian-ness */
-		bsi->iCache  = (*bsi->bytePtr++) << 24;
-		bsi->iCache |= (*bsi->bytePtr++) << 16;
-		bsi->iCache |= (*bsi->bytePtr++) <<  8;
+		bsi->iCache  = (unsigned int)(*bsi->bytePtr++) << 24;
+		bsi->iCache |= (unsigned int)(*bsi->bytePtr++) << 16;
+		bsi->iCache |= (unsigned int)(*bsi->bytePtr++) <<  8;
 		bsi->iCache |= (*bsi->bytePtr++);
 	
 		bsi->cachedBits = 32;

@@ -36,8 +36,9 @@ bth_status_t bth_rfcomm_encode(uint8_t dlci,bool cr,uint8_t ctl,bool pf,bool has
 }
 static bool live(const bth_rfcomm_t* s,uint32_t g){return s&&s->initialized&&g&&s->generation==g;}
 static bth_rfcomm_dlc_t* find(bth_rfcomm_t* s,uint8_t d){unsigned i;for(i=0;i<BTH_RFCOMM_DLC_LIMIT;++i)if(s->dlc[i].state&&s->dlc[i].dlci==d)return &s->dlc[i];return 0;}
-static bth_rfcomm_dlc_t* allocate(bth_rfcomm_t* s,uint8_t d){unsigned i;bth_rfcomm_dlc_t* c=find(s,d);if(c)return c;for(i=0;i<BTH_RFCOMM_DLC_LIMIT;++i)if(!s->dlc[i].state){c=&s->dlc[i];memset(c,0,sizeof *c);c->dlci=d;return c;}return 0;}
+static bth_rfcomm_dlc_t* allocate(bth_rfcomm_t* s,uint8_t d){unsigned i;bth_rfcomm_dlc_t* c=find(s,d);if(c)return c;for(i=0;i<BTH_RFCOMM_DLC_LIMIT;++i)if(!s->dlc[i].state){c=&s->dlc[i];memset(c,0,sizeof *c);c->dlci=d;c->window=s->window;return c;}return 0;}
 static bool incoming(const bth_rfcomm_t* s,uint8_t d){return d>=2&&((d&1)==(s->initiator?1:0))&&(s->listener_mask&(1u<<(d>>1)));}
+static uint8_t listener_window(const bth_rfcomm_t* s,uint8_t d){unsigned i;const uint8_t scn=d>>1;if(incoming(s,d))for(i=0;i<BTH_RFCOMM_DLC_LIMIT;++i)if(s->listener_scn[i]==scn&&s->listener_window[i])return s->listener_window[i];return s->window;}
 static bth_status_t frame(bth_rfcomm_t* s,uint8_t d,uint8_t ctl,bool command,uint8_t* out,size_t cap,size_t* n){return bth_rfcomm_encode(d,command?s->initiator:!s->initiator,ctl,true,false,0,0,0,out,cap,n);}
 static bth_status_t mcc(bth_rfcomm_t* s,uint8_t type,bool command,const uint8_t* p,size_t len,uint8_t* out,size_t cap,size_t* n){
  uint8_t data[BTH_RFCOMM_MTU_LIMIT];size_t header=1+length_size(len);if(len>sizeof data-header)return BTH_ERR_CAPACITY;
@@ -54,6 +55,12 @@ bth_status_t bth_rfcomm_add_listener(bth_rfcomm_t* s,uint32_t g,uint8_t scn){
  for(i=1;i<=30;++i)if(s->listener_mask&(1u<<i))++count;if(count>=BTH_RFCOMM_DLC_LIMIT)return BTH_ERR_CAPACITY;
  s->listener_mask|=1u<<scn;return BTH_OK;
 }
+bth_status_t bth_rfcomm_set_listener_window(bth_rfcomm_t* s,uint32_t g,uint8_t scn,uint8_t window){
+ unsigned i,slot=BTH_RFCOMM_DLC_LIMIT;if(!live(s,g))return BTH_IGNORED;if(!scn||scn>30||!window||window>7||!(s->listener_mask&(1u<<scn)))return BTH_ERR_PARAM;
+ if(s->mux!=BTH_RFCOMM_CLOSED)return BTH_ERR_STATE;
+ for(i=0;i<BTH_RFCOMM_DLC_LIMIT;++i){if(s->listener_scn[i]==scn){slot=i;break;}if(!s->listener_scn[i]&&slot==BTH_RFCOMM_DLC_LIMIT)slot=i;}
+ if(slot==BTH_RFCOMM_DLC_LIMIT)return BTH_ERR_CAPACITY;s->listener_scn[slot]=scn;s->listener_window[slot]=window;return BTH_OK;
+}
 void bth_rfcomm_close(bth_rfcomm_t* s){if(s)memset(s,0,sizeof *s);}
 bth_status_t bth_rfcomm_start(bth_rfcomm_t* s,uint32_t g,uint32_t now,uint8_t* out,size_t cap,size_t* n){
  bth_status_t st;if(!n)return BTH_ERR_PARAM;*n=0;if(!live(s,g))return BTH_IGNORED;if(!s->initiator||s->mux!=BTH_RFCOMM_CLOSED)return BTH_ERR_STATE;
@@ -64,7 +71,7 @@ bth_status_t bth_rfcomm_open(bth_rfcomm_t* s,uint32_t g,uint8_t scn,bool credits
  if(!n)return BTH_ERR_PARAM;*n=0;if(!live(s,g))return BTH_IGNORED;if(bth_rfcomm_expire(s,g,now)==BTH_OK)return BTH_IGNORED;if(s->mux!=BTH_RFCOMM_OPEN||!scn||scn>30)return BTH_ERR_PARAM;
  p[0]=(uint8_t)(scn*2+(s->initiator?0:1));if(find(s,p[0]))return BTH_ERR_STATE;if(s->mode==MODE_CREDIT&&!credits)return BTH_ERR_STATE;
  if(!s->mode){unsigned i;for(i=0;i<BTH_RFCOMM_DLC_LIMIT;++i)if(s->dlc[i].state)return BTH_MORE;}
- copy=*s;c=allocate(&copy,p[0]);if(!c)return BTH_ERR_CAPACITY;c->state=DLC_PN_WAIT;c->mtu=s->mtu;c->credit=credits&&s->mode!=MODE_LEGACY;c->rx_credits=c->credit?s->window:0;c->deadline=now+60000;
+ copy=*s;c=allocate(&copy,p[0]);if(!c)return BTH_ERR_CAPACITY;c->state=DLC_PN_WAIT;c->mtu=s->mtu;c->credit=credits&&s->mode!=MODE_LEGACY;c->rx_credits=c->credit?c->window:0;c->deadline=now+60000;
  p[1]=c->credit?0xf0:0;p[2]=7;p[4]=(uint8_t)c->mtu;p[5]=(uint8_t)(c->mtu>>8);p[7]=c->rx_credits;
  st=mcc(&copy,PN,true,p,8,out,cap,n);if(st==BTH_OK)*s=copy;return st;
 }
@@ -81,10 +88,10 @@ static bth_status_t receive_mcc(bth_rfcomm_t* s,uint32_t now,bth_span_t m,uint8_
  if(type==PN){
   uint8_t d;uint16_t mtu;bool credit;if(len!=8)return BTH_ERR_LENGTH;d=p[0];mtu=bth_read_le16(p+4);if(!valid_dlci(d)||!d)return BTH_ERR_PARAM;c=find(s,d);if(mtu<23)return command?reject_dlc(s,d,out,cap,n,e):BTH_ERR_PARAM;
   if(!command){if(!c||c->state!=DLC_PN_WAIT)return BTH_IGNORED;if(mtu>c->mtu)return BTH_ERR_PARAM;credit=(p[1]>>4)==14&&c->credit;
-   if(s->mode&&credit!=(s->mode==MODE_CREDIT))return BTH_ERR_STATE;c->credit=credit;c->mtu=mtu;c->tx_credits=credit?(p[7]&7):0;c->rx_credits=credit?s->window:0;c->state=DLC_SABM_PENDING;c->deadline=now+60000;return BTH_OK;}
+   if(s->mode&&credit!=(s->mode==MODE_CREDIT))return BTH_ERR_STATE;c->credit=credit;c->mtu=mtu;c->tx_credits=credit?(p[7]&7):0;c->rx_credits=credit?c->window:0;c->state=DLC_SABM_PENDING;c->deadline=now+60000;return BTH_OK;}
   if(!incoming(s,d)||(!c&&s->mode==MODE_CREDIT&&(p[1]>>4)!=15)||(c&&c->state!=DLC_OPEN))return frame(s,d,BTH_RFCOMM_DM,false,out,cap,n);
   if(!c){if(!s->mode){unsigned i;for(i=0;i<BTH_RFCOMM_DLC_LIMIT;++i)if(s->dlc[i].state)return frame(s,d,BTH_RFCOMM_DM,false,out,cap,n);}
-   c=allocate(s,d);if(!c)return frame(s,d,BTH_RFCOMM_DM,false,out,cap,n);c->state=DLC_SABM_PENDING;c->mtu=mtu<s->mtu?mtu:s->mtu;c->credit=(p[1]>>4)==15&&s->mode!=MODE_LEGACY;c->tx_credits=c->credit?(p[7]&7):0;c->rx_credits=c->credit?s->window:0;c->deadline=now+60000;}
+   c=allocate(s,d);if(!c)return frame(s,d,BTH_RFCOMM_DM,false,out,cap,n);c->state=DLC_SABM_PENDING;c->mtu=mtu<s->mtu?mtu:s->mtu;c->window=listener_window(s,d);c->credit=(p[1]>>4)==15&&s->mode!=MODE_LEGACY;c->tx_credits=c->credit?(p[7]&7):0;c->rx_credits=c->credit?c->window:0;c->deadline=now+60000;}
   // On an open DLC, report current values; never reapply initial credits.
   memset(reply,0,8);reply[0]=d;reply[1]=c->state==DLC_OPEN?0:(c->credit?0xe0:0);reply[2]=p[2]&63;reply[4]=(uint8_t)c->mtu;reply[5]=(uint8_t)(c->mtu>>8);reply[7]=c->state==DLC_OPEN?0:c->rx_credits;
   if(c->mtu>mtu)return reject_dlc(s,d,out,cap,n,e);
@@ -119,7 +126,7 @@ static bth_status_t receive_impl(bth_rfcomm_t* s,uint32_t now,const bth_rfcomm_f
   if(s->mux!=BTH_RFCOMM_OPEN)return frame(s,v->dlci,BTH_RFCOMM_DM,false,out,cap,n);c=find(s,v->dlci);
   if(v->control==BTH_RFCOMM_DISC){st=frame(s,v->dlci,c&&c->state==DLC_OPEN?BTH_RFCOMM_UA:BTH_RFCOMM_DM,false,out,cap,n);if(st==BTH_OK&&c){memset(c,0,sizeof *c);event(s,e,BTH_RFCOMM_DLC_CLOSED,v->dlci);}return st;}
   if(!incoming(s,v->dlci))return frame(s,v->dlci,BTH_RFCOMM_DM,false,out,cap,n);
-  if(!c){if(s->mode==MODE_CREDIT)return frame(s,v->dlci,BTH_RFCOMM_DM,false,out,cap,n);c=allocate(s,v->dlci);if(!c)return frame(s,v->dlci,BTH_RFCOMM_DM,false,out,cap,n);c->mtu=127;c->credit=false;}
+  if(!c){if(s->mode==MODE_CREDIT)return frame(s,v->dlci,BTH_RFCOMM_DM,false,out,cap,n);c=allocate(s,v->dlci);if(!c)return frame(s,v->dlci,BTH_RFCOMM_DM,false,out,cap,n);c->mtu=127;c->credit=false;c->window=listener_window(s,v->dlci);}
   if(c->state==DLC_REFUSED)return frame(s,v->dlci,BTH_RFCOMM_DM,false,out,cap,n);
   if(c->state==DLC_OPEN)return frame(s,v->dlci,BTH_RFCOMM_UA,false,out,cap,n);
   st=frame(s,v->dlci,BTH_RFCOMM_UA,false,out,cap,n);if(st==BTH_OK){c->state=DLC_OPEN;c->deadline=now+60000;if(!s->mode)s->mode=c->credit?MODE_CREDIT:MODE_LEGACY;event(s,e,BTH_RFCOMM_DLC_OPENED,v->dlci);}return st;
@@ -152,7 +159,7 @@ bth_status_t bth_rfcomm_send(bth_rfcomm_t* s,uint32_t g,uint8_t d,const uint8_t*
  st=bth_rfcomm_encode(d,s->initiator,BTH_RFCOMM_UIH,false,false,0,p,len,out,cap,n);if(st==BTH_OK&&len&&c->credit)--c->tx_credits;return st;
 }
 bth_status_t bth_rfcomm_release(bth_rfcomm_t* s,uint32_t g,uint8_t d,uint8_t count){bth_rfcomm_dlc_t* c;if(!live(s,g))return BTH_IGNORED;c=find(s,d);if(!c||c->state!=DLC_OPEN||!c->credit)return BTH_ERR_STATE;
- if(!count||count>s->window-c->rx_credits-c->grant_pending)return BTH_ERR_PARAM;c->grant_pending=(uint8_t)(c->grant_pending+count);return BTH_OK;}
+ if(!count||count>c->window-c->rx_credits-c->grant_pending)return BTH_ERR_PARAM;c->grant_pending=(uint8_t)(c->grant_pending+count);return BTH_OK;}
 bth_status_t bth_rfcomm_set_flow(bth_rfcomm_t* s,uint32_t g,uint8_t d,bool off,uint8_t* out,size_t cap,size_t* n){bth_rfcomm_dlc_t* c;bth_status_t st;uint8_t p[2];if(!n)return BTH_ERR_PARAM;*n=0;if(!live(s,g))return BTH_IGNORED;c=find(s,d);if(!c||c->state!=DLC_OPEN)return BTH_ERR_STATE;if(c->credit)return BTH_UNSUPPORTED;
  p[0]=(uint8_t)((d<<2)|3);p[1]=0x8d|(off?2:0);st=mcc(s,MSC,true,p,2,out,cap,n);if(st==BTH_OK)c->local_flow_off=off;return st;}
 bth_status_t bth_rfcomm_disconnect(bth_rfcomm_t* s,uint32_t g,uint8_t d,uint32_t now,uint8_t* out,size_t cap,size_t* n){bth_rfcomm_dlc_t* c;bth_status_t st;if(!n)return BTH_ERR_PARAM;*n=0;if(!live(s,g))return BTH_IGNORED;if(bth_rfcomm_expire(s,g,now)==BTH_OK)return BTH_IGNORED;if(s->mux!=BTH_RFCOMM_OPEN)return BTH_ERR_STATE;c=d?find(s,d):0;if(d&&(!c||c->state!=DLC_OPEN))return BTH_ERR_STATE;

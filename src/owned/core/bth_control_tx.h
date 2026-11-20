@@ -18,7 +18,7 @@ typedef struct {
     uint32_t owner;
     uint16_t handle;
     uint8_t order[BTH_CONTROL_SLOTS],read,count,owned;
-    bool attached;
+    bool attached,att_blocked;
     uint16_t cursor; // Current FIFO-head offset; uses existing tail padding.
 } bth_control_peer_t;
 typedef struct {
@@ -30,12 +30,14 @@ typedef struct {
 // Single owner, initialize only with all outstanding reservations retired.
 // Actor selects first peer and data eligibility without changing queue state.
 typedef struct { uint8_t first_peer; bool le_data_allowed; uint16_t le_data_max_payload; bool le_control_pending; } bth_control_tx_policy_t;
-typedef struct { uint16_t payload_bytes; uint8_t peer; bool le_data,urgent_bypass,paced,shared_reserved; } bth_control_tx_info_t;
+typedef struct { uint16_t payload_bytes; uint8_t peer; bool le_data,urgent_bypass,paced,shared_reserved;
+    bth_control_token_t token; uint32_t owner; bool first_fragment,final_fragment; } bth_control_tx_info_t;
 void bth_control_tx_init(bth_control_tx_t *q);
 bool bth_control_tx_attach(bth_control_tx_t *q,uint8_t peer,uint16_t handle,uint32_t owner);
 // Entire disconnected generation only; never cancel a partially sent SDU on a
 // still-live handle. Already sent controller credits are owned by HCI flow.
 bool bth_control_tx_detach(bth_control_tx_t *q,uint8_t peer,uint32_t owner);
+bool bth_control_tx_block_att(bth_control_tx_t *q,uint8_t peer,uint32_t owner);
 unsigned bth_control_tx_available(const bth_control_tx_t *q,uint8_t peer);
 // Read-only channel drain query. Includes prepared/partial ACL state and validates
 // the exact live peer owner; never releases a slot, packet credit or reservation.

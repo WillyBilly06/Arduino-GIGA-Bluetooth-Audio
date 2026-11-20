@@ -23,9 +23,8 @@ typedef struct {
  bth_sco_config_t config;bth_sco_state_t state;uint8_t* receive_storage;size_t receive_bytes;
  uint32_t generation,serial,deadline;uint16_t handle,tx_available,tx_outstanding,pending_completed;
  bth_sco_rx_slot_t receive[BTH_SCO_RX_LIMIT];uint8_t rx_read,rx_count,last_error;
- // Local fallback entitlement, NOT controller packet credits. Its bound is
- // RX storage bytes plus59 bytes of codec-unit remainder. Every accepted RX
- // byte is retained; overflow is an explicit error, never silent clipping.
+ // Reserved legacy fields: RX-derived TX entitlement is disabled because
+ // received data does not prove controller TX buffer retirement.
  uint16_t rx_pacing_bytes;
  uint8_t interval_slots,air_mode;uint16_t air_rx_bytes,air_tx_bytes;
  uint16_t pending_opcode;bool initialized,ready,reject,command_queued,tx_reserved,completed_reserved,active_handle,close_on_complete;

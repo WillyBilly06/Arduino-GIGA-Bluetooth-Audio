@@ -9,7 +9,7 @@
 #undef private
 #include "GigaBredr.cpp"
 using namespace giga_bredr;
-namespace {detail::RadioCallbacks callbacks;unsigned checks=0,ends=0;uint32_t output_rate=0;size_t output_frames=0;bool output_active=false;int32_t last_slot=0;
+namespace {detail::RadioCallbacks callbacks;unsigned hs_calls=0;bool hs_connected=true;uint32_t hs_generation=7;Status hs_result=Status::Ok;unsigned checks=0,ends=0;uint32_t output_rate=0;size_t output_frames=0;bool output_active=false;int32_t last_slot=0;
 struct MicContext {GigaBredr* receiver;VoiceInputToken token;unsigned reads=0;Status reentry=Status::Ok;bool retired=false;};}
 #define CHECK(x) do{++checks;if(!(x)){std::fprintf(stderr,"CHECK line%d %s\n",__LINE__,#x);std::abort();}}while(0)
 namespace giga_bredr { namespace detail {
@@ -19,7 +19,8 @@ Status radioBegin(const char*,uint32_t,const RadioCallbacks& c,const BleConfig&)
 Status radioBegin(const char* n,uint32_t m,const RadioCallbacks& c){return radioBegin(n,m,c,{});}void radioPoll(){}void radioEnd(){callbacks={};}RadioStats radioStats(){return {};}BleStats radioBleStats(){return {};}
 Status radioBleNotify(const uint8_t*,size_t){return Status::Unsupported;}bool radioBleReadWrite(BleWrite&){return false;}Status radioBleDisconnect(uint32_t,bool){return Status::Unsupported;}Status radioBleResumeAdvertising(){return Status::Unsupported;}
 AvrcpStatus radioAvrcpStatus(){return {};}AvrcpMetadata radioAvrcpMetadata(){return {};}Status radioAvrcpCommand(AvrcpCommand,uint32_t,uint32_t&){return Status::Unsupported;}Status radioAvrcpCancel(uint32_t,uint32_t){return Status::Unsupported;}
-Status radioVoiceStatus(VoiceStatus& s){s.enabled=s.controller_ready=s.backend_available=true;s.generation=2;return Status::Ok;}Status radioVoiceCommand(HfpCommand,uint32_t generation,const char*){return generation==7?Status::Ok:Status::InvalidArgument;}
+Status radioVoiceStatus(VoiceStatus& s){s.enabled=s.controller_ready=s.backend_available=true;s.generation=2;s.headset.connected=hs_connected;s.headset.generation=hs_connected?hs_generation:0;return Status::Ok;}Status radioVoiceCommand(HfpCommand,uint32_t generation,const char*){return generation==7?Status::Ok:Status::InvalidArgument;}
+Status radioHeadsetCommand(HspCommand c,uint32_t generation){++hs_calls;return c==HspCommand::Button&&generation==hs_generation?hs_result:Status::InvalidArgument;}
 Status i2sBegin(uint32_t r,uint16_t,const I2sPins&,uint16_t){CHECK(!output_active);output_rate=r;output_active=true;return Status::Ok;}Status i2sBegin(uint32_t r,uint16_t ms,const I2sPins& p){return i2sBegin(r,ms,p,0);}Status i2sBegin(uint32_t r,uint16_t ms){return i2sBegin(r,ms,I2sPins{},0);}Status i2sBegin(uint32_t r){return i2sBegin(r,20);}
 size_t i2sWrite(const int32_t* p,size_t frames){CHECK(output_active);output_frames+=frames;if(frames){last_slot=p[2*frames-2];CHECK(last_slot==p[2*frames-1]);}return frames;}void i2sEnd(){output_active=false;++ends;}OutputStats i2sStats(){OutputStats s;s.initialized=s.running=output_active;s.sample_rate=output_rate;return s;}OutputTimingSnapshot i2sTiming(){return {};}PcmRecoverySnapshot i2sRecovery(){return {};}
 }}

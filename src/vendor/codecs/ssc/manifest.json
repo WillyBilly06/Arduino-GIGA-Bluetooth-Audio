@@ -1,0 +1,152 @@
+{
+  "qualification": "SAMSUNG_SSC_DECODER_IMPORT_HOST_TESTED_ONLY",
+  "upstream": "https://github.com/WillyBilly06/samsung-ssc-decoder",
+  "upstream_commit": "b9425314ccf961599ac16d14a14d907e679eb559",
+  "source_selection": "ssc_decoder/ C sources and headers, COPYING.opus and the repository LICENSE; ESP-IDF component files and tools omitted",
+  "files": [
+    {
+      "source": "ssc_decoder/COPYING.opus",
+      "destination": "src/vendor/codecs/ssc/COPYING.opus",
+      "source_sha256": "8338ce8d922bb4416ce3dd1e5680173332435e3f0755007ac7801ccd674fe682",
+      "exported_sha256": "8338ce8d922bb4416ce3dd1e5680173332435e3f0755007ac7801ccd674fe682",
+      "exported_bytes": 1928,
+      "modified": false,
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "LICENSE",
+      "destination": "src/vendor/codecs/ssc/LICENSE",
+      "source_sha256": "62dec7a1e5feb8592a5bb71a043f2f88576f984da33c9c38f6cf1f85c96147cd",
+      "exported_sha256": "62dec7a1e5feb8592a5bb71a043f2f88576f984da33c9c38f6cf1f85c96147cd",
+      "exported_bytes": 2141,
+      "modified": false,
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_alloc.c",
+      "destination": "src/vendor/codecs/ssc/ssc_alloc.c",
+      "source_sha256": "ebc4d7768af09312d688ee31fd02339a2fbe04783f5e5e299e2f93736e0b9cc2",
+      "exported_sha256": "5365c5684595f6ca135179667a71f11b44349ba0ff66b431377230393df9f022",
+      "exported_bytes": 13360,
+      "modified": true,
+      "modification": "GigaBredr notice and GBR_ENABLE_SSC guard around the unchanged original body",
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_bands.c",
+      "destination": "src/vendor/codecs/ssc/ssc_bands.c",
+      "source_sha256": "9f64df2c0011a8b070b59d2f27291994d738196bb17626e6615fb3d3f4f43c0a",
+      "exported_sha256": "bf030012722032168ffc79ea9fd3ebb4ba6fc0af8eb5ecb4db92bfb601716d2c",
+      "exported_bytes": 28953,
+      "modified": true,
+      "modification": "GigaBredr notice and GBR_ENABLE_SSC guard around the unchanged original body",
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_cwrs.c",
+      "destination": "src/vendor/codecs/ssc/ssc_cwrs.c",
+      "source_sha256": "d287ec56cb9c117082ebf147140573e342cdb97f1cec2939b79629b442579cc3",
+      "exported_sha256": "be93e3e5548f754fa829ccb343aa024c104fd724ff2df78395fed2e1be1703bd",
+      "exported_bytes": 15160,
+      "modified": true,
+      "modification": "GigaBredr notice and GBR_ENABLE_SSC guard around the unchanged original body",
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_decoder.c",
+      "destination": "src/vendor/codecs/ssc/ssc_decoder.c",
+      "source_sha256": "09bf3dd6ed2ae6fa070ea262b25be80da3b333a594d9c59790d301dd07d37d1c",
+      "exported_sha256": "bb3e9b2d4e48a2c7b3fd9fda93a34eb39414018fdb45aa56b78b95ef3d2811c6",
+      "exported_bytes": 17527,
+      "modified": true,
+      "modification": "GigaBredr notice and GBR_ENABLE_SSC guard around the unchanged original body",
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_decoder.h",
+      "destination": "src/vendor/codecs/ssc/ssc_decoder.h",
+      "source_sha256": "c1a099a12bf1e6011e6a92447f27aacd83385af9cd56058f247acbcd9e3a0ab5",
+      "exported_sha256": "c1a099a12bf1e6011e6a92447f27aacd83385af9cd56058f247acbcd9e3a0ab5",
+      "exported_bytes": 4128,
+      "modified": false,
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_ec.c",
+      "destination": "src/vendor/codecs/ssc/ssc_ec.c",
+      "source_sha256": "54ccb6aca695eaa71e3f96fbc2cf2f62f2fce586b24e5e08788a182f107d68d7",
+      "exported_sha256": "6c6e15d398168dddef93eacc33e308d7eb20dee053352bb729a154193a34d388",
+      "exported_bytes": 6555,
+      "modified": true,
+      "modification": "GigaBredr notice and GBR_ENABLE_SSC guard around the unchanged original body",
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_ec.h",
+      "destination": "src/vendor/codecs/ssc/ssc_ec.h",
+      "source_sha256": "0c9b675178ea100dc279dd7db4a9a1b7354fd776f721ae8698b806a6b2c511cb",
+      "exported_sha256": "0c9b675178ea100dc279dd7db4a9a1b7354fd776f721ae8698b806a6b2c511cb",
+      "exported_bytes": 3319,
+      "modified": false,
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_energy.c",
+      "destination": "src/vendor/codecs/ssc/ssc_energy.c",
+      "source_sha256": "28b0add984f83434e76e66d92ac763ede4604cfa3d3288a9a63b80786bbb1728",
+      "exported_sha256": "8d9165ae302e92e0da46e1226d5315bdda99481877eac6927158457ebf085d18",
+      "exported_bytes": 6052,
+      "modified": true,
+      "modification": "GigaBredr notice and GBR_ENABLE_SSC guard around the unchanged original body",
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_internal.h",
+      "destination": "src/vendor/codecs/ssc/ssc_internal.h",
+      "source_sha256": "a77aab78541b8e7d7c59d84b89c162342129df2a6fe7b6389914d946620c0276",
+      "exported_sha256": "a77aab78541b8e7d7c59d84b89c162342129df2a6fe7b6389914d946620c0276",
+      "exported_bytes": 5204,
+      "modified": false,
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_synth.c",
+      "destination": "src/vendor/codecs/ssc/ssc_synth.c",
+      "source_sha256": "238fffcd753804393a75be6f785ff5100693bd8cfffc0e49344ddd8be0e9de8f",
+      "exported_sha256": "678b4ef14c5240db4bb7479950b6b8f9bb734b7e2ce020b0f78c07f3d34d0dfc",
+      "exported_bytes": 23442,
+      "modified": true,
+      "modification": "GigaBredr notice and GBR_ENABLE_SSC guard around the unchanged original body",
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_tables.c",
+      "destination": "src/vendor/codecs/ssc/ssc_tables.c",
+      "source_sha256": "46a3eff03e5c50ff3cefa46449e70c57fddc394f36631cf1199fbbec9691f935",
+      "exported_sha256": "86e5223d3b80ec7231114dd6d9e7f48c43f7c86e5f42d8bc07247b931ee8e7d3",
+      "exported_bytes": 9063,
+      "modified": true,
+      "modification": "GigaBredr notice and GBR_ENABLE_SSC guard around the unchanged original body",
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_tables.h",
+      "destination": "src/vendor/codecs/ssc/ssc_tables.h",
+      "source_sha256": "1e245ffb6652a9a34ab968b99a2c59cabee0303c8fd17857fb3aea7711fb73b7",
+      "exported_sha256": "1e245ffb6652a9a34ab968b99a2c59cabee0303c8fd17857fb3aea7711fb73b7",
+      "exported_bytes": 787,
+      "modified": false,
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    },
+    {
+      "source": "ssc_decoder/ssc_twiddle.c",
+      "destination": "src/vendor/codecs/ssc/ssc_twiddle.c",
+      "source_sha256": "b4ec13c5de4741ecf4677ee7ddb729a5f7e8f233adf8cebecb51c7f90f7954e0",
+      "exported_sha256": "fe7765df52c297a559898e39381f04b1837bd86e9879626e332883d2bb8f3487",
+      "exported_bytes": 56784,
+      "modified": true,
+      "modification": "GigaBredr notice and GBR_ENABLE_SSC guard around the unchanged original body",
+      "license": "BSD-3-Clause (LICENSE, William Ho); libopus 1.1-derived parts BSD-3-Clause (COPYING.opus)"
+    }
+  ]
+}

@@ -1,5 +1,44 @@
 # Changelog
 
+## Local unreleased connection, bonding, SSC and coexistence work - 2026-11-20
+
+- Fix Linux/BlueZ A2DP connections: accepted links no longer race the
+  initiator's authentication (Command Disallowed -> EBUSY). The local request
+  waits up to 300 ms, is dropped when the peer authenticates or pairs, and runs
+  at once when a profile channel is already waiting for security.
+- Faster connects: 40 ms interlaced page/inquiry scan while idle (scans stay off
+  while a Classic peer is attached) and an optional low-latency QoS request.
+  Reconnects from a Linux source measured 0.56-0.74 s (previously failing, then
+  1.0-3.3 s). See docs/validation/connect-speed-2026-11-20.md.
+- Add opt-in `GigaQspiBondStorage`: Classic link keys persist in the last MiB of
+  QSPI flash, so phones reconnect after resets and sketch uploads without
+  pairing again. Used by the Receiver example.
+- Add the Samsung SSC decoder (44.1/48 kHz, HiFi 48/24, UHQ 96/24) behind
+  `GBR_ENABLE_SSC` with lazy allocation (22,920-byte state); bit-exact native
+  vectors and sanitizer malformed-input tests. No Galaxy phone interop yet.
+- BLE coexistence: `BleConfig::audio_coexistence_reserve_ms` (default 50) widens
+  the automatic PCM reserve of >=88.2 kHz streams while BLE is enabled.
+- Diagnostics: `GIGA_BREDR_CONNECT_TRACE` connection timeline and controller
+  capability dump (CSB/CPB bits); `GIGA_BREDR_ACL_PRIORITY_DIRECTION`.
+- Portability: native tests build with clang/gcc on Linux (missing standard
+  includes, one misleading-indentation warning).
+- Library Manager metadata: `url`, author/maintainer; `arduino-lint
+  --library-manager submit --compliance strict` passes.
+
+## Local unreleased LHDC AOSP synthesis correction - 2026-10-28
+
+- Replace fitted synthesis windows with float tables generated from the pinned
+  AOSP encoder's Q31 analysis ramps; preserve the fast overlap path when ramp
+  endpoints round to unity.
+- Replace empirical volume trims with the transform/container scale
+  `N * 2^(output_bits-32)`. Eight synthetic AOSP encoder configurations pass
+  level and signal/error regression checks; 16-bit level errors improve from
+  roughly -5 dB to within 0.011 dB.
+- Add pinned fixtures, private fast/general overlap checks and sanitizer tests.
+  Full native suite and official Cortex-M7 Receiver build/static audit pass.
+  This local correction is not flashed or published. ARM numerical parity,
+  physical audio and field continuity remain unqualified.
+
 ## 0.1.0-dev.17 - experimental development source, 2026-10-28
 
 - Allow ordered accepted A2DP media to progress while an eligible completed read-only SDP/AVRCP control waits for transmit/reply capacity. Park the pending control in an existing bounded spare Packet buffer before releasing its borrowed receive lease; add no per-frame heap allocation or IRQ work.

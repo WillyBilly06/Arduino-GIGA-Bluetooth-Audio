@@ -10,6 +10,7 @@ extern "C" {
 #include "vendor/codecs/lhdc/lhdc_imdct.h"
 #include "vendor/codecs/lhdc/lhdc_entropy_dec.h"
 }
+#include <initializer_list>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>

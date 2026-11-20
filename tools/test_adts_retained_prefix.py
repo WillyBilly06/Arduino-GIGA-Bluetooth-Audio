@@ -12,6 +12,10 @@ def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--cc');p.add_argument('--cxx');p.add_argument('--output',type=Path,default=ROOT/'build/adts-retained');p.add_argument('--plan',action='store_true');p.add_argument('--sanitize',action='store_true');p.add_argument('--asan',action='store_true');a=p.parse_args()
  cc=a.cc or shutil.which('clang');cxx=a.cxx or shutil.which('clang++')
  if not cc or not cxx:p.error('clang and clang++ required')
+ env=os.environ.copy()
+ if a.asan and not a.plan:
+  rt=Path(subprocess.check_output([cc,'-print-runtime-dir'],text=True,timeout=15).strip())
+  env['PATH']=str(rt)+os.pathsep+str(rt.parent/'windows')+os.pathsep+env.get('PATH','')
  out=a.output.resolve()
  if out==ROOT or any(ROOT/x==out or ROOT/x in out.parents for x in ('src','tests','tools','examples','docs')):p.error('output must be outside source directories')
  out.mkdir(parents=True,exist_ok=True)
@@ -22,11 +26,11 @@ def main():
  def run(args):
   cmd=list(map(str,args));row=dict(command=cmd,executed=False,exit=None);records.append(row)
   if a.plan:return
-  result=subprocess.run(cmd,cwd=ROOT,text=True,capture_output=True,timeout=120);row.update(executed=True,exit=result.returncode,stdout=result.stdout,stderr=result.stderr);print(result.stdout+result.stderr,end='',flush=True);result.check_returncode()
+  result=subprocess.run(cmd,cwd=ROOT,env=env,text=True,capture_output=True,timeout=120);row.update(executed=True,exit=result.returncode,stdout=result.stdout,stderr=result.stderr);print(result.stdout+result.stderr,end='',flush=True);result.check_returncode()
  cfiles=[*sorted((ROOT/'src/vendor/codecs/aac').glob('*.c')),*voice_extra_c(ROOT)];objects=[]
  for i,source in enumerate(cfiles):
   obj=out/('c%02d.o'%i);run([cc,'-std=c11',*flags,*(['-Wno-error']if 'aac'in source.parts else[]),'-c',source,'-o',obj]);objects.append(obj)
- codec=out/'actual-aac-codecs.o';isolation=['-DGBR_ENABLE_SBC=0','-DGBR_ENABLE_APTX=0','-DGBR_ENABLE_LDAC=0','-DGBR_ENABLE_LHDC=0','-DGBR_ENABLE_OPUS=0','-DcodecOperations=realCodecOperations','-DcompiledCodecs=realCompiledCodecs']
+ codec=out/'actual-aac-codecs.o';isolation=['-DGBR_ENABLE_SBC=0','-DGBR_ENABLE_APTX=0','-DGBR_ENABLE_LDAC=0','-DGBR_ENABLE_LHDC=0','-DGBR_ENABLE_OPUS=0','-DGBR_ENABLE_SSC=0','-DcodecOperations=realCodecOperations','-DcompiledCodecs=realCompiledCodecs']
  run([cxx,'-std=c++17',*flags,'-Wno-error',*isolation,'-c','src/codecs/Codecs.cpp','-o',codec]);objects.append(codec)
  front=['src/detail/Memory.cpp','src/detail/Media.cpp','src/detail/Decoder.cpp','src/detail/PacketQueue.cpp','src/detail/AudioTiming.cpp','src/Types.cpp',*VOICE_FRONTEND_SOURCES,'tests/support/voice_radio_unavailable.cpp']
  exe=out/('adts-retained-prefix.exe'if os.name=='nt'else'adts-retained-prefix');run([cxx,'-std=c++17',*flags,*(['-pthread']if os.name!='nt'else[]),'tests/test_adts_retained_prefix.cpp',*front,*objects,'-o',exe]);run([exe])

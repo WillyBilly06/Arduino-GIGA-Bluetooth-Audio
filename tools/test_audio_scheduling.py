@@ -99,7 +99,7 @@ def main():
     cc = compiler(args.cc or os.environ.get('CC'), 'clang', cxx)
     env = os.environ.copy()
     env['PYTHONDONTWRITEBYTECODE'] = '1'
-    flags = ['-O1', '-g', '-Wall', '-Wextra', '-Werror', '-fsanitize=address,undefined', '-fno-sanitize=vptr', '-fno-omit-frame-pointer']
+    flags = ['-O1', '-g', '-Wall', '-Wextra', '-Werror', '-D_CRT_SECURE_NO_WARNINGS', '-fsanitize=address,undefined', '-fno-sanitize=vptr', '-fno-omit-frame-pointer']
     tests = ['test_owned_host_expanded_control', 'test_owned_host_mtu_update', 'test_output_wait_lifecycle', 'test_output_priming', 'test_output_pipeline']
     test_paths = [ROOT / 'tests' / (name + '.cpp') for name in tests]
     test_paths += [ROOT / 'tests/test_owned_host.cpp', *sorted((ROOT / 'tests/support/audio_scheduler').glob('*.h')), Path(__file__).resolve(), ROOT / 'tools/portable_sources.py', *unavailable_voice_boundary(ROOT)]
@@ -118,6 +118,8 @@ def main():
 
     def run(label, command, timeout=120):
         command = [str(arg) for arg in command]
+        if os.name == 'nt' and command[0] == str(cxx) and any(arg.startswith('-std=c++') for arg in command):
+            command[1:1] = ['-include', 'cstddef']
         if args.plan:
             steps.append({'label': label, 'command': command, 'executed': False, 'exit_code': None})
             persist()

@@ -1,3 +1,24 @@
+# Current unreleased shared-clock source
+
+After an unhealthy sample, output recovery, invalid owner/counters, refused
+acknowledgment or an observation gap above 250 ms, the controller retires its
+frames-per-packet estimate and relearns from fresh healthy packet/frame deltas.
+Valid completed fragments with zero output stay in the packet denominator; no
+new trim is requested until a positive estimate and the existing learning
+interval are available. Cumulative counters and the last acknowledged trim are
+preserved, and a configured target is retained for relearning. Audio/codec
+processing continues while estimation is unavailable.
+
+This remains an approximate compressed-inventory regulator. Retained data can
+span a fault and packet durations need not match the historical average; an
+exact duration ledger is not implemented. Nominal codec rate and PLL trim are
+not measurements of sender Hz, LRCK or acoustic performance. The 20 microsecond
+backend guard and interrupt-mask policy are unchanged. Synthetic tests and a
+CM7 build do not establish physical timing or continuity. See
+[current local source scope and limits](validation/current-local-source-2026-10-29.md).
+
+---
+
 R3 code-input parity: Root verified/extracted the475-file R2 ZIP and built the official all-codec M7 source in106.797s (exit0/quiescent). The corrected static audit passed; its first failed attempt is retained. The binary is byte-identical to the field-tested f42 image, so that finite clock-failed observation applies by exact binary parity, not a new hardware test. R3 changes only noncompiler documentation; all365 ordered input hashes/projection remain2cb3a3a2.... The final archive self-hash belongs only in the external sidecar. No clock/stability/fidelity/E2E pass is created.
 
 # Current clock qualification scope - experimental dev.9

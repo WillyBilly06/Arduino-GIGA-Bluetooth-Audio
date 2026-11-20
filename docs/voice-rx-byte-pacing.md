@@ -1,3 +1,9 @@
+> **Current source:** the RX-derived byte-credit fallback described below is
+> retired. `allow_rx_pacing` remains for source compatibility but is ignored;
+> HCI SCO backend readiness and TX require verified synchronous completion flow.
+> The following is a preserved historical byte-conservation note, not a current
+> policy, a controller-retirement guarantee or voice qualification.
+
 # Experimental fallback byte-conservation stage
 
 Root first executed the unchanged strict fixture against the old source: unfragmented/NCP controls returned0 with3840bytes; fragmented CVSD and mSBC aborted with1920 versus3840expected bytes. This change repairs that opt-in source accounting. It is not complete physical pacing or a hardware voice qualification.

@@ -7,7 +7,7 @@ def main():
  cc=shutil.which('clang');cxx=shutil.which('clang++');assert cc and cxx,'clang and clang++ must be on PATH'
  if a.sanitize and os.name=='nt':
   dll=sorted((Path(cc).parent.parent/'lib/clang').glob('*/lib/windows'));assert dll;os.environ['PATH']=str(dll[-1])+os.pathsep+os.environ.get('PATH','')
- flags=['-O1','-g','-fwrapv','-fno-strict-aliasing','-D_CRT_SECURE_NO_WARNINGS','-I'+str(R/'src'),'-DGBR_ENABLE_SBC=0','-DGBR_ENABLE_AAC=0','-DGBR_ENABLE_AAC_HE=0','-DGBR_ENABLE_APTX=0','-DGBR_ENABLE_LDAC=0','-DGBR_ENABLE_OPUS=0']
+ flags=['-O1','-g','-fwrapv','-fno-strict-aliasing','-D_CRT_SECURE_NO_WARNINGS','-I'+str(R/'src'),'-DGBR_ENABLE_SBC=0','-DGBR_ENABLE_AAC=0','-DGBR_ENABLE_AAC_HE=0','-DGBR_ENABLE_APTX=0','-DGBR_ENABLE_LDAC=0','-DGBR_ENABLE_OPUS=0','-DGBR_ENABLE_SSC=0']
  if a.sanitize:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer']
  source=R/'src/vendor/codecs/lhdc/lhdc_dec.c';text=source.read_text();marker='lhdc_dec_ret_t lhdc_dec_decode_frame(';start=text.index(marker);end=text.index('/* Destroy a decoder instance:',start);prefix=text[:start];body=text[start:end];assert body.count('lhdc_dec_decode_channel_autosel(')==3
  # Preserve all branches under test. Only three channel calls in the public

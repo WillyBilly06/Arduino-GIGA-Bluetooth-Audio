@@ -1,0 +1,23 @@
+{
+  "scope": "isolated dev397 candidate; source-provenance.json retains historical snapshot",
+  "files": [
+    {
+      "destination": "src/vendor/codecs/aac/stproc.c",
+      "upstream_source": "decoders/AAC-LC/libhelix_aac/stproc.c",
+      "upstream_sha256": "a06116a66606976633fcea8ce175899b33e360b60117c6699e4d2931b33246d8",
+      "prior_port_sha256": "58485926bdde5d4b80c9717f0d8ba8391f8c3bee6b5ff0a4f7abc0fd4b9ce97d",
+      "candidate_sha256": "fa94866e61b9bd17d31930a0cd27d20cc871aae8d0d681c813ac935424960999",
+      "license": "RealNetworks notices retained; consult repository licensing documentation",
+      "change": "defined-clipped-stereo-scaling-2026-10-29"
+    },
+    {
+      "destination": "src/vendor/codecs/aac/pns.c",
+      "upstream_source": "decoders/AAC-LC/libhelix_aac/pns.c",
+      "upstream_sha256": "9a0462b62186df4d4072b50ee07312fac3ee5a75b5b5dc6f11440a4fce5fcb84",
+      "prior_port_sha256": "3d7b6421089f47644422e12e665b0e2eaad9b51ad7acb173fe7cfe841900c3cc",
+      "candidate_sha256": "b4e55416c20bba2efa7c5beb3240a5c12691b767b0730771e8d8a5afc86444b9",
+      "license": "RealNetworks notices retained; consult repository licensing documentation",
+      "change": "defined-bounded-pns-scaling-2026-10-29"
+    }
+  ]
+}

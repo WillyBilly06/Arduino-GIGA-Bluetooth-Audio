@@ -23,6 +23,11 @@ bool bth_control_tx_detach(bth_control_tx_t *q,uint8_t peer,uint32_t owner) {
         if (q->slots[i].state!=FREE && q->slots[i].peer==peer && q->slots[i].owner==owner) release(q,i);
     memset(&q->peers[peer],0,sizeof(q->peers[peer])); return true;
 }
+bool bth_control_tx_block_att(bth_control_tx_t *q,uint8_t peer,uint32_t owner) {
+    if (!q || !q->initialized || peer>=BTH_CONTROL_PEERS || !owner ||
+        !q->peers[peer].attached || q->peers[peer].owner!=owner) return false;
+    q->peers[peer].att_blocked=true; return true;
+}
 unsigned bth_control_tx_available(const bth_control_tx_t *q,uint8_t peer) {
     if (!q || !q->initialized || peer>=BTH_CONTROL_PEERS || !q->peers[peer].attached || q->peers[peer].owned>=BTH_CONTROL_PEER_LIMIT) return 0;
     unsigned free=0;
@@ -122,6 +127,7 @@ bth_status_t bth_control_tx_next_policy(bth_control_tx_t *q,const uint32_t owner
         const bth_control_slot_t *s=&q->slots[i];
         if (s->state!=QUEUED || s->peer!=peer || s->owner!=p->owner) return BTH_ERR_STATE;
         const bool le_data=peer==1 && s->cid==4;
+        if (le_data && p->att_blocked) continue;
         if (policy && le_data && !policy->le_data_allowed && !urgent_le) {
             if (info) info->paced=true;
             continue; // No fragment start, queue cursor, or credit mutation.
@@ -143,11 +149,14 @@ bth_status_t bth_control_tx_next_policy(bth_control_tx_t *q,const uint32_t owner
             if (st!=BTH_OK) return st;
         }
         const size_t sdu_bytes=p->tx.data.len;
+        const bool first_fragment=p->tx.position==0;
         const uint16_t maximum=policy && le_data?policy->le_data_max_payload:0;
         bth_status_t st=bth_acl_tx_next_limited(&p->tx,owners[peer],flow,maximum,out,cap,written);
         if (st==BTH_MORE) continue;
         if (st!=BTH_OK) return st;
         if (info) { info->peer=(uint8_t)peer; info->le_data=le_data;
+            info->token=(bth_control_token_t){s->serial,(uint8_t)i}; info->owner=s->owner;
+            info->first_fragment=first_fragment; info->final_fragment=!p->tx.active;
             info->urgent_bypass=peer==1 && urgent_le; info->payload_bytes=bth_read_le16(out+3); }
         q->next_peer=(uint8_t)(peer^1u);
         if (!p->tx.active) {

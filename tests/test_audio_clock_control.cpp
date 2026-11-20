@@ -33,7 +33,9 @@ static void sign_and_ack(){AudioClockControl c;CHECK(c.begin(1,1,48000,960,16));
 }
 static void accounting_and_zero_fragments(){AudioClockControl c;CHECK(c.begin(1,1,48000,960,16));warm(c);auto s=sample(2102000);s.discarded=500;auto d=c.observe(s);(void)d;CHECK(c.snapshot().inventory_frames==500+8*480);
  s=sample(2103000);s.discarded=s.decoded+1;c.observe(s);CHECK(c.snapshot().suspended&&c.snapshot().invalid_samples);
- CHECK(c.begin(2,3,48000,960,16));s=sample(0);s.stream_epoch=2;s.output_epoch=3;s.completed_packets=2;s.completed_frames=480;s.compressed_units_q16=3*65536;CHECK(!c.observe(s).update);CHECK(c.snapshot().frames_per_packet_q16==240*65536u);CHECK(c.snapshot().inventory_frames==1000+3*240);
+ CHECK(c.begin(2,3,48000,960,16));s=sample(0);s.stream_epoch=2;s.output_epoch=3;s.completed_packets=0;s.completed_frames=0;s.compressed_units_q16=3*65536;CHECK(!c.observe(s).update);CHECK(c.snapshot().frames_per_packet_q16==0);
+ s.now_us=1000;s.completed_packets=1;CHECK(!c.observe(s).update);CHECK(c.snapshot().frames_per_packet_q16==0);
+ s.now_us=2000;s.completed_packets=2;s.completed_frames=480;CHECK(!c.observe(s).update);CHECK(c.snapshot().frames_per_packet_q16==240*65536u);CHECK(c.snapshot().inventory_frames==1000+3*240);
  s.now_us=1000;s.stream_epoch=1;CHECK(!c.observe(s).update);CHECK(c.snapshot().suspended);
 }
 static void lifetime_gap_recovery_refusal(){AudioClockControl c;CHECK(c.begin(1,1,48000,960,16));warm(c);auto s=sample(2101000);s.recovering=true;CHECK(!c.observe(s).update&&c.snapshot().suspended);
@@ -56,6 +58,7 @@ static void limits_wrap_disabled(){AudioClockControl c;CHECK(c.begin(1,1,48000,9
 }
 static void arithmetic_extremes(){AudioClockControl c;CHECK(c.begin(1,1,48000,960,16));auto s=sample(0);
  s.decoded=UINT64_MAX-4;s.prepared=s.decoded-1000;s.completed_packets=UINT64_MAX/2+3;s.completed_frames=s.completed_packets/2;s.compressed_units_q16=65536;
+ c.observe(s);CHECK(c.snapshot().frames_per_packet_q16==0);++s.decoded;++s.prepared;s.completed_packets+=2;++s.completed_frames;s.now_us=1000;
  c.observe(s);CHECK(c.snapshot().frames_per_packet_q16==32768);CHECK(c.snapshot().inventory_frames==1000);
 }
 int main(){sign_and_ack();accounting_and_zero_fragments();lifetime_gap_recovery_refusal();limits_wrap_disabled();arithmetic_extremes();printf("AUDIO_CLOCK_CONTROL_PASS checks=%u bytes=%zu\n",checks,sizeof(AudioClockControl));}

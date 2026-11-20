@@ -322,10 +322,12 @@
     "patches": [
       "relative-includes",
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "defined-wrap-sbc-synthesis-2026-10-29",
+      "gcc-clang-force-inline-sbc-wrap-helpers-2026-10-29"
     ],
-    "exported_sha256": "159d4b27875587520cc74ada5b070bdd96abf93ba51c047be2de213c2861da65",
-    "exported_bytes": 8465
+    "exported_sha256": "b45821953801a41ebb8cd0504f7fc8a28d0eedc0ab0e956b141f92eacea14c77",
+    "exported_bytes": 13516
   },
   {
     "source": "decoders/SBC/decoder/srce/synthesis-dct8.c",
@@ -335,10 +337,12 @@
     "patches": [
       "relative-includes",
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "defined-wrap-sbc-synthesis-2026-10-29",
+      "gcc-clang-force-inline-sbc-wrap-helpers-2026-10-29"
     ],
-    "exported_sha256": "e3f1dc25418edfa9a5a2b2a47b1dd652cc7c97637558b0e1ab316e9349c42786",
-    "exported_bytes": 10338
+    "exported_sha256": "e77a90080ef7772724a85126bc7bda3180de562d921c9a57b144b82b59540139",
+    "exported_bytes": 11875
   },
   {
     "source": "decoders/SBC/decoder/srce/synthesis-sbc.c",
@@ -373,10 +377,11 @@
     "patches": [
       "giga-portable-reviewed-patch-v1",
       "explicit-build-selection",
-      "configuration-sized-raw-aac-program-storage-dev8"
+      "configuration-sized-raw-aac-program-storage-dev8",
+      "aac-selected-element-planes-transactional-sbr-output-channels-20261028"
     ],
-    "exported_sha256": "eeebcbb43244b5c70f91d5bb3c39dc8b5b231df768d4ccdbc592cea17af9477a",
-    "exported_bytes": 17608
+    "exported_sha256": "406d0c45cbb3da575ea361b37cc88b246263ad28194bd72e628992d13efc7963",
+    "exported_bytes": 17994
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/aacdec.h",
@@ -421,10 +426,11 @@
     "patched_sha256": "92659047c8e583306b54ef9e4a5aa564f31e1e63673fd591e7ef27ec39205fdb",
     "patches": [
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "unsigned-byte-cache-shifts-2026-10-29"
     ],
-    "exported_sha256": "4fe5f81bce3aed4c8645046b8e20276f93b72746cdac74ba9df22cee82a44f5a",
-    "exported_bytes": 9870
+    "exported_sha256": "f901829cca12ca6d6c2c651cfb7915d036a753328a2a2f24ba53f949c569f10d",
+    "exported_bytes": 9962
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/bitstream.h",
@@ -445,10 +451,11 @@
     "patches": [
       "giga-portable-reviewed-patch-v1",
       "explicit-build-selection",
-      "configuration-sized-raw-aac-program-storage-dev8"
+      "configuration-sized-raw-aac-program-storage-dev8",
+      "aac-selected-element-planes-transactional-sbr-output-channels-20261028"
     ],
-    "exported_sha256": "1579c9fb6a66d8b0a026fb83c903e29a81f113ee49f8d28bc0157de740f61eb8",
-    "exported_bytes": 6073
+    "exported_sha256": "23c679dc664c9f223905c5241ee10f5487ca0271817b23a844f5eb7016092b01",
+    "exported_bytes": 7577
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/coder.h",
@@ -457,10 +464,11 @@
     "patched_sha256": "ea8dc66176a59a007f9849e1d31eaa2624cc199bd860306047454616b6bd8958",
     "patches": [
       "giga-portable-reviewed-patch-v1",
-      "configuration-sized-raw-aac-program-storage-dev8"
+      "configuration-sized-raw-aac-program-storage-dev8",
+      "aac-selected-element-planes-transactional-sbr-output-channels-20261028"
     ],
-    "exported_sha256": "e5461c94f3cced63e11ca4cf97c8e66e94b81cfbb336c23697d9bb1e5e8f0681",
-    "exported_bytes": 17872
+    "exported_sha256": "7fb2160e9ba1f5ac924074980f7080c6e3ab2c2b6ff2bb8377576dde50f96c39",
+    "exported_bytes": 17721
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/ConfigHelix.h",
@@ -493,10 +501,11 @@
     "patched_sha256": "8cd50ff0b0821cb9194ece89c31655389cd35cfd3861c8ad1991366fb8dcc5e3",
     "patches": [
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "aac-selected-element-planes-transactional-sbr-output-channels-20261028"
     ],
-    "exported_sha256": "5b001233bc0c10a9697b51e8b4d648b9263fe192edebaf7049c2ce07208bc1ee",
-    "exported_bytes": 14503
+    "exported_sha256": "6c8c3d9001b4a85738e814b9cbef4db6fedef31ec61c48b1f88acf6550124078",
+    "exported_bytes": 14653
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/dequant.c",
@@ -505,10 +514,11 @@
     "patched_sha256": "ff143c4f8f13ab34781b9c5d7fde93a49f017df849639043d95282b7a6c867a7",
     "patches": [
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "aac-selected-element-planes-transactional-sbr-output-channels-20261028"
     ],
-    "exported_sha256": "185af1579800b376b7708053475b348b72c204c66c5dab04eca44c039e247af7",
-    "exported_bytes": 12776
+    "exported_sha256": "a563f4fdeea2d838ae02c928a9f33f638ab4abf89e6e7d9997c80b9899e939e9",
+    "exported_bytes": 12908
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/fft.c",
@@ -542,10 +552,11 @@
     "patched_sha256": "7f0fffcaffc190a832c9bd53d19b8cea05df6ff49b824433e365983e02570891",
     "patches": [
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "defined-packed-huffman-sign-extension-2026-10-29"
     ],
-    "exported_sha256": "3b3a61eca4b9b1558ccb654458ccaa01543010cd17c9bbbfdd85573fdeb9c0de",
-    "exported_bytes": 15127
+    "exported_sha256": "dbf811d909536345b89edc439a5a40886f4e6f59c0751c58a7bc269bd5de6621",
+    "exported_bytes": 15812
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/hufftabs.c",
@@ -566,10 +577,11 @@
     "patched_sha256": "d7a8811103e0215474081268d24aa12359d700d96fff95a5997a073e25966cc4",
     "patches": [
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "aac-selected-element-planes-transactional-sbr-output-channels-20261028"
     ],
-    "exported_sha256": "737d46e2e825ca0daad89360ade2d044ddd84437c19f3143444a58e9d14b3b2b",
-    "exported_bytes": 20949
+    "exported_sha256": "41de4142d055f67d77ebee13724fe03516adab49e711e7ee10cec017f48336b4",
+    "exported_bytes": 21223
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/noiseless.c",
@@ -578,10 +590,11 @@
     "patched_sha256": "25698da4ece613c7f3452154b0dc80558fb72f3484498e71b6ebede609741a50",
     "patches": [
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "aac-selected-element-planes-transactional-sbr-output-channels-20261028"
     ],
-    "exported_sha256": "1bedcfa6db219059c5206af22345885b33ef27ea8fd5c4ea6b45958008792c20",
-    "exported_bytes": 17321
+    "exported_sha256": "6c43b0377e2bb1873ed517925a24b912991acdaf2f5c558ce5623762240d947e",
+    "exported_bytes": 17453
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/pns.c",
@@ -590,10 +603,12 @@
     "patched_sha256": "f424401f7d885d7918202d5fd0770a81c54c9c9ff50671fa7e9d922a8c6f3a38",
     "patches": [
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "aac-selected-element-planes-transactional-sbr-output-channels-20261028",
+      "defined-bounded-pns-scaling-2026-10-29"
     ],
-    "exported_sha256": "7fcf8e0e78696ab0511ffe6dda9b88f977123b10afb769b45dfdcab1b179a22a",
-    "exported_bytes": 12820
+    "exported_sha256": "b4e55416c20bba2efa7c5beb3240a5c12691b767b0730771e8d8a5afc86444b9",
+    "exported_bytes": 13159
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/sbr.c",
@@ -604,9 +619,10 @@
       "tracked-allocation",
       "giga-portable-reviewed-patch-v1",
       "explicit-build-selection",
-      "channel-sized-sbr-envelope-tail-20261027"
+      "channel-sized-sbr-envelope-tail-20261027",
+      "aac-selected-element-planes-transactional-sbr-output-channels-20261028"
     ],
-    "exported_sha256": "ec3780ddec6b981337699f33c85834e7ede98a9d115487ce8607d1096e1bae9f",
+    "exported_sha256": "92f6cac123283b6c5407d9051206582fb65db66461baee7f5b51b027a0b04f23",
     "exported_bytes": 18397
   },
   {
@@ -759,10 +775,12 @@
     "patched_sha256": "5b208cb81990879e6409f79c45ad041912201ab81826190228a8f0cdeed30463",
     "patches": [
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "aac-selected-element-planes-transactional-sbr-output-channels-20261028",
+      "defined-clipped-stereo-scaling-2026-10-29"
     ],
-    "exported_sha256": "4c50c85f5d9cc6a963dbb4ca59200d26bd40d014a59bba3161ffb70727e7e3c7",
-    "exported_bytes": 8611
+    "exported_sha256": "fa94866e61b9bd17d31930a0cd27d20cc871aae8d0d681c813ac935424960999",
+    "exported_bytes": 8922
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/tns.c",
@@ -771,10 +789,11 @@
     "patched_sha256": "071f8614ec9cf66f17b6f790a042eb9485f3dd42a0af12c49ad6bf29270b3e54",
     "patches": [
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "aac-selected-element-planes-transactional-sbr-output-channels-20261028"
     ],
-    "exported_sha256": "e2ecf040057b98621e0e4de00fbfe6694a90aad5eff0756baa53364c7332dd30",
-    "exported_bytes": 10794
+    "exported_sha256": "03f18b722f07a16658678f0067743268c51146ed802b9a4ac9a6bf1ecdd8db80",
+    "exported_bytes": 10926
   },
   {
     "source": "decoders/AAC-LC/libhelix_aac/trigtabs.c",
@@ -1121,10 +1140,11 @@
       "portable-clock-quiet-log",
       "giga-portable-reviewed-patch-v1",
       "explicit-build-selection",
-      "per-call-concealment-flags"
+      "per-call-concealment-flags",
+      "giga-aosp-lhdcv5-synthesis-window-and-normalization-20261028"
     ],
-    "exported_sha256": "80d3672c5d367ae422d224b2a4358365e3a55158dd7334378b429df416966255",
-    "exported_bytes": 94400
+    "exported_sha256": "d2ce9e4b3f0998a2610a85b722461cec13c9ce76f8fc809b1459b5ef46614124",
+    "exported_bytes": 92521
   },
   {
     "source": "decoders/LHDC-V5/lhdc_dec.h",
@@ -1272,10 +1292,11 @@
     "patched_sha256": "0d3ed71d49759d38cdc305d0bf8cbae90f9bba73d500d09511b93cc78af15386",
     "patches": [
       "giga-portable-reviewed-patch-v1",
-      "explicit-build-selection"
+      "explicit-build-selection",
+      "giga-aosp-lhdcv5-synthesis-window-and-normalization-20261028"
     ],
-    "exported_sha256": "37a957c9613518f1beb4b64d7e5e60678a9d566d57b8472302f8ef528c22e0f2",
-    "exported_bytes": 63190
+    "exported_sha256": "4860b5ae5c62bf5145455bf9a4bc55dd5d20748ff4e022963d0acf265b81ff3e",
+    "exported_bytes": 84062
   },
   {
     "source": "decoders/LHDC-V5/lhdc_tables.h",

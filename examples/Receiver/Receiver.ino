@@ -2,10 +2,14 @@
 #include <platform/I2sPins.h>
 #include <platform/GigaI2s.h>
 #include "Console.h"
+#include "ProfileLog.h"
 #include <platform/SchedulerWitness.h>
+#include <GigaQspiBondStorage.h>
 using namespace giga_bredr;
 GigaBredr receiver;
+GigaQspiBondStorage bonds; // Paired phones reconnect after reset/upload without re-pairing.
 ReceiverConsole console;
+receiver_log::ProfileLog profileLog;
 BleConnectionPreference requestedConnectionPreference;
 void diagnostic(const char* message, void*) {
 #if GIGA_BREDR_PRIVATE_SCHED_WITNESS
@@ -19,8 +23,8 @@ void diagnostic(const char* message, void*) {
 void configured(const CodecConfig& c, void*) {
   console.print("GBR_CONFIG codec=%s rate=%lu channels=%u bits=%u bitrate=%lu duration_us=%lu\n", codecName(c.codec), (unsigned long)c.sample_rate, c.channels, c.bits_per_sample, (unsigned long)c.bitrate, (unsigned long)c.frame_duration_us);
 }
-void volume(uint8_t value, void*) { console.print("GBR_VOLUME value=%u\n", value); }
-void metadata(uint8_t attribute, const char* text, size_t bytes, void*) { console.print("GBR_METADATA attribute=%u bytes=%u text=%.*s\n", attribute, unsigned(bytes), int(bytes), text); }
+void volume(uint8_t value, void*) { receiver_log::volumeEvent(console,millis(),value); }
+void metadata(uint8_t attribute, const char* text, size_t bytes, void*) { receiver_log::metadataEvent(console,millis(),attribute,text,bytes); }
 void setup() {
   Serial.begin(921600);
   uint32_t start=millis(); while (!Serial && millis()-start<3000) delay(10);
@@ -31,6 +35,7 @@ void setup() {
   config.ble.enabled=true; config.ble.maximum_mtu=517;
   config.ble.audio_connection_preference.interval_min=96;
   config.ble.audio_connection_preference.interval_max=96; // 120ms; peer acceptance is reported.
+  config.classic_bonds=bonds.storage();
   config.diagnostic=diagnostic; config.configuration_changed=configured;
   config.volume_changed=volume; config.metadata_changed=metadata;
   // Hardware-compatible pins are selected before begin(); -1 disables MCLK.
@@ -42,6 +47,10 @@ void setup() {
 }
 void loop() {
   receiver.poll();
+  // Foreground snapshots: received AVRCP status and A2DP transport stay distinct.
+  const uint32_t profileNow=millis();
+  if(profileLog.due(profileNow))
+    profileLog.poll(console,profileNow,receiver.avrcpStatus(),receiver.avrcpMetadata(),receiver.stats(),receiver.bleStats());
   // Private qualification controls: one foreground byte/attempt per turn.
   // Actor lifecycle diagnostics above expose actual detach/new-owner edges.
   if(Serial.available()>0) {
@@ -65,7 +74,8 @@ void loop() {
   if(bleEchoPending) {
     Status status=receiver.bleNotify(bleEcho);
     if(status!=Status::Busy && status!=Status::OutputFull) {
-      console.print("GBR_BLE_RX generation=%lu bytes=%u notify=%s\n",(unsigned long)bleEcho.generation,bleEcho.length,statusName(status));
+      if(status!=Status::Ok)
+        console.print("GBR_BLE_RX generation=%lu bytes=%u notify=%s\n",(unsigned long)bleEcho.generation,bleEcho.length,statusName(status));
       bleEchoPending=false;
     }
   }

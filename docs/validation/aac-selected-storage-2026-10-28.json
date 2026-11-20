@@ -1,0 +1,138 @@
+{
+  "status": "LOCAL_FINAL_AAC_NATIVE_AND_M7_BUILD_VERIFIED_NOT_DEPLOYED",
+  "base_commit": "13fc9997e4a329f563a98e382634fa5d537ecf4c",
+  "production_changes": {
+    "src/vendor/codecs/aac/aacdec.c": {
+      "before_sha256": "eeebcbb43244b5c70f91d5bb3c39dc8b5b231df768d4ccdbc592cea17af9477a",
+      "frozen_sha256": "53e0ac068e494330adc03c429c1b690776a07ffb0e6d7e6ca1d73cf9472cd6e4",
+      "after_sha256": "406d0c45cbb3da575ea361b37cc88b246263ad28194bd72e628992d13efc7963",
+      "after_bytes": 17994
+    },
+    "src/vendor/codecs/aac/buffers.c": {
+      "before_sha256": "1579c9fb6a66d8b0a026fb83c903e29a81f113ee49f8d28bc0157de740f61eb8",
+      "frozen_sha256": "dedf0de376fc28616e7a51aad38a08d2b27bf6c86f87e32b7bf6252abe0b079f",
+      "after_sha256": "23c679dc664c9f223905c5241ee10f5487ca0271817b23a844f5eb7016092b01",
+      "after_bytes": 7577
+    },
+    "src/vendor/codecs/aac/coder.h": {
+      "before_sha256": "e5461c94f3cced63e11ca4cf97c8e66e94b81cfbb336c23697d9bb1e5e8f0681",
+      "frozen_sha256": "aef49eaf990185f4788274126a87e9fbaaaead199291503f432c05fc9dc3b333",
+      "after_sha256": "7fb2160e9ba1f5ac924074980f7080c6e3ab2c2b6ff2bb8377576dde50f96c39",
+      "after_bytes": 17721
+    },
+    "src/vendor/codecs/aac/decelmnt.c": {
+      "before_sha256": "5b001233bc0c10a9697b51e8b4d648b9263fe192edebaf7049c2ce07208bc1ee",
+      "frozen_sha256": "d21156e8b487a27dcd129d734cc5143f03bb9a2087aea2b86ad51894dce6dbe6",
+      "after_sha256": "6c8c3d9001b4a85738e814b9cbef4db6fedef31ec61c48b1f88acf6550124078",
+      "after_bytes": 14653
+    },
+    "src/vendor/codecs/aac/dequant.c": {
+      "before_sha256": "185af1579800b376b7708053475b348b72c204c66c5dab04eca44c039e247af7",
+      "frozen_sha256": "2be81dfeefb9f09a9a918f281596056669b1f23560ea226cc7a62bfc2bb47761",
+      "after_sha256": "a563f4fdeea2d838ae02c928a9f33f638ab4abf89e6e7d9997c80b9899e939e9",
+      "after_bytes": 12908
+    },
+    "src/vendor/codecs/aac/imdct.c": {
+      "before_sha256": "737d46e2e825ca0daad89360ade2d044ddd84437c19f3143444a58e9d14b3b2b",
+      "frozen_sha256": "ce75a6a763588470697f81c2d83938e3e84f8c52b93f0126924255df491c6725",
+      "after_sha256": "41de4142d055f67d77ebee13724fe03516adab49e711e7ee10cec017f48336b4",
+      "after_bytes": 21223
+    },
+    "src/vendor/codecs/aac/noiseless.c": {
+      "before_sha256": "1bedcfa6db219059c5206af22345885b33ef27ea8fd5c4ea6b45958008792c20",
+      "frozen_sha256": "adb909960bc94ea72c7486ce821ed68e279bca5cd040089aebadb8b11da40e40",
+      "after_sha256": "6c43b0377e2bb1873ed517925a24b912991acdaf2f5c558ce5623762240d947e",
+      "after_bytes": 17453
+    },
+    "src/vendor/codecs/aac/pns.c": {
+      "before_sha256": "7fcf8e0e78696ab0511ffe6dda9b88f977123b10afb769b45dfdcab1b179a22a",
+      "frozen_sha256": "7040d62f2f1e539125127165759e8e24b3db37971a58fa11d9631a736484e1ea",
+      "after_sha256": "3d7b6421089f47644422e12e665b0e2eaad9b51ad7acb173fe7cfe841900c3cc",
+      "after_bytes": 12952
+    },
+    "src/vendor/codecs/aac/sbr.c": {
+      "before_sha256": "ec3780ddec6b981337699f33c85834e7ede98a9d115487ce8607d1096e1bae9f",
+      "frozen_sha256": "53f3d226aea0da9799164bd10b068e8e32cd2a6ef0808319d9955c991303b5c6",
+      "after_sha256": "92f6cac123283b6c5407d9051206582fb65db66461baee7f5b51b027a0b04f23",
+      "after_bytes": 18397
+    },
+    "src/vendor/codecs/aac/stproc.c": {
+      "before_sha256": "4c50c85f5d9cc6a963dbb4ca59200d26bd40d014a59bba3161ffb70727e7e3c7",
+      "frozen_sha256": "169864b63a14d92829f2617a2bf8c7514994ed332f60c8b9fc9e690dd3897714",
+      "after_sha256": "58485926bdde5d4b80c9717f0d8ba8391f8c3bee6b5ff0a4f7abc0fd4b9ce97d",
+      "after_bytes": 8699
+    },
+    "src/vendor/codecs/aac/tns.c": {
+      "before_sha256": "e2ecf040057b98621e0e4de00fbfe6694a90aad5eff0756baa53364c7332dd30",
+      "frozen_sha256": "6b69efcfb3ec68457f071e377eb3b98aff76b764b930b7d909b0cbaf001904ba",
+      "after_sha256": "03f18b722f07a16658678f0067743268c51146ed802b9a4ac9a6bf1ecdd8db80",
+      "after_bytes": 10926
+    }
+  },
+  "native": {
+    "receipt_sha256": "250de1a3f6f78bd6e1bd55240698ded9123853594b168b18e4cd05ba21e2989a",
+    "cases": 14,
+    "asan": true,
+    "ubsan": true,
+    "ubsan_exclusions": [
+      "shift",
+      "signed-integer-overflow"
+    ],
+    "source_unchanged": true
+  },
+  "frontend": {
+    "receipt_sha256": "f9f1bfe8a193e695f5765ce0f96cd87669cf79b5883ee3e4718a4209730c8fcf",
+    "status": "PASS_REAL_ADTS_FRONTEND_FAKE_RADIO_I2S",
+    "actual_AAC": true,
+    "fake_radio_I2S": true,
+    "cases": 11,
+    "asan": true
+  },
+  "M7": {
+    "binary_sha256": "da887e8d3a02860f2f17b4e21299dfea735675662d00bd5e0edc65231f0bdb71",
+    "binary_bytes": 542100,
+    "facts_sha256": "56db7efec099dacdb4258bc55cb8a8481a4e764adad4ebaa909b7214959f9f88",
+    "library_TUs": 191,
+    "seven_codec_defaults": {
+      "GBR_ENABLE_LDAC": "1",
+      "GBR_ENABLE_LHDC": "1",
+      "GBR_ENABLE_AAC_HE": "1",
+      "GBR_ENABLE_SBC": "1",
+      "GBR_ENABLE_APTX": "1",
+      "GBR_ENABLE_AAC": "1",
+      "GBR_ENABLE_OPUS": "1"
+    },
+    "stock_HCD": "d270d48a0038885e57cdf0096e2004ade1719906753d7979a5ffd344044b14ea"
+  },
+  "M7_layout": {
+    "baseline": {
+      "pointer_bytes": 4,
+      "AACDecInfo_bytes": 96,
+      "PSInfoBase_bytes": 2884,
+      "ProgConfigElement_bytes": 82,
+      "raw_mono_payload": 11254,
+      "raw_stereo_payload": 19446,
+      "generic_mono_payload": 12484,
+      "generic_stereo_payload": 20676,
+      "object_sha256": "be312dd733a269c9c220ab2f5d0c8f8ded6644e0ba55a79375029e6ae10cad3a",
+      "source_header_sha256": "e5461c94f3cced63e11ca4cf97c8e66e94b81cfbb336c23697d9bb1e5e8f0681"
+    },
+    "selected": {
+      "pointer_bytes": 4,
+      "AACDecInfo_bytes": 96,
+      "PSInfoBase_bytes": 1112,
+      "ProgConfigElement_bytes": 82,
+      "raw_mono_payload": 10388,
+      "raw_stereo_payload": 19484,
+      "generic_mono_payload": 11620,
+      "generic_stereo_payload": 20712,
+      "object_sha256": "533ed5e5bf634e1ea811b407842ed762a2791269aaa6e29e2f63a026a94fdb0a",
+      "source_header_sha256": "7fb2160e9ba1f5ac924074980f7080c6e3ab2c2b6ff2bb8377576dde50f96c39"
+    },
+    "scope": "Official Cortex-M7 compiler ABI and allocation-formula constants; no M7 execution, heap high-water or allocator-overhead measurement",
+    "raw_payload_savings_mono_bytes": 866,
+    "raw_payload_savings_stereo_bytes": -38
+  },
+  "deployed": false,
+  "physical_audio_proven": false
+}

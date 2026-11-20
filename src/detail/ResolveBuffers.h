@@ -35,7 +35,15 @@ constexpr bool resolveAudioBuffers(const ReceiverConfig& r,const CodecConfig& c,
     if(p.startup_packets) out.startup_packets=p.startup_packets;
     else if(p.startup_buffer_ms) out.startup_buffer_ms=p.startup_buffer_ms;
     else if(g.startup_packets) out.startup_packets=g.startup_packets;
-    else out.startup_buffer_ms=g.startup_buffer_ms?g.startup_buffer_ms:automatic.startup_ms;
+    else if(g.startup_buffer_ms) out.startup_buffer_ms=g.startup_buffer_ms;
+    else {
+        // Automatic only: widen the jitter reserve where BLE shares the radio
+        // with a high-rate stream (see BleConfig::audio_coexistence_reserve_ms).
+        uint32_t startup=automatic.startup_ms;
+        const uint32_t margin=r.ble.audio_coexistence_reserve_ms>200?200u:r.ble.audio_coexistence_reserve_ms;
+        if(r.ble.enabled && c.sample_rate>=88200 && startup+margin+10u<=MaximumPcmBufferMs) startup+=margin;
+        out.startup_buffer_ms=uint16_t(startup);
+    }
     if(!r.enable_i2s) { out.startup_packets=1;out.startup_buffer_ms=0; }
     if(out.startup_packets>out.queue_packets) out.startup_packets=out.queue_packets;
     const uint32_t requested_pcm=out.startup_buffer_ms?uint32_t(out.startup_buffer_ms)+10u:20u;

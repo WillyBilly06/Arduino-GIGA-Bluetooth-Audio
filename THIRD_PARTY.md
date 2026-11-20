@@ -12,7 +12,11 @@ Original file bodies and notices are preserved. Previously modified imported
 code receives an additional port notice, without replacing its original terms.
 `docs/source-provenance.json` records each input, port and exported SHA-256;
 `src/vendor/codecs/manifest.json` retains all 257 original relative mappings.
-No new third-party implementation source was fetched for this export.
+The original import is retained separately from later source-derived changes.
+The local LHDC synthesis correction adds numerical windows generated from the
+Apache-2.0 AOSP encoder routine (Copyright 2025 The Android Open Source Project),
+with pinned source/fixture provenance in `tests/lhdc_aosp`. Its full encoder
+implementation is used as a test reference outside this library export.
 
 | Supplied component | Files | Retained evidence and limitations |
 |---|---:|---|
@@ -55,3 +59,16 @@ unchanged; these hash fields do not grant additional rights.
 ## Unpublished voice encoder overlay
 
 The follow-on voice source adds13 owner-supplied Broadcom SBC encoder files, retaining their Apache-2.0 notices, plus original project adapters. The selected implementation supplies mono mSBC for experimental HFP; it is separate from the257-file decoder inventory above. Its input/export hashes and dated modification notices are in `src/vendor/voice/sbc_encoder/manifest.json` and `PORTING.md`. The existing SBC CPU typedef header has an additional documented ARM LP64 correction; its vendor export hash is updated. The other decoder license limitations above remain unchanged. Historical release source-provenance documents retain their original build scope; the voice phase2 source manifest separately identifies this unpublished overlay.
+
+## Samsung SSC decoder overlay
+
+`src/vendor/codecs/ssc/` adds 15 files from the BSD-3-Clause
+[samsung-ssc-decoder](https://github.com/WillyBilly06/samsung-ssc-decoder) at commit
+`b9425314ccf961599ac16d14a14d907e679eb559`: the `ssc_decoder/` C sources and headers, its
+`COPYING.opus` (libopus 1.1 BSD terms for the CELT-derived parts) and the repository
+`LICENSE` (Copyright 2026 William Ho). Each `.c` file gains only a dated notice and a
+`GBR_ENABLE_SSC` guard; the original bodies and notices are unchanged. Input and export
+hashes are in `src/vendor/codecs/ssc/manifest.json`. The trimmed Samsung-encoder test frames
+in `tests/fixtures/ssc` come from the same repository (`tests/fixtures/ssc/manifest.json`).
+This overlay is separate from the 257-file decoder inventory above. Samsung codec patent or
+trademark rights are not granted by these source licenses.

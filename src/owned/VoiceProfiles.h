@@ -2,6 +2,7 @@
 #include "../Types.h"
 #include "HfpControl.h"
 #include "HspControl.h"
+#include "SppPort.h"
 extern "C" {
 #include "core/bth_rfcomm.h"
 #include "core/bth_control_tx.h"
@@ -12,6 +13,9 @@ namespace giga_bredr { namespace detail {
 struct VoiceControlConfig {
  bool hands_free=false,headset=false;
  uint8_t hands_free_channel=1,headset_channel=2,speaker_gain=15,microphone_gain=15;
+ // Optional caller-owned Serial Port DLC on the same RFCOMM mux. The caller
+ // begins it before this owner and retains it through OwnedHost::end().
+ SppPort* serial=nullptr;
 };
 struct VoiceControlStats {
  uint32_t received_frames=0,consumed_frames=0,transmitted_frames=0,backpressure=0;
@@ -19,9 +23,14 @@ struct VoiceControlStats {
 class VoiceProfiles {
 public:
  static constexpr unsigned InformationBytes=127,FrameBytes=136,ReceiveWindow=2,TransmitSlots=2;
+ // A bulk SPP frame enters the shared Classic control FIFO only when this many
+ // peer slots are free: signaling/AVDTP/AVRCP replies are never queued behind it.
+ static constexpr unsigned SerialIndex=2,BulkReserve=3;
  Status begin(const VoiceControlConfig&,bth_control_tx_t&,uint8_t peer_index=0);
  void reset(uint32_t peer_owner);
  void end();
+ // Boot only, before any mux: retire HF/HS but keep an admitted SPP DLC owner.
+ void dropVoice();
  bool enabled()const{return active_;}
  bool channelOpened(uint32_t peer_owner,uint16_t local,uint16_t remote,uint16_t remote_mtu);
  bool channelMtuUpdated(uint32_t peer_owner,uint16_t local,uint16_t remote,uint16_t remote_mtu);
@@ -42,17 +51,23 @@ public:
  // Only before an RFCOMM mux exists; never change advertised BRSF/BAC midway.
  bool setWidebandBackend(bool ready){if(local_)return false;wideband_=ready;return true;}
  bth_status_t commandHfp(uint32_t expected,owned::HfpCommand command,const char* argument=nullptr){return close_?BTH_IGNORED:hf_.command(expected,command,argument);}
+ bth_status_t commandHsp(uint32_t expected,owned::HspCommand command);
+ // Actor: minimum milliseconds between SPP data frames (A2DP streaming); 0 = none.
+ void setBulkInterval(uint8_t ms){bulk_interval_=ms;}
+ const bth_rfcomm_t& mux()const{return mux_;}
 private:
  struct Rx {uint8_t bytes[InformationBytes];uint16_t length=0;};
  struct Dlc {Rx receive[ReceiveWindow];uint8_t dlci=0,read=0,count=0;uint32_t generation=0;char row[48]{};uint8_t row_size=0,row_cursor=0;};
- struct Tx {uint8_t bytes[FrameBytes];uint16_t length=0;};
+ struct Tx {uint8_t bytes[FrameBytes];uint16_t length=0;bool bulk=false;};
  bool ownerValid()const;
  Dlc* dlc(uint8_t);const bth_rfcomm_dlc_t* coreDlc(uint8_t)const;
  void clearChannel();void requestClose();void pump();
- bool enqueue(size_t);uint8_t* output();
+ bool enqueue(size_t,bool bulk=false);uint8_t* output();
  bool consume(Dlc&,uint32_t);void generate(Dlc&,uint32_t);
+ void serviceSerial();void generateSerial(uint32_t);
  VoiceControlConfig config_{};VoiceControlStats stats_{};bth_control_tx_t* replies_=nullptr;
- bth_rfcomm_t mux_{};owned::HfpControl hf_{};owned::HspControl hs_{};Dlc dlcs_[2];Tx transmit_[TransmitSlots];
+ bth_rfcomm_t mux_{};owned::HfpControl hf_{};owned::HspControl hs_{};Dlc dlcs_[3];Tx transmit_[TransmitSlots];
+ SppPort* serial_=nullptr;uint32_t bulk_at_=0;uint8_t bulk_interval_=0;bool bulk_sent_=false;
  uint32_t owner_=0,channel_generation_=0,profile_serial_=0;uint16_t local_=0,remote_=0,mtu_=0;
  uint32_t retired_owner_=0;uint16_t retired_local_=0,retired_remote_=0;bool retirement_authorized_=false;
  uint8_t peer_=0,transmit_read_=0,transmit_count_=0,next_dlc_=0;bool active_=false,close_=false,wideband_=false;

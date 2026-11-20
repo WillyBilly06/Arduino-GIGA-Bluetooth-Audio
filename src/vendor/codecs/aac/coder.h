@@ -286,28 +286,28 @@ typedef struct _PSInfoBase {
     int                   sampRateIdx;
 
     /* state information which can be overwritten by subsequent elements within frame */
-    ICSInfo               icsInfo[MAX_NCHANS_ELEM];
+    ICSInfo              *icsInfo;
 
     int                   commonWin;
-    short                 scaleFactors[MAX_NCHANS_ELEM][MAX_SF_BANDS];
-    unsigned char         sfbCodeBook[MAX_NCHANS_ELEM][MAX_SF_BANDS];
+    short               (*scaleFactors)[MAX_SF_BANDS];
+    unsigned char       (*sfbCodeBook)[MAX_SF_BANDS];
 
     int                   msMaskPresent;
     unsigned char         msMaskBits[MAX_MS_MASK_BYTES];
 
-    int                   pnsUsed[MAX_NCHANS_ELEM];
+    int                  *pnsUsed;
     int                   pnsLastVal;
-    int                   intensityUsed[MAX_NCHANS_ELEM];
+    int                  *intensityUsed;
 
-    PulseInfo             pulseInfo[MAX_NCHANS_ELEM];
+    PulseInfo            *pulseInfo;
 
-    TNSInfo               tnsInfo[MAX_NCHANS_ELEM];
+    TNSInfo              *tnsInfo;
     int                   tnsLPCBuf[MAX_TNS_ORDER];
     int                   tnsWorkBuf[MAX_TNS_ORDER];
 
-    GainControlInfo       gainControlInfo[MAX_NCHANS_ELEM];
+    GainControlInfo      *gainControlInfo;
 
-    int                   gbCurrent[MAX_NCHANS_ELEM];
+    int                  *gbCurrent;
     int                 (*coef)[AAC_MAX_NSAMPS];
     int allocatedChannels;
 #ifdef AAC_ENABLE_SBR

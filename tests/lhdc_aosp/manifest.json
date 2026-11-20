@@ -1,0 +1,523 @@
+{
+  "upstream_repository": "https://android.googlesource.com/platform/packages/modules/Bluetooth",
+  "upstream_commit": "c77db469de80f86660bc053bec4dee0c5d4b947c",
+  "upstream_tag": "android-17.0.0_r1",
+  "upstream_subdirectory": "system/audio/codecs/lhdcv5",
+  "upstream_source_blobs": {
+    "status": "PINNED_OFFICIAL_AOSP_SOURCE_FETCHED_NOT_EXECUTED",
+    "repository": "https://android.googlesource.com/platform/packages/modules/Bluetooth",
+    "commit": "c77db469de80f86660bc053bec4dee0c5d4b947c",
+    "tag": "android-17.0.0_r1",
+    "path": "system/audio/codecs/lhdcv5",
+    "tree_ids": {
+      "": "ae18507b0f80d4bc4eea55edb7e1b2a27ebd211a",
+      "src/": "bcd9a20f98c6c6456bbe2446e1fda19ae70feb1b",
+      "src/lhdc_enc/": "2cb26db1e1e67583c454ccfe05259e9ad112202b",
+      "src/lhdc_api/": "375f27865850ec6e678940533a259c9e93f9f343",
+      "src/enc/": "9b3d387d33c46dd6cd62843300b161e5ef4dd363",
+      "src/enc/process/": "37dd981fd7e99ecf6349cace7521da623419561a",
+      "src/common/": "5fb1f4dc612ab74a57b0a52812846ee092638410",
+      "src/bits/": "cf243c0177433474912805ace06c5025aa60ba59",
+      "src/bin/": "7dacf8544013dd2eaf9da73dc34f04e34db78b98",
+      "src/bin/simulator/": "5405c46b2957c6eef1ed7e26780f36625825534c",
+      "src/arith/": "adbfde6d1886ef162cc1964ae3fe8d23b35a74f4",
+      "include/": "126714aa308d516dd44bb7208707268689586d66"
+    },
+    "files": {
+      "Android.bp": {
+        "git_blob": "b15d0f1d22c95dd647fe51e625f0077cafd7d785",
+        "sha256": "08bccb5b4f2c71eea9416fb99f767cab24c14b2953c3507c8dfb7a3c42da91a3",
+        "bytes": 1180
+      },
+      "Cargo.toml": {
+        "git_blob": "99618621a98f36b22f5e69393ecdf6dd8a5f7e17",
+        "sha256": "5b3130089774ef18ea14769f6a4f3253333623e79d1c5fb5d52bc658e4b50d2b",
+        "bytes": 538
+      },
+      "generate.bash": {
+        "git_blob": "41916d0c8e3d623aea4aba2f386a38b486ffdaa0",
+        "sha256": "3de328f35d718ed7aec1d71b4e35e4308d876ff7ce59302a5c741dd1bdd9c6fa",
+        "bytes": 192
+      },
+      "src/arith.rs": {
+        "git_blob": "71c01b268461c04b25e5ec7ce7469bb61a7bbddf",
+        "sha256": "3fdd8bc89bc61b0a46774f4a6edfecdcece6abdab370549659dc6869e6335121",
+        "bytes": 7054
+      },
+      "src/ffi.rs": {
+        "git_blob": "60a11b3af928960f25d5bc4f8cc6f7d918e8aae1",
+        "sha256": "8d1f37b98ea64085b3ec1ff57f5d7e8091a881cc0fb99654899db3c000988f71",
+        "bytes": 10038
+      },
+      "src/kiss_fft.rs": {
+        "git_blob": "66d65cf7c64c3fad609fab3395a22048f22db291",
+        "sha256": "ca1a7d8766792559e45798ff7983df5575d4f5f9cec2ac342add769ef40656cb",
+        "bytes": 21681
+      },
+      "src/lhdc_api.rs": {
+        "git_blob": "06739c48f8caa986d76866757966a03b25afd99d",
+        "sha256": "55b8e728074904db2d2891d86721d96ef211af11364d10dcf5c69121251b6ed5",
+        "bytes": 12992
+      },
+      "src/lhdcv5BT_enc.c": {
+        "git_blob": "656b20fef17f6eff6c7a640b963d7feda2864d10",
+        "sha256": "9b4fa20e0023d9d7ebb435a13e64749c758411716506fa94efa9d2cbdbd5680d",
+        "bytes": 28481
+      },
+      "src/lib.rs": {
+        "git_blob": "b48c9d9ab706a08a9996f1a5f335d407aad415f9",
+        "sha256": "3c60f9a95f9a6e39a5909a25e45c22c40e6a0b6ecbc5e7d3ef9a5c42fb937a23",
+        "bytes": 1194
+      },
+      "src/math.rs": {
+        "git_blob": "becf5ec61dfacf5557706ef00bd9b9a491515923",
+        "sha256": "fec3fc8cf9590163bdca62f2d7c7b71d8b9eaedfb41c0280886e7d9bc5086c59",
+        "bytes": 3330
+      },
+      "src/lhdc_enc/lhdc_enc_freq_process.rs": {
+        "git_blob": "d07cf0219cd10fd574b2f5c1d87d80359329d9ec",
+        "sha256": "fd6cc6642dbae43b85ac4fc56b646c3bca548d901d83d35922b6d5ae5e32e873",
+        "bytes": 11217
+      },
+      "src/lhdc_enc/lhdc_enc_header.rs": {
+        "git_blob": "4140cec81f1fad5db22588c0cdd82fe2a12ad39d",
+        "sha256": "67180f4ae5c0d24175c752e908d75d1372f0b6fe68ce1f0b2fb4eda8a17e04a9",
+        "bytes": 10908
+      },
+      "src/lhdc_enc/lhdc_enc_workspace.rs": {
+        "git_blob": "cfec68c9a369ccfda352ca1445ee69b0a9f58414",
+        "sha256": "2b2e8732e57babb13eb63444e6b315acbce81d40ddd863a81298917e66d54169",
+        "bytes": 8238
+      },
+      "src/lhdc_api/cirbuf.rs": {
+        "git_blob": "a0c0d6bcaf679085e0a282d184652526cc06df9c",
+        "sha256": "160e46f6ba63ddab5af8ace8db6553fe1dfacce4e6bbe4bc36b4398f61ca8dc9",
+        "bytes": 3330
+      },
+      "src/lhdc_api/lhdc_api_internal.rs": {
+        "git_blob": "54125362b922cddb825dc20ca026833d50a55e74",
+        "sha256": "fec0d0b37a3d18514e7d2208647c379f4e0672e9b1bdbca8659ab772e93e6f9b",
+        "bytes": 30819
+      },
+      "src/enc/context.rs": {
+        "git_blob": "8b1fd66b03ba92799c00278febd5881b3d49020a",
+        "sha256": "4aad181af5504bb014d143bd3448aeb04c71235db242d692031af289e35a9920",
+        "bytes": 4123
+      },
+      "src/enc/mod.rs": {
+        "git_blob": "a2fc65bbedfe0a23ab5f4a2b1b24d4c6f663efb8",
+        "sha256": "79a7e079381d965074aa17ee91a79e82349422ebb57ee3e5290f0f65cc1fe854",
+        "bytes": 34
+      },
+      "src/enc/process.rs": {
+        "git_blob": "2e6e85135ae29781e0675d01201664c862f23599",
+        "sha256": "e4420519b2f724e4153b7b59ad633a025689bfbab237afcc925872261d836e2b",
+        "bytes": 52449
+      },
+      "src/enc/process/tables.rs": {
+        "git_blob": "6a8801adef972e22a22c61b4f3e0f6fdcf32c0a9",
+        "sha256": "6ae5e90146d2a90c159b48e02bae3146500b03d6d516926139c6402b1ecef734",
+        "bytes": 4939
+      },
+      "src/common/lhdc_level.rs": {
+        "git_blob": "bdb5af1b2ed140b0064e78bf9f1c22fd896552f1",
+        "sha256": "c7972a94bf0c5bec48995385b34ed9a94e931b457367faff5c88960b9e1d3f67",
+        "bytes": 4658
+      },
+      "src/bits/mod.rs": {
+        "git_blob": "1da76e11ab110a7efd152f99b2d3a80ce292470a",
+        "sha256": "5a9c560745d76454e1cf6bffe2b773f458a8db223b11eebc0f12f1256128b783",
+        "bytes": 16
+      },
+      "src/bits/output.rs": {
+        "git_blob": "d485c4170fccdcd0c370367d7054ec17757cf675",
+        "sha256": "5fd644784b2c123b5fdf52522719a3495753318f089667bdf53e677a04807e75",
+        "bytes": 4859
+      },
+      "src/bin/simulator/lhdc_abr.rs": {
+        "git_blob": "f4baeda5d2059bb74b69b52d71027a7563507163",
+        "sha256": "bf83d5f2ea93c63ea42ced024f1b282e9d38895c7a725ec42c225621482e4c1e",
+        "bytes": 13085
+      },
+      "src/bin/simulator/main.rs": {
+        "git_blob": "9179c1e9bd456b9f49454f051584cb6cd208a531",
+        "sha256": "d948bdb58c6f11d3de99bf6b3031bb74bf41d6ba5e88dfe7ab6f78a963457dc7",
+        "bytes": 15075
+      },
+      "src/bin/simulator/wave_file.rs": {
+        "git_blob": "00625209ed9aa5315508a4df1a906fa88cdb6d76",
+        "sha256": "f6bf5e8d025845443cb4e67f6e2896495f00597a10ea335b4c17c46df2a64214",
+        "bytes": 2837
+      },
+      "src/arith/ring_buf.rs": {
+        "git_blob": "48536781494608f8101648edcb28ea1a03248a3b",
+        "sha256": "8cb2a3d3317abeb73f32b0a8e2008b9a76a218383e138bf25db9062a6dadf53b",
+        "bytes": 1615
+      },
+      "include/lhdcv5BT.h": {
+        "git_blob": "d0bb767566bdf56b0a5f5a380c836a1993bb9a1f",
+        "sha256": "84557039fb9fdb410d3d93766b5f98ba3cc95350bc12bfa71b9cd7f4ca59a7e7",
+        "bytes": 1852
+      },
+      "include/lhdcv5_api.h": {
+        "git_blob": "4bb61be44bcbd37ce3a64b05cfcdc97496223205",
+        "sha256": "8af45cecfa72dbcd938d2ec34359c42d5cb746c37a090fca2dd5d5772b210eea",
+        "bytes": 6178
+      }
+    }
+  },
+  "scope": "Deterministic synthetic AOSP encoder fixtures and source-derived windows. Host reference execution; no vendor decoder oracle or physical playback qualification.",
+  "encoder_profile": "Unmodified upstream Rust source, Cargo dev opt-level=0; Windows x86_64 host. Cargo.lock retained.",
+  "fidelity_limits": {
+    "maximum_abs_gain_db": 0.1,
+    "minimum_snr_db": 20.0
+  },
+  "files": {
+    "192000-16/encoded.bin": {
+      "bytes": 20032,
+      "sha256": "1035f4c65087e2cd1efeb753fd60f7adac31c7e9637ed7ba3bb7863f9434afcd"
+    },
+    "192000-16/input.pcm": {
+      "bytes": 122880,
+      "sha256": "676846298ddcfad025e8763713a640ef57fdf3f5bc177d0dd756349719dac5e5"
+    },
+    "192000-24/encoded.bin": {
+      "bytes": 20032,
+      "sha256": "194f8f003072a572be26a09960cadb8965d7fbc673c72464a954f1c3f3f85fc3"
+    },
+    "192000-24/input.pcm": {
+      "bytes": 184320,
+      "sha256": "0e9a9949cd6f50d1799dd52f507b5a923e7b5c9d5cad3f411f6d758766bec715"
+    },
+    "44100-16/encoded.bin": {
+      "bytes": 21824,
+      "sha256": "4b382288750971fb46ec3450b039e0c4ebcb409ebb058e0d35ba93f341c56bdd"
+    },
+    "44100-16/input.pcm": {
+      "bytes": 30720,
+      "sha256": "fc8f7a6f6f901a6bf9d8940b78ce6ed30baa9323f032ec485955f36d95286905"
+    },
+    "44100-24/encoded.bin": {
+      "bytes": 21824,
+      "sha256": "b7b116519e78ababf028c27763362518c02cb6ab6acfdb3911353c47dc16f242"
+    },
+    "44100-24/input.pcm": {
+      "bytes": 46080,
+      "sha256": "46906bb2e8356ae605f0af642caf6e8645ce17fb7a5de5722204d73e6e8e5151"
+    },
+    "48000-16/encoded.bin": {
+      "bytes": 20032,
+      "sha256": "3e43831249ae7c79a64c7e7eca9cfbb4f23445198c5fa2b7e389450542ada4c1"
+    },
+    "48000-16/input.pcm": {
+      "bytes": 30720,
+      "sha256": "837cf34a1a349aee26ebd8689080c707ea0bb71418af76cdb4f2b58171206eb3"
+    },
+    "48000-24/encoded.bin": {
+      "bytes": 20032,
+      "sha256": "3ca98a903c5282e0a925cd39db000a444146f9750bd1877dbb51b56a247fafbd"
+    },
+    "48000-24/input.pcm": {
+      "bytes": 46080,
+      "sha256": "dc09bd0d4353b197a32ba74556d989254b03b22f0262fe3d4fa17a4b828c16c7"
+    },
+    "96000-16/encoded.bin": {
+      "bytes": 20032,
+      "sha256": "01e84bb4f57f3c5c40ddc0780f6f105fd33fba9a74358813c4d06e1adf4c9cf8"
+    },
+    "96000-16/input.pcm": {
+      "bytes": 61440,
+      "sha256": "e5d0c118542a13380face0ae53901b57667348be129e150bfe6a9061f6951a20"
+    },
+    "96000-24/encoded.bin": {
+      "bytes": 20032,
+      "sha256": "1bccdb8e7ad7a5f93c4876a3866a8eeb85fdb3694eba3b32f02a58dcd47d4585"
+    },
+    "96000-24/input.pcm": {
+      "bytes": 92160,
+      "sha256": "e76070658576c761179f6b1234f92eceeb0f9e73682b1459bb68cc0f1d6164f7"
+    },
+    "encoder-Cargo.lock": {
+      "bytes": 8943,
+      "sha256": "ec662b2e0b44ab61001fe02b0dee1be64f357cfb03b2e95ea2846d0ad0fa29dd"
+    },
+    "window-192.q31": {
+      "bytes": 768,
+      "sha256": "26bbbda5b969e5b64631dc6ba14ad1ec130128beb94a5879e0fc92dc64093c44"
+    },
+    "window-384.q31": {
+      "bytes": 1536,
+      "sha256": "758470c115bc4b802b8dd39858e2a1ac229bdabe69816122a8c8f0fea6deb31a"
+    },
+    "window-96.q31": {
+      "bytes": 384,
+      "sha256": "00d848946ba416aaab3dc9e40bcb6a0788073527dfa8146bd73ef0fbc2d71975"
+    }
+  },
+  "cases": [
+    {
+      "name": "44100-16",
+      "rate": 44100,
+      "bits": 16,
+      "frames": 32,
+      "delay_samples": 168,
+      "actual_encoder_bitrate_kbps": 1000,
+      "stage_comparison": {
+        "q_mismatches": 0,
+        "sf_mismatches": 0,
+        "gain_mismatches": 0
+      },
+      "correction_observation": {
+        "gain_db": [
+          -0.0009503049716971599,
+          -0.0011633802856726389
+        ],
+        "snr_db": [
+          73.83308935896181,
+          71.85326135955117
+        ]
+      },
+      "baseline_observation": {
+        "gain_db": [
+          -5.041149286552904,
+          -5.041533703629904
+        ],
+        "snr_db": [
+          7.124698598004859,
+          7.1242097390206744
+        ]
+      }
+    },
+    {
+      "name": "44100-24",
+      "rate": 44100,
+      "bits": 24,
+      "frames": 32,
+      "delay_samples": 168,
+      "actual_encoder_bitrate_kbps": 1000,
+      "stage_comparison": {
+        "q_mismatches": 0,
+        "sf_mismatches": 0,
+        "gain_mismatches": 0
+      },
+      "correction_observation": {
+        "gain_db": [
+          9.081176920408779e-05,
+          0.00019455749953349862
+        ],
+        "snr_db": [
+          43.34151173270513,
+          45.477856836198924
+        ]
+      },
+      "baseline_observation": {
+        "gain_db": [
+          -0.7593369643872762,
+          -0.7592327678815394
+        ],
+        "snr_db": [
+          21.520218897449826,
+          21.530733951016693
+        ]
+      }
+    },
+    {
+      "name": "48000-16",
+      "rate": 48000,
+      "bits": 16,
+      "frames": 32,
+      "delay_samples": 168,
+      "actual_encoder_bitrate_kbps": 1000,
+      "stage_comparison": {
+        "q_mismatches": 0,
+        "sf_mismatches": 0,
+        "gain_mismatches": 0
+      },
+      "correction_observation": {
+        "gain_db": [
+          -0.001075832357916035,
+          -0.001380107387371478
+        ],
+        "snr_db": [
+          45.15721908989852,
+          43.07348582328877
+        ]
+      },
+      "baseline_observation": {
+        "gain_db": [
+          -5.041269304946651,
+          -5.0417616627262705
+        ],
+        "snr_db": [
+          7.124332529808214,
+          7.123574894199232
+        ]
+      }
+    },
+    {
+      "name": "48000-24",
+      "rate": 48000,
+      "bits": 24,
+      "frames": 32,
+      "delay_samples": 168,
+      "actual_encoder_bitrate_kbps": 1000,
+      "stage_comparison": {
+        "q_mismatches": 0,
+        "sf_mismatches": 0,
+        "gain_mismatches": 0
+      },
+      "correction_observation": {
+        "gain_db": [
+          -0.0001267113805129606,
+          0.0001271848456182793
+        ],
+        "snr_db": [
+          43.872882172897796,
+          46.95857811745369
+        ]
+      },
+      "baseline_observation": {
+        "gain_db": [
+          0.35044656610738184,
+          0.3506998752683074
+        ],
+        "snr_db": [
+          27.59491580777736,
+          27.645001471877887
+        ]
+      }
+    },
+    {
+      "name": "96000-16",
+      "rate": 96000,
+      "bits": 16,
+      "frames": 32,
+      "delay_samples": 336,
+      "actual_encoder_bitrate_kbps": 1000,
+      "stage_comparison": {
+        "q_mismatches": 0,
+        "sf_mismatches": 0,
+        "gain_mismatches": 0
+      },
+      "correction_observation": {
+        "gain_db": [
+          -0.0029126654675867003,
+          -0.0010426865915924635
+        ],
+        "snr_db": [
+          42.81778683509293,
+          41.4307975872991
+        ]
+      },
+      "baseline_observation": {
+        "gain_db": [
+          -5.04311651149703,
+          -5.041451228477577
+        ],
+        "snr_db": [
+          7.12183323242654,
+          7.123809222617348
+        ]
+      }
+    },
+    {
+      "name": "96000-24",
+      "rate": 96000,
+      "bits": 24,
+      "frames": 32,
+      "delay_samples": 336,
+      "actual_encoder_bitrate_kbps": 1000,
+      "stage_comparison": {
+        "q_mismatches": 0,
+        "sf_mismatches": 0,
+        "gain_mismatches": 0
+      },
+      "correction_observation": {
+        "gain_db": [
+          6.870789381407898e-05,
+          -0.0008957712661350999
+        ],
+        "snr_db": [
+          42.95002649406631,
+          41.26651030869044
+        ]
+      },
+      "baseline_observation": {
+        "gain_db": [
+          -0.729357857301972,
+          -0.7303234026057382
+        ],
+        "snr_db": [
+          21.85088314070313,
+          21.826368118275408
+        ]
+      }
+    },
+    {
+      "name": "192000-16",
+      "rate": 192000,
+      "bits": 16,
+      "frames": 32,
+      "delay_samples": 672,
+      "actual_encoder_bitrate_kbps": 1000,
+      "stage_comparison": {
+        "q_mismatches": 0,
+        "sf_mismatches": 0,
+        "gain_mismatches": 0
+      },
+      "correction_observation": {
+        "gain_db": [
+          0.0045822281055238655,
+          -0.010082623801891663
+        ],
+        "snr_db": [
+          27.66047704288212,
+          26.169807931044296
+        ]
+      },
+      "baseline_observation": {
+        "gain_db": [
+          -5.035626510163242,
+          -5.05046469376777
+        ],
+        "snr_db": [
+          7.1196941606711395,
+          7.096009078232712
+        ]
+      }
+    },
+    {
+      "name": "192000-24",
+      "rate": 192000,
+      "bits": 24,
+      "frames": 32,
+      "delay_samples": 672,
+      "actual_encoder_bitrate_kbps": 1000,
+      "stage_comparison": {
+        "q_mismatches": 0,
+        "sf_mismatches": 0,
+        "gain_mismatches": 0
+      },
+      "correction_observation": {
+        "gain_db": [
+          -0.0011708924582108982,
+          -0.0003916570782079083
+        ],
+        "snr_db": [
+          27.88728493998078,
+          25.881010189056465
+        ]
+      },
+      "baseline_observation": {
+        "gain_db": [
+          1.3494017793742006,
+          1.350180296633579
+        ],
+        "snr_db": [
+          15.161426259232254,
+          14.974654076653566
+        ]
+      }
+    }
+  ]
+}

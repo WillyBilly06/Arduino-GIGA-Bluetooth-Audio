@@ -9,6 +9,18 @@ typedef struct { uint8_t key[16], key_type, pin_len; } bth_bond_t;
 typedef enum { BTH_CONFIRM_REJECT, BTH_CONFIRM_ACCEPT, BTH_CONFIRM_DEFER } bth_confirmation_t;
 typedef struct {
     uint8_t io_capability, auth_requirement, min_key_size, pin_len, pin[16];
+    // Accepted (remote-initiated) Classic links: wait this long for the
+    // initiator's own authentication before requesting it locally. Starting
+    // both at once makes some controllers (e.g. Linux/Realtek) refuse the
+    // initiator's Authentication_Requested with Command Disallowed, which
+    // BlueZ treats as a failed connection. 0 authenticates immediately.
+    uint16_t acceptor_auth_delay_ms;
+    // Nonzero: after Classic Connection Complete, ask the master for
+    // guaranteed-service QoS with this poll latency (HCI_QoS_Setup). As BR/EDR
+    // slave we may only transmit when polled; the default ~25 ms poll interval
+    // adds that much to every L2CAP/AVDTP reply during connection setup. The
+    // master may refuse; nothing else depends on the outcome.
+    uint32_t qos_poll_latency_us;
 } bth_security_policy_t;
 typedef struct {
     bool (*load)(void *context,const uint8_t peer[6],bth_bond_t *bond);
@@ -24,6 +36,7 @@ typedef struct {
     bth_peer_state_t state;
     bool authenticated, key_size_verified, bonded, key_pending, confirmation_pending, disconnecting;
     bool cached_key_pending,cached_key_accepted,cached_key_encrypted;
+    bool pairing_succeeded,fresh_pairing_verified;
     uint8_t stale_size_reads,stale_key_replies;
     uint8_t encryption, key_size, key_type, last_error;
     uint8_t collision_retries,retry_results_pending;
@@ -52,6 +65,9 @@ bth_status_t bth_links_on_event(bth_links_t *links,const bth_h4_frame_t *event);
 // periodically while connected. Retry only Classic transaction collisions, at
 // least1s apart and at most five times; existing authorization deadlines remain.
 bth_status_t bth_links_security_tick(bth_links_t *links,uint32_t now_ms);
+// A peer is waiting on a secured channel: run a still-deferred acceptor
+// authentication at the next tick instead of after the grace period.
+bth_status_t bth_links_expedite_authentication(bth_links_t *links,uint16_t handle);
 const bth_peer_link_t *bth_links_find(const bth_links_t *links,uint16_t handle);
 bool bth_links_secure(const bth_links_t *links,uint16_t handle);
 // Idempotent teardown; authorization is revoked immediately. Owner supplies a

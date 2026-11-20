@@ -11,7 +11,7 @@ namespace giga_bredr { namespace detail {
 // Root owns link generations, ACL reassembly/credits, and control_tx attachment.
 class LeProfiles {
 public:
-    enum : uint16_t { RxHandle=9, TxHandle=11, TxCccdHandle=12 };
+    enum : uint16_t { RxHandle=9, TxHandle=11, TxCccdHandle=12, ChangedHandle=16, ChangedCccdHandle=17 };
     struct ControlState {uint16_t opcode;uint8_t stage,error;bool pending;uint32_t deadline;};
     ControlState controlState() const {return {gap_.pending_opcode,uint8_t(gap_.stage),gap_.error,gap_.pending,gap_.deadline};}
     Status begin(const BleConfig&,const char* name,bth_cmdq_t&,bth_control_tx_t&);
@@ -24,6 +24,10 @@ public:
     void event(const bth_h4_frame_t&,uint32_t commandOwner=0);
     bool closeRequested() const { return close_requested_; }
     void commandSubmitted(uint32_t owner,uint16_t opcode,const uint8_t* parameters,size_t length);
+    // Owner-only real mutation: add/remove the vendor user-description attribute.
+    // Changes are volatile for this image and cover the full vendor service.
+    bool setVendorDescription(uint32_t generation,bool present);
+    void controlSubmitted(const bth_control_tx_info_t&,uint32_t now);
     // Call only in an available ACL submission turn. A true result commits one
     // whole optional CID5 SDU which the caller must submit immediately.
     bool prepareOptionalSignal(uint32_t now,bool audioActive,const uint32_t owners[2],const bth_hci_flow_t&,uint8_t firstPeer);
@@ -54,7 +58,7 @@ private:
     bth_le_transport_t transport_ = {};
     uint32_t connected_at_ = 0;
     InitialBleNotificationGate notification_startup_;
-    bth_att_attribute_t attributes_[13] = {};
+    bth_att_attribute_t attributes_[16] = {};
     BleWrite write_;
     uint8_t advertisement_[21] = {}, scan_response_[31] = {};
     uint8_t tx_value_[BleValueCapacity] = {};
@@ -74,5 +78,11 @@ private:
     uint8_t scan_length_ = 0;
     bool initialized_ = false, write_pending_ = false, notify_pending_ = false;
     bool ltk_pending_ = false, parameters_pending_ = false;
+    bool description_present_=true,change_pending_=false,change_queued_=false,change_started_=false,change_complete_=false;
+    uint16_t change_first_=0,change_last_=0;
+    uint32_t indication_started_=0;
+    bth_control_token_t change_token_={};
+    void expireIndication(uint32_t now);
+    void queueServiceChanged();
 };
 }}

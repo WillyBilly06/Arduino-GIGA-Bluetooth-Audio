@@ -217,9 +217,12 @@ static void lhdc_dec_window_prepare(int mdct_size)
 
     while (z < mdct_size && w[z] == 0.0f) z++;
     if (z <= 0 || z >= h) return;
-    while (z + t < mdct_size && w[z + t] != 1.0f) t++;
+    /* The Q31 analysis ramp rounds its final entries to float unity. Derive
+     * its length from the folding geometry, rather than the first 1.0f. */
+    t = h - 2 * z;
     if (t <= 0 || z + t > h) return;
-    if (z != (h - t) / 2) return;              /* z == (h - T)/2 */
+    for (i = 0; i < t; i++)
+        if (!(w[z + i] >= 0.0f && w[z + i] <= 1.0f)) return;
 
     for (i = z + t; i < h + z; i++)            /* flat unity run */
         if (w[i] != 1.0f) return;
@@ -436,50 +439,14 @@ static float lhdc_dec_gain_exponent(int gain_idx, int enc_frame_len, int bit_dep
     return e;
 }
 
-/* Per-rate output level normalization. 44.1k/48k (mdct_size 480) decode at unity,
- * but the reconstruction gain falls ~1/N^2 with the transform size N, so 96k
- * (mdct 960) came out ~12 dB quieter and 192k (mdct 1920) ~24 dB quieter than
- * 48k -- the volume DROPPED when switching to a higher sample rate. The old
- * LHDC_96K_GAIN=1.0 hack never corrected it. Restore a consistent level with
- * (mdct_size/480)^2 (480->x1, 960->x4, 1920->x16). Verified via the real-encoder
- * round-trip: brings 96k/192k to within <0.5 dB of 48k. */
-static float lhdc_dec_rate_norm(int mdct_size)
+/* AOSP's fixed-point analysis normalization and the 2/N inverse transform
+ * give an end-to-end unquantized gain 256/N for 24-bit input. The 16-bit
+ * analysis uses eight additional input shift bits. Together with output
+ * container alignment, both cases reduce to N * 2^(output_bits-32).
+ * This is an algebraic scale, without empirical per-rate/per-depth trims. */
+static float lhdc_dec_output_scale(int mdct_size, int output_bits)
 {
-    float r = (float)mdct_size / 480.0f;
-#if 0 /* excluded host diagnostics */
-    { const char *e = getenv("LHDC_RATEPOW"); if (e) return powf(r, (float)atof(e)); }
-#endif
-    return r;
-}
-
-/* Per-config output level calibration toward VALUE-PRESERVING (0 dBFS in ->
- * 0 dBFS out) so every LHDC config — and thus every codec, since the standard
- * decoders are already value-preserving — plays at the same volume regardless
- * of sample rate / bit depth. Residual decode gain (after rate_norm) measured
- * via near-transparent multitone round-trip through the real encoder
- * (tools/lhdc_roundtrip busy=1 @900k, broadband RMS): 24-bit 48k +0.2, 96k +1.3,
- * 44.1k +1.3, 192k -0.8 dB; 16-bit ~+5.6 dB (its gain table was never calibrated
- * — the slope/split fixes were 24-bit only). These trims cancel it. NOTE:
- * approximate (signal-dependent within ~1-2 dB); host env LHDC_LEVELDB overrides
- * for re-calibration by ear. */
-static float lhdc_dec_level_cal(uint32_t sample_rate, int bit_depth)
-{
-    float db = 0.0f;
-    if (bit_depth >= 24) {
-        switch (sample_rate) {
-            case 44100:  db = -1.32f; break;
-            case 48000:  db = -0.21f; break;
-            case 96000:  db = -1.29f; break;
-            case 192000: db = +0.79f; break;
-            default:     db = 0.0f;   break;
-        }
-    } else {
-        db = -5.60f;   /* 16-bit (44.1/48k) */
-    }
-#if 0 /* excluded host diagnostics */
-    { const char *e = getenv("LHDC_LEVELDB"); if (e) db = (float)atof(e); }
-#endif
-    return exp2f(db / 6.020599913f);   /* 10^(db/20) */
+    return ldexpf((float)mdct_size, output_bits - 32);
 }
 
 /*
@@ -1253,8 +1220,7 @@ static lhdc_dec_ret_t lhdc_dec_decode_channel_autosel(lhdc_decoder_t *dec,
      * (matches what the listener hears). The overlap is restored before each retry
      * so the decision uses the true prior-frame context (no cascade). */
     int bd = (int)dec->config.bit_depth;
-    float sc = ldexpf(1.0f, bd - 23) * lhdc_dec_rate_norm(dec->band_cfg ? dec->band_cfg->mdct_size : 480)
-             * lhdc_dec_level_cal(dec->header.sample_rate, bd);
+    float sc = lhdc_dec_output_scale(dec->band_cfg ? dec->band_cfg->mdct_size : 480, bd);
     float clip_lim = (bd == 16) ? 32767.0f : (bd == 24) ? 8388607.0f : 2147483647.0f;
     const float PEAK_LIMIT = 2.0f * clip_lim / sc;
     int samples = dec->header.samples_per_channel;
@@ -1783,12 +1749,8 @@ lhdc_dec_ret_t lhdc_dec_decode_frame(
         }
     }
 
-    /* Output scale: the encoder works in a fixed 24-bit internal scale; combined
-     * with the IMDCT/overlap reconstruction gain of 2 the total is
-     * 2^(bit_depth-23). Brings output to the original level and keeps 16/24-bit
-     * levels equal. */
-    float sc = ldexpf(1.0f, out_bit_depth - 23) * lhdc_dec_rate_norm(mdct_size)
-             * lhdc_dec_level_cal(dec->header.sample_rate, (int)dec->header.bit_depth);
+    /* Match the encoder's transform normalization and emitted container. */
+    float sc = lhdc_dec_output_scale(mdct_size, out_bit_depth);
     float clip_lim = (bytes_per_sample == 2) ? 32767.0f
                    : (bytes_per_sample == 3) ? 8388607.0f : 2147483647.0f;
 

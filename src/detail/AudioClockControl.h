@@ -55,11 +55,22 @@ public:
                    s.zeros>=lastZ_&&s.completed_packets>=lastF_&&s.completed_frames>=lastG_);
   const bool same=s.stream_epoch==stream_&&s.output_epoch==output_;
   const bool missing=haveCounters_&&s.zeros!=lastZ_;
-  if(!same||!counters||!forward){++stats_.invalid_samples;suspend();remember(s);return {};}
+  if(!same||!counters||!forward){++stats_.invalid_samples;suspend();haveCounters_=false;return {};}
   if(!s.running||!s.healthy||s.recovering||missing){suspend();remember(s);return {};}
-  if(!stats_.frames_per_packet_q16&&s.completed_packets&&s.completed_frames)
-   stats_.frames_per_packet_q16=ratio(s.completed_frames,s.completed_packets);
-  if(!stats_.frames_per_packet_q16){remember(s);return {};}
+  // A gap invalidates a cohort even before its first nonzero frame credit.
+  if(haveCounters_&&uint32_t(s.now_us-lastObservation_)>250000u){suspend();remember(s);stats_.learning=true;stats_.suspended=false;return {};}
+  // A new cohort begins at the last valid observation, never at lifetime
+  // totals. Every completed packet remains in the denominator, including a
+  // valid fragment that produced zero frames. Do not guess before a positive
+  // result is attributable to at least one completed packet.
+  if(!haveCohort_){windowF_=haveCounters_?lastF_:s.completed_packets;windowG_=haveCounters_?lastG_:s.completed_frames;haveCohort_=true;}
+  stats_.learning=stats_.frames_per_packet_q16?stats_.learning:true;
+  stats_.suspended=false;
+  if(!stats_.frames_per_packet_q16){
+   const uint64_t packets=s.completed_packets-windowF_,frames=s.completed_frames-windowG_;
+   if(packets&&frames)stats_.frames_per_packet_q16=ratio(frames,packets);
+   if(!stats_.frames_per_packet_q16){remember(s);return {};}
+  }
   const uint64_t units=s.compressed_units_q16;
   const uint64_t f=stats_.frames_per_packet_q16;
   if(units&&f>UINT64_MAX/units){++stats_.invalid_samples;suspend();remember(s);return {};}
@@ -68,7 +79,7 @@ public:
   if(exact>UINT32_MAX||compressed>UINT32_MAX-exact){++stats_.invalid_samples;suspend();remember(s);return {};}
   stats_.inventory_frames=exact+compressed;
   if(!haveTime_){
-   haveTime_=true;lastTime_=windowStart_=s.now_us;lastInventory_=stats_.inventory_frames;
+   haveTime_=true;lastTime_=s.now_us;lastInventory_=stats_.inventory_frames;
    windowF_=s.completed_packets;windowG_=s.completed_frames;stats_.learning=true;stats_.tracking=stats_.suspended=false;
    remember(s);return {};
   }
@@ -101,7 +112,7 @@ public:
   if(stats_.tracking&&queueCapacity_>=4){const uint64_t ceiling=targetCeilingQ16();
    if(targetQ16_>ceiling){targetQ16_=ceiling;stats_.target_frames=ceiling>>16;}}
   windowF_=s.completed_packets;windowG_=s.completed_frames;
-  area_=elapsed_=0;windowStart_=s.now_us;
+  area_=elapsed_=0;
   if(!stats_.tracking||pending_.update)return {};
   if(haveDecision_&&uint32_t(s.now_us-lastDecision_)<1000000u)return {};
   // Error is nominal microseconds, clipped before gain arithmetic. Incremental
@@ -147,13 +158,18 @@ private:
   }
   return whole*65536+fraction;
  }
- constexpr void suspend(){stats_.tracking=stats_.learning=false;stats_.suspended=true;haveTime_=false;area_=elapsed_=learnArea_=learnElapsed_=0;previousError_=0;pending_.update=false;}
- constexpr void remember(const AudioClockSample& s){lastA_=s.decoded;lastD_=s.discarded;lastP_=s.prepared;lastZ_=s.zeros;lastF_=s.completed_packets;lastG_=s.completed_frames;haveCounters_=true;}
+ constexpr void suspend(){
+  stats_.tracking=stats_.learning=false;stats_.suspended=true;stats_.frames_per_packet_q16=0;
+  stats_.inventory_frames=stats_.target_frames=0;haveTime_=haveCohort_=false;
+  area_=elapsed_=learnArea_=learnElapsed_=0;windowF_=windowG_=0;filterQ16_=0;
+  if(!configured_target_)targetQ16_=0;previousError_=0;pending_.update=false;
+ }
+ constexpr void remember(const AudioClockSample& s){lastA_=s.decoded;lastD_=s.discarded;lastP_=s.prepared;lastZ_=s.zeros;lastF_=s.completed_packets;lastG_=s.completed_frames;lastObservation_=s.now_us;haveCounters_=true;}
  AudioClockConfig config_;AudioClockSnapshot stats_;AudioClockDecision pending_;
- uint32_t stream_=0,output_=0,rate_=0,pcmCapacity_=0,queueCapacity_=0,lastTime_=0,windowStart_=0,lastDecision_=0,serial_=0;
+ uint32_t stream_=0,output_=0,rate_=0,pcmCapacity_=0,queueCapacity_=0,lastTime_=0,lastObservation_=0,lastDecision_=0,serial_=0;
  uint64_t lastA_=0,lastD_=0,lastP_=0,lastZ_=0,lastF_=0,lastG_=0,windowF_=0,windowG_=0;
  uint64_t area_=0,elapsed_=0,learnArea_=0,learnElapsed_=0,lastInventory_=0,targetQ16_=0,filterQ16_=0;
  int64_t previousError_=0;
- bool active_=false,haveCounters_=false,haveTime_=false,haveDecision_=false,configured_target_=false;
+ bool active_=false,haveCounters_=false,haveTime_=false,haveDecision_=false,configured_target_=false,haveCohort_=false;
 };
 }}

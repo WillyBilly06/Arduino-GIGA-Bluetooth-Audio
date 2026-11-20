@@ -6,6 +6,8 @@
 #include "AudioClock.h"
 #include "I2sConfig.h"
 #include "GigaVoice.h"
+#include "GigaSpp.h"
+#include "BondStorage.h"
 
 namespace giga_bredr {
 // Zero fields inherit globals, then negotiated-codec defaults. A resolved
@@ -51,6 +53,8 @@ struct ReceiverConfig {
     // in BLE-only mode; enable_i2s=false alone still leaves Classic enabled.
     bool enable_a2dp = true;
     VoiceConfig voice; // Experimental, default disabled; requires Classic+I2S.
+    ClassicBondStorage classic_bonds; // Optional application-owned store; default RAM-only.
+    SppConfig spp; // Default disabled Serial Port Profile server; requires enable_a2dp.
 };
 struct ReceiverStats {
     AudioClockStats clock;
@@ -113,6 +117,11 @@ public:
     Status voiceStatus(VoiceStatus&)const;
     // Copies one explicit typed HF intent; Ok is admission, not phone execution.
     Status voiceCommand(HfpCommand,uint32_t expected_generation,const char* argument=nullptr);
+    // Explicit HSP button intent using a copied voiceStatus().headset_command_token.
+    // AG/state dependent: an idle button can redial/place a call. Never auto-retry.
+    // Ok is one admitted intent, not execution; no per-request unsend is promised.
+    // HF state cannot authorize HS. End/restart/another receiver rejects old tokens.
+    Status headsetCommand(HspCommand,HspCommandToken expected);
     // Copies the readable TX value; notifies only while connected/subscribed.
     // Ok is admission, not remote delivery. Busy/OutputFull ask for a retry.
     // Foreground data calls do not wait for the radio owner; contention is Busy.
@@ -133,6 +142,19 @@ public:
     // Pops one copied write from the GATT RX characteristic, if available.
     // Returns false without changing value when empty or the radio owner is busy.
     bool bleReadWrite(BleWrite& value);
+    // Serial Port Profile (config.spp.enabled). Foreground data calls never wait
+    // for the radio owner: contention is Busy (or 0 bytes); retry from loop().
+    // Ok copies up to length bytes into the fixed TX ring; accepted may be less
+    // (partial write). OutputFull: ring full, nothing copied. InvalidArgument:
+    // no open SPP connection. Ok is admission, not remote delivery: frames go
+    // out as RFCOMM credits and the peer N1 allow, behind Classic control.
+    Status sppWrite(const uint8_t* data,size_t length,size_t& accepted);
+    // Drains up to capacity received bytes; freed space returns RFCOMM credits.
+    // Bytes received before a disconnect stay readable until the next connect.
+    size_t sppRead(uint8_t* data,size_t capacity);
+    bool sppConnected() const;
+    // Copied counters; Unsupported unless SPP is enabled for this begin().
+    Status sppStats(SppStats& value) const;
     static uint32_t availableCodecs();
     using Allocate = void* (*)(size_t bytes, void* user);
     using Free = void (*)(void* pointer, void* user);

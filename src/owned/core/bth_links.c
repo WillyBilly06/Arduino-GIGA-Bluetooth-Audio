@@ -18,7 +18,7 @@ static bool valid_bond(const bth_bond_t *b) {
 }
 static void clear_security(bth_peer_link_t *p) {
     p->authenticated=false; p->key_size_verified=false; p->key_size=0;
-    p->confirmation_pending=false; p->key_pending=false;
+    p->confirmation_pending=false; p->key_pending=false; p->pairing_succeeded=p->fresh_pairing_verified=false;
     p->cached_key_pending=p->cached_key_accepted=p->cached_key_encrypted=false;p->stale_size_reads=p->stale_key_replies=0;
     erase_bond(&p->pending_bond);
     p->retry_opcode=0;p->retry_at_ms=0;p->collision_retries=0;p->retry_results_pending=0;
@@ -73,6 +73,23 @@ static bth_status_t disconnect_security(bth_links_t *l,bth_peer_link_t *p,uint8_
     if (st==BTH_OK) p->disconnecting=true;
     return st;
 }
+static bth_status_t paired_encryption_verified(bth_links_t *l,bth_peer_link_t *peer) {
+    // Successful remote SSP is a current authentication fact. Publish nothing
+    // until its fresh key, actual encryption and current key-size proof agree.
+    if (peer->state!=BTH_PEER_CONNECTED || peer->disconnecting || !peer->pairing_succeeded ||
+        !peer->key_pending || !peer->encryption || !peer->key_size_verified) return BTH_OK;
+    if (peer->key_type!=4 && peer->key_type!=5 && peer->key_type!=7 && peer->key_type!=8) return BTH_OK;
+    bool stored=false;
+    if (l->policy.auth_requirement&6u) {
+        stored=l->callbacks.save && l->callbacks.save(l->context,peer->peer,&peer->pending_bond);
+        if (!stored) { peer->bonded=false; (void)disconnect_security(l,peer,5); return BTH_ERR_STATE; }
+    }
+    peer->key_type=peer->pending_bond.key_type; peer->bonded=stored;
+    erase_bond(&peer->pending_bond); peer->key_pending=false; peer->pairing_succeeded=false;
+    peer->authenticated=true; peer->fresh_pairing_verified=true;
+    (void)bth_cmdq_cancel_owned(l->commands,peer->owner,0x0411);
+    return BTH_OK;
+}
 static bth_status_t collision_retry(bth_links_t *l,bth_peer_link_t *p,uint16_t opcode) {
     if(p->disconnecting)return BTH_IGNORED;
     const uint8_t result_bit=opcode==0x0411?1:2;
@@ -86,6 +103,14 @@ static bth_status_t collision_retry(bth_links_t *l,bth_peer_link_t *p,uint16_t o
     if(p->collision_retries>=5)return disconnect_security(l,p,5);
     ++p->collision_retries;p->retry_opcode=opcode;p->retry_at_ms=l->security_now_ms+1000;
     return BTH_OK;
+}
+bth_status_t bth_links_expedite_authentication(bth_links_t *l,uint16_t handle) {
+    if(!l || !l->initialized)return BTH_ERR_PARAM;
+    bth_peer_link_t *p=&l->classic;
+    if(p->state!=BTH_PEER_CONNECTED || p->handle!=handle || p->disconnecting ||
+       p->retry_opcode!=0x0411 || p->collision_retries)return BTH_IGNORED;
+    if((int32_t)(p->retry_at_ms-l->security_now_ms)<=0)return BTH_IGNORED;
+    p->retry_at_ms=l->security_now_ms;return BTH_OK;
 }
 bth_status_t bth_links_security_tick(bth_links_t *l,uint32_t now_ms) {
     if(!l || !l->initialized)return BTH_ERR_PARAM;
@@ -162,15 +187,27 @@ static bth_status_t connected_classic(bth_links_t *l,bth_span_t p) {
     if (!bth_cmdq_available(l->commands)) return BTH_ERR_CAPACITY;
     if (!bth_hci_flow_attach(l->flow,handle,BTH_LINK_CLASSIC)) return BTH_ERR_STATE;
     const uint8_t auth[]={(uint8_t)handle,(uint8_t)(handle>>8)};
-    const uint32_t owner=l->classic.state==BTH_PEER_PENDING?l->classic.owner:new_owner(l);
+    const bool accepted=l->classic.state==BTH_PEER_PENDING;
+    const uint32_t owner=accepted?l->classic.owner:new_owner(l);
+    const bool defer=accepted && l->policy.acceptor_auth_delay_ms;
     // A locally initiated authentication request must not overtake the remote
     // host's urgent key/IO-capability/confirmation responses.
-    bth_status_t status=bth_cmdq_push_owned(l->commands,0x0411,auth,sizeof auth,false,owner);
+    bth_status_t status=defer?BTH_OK:bth_cmdq_push_owned(l->commands,0x0411,auth,sizeof auth,false,owner);
     if (status!=BTH_OK) { (void)bth_hci_flow_detach(l->flow,handle); return status; }
     clear_link(&l->classic);
     memcpy(l->classic.peer,p.data+3,6); l->classic.handle=handle; l->classic.owner=owner;
     l->classic.type=BTH_LINK_CLASSIC; l->classic.state=BTH_PEER_CONNECTED;
     l->classic.encryption=p.data[10]; l->classic.key_type=0xff;
+    // Deferred local authentication rides the bounded retry timer without
+    // consuming a collision retry. Remote Link Key/IO Capability requests and
+    // successful encryption clear it; profile channels stay pending until secure.
+    if (defer) { l->classic.retry_opcode=0x0411; l->classic.retry_at_ms=l->security_now_ms+l->policy.acceptor_auth_delay_ms; }
+    const uint32_t latency=l->policy.qos_poll_latency_us;
+    if (latency && bth_cmdq_available(l->commands)) {
+        const uint8_t qos[]={(uint8_t)handle,(uint8_t)(handle>>8),0,2, 0,0,0,0, 0,0,0,0,
+            (uint8_t)latency,(uint8_t)(latency>>8),(uint8_t)(latency>>16),(uint8_t)(latency>>24), 0xff,0xff,0xff,0xff};
+        (void)bth_cmdq_push_owned(l->commands,0x0807,qos,sizeof qos,false,owner);
+    }
     return BTH_OK;
 }
 static bth_status_t connected_le(bth_links_t *l,bth_span_t p) {
@@ -234,7 +271,11 @@ static bth_status_t pin_request(bth_links_t *l,bth_span_t p) {
 }
 static bth_status_t io_request(bth_links_t *l,bth_span_t p) {
     if (p.len!=6) return BTH_ERR_LENGTH;
-    const bool accept=classic_peer(l,p.data)!=NULL;
+    bth_peer_link_t *peer=classic_peer(l,p.data);
+    const bool accept=peer!=NULL;
+    if (peer) peer->pairing_succeeded=false;
+    // The remote started pairing; a still-deferred local request is redundant.
+    if (peer && peer->retry_opcode==0x0411 && !peer->collision_retries) peer->retry_opcode=0;
     uint8_t reply[9]; memcpy(reply,p.data,6);
     reply[6]=accept?l->policy.io_capability:0x18;
     reply[7]=0; reply[8]=l->policy.auth_requirement;
@@ -290,7 +331,8 @@ static bth_status_t key_notification(bth_links_t *l,bth_span_t p) {
         return BTH_OK;
     }
     const uint8_t stale=retire_size_reads(l,peer),old_keys=retire_key_replies(l,peer);
-    clear_security(peer);peer->stale_size_reads=stale;peer->stale_key_replies=old_keys;peer->bonded=false;
+    const bool paired=peer->pairing_succeeded;
+    clear_security(peer);peer->pairing_succeeded=paired;peer->stale_size_reads=stale;peer->stale_key_replies=old_keys;peer->bonded=false;
     peer->pending_bond=bond; peer->key_pending=true; peer->key_type=bond.key_type;
     erase_bond(&bond);
     return BTH_OK;
@@ -310,11 +352,11 @@ static bth_status_t authentication_complete(bth_links_t *l,bth_span_t p) {
         const bth_status_t result=disconnect_security(l,peer,5);
         return result!=BTH_OK?result:(removed?BTH_OK:BTH_ERR_STATE);
     }
+    if(peer->authenticated && ((peer->cached_key_accepted && peer->cached_key_encrypted) || peer->fresh_pairing_verified) &&
+        peer->key_size_verified && peer->encryption && !peer->key_pending)return BTH_OK;
     if (!peer->key_pending && !peer->bonded) {
         (void)disconnect_security(l,peer,5); return BTH_ERR_STATE;
     }
-    if(peer->authenticated && peer->cached_key_accepted && peer->cached_key_encrypted &&
-        peer->key_size_verified && peer->encryption && !peer->key_pending)return BTH_OK;
     if (!bth_cmdq_available(l->commands)) { clear_security(peer); return BTH_ERR_CAPACITY; }
     if (peer->key_pending) {
         bool stored=false;
@@ -325,7 +367,7 @@ static bth_status_t authentication_complete(bth_links_t *l,bth_span_t p) {
             }
         }
         peer->key_type=peer->pending_bond.key_type; peer->bonded=stored;
-        erase_bond(&peer->pending_bond); peer->key_pending=false;
+        erase_bond(&peer->pending_bond); peer->key_pending=false; peer->pairing_succeeded=false;
     }
     peer->retry_opcode=0;(void)bth_cmdq_cancel_owned(l->commands,peer->owner,0x0411);
     peer->authenticated=true; peer->key_size_verified=false; peer->key_size=0;
@@ -396,7 +438,7 @@ static bth_status_t security_command_complete(bth_links_t *l,const bth_h4_frame_
     if (!peer->encryption) return BTH_OK;
     peer->key_size=p.data[6]; peer->key_size_verified=true;
     cached_encryption_verified(l,peer);
-    return BTH_OK;
+    return paired_encryption_verified(l,peer);
 }
 static bth_status_t security_command_status(bth_links_t *l,const bth_h4_frame_t *e) {
     const bth_span_t p=e->event.params;
@@ -442,8 +484,9 @@ static bth_status_t pairing_complete(bth_links_t *l,bth_span_t p) {
     bth_peer_link_t *peer=classic_peer(l,p.data+1);
     if (!peer) return BTH_IGNORED;
     if (p.data[0]) return disconnect_security(l,peer,5);
-    // SSP completion alone is not authentication or an encryption-size check.
-    return BTH_OK;
+    // SSP completion alone never authorizes a profile or stores its key.
+    if (!peer->disconnecting && (!peer->authenticated || peer->key_pending)) peer->pairing_succeeded=true;
+    return paired_encryption_verified(l,peer);
 }
 bth_status_t bth_links_on_event(bth_links_t *l,const bth_h4_frame_t *event) {
     if (!l || !l->initialized || !event) return BTH_ERR_PARAM;

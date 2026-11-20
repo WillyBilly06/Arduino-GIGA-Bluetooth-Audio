@@ -27,6 +27,9 @@ int gbr_lhdc_entropy_ready(void);
 #if GBR_ENABLE_OPUS
 #include "../vendor/codecs/opus/include/opus.h"
 #endif
+#if GBR_ENABLE_SSC
+#include "../vendor/codecs/ssc/ssc_decoder.h"
+#endif
 }
 // Single serialized decoder worker owns this guard and all LHDC module caches.
 static uintptr_t ldacFirst=0,ldacLast=0;
@@ -250,6 +253,32 @@ static DecodeResult opusDecode(void* p,const uint8_t* in,size_t n,int32_t* pcm,s
 }
 static const DecoderOps opusOps={opusOpen,opusDecode,opusClose};
 #endif
+#if GBR_ENABLE_SSC
+// Three tracked state blocks (ssc_decoder_size) exist only between open and close.
+// One self-delimiting frame per call: the receive loop advances through two-frame 96 kHz
+// payloads, and every frame header may carry a different bitrate and size.
+struct SscState { ssc_decoder* decoder;int mode; };
+static void* sscAllocate(void*,unsigned n) {return gbr_malloc(n);}
+static void sscRelease(void*,void* p) {gbr_free(p);}
+static void sscClose(void* p) {auto s=(SscState*)p;if(!s)return;ssc_decoder_destroy(s->decoder);gbr_free(s);}
+static Status sscOpen(void** p,const CodecConfig& c) {
+    *p=nullptr;if(c.channels!=2||!(rate(c.sample_rate)||c.sample_rate==96000)||!(c.bits_per_sample==16||c.bits_per_sample==24))return Status::Unsupported;
+    auto s=(SscState*)gbr_calloc(1,sizeof(SscState));if(!s)return Status::OutOfMemory;s->mode=(int)c.sample_rate;
+    s->decoder=ssc_decoder_create_with_allocator(s->mode,sscAllocate,sscRelease,nullptr);
+    if(!s->decoder){sscClose(s);return Status::OutOfMemory;}*p=s;return Status::Ok;
+}
+static DecodeResult sscDecode(void* p,const uint8_t* in,size_t n,int32_t* pcm,size_t cap) {
+    if(!io(in,n,pcm,cap))return result(cap?Status::InvalidArgument:Status::OutputFull);
+    auto s=(SscState*)p;if(cap<SSC_FRAME_SAMPLES)return result(Status::OutputFull);
+    // Frames never span packets: a size beyond the payload is truncation, not more data.
+    int length=ssc_frame_bytes(in,n>65535?65535:int(n),s->mode);
+    if(length<=0||size_t(length)>n){ssc_decoder_reset(s->decoder);return result(Status::CorruptFrame);}
+    // s32 output already places 16-bit full scale at 1<<31 and keeps 24-bit HiFi/UHQ detail.
+    if(ssc_decode_s32(s->decoder,in,length,pcm)!=SSC_FRAME_SAMPLES){ssc_decoder_reset(s->decoder);return result(Status::CorruptFrame);}
+    return result(Status::Ok,size_t(length),SSC_FRAME_SAMPLES);
+}
+static const DecoderOps sscOps={sscOpen,sscDecode,sscClose};
+#endif
 const DecoderOps* codecOperations(Codec c) {
     switch(c) {
 #if GBR_ENABLE_SBC
@@ -272,6 +301,9 @@ const DecoderOps* codecOperations(Codec c) {
 #endif
 #if GBR_ENABLE_OPUS
     case Codec::Opus:return &opusOps;
+#endif
+#if GBR_ENABLE_SSC
+    case Codec::Ssc:return &sscOps;
 #endif
     default:return nullptr;
     }

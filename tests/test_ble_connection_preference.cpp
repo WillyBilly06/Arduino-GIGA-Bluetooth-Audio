@@ -45,7 +45,10 @@ static void actor_preference(){
 static void enable_notify(Fixture& f){f.acl(0x26,4,{2,5,2});f.settle();f.acl(0x26,4,{0x12,12,0,1,0});f.settle();}
 static void optional_prefix(){
  Fixture f;Wire w(f);w.localLow=1;w.boot();audio(f);f.leConnect();enable_notify(f);w.sent.clear();w.pdus.clear();
- f.ready=false;uint8_t value[512]={};for(unsigned i=0;i<2;++i){CHECK(f.host.bleNotify(value,sizeof value)==Status::Ok);w.poll(0);}
+ f.ready=false;uint8_t value[512]={};
+ // This transport test starts with two already-committed ATT notification
+ // prefixes. Initial application notification admission is tested separately.
+ for(unsigned i=0;i<2;++i){bth_control_reservation_t slot;CHECK(bth_control_tx_reserve(&f.host.control_,1,&slot)==BTH_OK);size_t written=0;CHECK(bth_att_notify(&f.host.le_.att_,11,12,value,sizeof value,false,bth_att_security_t{},slot.data,slot.capacity,&written)==BTH_OK&&written==515);CHECK(bth_control_tx_commit(&f.host.control_,slot.token,4,written,517)==BTH_OK);w.poll(0);}
  CHECK(f.host.control_.peers[1].count==2);w.poll(5000);f.ready=true;
  for(unsigned i=0;i<1000;++i){w.poll();if(std::any_of(w.pdus.begin(),w.pdus.end(),[](const Fixture::Pdu& p){return p.cid==5;}))break;}
  unsigned data=0,signal=0;bool have=false;uint32_t previous=0;
@@ -138,15 +141,20 @@ static void pending_parameters(){
  Fixture f;Wire w(f);w.boot();auto media=audio(f);f.leConnect();f.ready=false;
  for(unsigned i=0;i<8;++i)CHECK(bth_cmdq_push(&f.host.commands_,0xfc01,nullptr,0,false)==BTH_OK);
  f.event(0x3e,{6,0x26,0,24,0,40,0,0,0,200,0});f.event(0x3e,{6,0x26,0,80,0,120,0,0,0,0xf4,1});
- CHECK(f.host.le_.parameters_pending_&&bth_read_le16(f.host.le_.pending_parameters_+3)==24&&f.host.le_.parameter_count_==1&&!f.host.deferred_count_&&f.playing);
+ // Strict policy rejects out-of-range requests instead of rewriting them;
+ // a later wholly admitted request must retain its exact tuple and FIFO order.
+ f.event(0x3e,{6,0x26,0,80,0,96,0,0,0,0xf4,1});
+ CHECK(f.host.le_.parameters_pending_&&bth_read_le16(f.host.le_.pending_parameters_+3)==24&&f.host.le_.parameter_count_==2&&!f.host.deferred_count_&&f.playing);
  f.acl(0x25,media,{0x80,0x60,0,1,1,2,3,4,5,6,7,8,1,0xaa});f.ready=true;w.poll();CHECK(f.media==1&&f.playing&&f.host.radioStats().streaming);for(unsigned i=0;i<60;++i)w.poll();
  std::vector<Bytes> replies;for(auto& p:w.commands)if(Fixture::op(p)==0x2020||Fixture::op(p)==0x2021)replies.push_back(p);
- CHECK(replies.size()==2&&Fixture::op(replies[0])==0x2021&&replies[0].size()==7&&replies[0][6]==0x3b);
- CHECK(Fixture::op(replies[1])==0x2020&&bth_read_le16(replies[1].data()+6)==80&&bth_read_le16(replies[1].data()+8)==96);
+ CHECK(replies.size()==3&&Fixture::op(replies[0])==0x2021&&replies[0].size()==7&&replies[0][6]==0x3b);
+ CHECK(Fixture::op(replies[1])==0x2021&&replies[1].size()==7&&replies[1][6]==0x3b);
+ CHECK(Fixture::op(replies[2])==0x2020&&bth_read_le16(replies[2].data()+6)==80&&bth_read_le16(replies[2].data()+8)==96);
+ CHECK(f.host.bleStats().connection.audio_policy_rejections==2);
  CHECK(f.media==1&&!f.host.le_.parameters_pending_&&!f.host.deferred_count_&&!f.host.rx_.outstanding&&!f.host.radioStats().transport_errors);
  // A remote procedure must get a quiet window before our optional chain.
  w.poll(5000);CHECK(!w.featureCount&&!w.updateCount);
- puts("PENDING06_OLDEST_RETAINED_INTERSECTION_REPLIES_CLASSIC_PROGRESS_PASS");
+ puts("PENDING06_OLDEST_RETAINED_EXACT_ECHO_STRICT_REJECTIONS_CLASSIC_PROGRESS_PASS");
 }
 static void remote_preempts_optional(){for(unsigned mode=0;mode<3;++mode){
  Fixture f;Wire w(f);if(mode==2)w.localLow=1;w.boot();audio(f);f.leConnect();
@@ -207,12 +215,12 @@ static void oldest_owner(){
  puts("SAME_HANDLE_REUSE_OLDEST_SENT_OWNER_TOMBSTONE_RETIRED_ONCE_PASS");
 }
 static void wrap_features_and_watchdog(){
- Fixture f;Wire w(f);w.localLow=3;w.boot();audio(f);f.now=0xffffff00u;f.leConnect();w.poll(4964);CHECK(!w.featureCount&&!w.updateCount&&!f.host.bleStats().connection.preference_started);w.poll();
+ Fixture f;Wire w(f);w.localLow=3;w.boot();audio(f);f.now=0xffffff00u;f.leConnect();w.poll(964);CHECK(!w.featureCount&&!w.updateCount&&!f.host.bleStats().connection.preference_started);w.poll();
  CHECK(f.host.bleStats().connection.preference_started&&!w.featureCount&&!w.updateCount);
  f.event(0x3e,{4,0,0x26,0,3,1,2,3,4,5,6,7});for(unsigned i=0;i<5;++i)w.poll();CHECK(!w.featureCount&&w.updateCount==1&&f.host.bleStats().connection.source==3);
  Fixture passive;Wire wait(passive);wait.localLow=3;wait.boot();audio(passive);passive.leConnect();wait.poll(5000);wait.poll(5001);CHECK(!wait.featureCount&&!wait.updateCount&&passive.host.bleStats().connection.preference_error==0xff&&!passive.host.radioStats().transport_errors);
  Fixture missing;Wire noack(missing);noack.featureRespond=false;noack.boot();audio(missing);missing.leConnect();noack.poll(5000);CHECK(noack.featureCount==1);noack.poll(5001);CHECK(missing.host.radioStats().transport_errors==1&&!missing.host.radioStats().controller_ready);
- puts("WRAP_5S_FEATURE_BIT1_VS3_PASSIVE_TIMEOUT_REAL_ACK_WATCHDOG_PASS");
+ puts("WRAP_1S_START_FEATURE_BIT1_VS3_PASSIVE_TIMEOUT_REAL_ACK_WATCHDOG_PASS");
 }
 static void enhanced_and_config(){
  const BleConnectionPreference defaults;CHECK(defaults.enabled&&defaults.interval_min==64&&defaults.interval_max==96&&defaults.latency==2&&defaults.timeout==500);
