@@ -6,6 +6,11 @@
 #ifndef GIGA_BREDR_ACL_PRIORITY_DIRECTION
 #define GIGA_BREDR_ACL_PRIORITY_DIRECTION 1
 #endif
+// Experimental: run a Connectionless Peripheral Broadcast transmit probe
+// after boot (requires GIGA_BREDR_CONNECT_TRACE). Diagnostic only.
+#ifndef GIGA_BREDR_CPB_PROBE
+#define GIGA_BREDR_CPB_PROBE 0
+#endif
 #ifndef GIGA_BREDR_CONNECT_TRACE
 #define GIGA_BREDR_CONNECT_TRACE 0
 #endif

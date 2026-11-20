@@ -360,6 +360,15 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
 #if GIGA_BREDR_CONNECT_TRACE
  // Controller capability dump: CSB/CPB support is optional (LMP page 2 bits 0..3,
  // commands 0x0441-0x0444/0x0C74-0x0C78). Read once after GAP setup.
+#if GIGA_BREDR_CPB_PROBE
+ if(((event.event.code==0x0e&&p.len>=4)||(event.event.code==0x0f&&p.len==4))&&(completed_opcode==0x0c63||completed_opcode==0x0c74||completed_opcode==0x0441||completed_opcode==0x0c78||completed_opcode==0x0c76||completed_opcode==0x0443)){
+  char t[128];const uint8_t st=event.event.code==0x0e?p.data[3]:p.data[0];
+  snprintf(t,sizeof t,"GBR_CPB op=%04x ev=%02x status=%02x ret=%02x%02x%02x",completed_opcode,event.event.code,st,p.len>4?p.data[4]:0,p.len>5?p.data[5]:0,p.len>6?p.data[6]:0);
+  (void)t;{char* L=capability_lines_[3];size_t n=strlen(L);if(!n){strcpy(L,"GBR_CPB_SEQ");n=strlen(L);}
+   snprintf(L+n,sizeof capability_lines_[3]-n," %04x:%02x%s",completed_opcode,st,event.event.code==0x0e&&p.len>4?"":"");}
+ }
+ if(event.event.code==0x4f||event.event.code==0x52){char t[64];snprintf(t,sizeof t,"GBR_CPB event=%02x b0=%02x b1=%02x",event.event.code,p.len?p.data[0]:0,p.len>1?p.data[1]:0);memcpy(capability_lines_[4],t,sizeof t);diagnose(t);}
+#endif
  if(event.event.code==0x0e&&p.len>=4&&(completed_opcode==0x1002||completed_opcode==0x1004)){
   char t[200];size_t n=(size_t)snprintf(t,sizeof t,"GBR_CAP op=%04x st=%02x",completed_opcode,p.data[3]);
   if(completed_opcode==0x1002&&p.len>=68){const uint8_t* m=p.data+4;n+=snprintf(t+n,sizeof t-n," oct22=%02x oct30=%02x oct31=%02x oct32=%02x csb_set=%u csb_rx=%u sync_start=%u sync_rx=%u lt_addr=%u csb_data=%u sync_param=%u",m[22],m[30],m[31],m[32],(m[31]>>0)&1,(m[31]>>1)&1,(m[31]>>2)&1,(m[31]>>3)&1,(m[31]>>4)&1,(m[31]>>6)&1,(m[32]>>0)&1);}
@@ -908,7 +917,19 @@ void OwnedHost::serviceControllerPriority(bool secure){
 void OwnedHost::runtimePoll(){
 #if GIGA_BREDR_CONNECT_TRACE
  if(capability_query_sent_&&uint32_t(now_-capability_printed_ms_)>=10000){capability_printed_ms_=now_;for(auto& l:capability_lines_)if(l[0])diagnose(l);}
- if(!capability_query_sent_&&gap_.stage==BTH_GAP_READY&&!peers_[0].attached&&!peers_[1].attached&&bth_cmdq_available(&commands_)>=4){
+#if GIGA_BREDR_CPB_PROBE
+ if(capability_query_sent_&&!cpb_probe_sent_&&!peers_[0].attached&&bth_cmdq_available(&commands_)>=BTH_CMD_QUEUE_LIMIT&&uint32_t(now_-capability_printed_ms_)<10000&&capability_lines_[2][0]){cpb_probe_sent_=true;
+  {const uint8_t mask2[8]={0,0x80,0x37,0,0,0,0,0},lt=1;
+   // Enable 0x0441: enable, LT_ADDR 1, no LPO, packet types DM1|DH1 (0x0018), interval 0x50..0xA0 slots, supervision 0x2000 slots.
+   const uint8_t cpb[11]={1,1,0,0x18,0x00,0x50,0x00,0xa0,0x00,0x00,0x20};
+   // Sync train: interval 0x80..0x100 slots, timeout 0x0002A000 slots (~107 s), service data 0x00.
+   const uint8_t train[9]={0x80,0x00,0x00,0x01,0x00,0xa0,0x02,0x00,0x00};
+   const uint8_t data[8]={1,0x03,5,'G','I','G','A','!'};
+   bth_cmdq_push(&commands_,0x0c63,mask2,8,false);bth_cmdq_push(&commands_,0x0c74,&lt,1,false);bth_cmdq_push(&commands_,0x0441,cpb,11,false);
+   bth_cmdq_push(&commands_,0x0c78,train,9,false);bth_cmdq_push(&commands_,0x0c76,data,8,false);bth_cmdq_push(&commands_,0x0443,nullptr,0,false);}
+ }
+#endif
+ if(!capability_query_sent_&&gap_.stage==BTH_GAP_READY&&!peers_[0].attached&&!peers_[1].attached&&bth_cmdq_available(&commands_)>=BTH_CMD_QUEUE_LIMIT){
   const uint8_t p1=1,p2=2;capability_query_sent_=true;
   const int a=bth_cmdq_push(&commands_,0x1002,&p1,0,false),b=bth_cmdq_push(&commands_,0x1004,&p1,1,false),c=bth_cmdq_push(&commands_,0x1004,&p2,1,false);
   (void)a;(void)b;(void)c;

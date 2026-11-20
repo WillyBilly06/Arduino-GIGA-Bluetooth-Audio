@@ -155,7 +155,7 @@ private:
  uint32_t qos_last_data_ms_=0,qos_classic_owner_=0,qos_le_owner_=0;
 #if GIGA_BREDR_CONNECT_TRACE
  bool capability_query_sent_=false; // GIGA_BREDR_CONNECT_TRACE diagnostic only.
- uint32_t capability_printed_ms_=0;char capability_lines_[3][200]={};
+ uint32_t capability_printed_ms_=0;char capability_lines_[5][200]={};bool cpb_probe_sent_=false;
 #endif
  uint32_t qos_data_fragments_=0,qos_data_bytes_=0,qos_paced_deferrals_=0,qos_urgent_bypasses_=0;
  uint8_t qos_classic_burst_=0;bool qos_have_data_=false,qos_audio_active_=false;
