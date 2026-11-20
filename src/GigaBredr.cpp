@@ -21,6 +21,7 @@
 #include "owned/VoiceSdp.h"
 #include "owned/SppPort.h"
 #include "owned/HidDevice.h"
+#include "owned/CpbPort.h"
 #include "owned/ObexPort.h"
 #include "detail/VoiceInputLifetime.h"
 #include "RadioBuildConfig.h"
@@ -934,6 +935,14 @@ struct GigaBredr::Impl {
         return hid->begin(options.hid)?Status::Ok:Status::InvalidArgument;
     }
     void releaseHid(){if(!hid)return;hid->end();hid->~HidDevice();detail::release(hid);hid=nullptr;}
+    detail::CpbPort* cpb=nullptr;uint8_t* cpb_storage=nullptr; // Allocated only for config.cpb.role != Off.
+    Status setupCpb(){
+        if(options.cpb.role==CpbRole::Off)return Status::Ok;
+        void* storage=detail::allocate(sizeof(detail::CpbPort));if(!storage)return Status::OutOfMemory;cpb=new(storage)detail::CpbPort();
+        cpb_storage=static_cast<uint8_t*>(detail::allocate(detail::CpbPort::storageBytes(options.cpb)));if(!cpb_storage)return Status::OutOfMemory;
+        return cpb->begin(options.cpb,cpb_storage)?Status::Ok:Status::InvalidArgument;
+    }
+    void releaseCpb(){if(cpb){cpb->end();cpb->~CpbPort();detail::release(cpb);cpb=nullptr;}if(cpb_storage){detail::release(cpb_storage);cpb_storage=nullptr;}}
     // Loop context: copy one pending output report, then call outside the lock.
     void deliverHidOutput(){
         if(!hid||!options.hid.output_report)return;
@@ -1053,6 +1062,10 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
            s.tx_buffer_bytes<detail::SppPort::MinimumRing||s.tx_buffer_bytes>detail::SppPort::MaximumRing||
            (v.hands_free&&s.channel==v.hands_free_channel)||(v.headset&&s.channel==v.headset_channel))return Status::InvalidArgument;
     }
+    if(input.cpb.role!=CpbRole::Off){
+        if(!input.enable_a2dp||GIGA_BREDR_USE_BTSTACK)return Status::Unsupported;
+        if(!detail::CpbPort::validate(input.cpb))return Status::InvalidArgument;
+    }
     if(input.hid.enabled){
         if(!input.enable_a2dp||GIGA_BREDR_USE_BTSTACK)return Status::Unsupported;
         if(!detail::HidDevice::validate(input.hid))return Status::InvalidArgument;
@@ -1085,6 +1098,7 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     Status status=impl_->setupVoice(voice_input_lifetime);if(status!=Status::Ok){end();return status;}
     status=impl_->setupSerial();if(status!=Status::Ok){end();return status;}
     status=impl_->setupHid();if(status!=Status::Ok){end();return status;}
+    status=impl_->setupCpb();if(status!=Status::Ok){end();return status;}
     status=impl_->setupObex();if(status!=Status::Ok){end();return status;}
     detail::RadioCallbacks callbacks; callbacks.enable_a2dp = config.enable_a2dp;
     callbacks.configure = Impl::onConfigure; callbacks.media = Impl::onMedia;
@@ -1094,7 +1108,7 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
     if(impl_->voice){callbacks.voice_audio=&impl_->voice->transport;callbacks.voice_control=&impl_->voice->profiles;callbacks.voice_sdp=&impl_->voice->sdp;callbacks.voice_config=&impl_->voice->control;}
     else if(impl_->serial){callbacks.voice_control=impl_->serial->profiles;callbacks.voice_config=&impl_->serial->control;}
     else if(impl_->obex){callbacks.voice_control=impl_->obex->profiles;callbacks.voice_config=&impl_->obex->control;}
-    callbacks.hid=impl_->hid;
+    callbacks.hid=impl_->hid;callbacks.cpb=impl_->cpb;
 #if defined(ARDUINO)
     callbacks.owner_wake = Impl::onOwnerWake;
 #endif
@@ -1205,6 +1219,7 @@ void GigaBredr::end() {
     impl_->releaseVoice();
     impl_->releaseSerial(); // The radio actor ended above; nothing retains its rings.
     impl_->releaseHid();
+    impl_->releaseCpb();
     impl_->releaseObex();
     { Lock lock(impl_->codec_mutex); impl_->releaseCodec(); }
     impl_->~Impl(); detail::release(impl_); impl_ = nullptr;
@@ -1357,6 +1372,57 @@ Status GigaBredr::hidStats(HidStats& value) const {
     if (!impl_ || !impl_->hid) return Status::Unsupported;
     Lock lock(impl_->radio_mutex);
     value = impl_->hid->stats();
+    return Status::Ok;
+}
+Status GigaBredr::cpbSetData(const uint8_t* data,size_t length) {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->cpb) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->cpb->setData(data,length); }
+#if defined(ARDUINO)
+    if (result == Status::Ok) impl_->host_events.set(1);
+#endif
+    return result;
+}
+bool GigaBredr::cpbRead(uint8_t* data,size_t capacity,size_t& length,uint32_t* clock) {
+    length = 0;
+    if(providerReentry())return false;
+    if (!impl_ || !impl_->cpb) return false;
+    TryLock lock(impl_->radio_mutex);
+    if (!lock) return false;
+    return impl_->cpb->read(data,capacity,length,clock);
+}
+Status GigaBredr::cpbStart() {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->cpb) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->cpb->start(); }
+#if defined(ARDUINO)
+    impl_->host_events.set(1);
+#endif
+    return result;
+}
+Status GigaBredr::cpbStop() {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->cpb) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->cpb->stop(); }
+#if defined(ARDUINO)
+    impl_->host_events.set(1);
+#endif
+    return result;
+}
+Status GigaBredr::cpbStats(CpbStats& value) const {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->cpb) return Status::Unsupported;
+    Lock lock(impl_->radio_mutex);
+    value = impl_->cpb->stats();
     return Status::Ok;
 }
 Status GigaBredr::pbapPullPhonebook(const char* path,uint16_t max_count,uint16_t offset) {

@@ -6,6 +6,7 @@
 #include "OwnedVoiceAudio.h"
 #include "VoiceSdp.h"
 #include "HidDevice.h"
+#include "CpbPort.h"
 #include "../detail/ClassicBondStore.h"
 #ifndef GIGA_BREDR_PRIVATE_SCHED_WITNESS
 #define GIGA_BREDR_PRIVATE_SCHED_WITNESS 0
@@ -33,6 +34,8 @@ struct OwnedHostConfig {
  ClassicBondStorage classic_bonds;
  // Optional caller-owned HID Device endpoint (begun, retained through end()).
  HidDevice* hid=nullptr;
+ // Optional caller-owned Connectionless Peripheral Broadcast endpoint.
+ CpbPort* cpb=nullptr;
 };
 struct OwnedHostHooks {
  bool (*txReady)(void*)=nullptr;

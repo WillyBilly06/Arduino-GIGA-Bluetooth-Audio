@@ -51,13 +51,67 @@ also contains a Broadcom-specific workaround for the Synchronization Train
 Received event layout (manufacturer 15), which a receiver implementation must
 handle.
 
+## Library implementation (2026-11-20)
+
+`ReceiverConfig.cpb` (see `src/GigaCpb.h`) drives a portable host kernel,
+`src/owned/core/bth_cpb.{c,h}`, through the owned-host actor
+(`src/owned/CpbPort.h`). One CPB command is in flight at a time, and only while
+at least three HCI command slots are free, so Classic and BLE control traffic
+keeps priority.
+
+| Role | HCI sequence |
+|---|---|
+| Transmitter start | 0x0C63 page-2 mask (once per HCI Reset) -> 0x0C74 reserve LT_ADDR -> 0x0C78 train parameters -> 0x0441 enable -> 0x0C76 data fragment(s) -> 0x0443 train |
+| Transmitter running | 0x0C76 on each `cpbSetData`; 0x0443 again after Sync Train Complete (0x4F) when `continuous_train`, and after CPB Channel Map Change (0x55) |
+| Transmitter stop | 0x0441 disable -> 0x0C75 delete LT_ADDR |
+| Receiver start | 0x0C63 -> 0x0444 receive train (Command Status, then event 0x50) -> 0x0442 enable with the train's offset/instant/interval/map |
+| Receiver running | event 0x51 data (fragments reassembled, newest complete message kept); 0x52 timeout -> 0x0444 again |
+| Receiver stop | 0x0442 disable (or wait for the pending train event; there is no cancel command) |
+
+Handled details:
+- **Train layout.** Event 0x50 is parsed in the standard order or the Broadcom
+  order (Service_Data before LT_ADDR) on manufacturer 15. A configured LT_ADDR
+  overrides the guess when only one order matches it.
+- **Stop races.** An enable or LT_ADDR reservation that succeeds after `cpbStop()` is undone.
+- **Recovery.** `cpbStart()` after a failure releases what was reserved before
+  retrying. A loaded payload is resent on every start and after the host's HCI
+  Reset.
+- **Lost train event.** If the train event never arrives, a guard of scan
+  timeout + 2 s rescans.
+
+Native evidence (Linux VM, clang 21, UBSan/ASan):
+- `tests/owned_core/test_cpb.c` — 499 checks. Covers:
+  - exact parameter bytes of all nine commands
+  - both train layouts and the LT_ADDR override
+  - fragmentation: 27-byte chunks, and a restart when the payload changes mid-sequence
+  - reassembly, bad packets, joining mid-message and overflow
+  - scan failure and retry timing, the lost-event guard, sync-loss rescan
+  - stop during reserve, enable and scan; failure, then stop and restart
+  - controller reset
+- `tests/test_cpb_actor.cpp` — 5989 checks. Runs the real `OwnedHost` actor and covers:
+  - with CPB off, no CPB command is ever sent
+  - both sequences after boot, the payload update and train restart through the actor
+  - a Classic peer connecting and securing during broadcast and during reception
+  - stop/start, the failed Set CPB recovery, and host restart (full sequence and payload resent)
+  - `start_at_begin=false`
+  - rejection in BLE-only mode
+
+Both run in `tools/run_owned_tests.py`, which passes in full. `CpbBroadcast`
+builds for `arduino:mbed_giga:giga`: 594,112 B flash, 49,640 B RAM.
+
 ## Not done / limits
 
-- Only the transmitter path has run, as a diagnostic probe. There is no public
-  CPB API yet (data fragmentation, channel-map handling, receiver procedures,
-  timeout/recovery), and no reception has been observed over the air.
-- A receiver needs a second CPB-capable device (another GIGA is the natural
-  pair). The Linux VM's Realtek adapter capability is unknown.
+- On the board only the transmitter sequence has run, as the earlier
+  diagnostic probe. The library API itself has not yet been flashed.
+- No reception has been observed over the air. A receiver needs a second
+  CPB-capable device; another GIGA running `CpbBroadcast` with
+  `CPB_TRANSMITTER 0` is the natural pair. The Linux VM's Realtek adapter
+  capability is unknown.
+- How the controller uses multi-fragment payloads over the air (one baseband
+  packet per instant or the full set) is untested. Keep payloads within one
+  packet of the chosen type (27 bytes for DH1) until that is measured.
+- The Broadcom train layout comes from BlueZ `tools/3dsp.c`; this controller's
+  actual 0x50 bytes have not been captured yet.
 - CPB has no acknowledgements or retransmission; any audio use needs its own
   repetition/FEC and a codec frame budget per broadcast interval.
 - The chip supports no Bluetooth 5.x optional features, so LE periodic

@@ -16,8 +16,17 @@
 - Add the Samsung SSC decoder (44.1/48 kHz, HiFi 48/24, UHQ 96/24) behind
   `GBR_ENABLE_SSC` with lazy allocation (22,920-byte state); bit-exact native
   vectors and sanitizer malformed-input tests. No Galaxy phone interop yet.
-- BLE coexistence: `BleConfig::audio_coexistence_reserve_ms` (default 50) widens
-  the automatic PCM reserve of >=88.2 kHz streams while BLE is enabled.
+- BLE coexistence: `BleConfig::audio_coexistence_reserve_ms` (default 100)
+  widens the automatic PCM reserve of >=88.2 kHz streams while BLE is enabled;
+  an allocation failure falls back to the base reserve and is counted in
+  `ReceiverStats::coexistence_reserve_fallbacks`.
+- Add Connectionless Peripheral Broadcast (CSB/CPB), off by default:
+  `ReceiverConfig.cpb` (transmitter or receiver), `cpbSetData`, `cpbRead`,
+  `cpbStart`, `cpbStop`, `cpbStats` and the `CpbBroadcast` example. Portable
+  kernel `bth_cpb` (HCI encodings, Broadcom train layout, fragmentation,
+  timeout resync, stop races) with native kernel and actor tests. The
+  transmitter sequence ran on the board earlier; reception is not yet tested
+  over the air.
 - Diagnostics: `GIGA_BREDR_CONNECT_TRACE` connection timeline and controller
   capability dump (CSB/CPB bits); `GIGA_BREDR_ACL_PRIORITY_DIRECTION`.
 - Portability: native tests build with clang/gcc on Linux (missing standard

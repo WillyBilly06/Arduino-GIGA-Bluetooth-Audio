@@ -71,6 +71,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  if(config.voice_audio&&(!config.voice_control||!config.voice_audio->enabled()))return Status::InvalidArgument;
  if(config.voice_sdp&&!config.voice_audio)return Status::InvalidArgument;
  if(config.hid&&(!config.hid->enabled()||!config.callbacks.enable_a2dp))return config.hid->enabled()?Status::Unsupported:Status::InvalidArgument;
+ if(config.cpb&&!config.callbacks.enable_a2dp)return Status::Unsupported;
  const OperationModePolicy mode{config.callbacks.enable_a2dp,config.ble.enabled};
  if(!config.classic_bonds.valid())return Status::InvalidArgument;
  if(config.classic_bonds.configured()&&!mode.a2dp)return Status::Unsupported;
@@ -138,6 +139,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
  }
  uint8_t local_hci[6];for(unsigned i=0;i<6;++i)local_hci[i]=config.address[5-i];
  if(!application_bonds_.begin(config.classic_bonds,local_hci))return Status::Unsupported;
+ if(config_.cpb)config_.cpb->hostStarted(); // Boot issues HCI Reset: no CPB resource survives.
  active_=true;return Status::Ok;
 }
 void OwnedHost::end(){
@@ -395,6 +397,8 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
   (void)n;const unsigned slot=completed_opcode==0x1002?0u:(p.len>=5&&p.data[4]==2?2u:1u);memcpy(capability_lines_[slot],t,sizeof capability_lines_[slot]);capability_lines_[slot][sizeof capability_lines_[slot]-1]=0;
  }
 #endif
+ // CPB observes command completions and its page-2 events; links still own the queue record.
+ if(config_.cpb)config_.cpb->event(event,now_);
  bth_status_t result=sco_disconnect_reply?bth_cmdq_complete(&commands_,&event,&consumed_owner):bth_links_on_event(&links_,&event);
  #if GIGA_BREDR_CONNECT_TRACE
  {const uint8_t c=event.event.code;if(c==0x03||c==0x04||c==0x06||c==0x08||c==0x17||c==0x31||c==0x32||c==0x18||c==0x33||c==0x36||c==0x05||(c==0x0f&&p.len==4&&p.data[0])||(c==0x0e&&p.len>=4&&p.data[3]&&bth_read_le16(p.data+1)>=0x0400&&bth_read_le16(p.data+1)<0x0500)){
@@ -964,6 +968,9 @@ void OwnedHost::runtimePoll(){
   (void)a;(void)b;(void)c;
  }
 #endif
+ // Connectionless Peripheral Broadcast: one command in flight, never the last free slots.
+ if(config_.cpb&&gap_.stage==BTH_GAP_READY&&bth_cmdq_available(&commands_)>=3){bth_cpb_command_t command;
+  if(config_.cpb->next(now_,stats_.manufacturer,command)&&bth_cmdq_push(&commands_,command.opcode,command.params,command.length,false)!=BTH_OK){fail("Owned CPB command queue failed");return;}}
  if(avrcp_retiring_&&int32_t(now_-avrcp_retire_deadline_)>=0)closePeer(0,0x13);
  if(voice_retiring_&&int32_t(now_-voice_retire_deadline_)>=0)closePeer(0,0x13);
  expanded_control_budget_=BTH_CONTROL_PEER_LIMIT; // At most three split replies per owner pass.

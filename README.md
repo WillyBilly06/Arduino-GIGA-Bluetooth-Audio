@@ -18,11 +18,15 @@ project-owned host stack on the board's Murata 1DX (CYW4343W) radio.
   all three modes. [Details](docs/validation/ssc-integration.md).
 - **SPP (Serial Port Profile) server**, off by default; `sppWrite`/`sppRead`
   and the `SppEcho` example. [Details](docs/validation/spp.md).
-- **BLE coexistence:** `BleConfig::audio_coexistence_reserve_ms` (default 50)
+- **BLE coexistence:** `BleConfig::audio_coexistence_reserve_ms` (default 100)
   widens the automatic reserve of >=88.2 kHz streams (e.g. LHDC V5 192 kHz)
-  while BLE is enabled. [Measurements and limits](docs/validation/ble-coexistence-2026-11-20.md).
-- **Connectionless Peripheral Broadcast (CSB/CPB):** the radio supports both
-  roles; a diagnostic probe runs the transmitter successfully.
+  while BLE is enabled; if the wider ring cannot be allocated the stream opens
+  with the base reserve. [Measurements and limits](docs/validation/ble-coexistence-2026-11-20.md).
+- **Connectionless Peripheral Broadcast (CSB/CPB)**, off by default: one GIGA
+  broadcasts a small payload to any number of synchronized GIGA receivers,
+  alongside A2DP (`config.cpb`, `cpbSetData`/`cpbRead`, the `CpbBroadcast`
+  example). The radio supports both roles; the transmitter has run on the
+  board, reception still needs a second board.
   [Details](docs/validation/csb-capability-2026-11-20.md).
 
 Codecs: SBC/SBC-XQ, AAC-LC (+ experimental HE-AAC), aptX, aptX HD, LDAC,
@@ -220,6 +224,10 @@ Off by default: `ReceiverConfig.spp.enabled=true` adds one SDP Serial Port recor
 ## OBEX: Object Push server and Phonebook Access client
 
 Off by default. `ReceiverConfig.obex.opp_enabled=true` adds an OBEX Object Push SDP record (UUID 0x1105, RFCOMM channel `obex.opp_channel`, default 4, OPP 1.1, any format), EIR UUID 0x1105 and an RFCOMM listener on the shared Classic RFCOMM owner; received objects stream to `on_object_begin(name,type,length)`, `on_object_data(ptr,len)` and `on_object_end(ok)` without buffering the whole object. `obex.pbap_enabled=true` advertises a PBAP client record (0x112E) and enables `pbapPullPhonebook(path="telecom/pb.vcf",max_count,offset)` / `pbapPullVcardListing(folder,max_count,offset)` / `pbapAbort()`: the GIGA looks up the connected phone's PSE with its own SDP client, opens an RFCOMM DLC (on the phone's mux, or its own), runs OBEX CONNECT/GET/DISCONNECT and streams vCard 2.1 bytes to `on_phonebook_data`, then one `on_phonebook_end(PbapResult)`. Calls are nonblocking (`Busy` on radio contention or while a pull is active). Callbacks run from `poll()`; a slow `loop()` only delays the next OBEX response. Requires `enable_a2dp=true` and an encrypted link; data frames follow the SPP A2DP-first queue and pacing rules. See [ObexPush](examples/ObexPush/ObexPush.ino), [PhonebookPull](examples/PhonebookPull/PhonebookPull.ino) and [OBEX validation](docs/validation/obex.md): native synthetic checks only, no over-the-air test yet.
+
+## Connectionless Peripheral Broadcast (CPB, formerly CSB)
+
+Off by default. `ReceiverConfig.cpb.role = CpbRole::Transmitter` makes the GIGA a Connectionless Peripheral Broadcast transmitter: after boot the owned host sets the page-2 event mask, reserves `cpb.lt_addr` (default 1), writes the synchronization-train parameters, enables CPB (`cpb.packet_types`, default DM1|DH1; interval `cpb.interval_min_slots`..`interval_max_slots`, default 50-100 ms), sends the payload and starts the synchronization train (restarted after each train and after a channel-map change while `continuous_train` is true). `cpbSetData(data,length)` replaces the payload the controller repeats at every CPB instant (up to `cpb.max_payload_bytes`, 1..1024, default 64; longer payloads go out as Set CPB Data fragments). `CpbRole::Receiver` with `cpb.transmitter_address` (as the transmitter prints `RadioStats::address`) scans for that train, enables reception with its clock offset, instant, interval and channel map, and rescans after a CPB timeout; `cpbRead(buffer,capacity,length,&clock)` returns the newest complete message not read yet. `cpbStart()`/`cpbStop()` start or release the role at run time (`start_at_begin=false` waits), and `cpbStats()` reports the state, granted interval, last failing HCI command and counters. Requires `enable_a2dp=true`; A2DP, AVRCP, BLE and the other profiles keep running and share the airtime. Delivery is latest-value: no acknowledgement, retransmission or encryption. Storage (payload once for a transmitter, twice for a receiver) is allocated only when the role is not Off. Synchronization Train Received is parsed in the standard order or the Broadcom order (Service_Data before LT_ADDR, manufacturer 15), and a configured LT_ADDR picks the matching order. See [CpbBroadcast](examples/CpbBroadcast/CpbBroadcast.ino) and [CSB/CPB validation](docs/validation/csb-capability-2026-11-20.md): native kernel and actor checks; on the board only the transmitter sequence has run so far.
 
 ## Validation and known limits
 

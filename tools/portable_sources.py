@@ -15,7 +15,8 @@ FRONTEND_BASE_SOURCES=(
  'src/detail/AudioTiming.cpp','tests/support/clock_backend_unavailable.cpp',
 )
 UNAVAILABLE_VOICE_RADIO='tests/support/voice_radio_unavailable.cpp'
-VOICE_CORE_C_SOURCES=('src/owned/core/bth_packet.c','src/owned/core/bth_sco.c','src/owned/core/bth_sco_setup.c')
+# Portable C the facade itself calls (voice transport and the CPB endpoint).
+VOICE_CORE_C_SOURCES=('src/owned/core/bth_packet.c','src/owned/core/bth_sco.c','src/owned/core/bth_sco_setup.c','src/owned/core/bth_cpb.c')
 def unique(sources):return list(dict.fromkeys(sources))
 def frontend_sources(*,include_giga=True,unavailable_radio=True):
  base=[p for p in FRONTEND_BASE_SOURCES if include_giga or p!='src/GigaBredr.cpp']

@@ -8,6 +8,7 @@
 #include "GigaVoice.h"
 #include "GigaSpp.h"
 #include "GigaHid.h"
+#include "GigaCpb.h"
 #include "GigaObex.h"
 #include "BondStorage.h"
 
@@ -58,6 +59,7 @@ struct ReceiverConfig {
     ClassicBondStorage classic_bonds; // Optional application-owned store; default RAM-only.
     SppConfig spp; // Default disabled Serial Port Profile server; requires enable_a2dp.
     HidConfig hid; // Default disabled HID Device (keyboard/mouse/gamepad); requires enable_a2dp.
+    CpbConfig cpb; // Default Off Connectionless Peripheral Broadcast; requires enable_a2dp.
     ObexConfig obex; // Default disabled OBEX Object Push server / PBAP client; requires enable_a2dp.
 };
 struct ReceiverStats {
@@ -172,6 +174,22 @@ public:
     Status hidSend(uint8_t report_id,const uint8_t* data,size_t length);
     bool hidConnected() const;
     Status hidStats(HidStats& value) const;
+    // Connectionless Peripheral Broadcast (config.cpb.role). Foreground calls
+    // never wait for the radio owner: contention is Busy (or false).
+    // Transmitter: copies the payload the controller repeats at every CPB
+    // instant (at most config.cpb.max_payload_bytes). Ok is admission; the new
+    // payload replaces the old one after the next host turn. Busy while stopping.
+    Status cpbSetData(const uint8_t* data,size_t length);
+    // Receiver: true copies the newest complete message not read yet (length is
+    // its full size; the copy is truncated to capacity). clock is the CPB clock
+    // of its last fragment. Older unread messages are dropped and counted in
+    // CpbStats::messages_overwritten.
+    bool cpbRead(uint8_t* data,size_t capacity,size_t& length,uint32_t* clock=nullptr);
+    // Start (also after Failed: resources are released first) or stop the
+    // configured role. Ok is admission; follow cpbStats().state.
+    Status cpbStart();
+    Status cpbStop();
+    Status cpbStats(CpbStats& value) const;
     // Phonebook Access client (config.obex.pbap_enabled). Nonblocking admission
     // of ONE operation on the connected phone: SDP lookup of its PSE, RFCOMM
     // DLC, OBEX CONNECT/GET/DISCONNECT. Ok is admission only; vCard bytes and

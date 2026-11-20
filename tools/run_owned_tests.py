@@ -66,17 +66,17 @@ def main():
  run([cxx,'-std=c++17',*flags,'-Itests','tests/'+n+'.cpp',*actor,*objects,'-o',exe],n);run([exe],n)
  n='test_gatt_voice_coexistence';exe=out/(n+'.exe')
  run([cxx,'-std=c++17',*flags,'-Itests','tests/'+n+'.cpp',*actor,*objects,'-o',exe],n);run([exe],n)
- for n in ['test_single_hnc','test_single_signal','test_ble_audio_qos','test_le_connection_preference','test_le_transport','test_le_control','test_sco_owner','test_sco_setup','test_sco_response_validation','test_sco_byte_pacing','test_normal_ssp_review','test_nonbond_late_auth']:
+ for n in ['test_single_hnc','test_single_signal','test_ble_audio_qos','test_le_connection_preference','test_le_transport','test_le_control','test_sco_owner','test_sco_setup','test_sco_response_validation','test_sco_byte_pacing','test_normal_ssp_review','test_nonbond_late_auth','test_cpb']:
   exe=out/(n+'.exe');extra=[]
-  core_entry={'test_sco_owner':'scoOwner','test_sco_setup':'scoSetup','test_sco_byte_pacing':'scoBytePacing'}
+  core_entry={'test_cpb':'cpb','test_sco_owner':'scoOwner','test_sco_setup':'scoSetup','test_sco_byte_pacing':'scoBytePacing'}
   if n in core_entry:
    stem=core_entry[n];wrapper=out/(n+'_main.c')
    wrapper.write_text('#include <stdio.h>\nunsigned '+stem+'Selftest(void);\nunsigned '+stem+'Checks(void);\nint main(void){unsigned r='+stem+'Selftest();printf("'+n+' failure=%u checks=%u\\n",r,'+stem+'Checks());return (int)r;}\n')
    extra=[wrapper]
   run([cc,'-std=c11',*flags,'tests/owned_core/'+n+'.c',*extra,*objects,'-o',exe],n);run([exe],n)
- units=['test_hsp_actor','test_spp_actor','test_hid_actor','test_obex_actor','test_owned_voice','test_avrcp_controls','test_avrcp_channel_retirement','test_avrcp_owner_retirement','test_avrcp_stale_disconnect','test_owned_classic','test_owned_ble','test_owned_host','test_classic_bond_provider_host','test_normal_ssp_host','test_owned_host_review','test_owned_host_bootstrap','test_owned_host_ble_large','test_owned_host_service','test_owned_host_single_hnc','test_owned_host_hnc','test_owned_host_benign','test_owned_host_le_requests','test_owned_host_signaling','test_owned_host_ble_commands','test_owned_host_ble_unsubscribe','test_owned_host_config_reject','test_owned_host_abort','test_owned_host_scheduling','test_owned_host_classic_combined','test_owned_host_mixed_att','test_uart_tx_mailbox','test_ble_audio_qos','test_ble_connection_preference','test_owned_ble_lifecycle','test_owned_voice_transport']
+ units=['test_hsp_actor','test_spp_actor','test_cpb_actor','test_hid_actor','test_obex_actor','test_owned_voice','test_avrcp_controls','test_avrcp_channel_retirement','test_avrcp_owner_retirement','test_avrcp_stale_disconnect','test_owned_classic','test_owned_ble','test_owned_host','test_classic_bond_provider_host','test_normal_ssp_host','test_owned_host_review','test_owned_host_bootstrap','test_owned_host_ble_large','test_owned_host_service','test_owned_host_single_hnc','test_owned_host_hnc','test_owned_host_benign','test_owned_host_le_requests','test_owned_host_signaling','test_owned_host_ble_commands','test_owned_host_ble_unsubscribe','test_owned_host_config_reject','test_owned_host_abort','test_owned_host_scheduling','test_owned_host_classic_combined','test_owned_host_mixed_att','test_uart_tx_mailbox','test_ble_audio_qos','test_ble_connection_preference','test_owned_ble_lifecycle','test_owned_voice_transport']
  for n in units:
-  sources=actor[1:]if n in ('test_hsp_actor','test_spp_actor','test_hid_actor','test_obex_actor','test_owned_voice','test_avrcp_stale_disconnect','test_owned_host_scheduling','test_owned_host_classic_combined')else actor
+  sources=actor[1:]if n in ('test_hsp_actor','test_spp_actor','test_cpb_actor','test_hid_actor','test_obex_actor','test_owned_voice','test_avrcp_stale_disconnect','test_owned_host_scheduling','test_owned_host_classic_combined')else actor
   extra=['-DGBR_QOS_CANDIDATE=1']if n=='test_ble_audio_qos'else[]
   arguments=['all']if n in ('test_ble_audio_qos','test_ble_connection_preference')else[]
   exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,*extra,'-Itests','tests/'+n+'.cpp',*sources,*objects,'-o',exe],n);run([exe,*arguments],n)

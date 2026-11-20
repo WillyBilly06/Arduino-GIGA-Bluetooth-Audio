@@ -4,7 +4,7 @@
 #include "../GigaVoice.h"
 #include "../BondStorage.h"
 namespace giga_bredr { namespace detail {
-class VoiceProfiles;class OwnedVoiceAudio;class VoiceSdp;struct VoiceControlConfig;class HidDevice;
+class VoiceProfiles;class OwnedVoiceAudio;class VoiceSdp;struct VoiceControlConfig;class HidDevice;class CpbPort;
 struct RadioCallbacks {
     Status (*configure)(const CodecConfig&, void*) = nullptr;
     void (*media)(const uint8_t*, size_t, void*) = nullptr; // unmodified AVDTP packet: RTP except ordinary aptX
@@ -20,6 +20,7 @@ struct RadioCallbacks {
     VoiceProfiles* voice_control=nullptr;OwnedVoiceAudio* voice_audio=nullptr;VoiceSdp* voice_sdp=nullptr;const VoiceControlConfig* voice_config=nullptr;
     ClassicBondStorage classic_bonds;
     HidDevice* hid=nullptr; // Optional caller-owned HID Device endpoint (config.hid.enabled).
+    CpbPort* cpb=nullptr; // Optional caller-owned CPB endpoint (config.cpb.role != Off).
 };
 Status radioBegin(const char* local_name, uint32_t codec_mask, const RadioCallbacks& callbacks);
 Status radioBegin(const char* local_name, uint32_t codec_mask, const RadioCallbacks& callbacks, const BleConfig& ble);
