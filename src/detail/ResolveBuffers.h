@@ -16,8 +16,10 @@ constexpr AudioBufferConfig globalBufferSettings(const ReceiverConfig& r) {
 }
 // No allocation. Caller passes the actual selected decoder block capacity.
 // Explicit fields remain authoritative; capacity is not a latency guarantee.
+// coexistence=false resolves without BleConfig::audio_coexistence_reserve_ms
+// (the receiver's fallback when the wider ring cannot be allocated).
 constexpr bool resolveAudioBuffers(const ReceiverConfig& r,const CodecConfig& c,
-                                   uint32_t block_frames,AudioBufferConfig& out) {
+                                   uint32_t block_frames,AudioBufferConfig& out,bool coexistence=true) {
     out={};
     if(static_cast<unsigned>(c.codec)>=static_cast<unsigned>(Codec::Count)) return false;
     const auto& p=r.codec_buffers[static_cast<unsigned>(c.codec)];
@@ -41,7 +43,7 @@ constexpr bool resolveAudioBuffers(const ReceiverConfig& r,const CodecConfig& c,
         // with a high-rate stream (see BleConfig::audio_coexistence_reserve_ms).
         uint32_t startup=automatic.startup_ms;
         const uint32_t margin=r.ble.audio_coexistence_reserve_ms>200?200u:r.ble.audio_coexistence_reserve_ms;
-        if(r.ble.enabled && c.sample_rate>=88200 && startup+margin+10u<=MaximumPcmBufferMs) startup+=margin;
+        if(coexistence && r.ble.enabled && c.sample_rate>=88200 && startup+margin+10u<=MaximumPcmBufferMs) startup+=margin;
         out.startup_buffer_ms=uint16_t(startup);
     }
     if(!r.enable_i2s) { out.startup_packets=1;out.startup_buffer_ms=0; }

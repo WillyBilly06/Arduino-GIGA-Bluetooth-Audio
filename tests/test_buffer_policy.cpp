@@ -22,15 +22,16 @@ constexpr bool automatic_lhdc() {
 static_assert(automatic_lhdc(),"selected LHDC192 actual-PCM policy");
 constexpr bool ble_coexistence_reserve() {
     ReceiverConfig r;CodecConfig c;c.codec=Codec::LhdcV5;c.sample_rate=192000;AudioBufferConfig b;
-    if(!r.ble.enabled || r.ble.audio_coexistence_reserve_ms!=50)return false;
-    if(!resolveAudioBuffers(r,c,960,b) || b.startup_buffer_ms!=130 || b.pcm_buffer_ms!=140)return false;
+    if(!r.ble.enabled || r.ble.audio_coexistence_reserve_ms!=100)return false;
+    if(!resolveAudioBuffers(r,c,960,b) || b.startup_buffer_ms!=180 || b.pcm_buffer_ms!=190)return false;
+    if(!resolveAudioBuffers(r,c,960,b,false) || b.startup_buffer_ms!=80 || b.pcm_buffer_ms!=90)return false; // allocation fallback
     c.codec=Codec::Ldac;c.sample_rate=96000;
-    if(!resolveAudioBuffers(r,c,256,b) || b.startup_buffer_ms!=100 || b.pcm_buffer_ms!=110)return false;
+    if(!resolveAudioBuffers(r,c,256,b) || b.startup_buffer_ms!=150 || b.pcm_buffer_ms!=160)return false;
     c.codec=Codec::LhdcV5;c.sample_rate=48000; // Normal-rate streams keep their reserve.
     if(!resolveAudioBuffers(r,c,240,b) || b.startup_buffer_ms!=80)return false;
     c.sample_rate=192000;r.ble.audio_coexistence_reserve_ms=0;
     if(!resolveAudioBuffers(r,c,960,b) || b.startup_buffer_ms!=80)return false;
-    r.ble.audio_coexistence_reserve_ms=50; // Explicit settings stay authoritative.
+    r.ble.audio_coexistence_reserve_ms=100; // Explicit settings stay authoritative.
     r.codec_buffers[static_cast<unsigned>(Codec::LhdcV5)].startup_buffer_ms=60;
     return resolveAudioBuffers(r,c,960,b) && b.startup_buffer_ms==60 && b.pcm_buffer_ms==70;
 }

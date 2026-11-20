@@ -72,6 +72,9 @@ struct ReceiverStats {
     uint32_t decoded_packets = 0, dropped_packets = 0, decode_errors = 0;
     uint32_t maximum_decode_us = 0, output_dropped_frames = 0, diagnostic_drops = 0;
     size_t decoder_memory_bytes = 0;
+    // Streams opened with the base reserve because the BLE coexistence margin's
+    // wider PCM ring could not be allocated (cumulative per begin()).
+    uint32_t coexistence_reserve_fallbacks = 0;
     uint8_t absolute_volume = 127;
     bool configured = false, playing = false;
     // Cumulative per begin(). A block is one successful encoded LHDC frame;

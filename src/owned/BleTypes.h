@@ -36,8 +36,9 @@ struct BleConfig {
     // High-rate codecs (LHDC 192k, LDAC 96k) leave little spare BR/EDR airtime;
     // LE connection events then delay media packets past the normal reserve.
     // Costs rate*8 bytes per ms (1.5 KB/ms at 192 kHz) and adds that latency.
-    // Explicit buffer settings are not changed. 0 disables; at most 200.
-    uint16_t audio_coexistence_reserve_ms = 50;
+    // Explicit buffer settings are not changed. 0 disables; at most 200. If the
+    // wider PCM ring cannot be allocated the stream opens with the base reserve.
+    uint16_t audio_coexistence_reserve_ms = 100;
 };
 struct BleWrite {
     uint32_t generation = 0;

@@ -34,10 +34,15 @@ Observations:
 
 ## Changes
 
-- `BleConfig::audio_coexistence_reserve_ms` (default 50): automatic reserve for
-  >=88.2 kHz streams grows from 80/90 to 130/140 ms (LHDC 192 kHz, +77 KB PCM)
-  and from 50/60 to 100/110 ms (LDAC 96 kHz) while BLE is enabled. Explicit
-  buffer settings are unchanged; 0 disables.
+- `BleConfig::audio_coexistence_reserve_ms`: automatic reserve for >=88.2 kHz
+  streams while BLE is enabled. Measured above at 50 ms (130/140 ms for LHDC
+  192 kHz). After those measurements the default was raised to 100 ms
+  (180/190 ms for LHDC 192 kHz, +154 KB PCM; 150/160 ms for LDAC 96 kHz), which
+  covers every gap observed (max 134 ms). If the wider ring cannot be
+  allocated, the stream opens with the base reserve and
+  `ReceiverStats::coexistence_reserve_fallbacks` counts it. The 100 ms default
+  has not yet been measured on the board. Explicit settings are unchanged; 0
+  disables.
 - Existing host measures retained: Classic receive before ATT, 27-byte paced
   ATT fragments, 80-120 ms LE connection preference, Broadcom ACL priority VSC
   0xFD1A (accepted, status 0). Direction byte is now a build property

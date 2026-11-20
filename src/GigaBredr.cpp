@@ -661,6 +661,25 @@ struct GigaBredr::Impl {
         if (status == Status::Ok && options.enable_i2s) {
             status = detail::i2sBegin(c.sample_rate, selected_buffers.pcm_buffer_ms, options.i2s,selected_buffers.startup_buffer_ms); output_owned = status == Status::Ok;
         }
+        if (status == Status::OutOfMemory && options.enable_i2s) {
+            // The BLE coexistence margin is optional: retry once with the base
+            // reserve rather than failing the stream on a tight heap.
+            AudioBufferConfig base_buffers;
+            if (detail::resolveAudioBuffers(options,c,uint32_t(capacity),base_buffers,false) &&
+                base_buffers.pcm_buffer_ms < selected_buffers.pcm_buffer_ms) {
+                releaseCodec(); selected_buffers = base_buffers;
+                status = decoder.open(c);
+                if (status == Status::Ok) status = media.configure(c, selected_buffers.maximum_access_unit_bytes, kind);
+                if (status == Status::Ok) { Lock queue_lock(queue_mutex); status = queue.configure(selected_buffers.queue_packets, selected_buffers.maximum_packet_bytes, kind); }
+                if (status == Status::Ok) {
+                    packet = static_cast<uint8_t*>(detail::allocate(selected_buffers.maximum_packet_bytes, kind));
+                    pcm = static_cast<int32_t*>(detail::allocate(capacity * 2 * sizeof(int32_t), MemoryKind::Fast));
+                    if (!packet || !pcm) status = Status::OutOfMemory;
+                }
+                if (status == Status::Ok) { status = detail::i2sBegin(c.sample_rate, selected_buffers.pcm_buffer_ms, options.i2s,selected_buffers.startup_buffer_ms); output_owned = status == Status::Ok; }
+                if (status == Status::Ok) ++counters.coexistence_reserve_fallbacks;
+            }
+        }
         if (status != Status::Ok) { releaseCodec(); counters.last_error = status; return status; }
         format = c; pcm_frames = capacity; configured = true; counters.last_error = Status::Ok;
         if (!++stream_epoch) ++stream_epoch;
