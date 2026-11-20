@@ -60,7 +60,7 @@ struct ReceiverConfig {
     SppConfig spp; // Default disabled Serial Port Profile server; requires enable_a2dp.
     HidConfig hid; // Default disabled HID Device (keyboard/mouse/gamepad); requires enable_a2dp.
     CpbConfig cpb; // Default Off Connectionless Peripheral Broadcast; requires enable_a2dp.
-    ObexConfig obex; // Default disabled OBEX Object Push server / PBAP client; requires enable_a2dp.
+    ObexConfig obex; // Default disabled OBEX Object Push server / PBAP client / MAP client; requires enable_a2dp.
 };
 struct ReceiverStats {
     AudioClockStats clock;
@@ -202,7 +202,26 @@ public:
     // Ok: an OBEX ABORT (or teardown before OBEX) follows; on_phonebook_end
     // still arrives with aborted=true. InvalidArgument when nothing is active.
     Status pbapAbort();
-    // Copied counters; Unsupported unless OPP or PBAP is enabled for this begin().
+    // Message Access client (config.obex.map_enabled), MCE role. Same admission
+    // rules as PBAP: ONE operation on the connected phone's MAS (SDP lookup,
+    // RFCOMM DLC, OBEX CONNECT, SETPATH per folder segment from the MAS root,
+    // GET, DISCONNECT); Ok is admission only; bytes and exactly one MapResult
+    // arrive through on_map_data/on_map_end from poll(). Busy: radio owner busy
+    // or a PBAP/MAP operation still active (both share one OBEX client link).
+    // max_count is MaxListCount (0 returns only listing_size; 1024 is the MAP
+    // default). No notification server: new messages are found by listing again.
+    // x-obex/folder-listing XML of a folder ("" = MAS root).
+    Status mapGetFolderListing(const char* folder="telecom/msg",uint16_t max_count=1024,uint16_t offset=0);
+    // x-bt/MAP-msg-listing XML of a folder. subject_length 1..255 asks the phone
+    // to truncate subjects (SubjectLength); 0 omits the parameter.
+    Status mapGetMessageListing(const char* folder="telecom/msg/inbox",uint16_t max_count=1024,uint16_t offset=0,uint8_t subject_length=0);
+    // x-bt/message (bMessage) by handle from a listing: 1..16 hex digits,
+    // attachments off, UTF-8 charset. InvalidArgument for any other handle.
+    Status mapGetMessage(const char* handle);
+    // Ok: an OBEX ABORT (or teardown before OBEX) follows; on_map_end still
+    // arrives with aborted=true. InvalidArgument when no MAP operation is active.
+    Status mapAbort();
+    // Copied counters; Unsupported unless OPP, PBAP or MAP is enabled for this begin().
     Status obexStats(ObexStats& value) const;
     static uint32_t availableCodecs();
     using Allocate = void* (*)(size_t bytes, void* user);

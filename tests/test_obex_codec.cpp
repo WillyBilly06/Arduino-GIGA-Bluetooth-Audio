@@ -176,9 +176,53 @@ void sdp_client(){
  REQUIRE(bth_sdp_client_parse(channel_zero,sizeof channel_zero,&s)==BTH_OK&&!s.found);
  REQUIRE(bth_sdp_client_parse(channel_zero,sizeof channel_zero-1,&s)==BTH_ERR_LENGTH);
 }
+// MAS record (MAP 1.4) beside the PSE: the MCE request asks for MASInstanceID
+// and SupportedMessageTypes too; the PBAP default list is unchanged.
+const uint8_t mas_record[]={
+ 0x09,0x00,0x00,0x0a,0x00,0x01,0x00,0x0a, 0x09,0x00,0x01,0x35,0x03,0x19,0x11,0x32,
+ 0x09,0x00,0x04,0x35,0x11,0x35,0x03,0x19,0x01,0x00,0x35,0x05,0x19,0x00,0x03,0x08,0x11,0x35,0x03,0x19,0x00,0x08,
+ 0x09,0x00,0x09,0x35,0x08,0x35,0x06,0x19,0x11,0x34,0x09,0x01,0x04, 0x09,0x02,0x00,0x09,0x10,0x29,
+ 0x09,0x03,0x15,0x08,0x02, 0x09,0x03,0x16,0x08,0x1f, 0x09,0x03,0x17,0x0a,0x00,0x00,0x00,0x00};
+const uint8_t mas_attributes[]={0x35,18,0x09,0x00,0x04,0x09,0x00,0x09,0x09,0x02,0x00,0x09,0x03,0x15,0x09,0x03,0x16,0x09,0x03,0x17};
+unsigned map_sdp_client(){
+ const unsigned before=checks;
+ bth_sdp_record_t records[]={{0x10009,{pse_record,sizeof pse_record}},{0x1000a,{mas_record,sizeof mas_record}}};
+ bth_sdp_t server{};REQUIRE(bth_sdp_init(&server,records,2,9));
+ uint8_t lists[640],req[64],rsp[700];size_t n=0,m=0;bth_sdp_client_t c;
+ REQUIRE(bth_sdp_client_init(&c,0x1132,lists,sizeof lists,0x10)&&bth_sdp_client_set_attributes(&c,mas_attributes,sizeof mas_attributes));
+ REQUIRE(bth_sdp_client_request(&c,req,sizeof req,&n)==BTH_OK);
+ const Bytes expected={0x06,0x00,0x11,0x00,0x1c,0x35,0x03,0x19,0x11,0x32,0x02,0x40,0x35,18,0x09,0x00,0x04,0x09,0x00,0x09,0x09,0x02,0x00,0x09,0x03,0x15,0x09,0x03,0x16,0x09,0x03,0x17,0x00};
+ REQUIRE(Bytes(req,req+n)==expected);
+ REQUIRE(!bth_sdp_client_set_attributes(&c,mas_attributes,sizeof mas_attributes)); // Only before the first request.
+ REQUIRE(bth_sdp_process(&server,req,n,rsp,sizeof rsp,&m)==BTH_OK&&bth_sdp_client_response(&c,rsp,m)==BTH_OK);
+ bth_sdp_service_t s;REQUIRE(bth_sdp_client_parse(lists,c.used,&s)==BTH_OK&&s.found&&s.rfcomm_channel==0x11&&s.profile_version==0x0104&&s.goep_l2cap_psm==0x1029);
+ REQUIRE(s.has_mas_instance&&s.mas_instance_id==2&&s.supported_message_types==0x1f&&s.has_supported_features&&s.supported_features==0&&!s.supported_repositories);
+ // Continuation across small responses gives the same result.
+ bth_sdp_cursor_t cursor{};REQUIRE(bth_sdp_client_init(&c,0x1132,lists,sizeof lists,3)&&bth_sdp_client_set_attributes(&c,mas_attributes,sizeof mas_attributes));
+ unsigned rounds=0;bth_status_t st=BTH_MORE;
+ while(st==BTH_MORE){REQUIRE(bth_sdp_client_request(&c,req,sizeof req,&n)==BTH_OK);REQUIRE(n>=33&&!memcmp(req+12,mas_attributes,sizeof mas_attributes));
+  REQUIRE(bth_sdp_process_compact(&server,&cursor,req,n,rsp,24,&m)==BTH_OK);st=bth_sdp_client_response(&c,rsp,m);++rounds;REQUIRE(rounds<40);}
+ REQUIRE(st==BTH_OK&&rounds>2&&bth_sdp_client_parse(lists,c.used,&s)==BTH_OK&&s.found&&s.mas_instance_id==2&&s.supported_message_types==0x1f);
+ // The PSE lookup keeps the default list: no MAS attributes are returned.
+ REQUIRE(bth_sdp_client_init(&c,0x112f,lists,sizeof lists,1)&&bth_sdp_client_request(&c,req,sizeof req,&n)==BTH_OK&&n==30);
+ REQUIRE(bth_sdp_process(&server,req,n,rsp,sizeof rsp,&m)==BTH_OK&&bth_sdp_client_response(&c,rsp,m)==BTH_OK);
+ REQUIRE(bth_sdp_client_parse(lists,c.used,&s)==BTH_OK&&s.found&&s.rfcomm_channel==0x13&&!s.has_mas_instance&&!s.supported_message_types&&s.has_supported_features&&s.supported_features==0x3ff);
+ // Attribute list validation: a DES with an exact length, at most 32 bytes.
+ const uint8_t bad_tag[]={0x36,0,3,0x09,0x00,0x04},bad_length[]={0x35,4,0x09,0x00,0x04};uint8_t big[34]={0x35,32};
+ REQUIRE(bth_sdp_client_init(&c,0x1132,lists,sizeof lists,1));
+ REQUIRE(!bth_sdp_client_set_attributes(&c,bad_tag,sizeof bad_tag)&&!bth_sdp_client_set_attributes(&c,bad_length,sizeof bad_length)&&!bth_sdp_client_set_attributes(&c,big,sizeof big));
+ REQUIRE(!bth_sdp_client_set_attributes(&c,nullptr,0)&&!bth_sdp_client_set_attributes(nullptr,mas_attributes,sizeof mas_attributes));
+ bth_sdp_client_t idle{};REQUIRE(!bth_sdp_client_set_attributes(&idle,mas_attributes,sizeof mas_attributes)); // Not initialized.
+ // Wrong widths for the MAS attributes are ignored, not misread.
+ const uint8_t odd[]={0x35,0x24,0x35,0x22,0x09,0x00,0x04,0x35,0x0c,0x35,0x03,0x19,0x01,0x00,0x35,0x05,0x19,0x00,0x03,0x08,0x05,
+  0x09,0x03,0x15,0x09,0x00,0x01, 0x09,0x03,0x16,0x09,0x00,0x02, 0x09,0x03,0x17,0x08,0x01};
+ REQUIRE(bth_sdp_client_parse(odd,sizeof odd,&s)==BTH_OK&&s.found&&s.rfcomm_channel==5&&!s.has_mas_instance&&!s.supported_message_types&&!s.has_supported_features);
+ return checks-before;
+}
 }
 int main(){
  setvbuf(stdout,nullptr,_IONBF,0);
  writer_exact();utf16_names();parse_packets();fragmentation();sdp_client();fuzz();
+ const unsigned map=map_sdp_client();std::printf("MAP_SDP_CLIENT_PASS checks=%u (MAS request/parse, attribute-list validation)\n",map);
  std::printf("OBEX_CODEC_SDP_CLIENT_PASS checks=%u (portable C core; no radio)\n",checks);return 0;
 }

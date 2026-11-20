@@ -28,6 +28,11 @@ project-owned host stack on the board's Murata 1DX (CYW4343W) radio.
   example). The radio supports both roles; the transmitter has run on the
   board, reception still needs a second board.
   [Details](docs/validation/csb-capability-2026-11-20.md).
+- **MAP client (Message Access, MCE)**, off by default: folder listing,
+  message listing and message pull from the connected phone
+  (`mapGetMessageListing`, `mapGetMessage`, the `MessageListing` example).
+  No notification server. Native synthetic checks only so far.
+  [Details](docs/validation/map.md).
 
 Codecs: SBC/SBC-XQ, AAC-LC (+ experimental HE-AAC), aptX, aptX HD, LDAC,
 LHDC V5, Opus, Samsung SSC. Each is compiled in by `GBR_ENABLE_*` and its
@@ -224,6 +229,10 @@ Off by default: `ReceiverConfig.spp.enabled=true` adds one SDP Serial Port recor
 ## OBEX: Object Push server and Phonebook Access client
 
 Off by default. `ReceiverConfig.obex.opp_enabled=true` adds an OBEX Object Push SDP record (UUID 0x1105, RFCOMM channel `obex.opp_channel`, default 4, OPP 1.1, any format), EIR UUID 0x1105 and an RFCOMM listener on the shared Classic RFCOMM owner; received objects stream to `on_object_begin(name,type,length)`, `on_object_data(ptr,len)` and `on_object_end(ok)` without buffering the whole object. `obex.pbap_enabled=true` advertises a PBAP client record (0x112E) and enables `pbapPullPhonebook(path="telecom/pb.vcf",max_count,offset)` / `pbapPullVcardListing(folder,max_count,offset)` / `pbapAbort()`: the GIGA looks up the connected phone's PSE with its own SDP client, opens an RFCOMM DLC (on the phone's mux, or its own), runs OBEX CONNECT/GET/DISCONNECT and streams vCard 2.1 bytes to `on_phonebook_data`, then one `on_phonebook_end(PbapResult)`. Calls are nonblocking (`Busy` on radio contention or while a pull is active). Callbacks run from `poll()`; a slow `loop()` only delays the next OBEX response. Requires `enable_a2dp=true` and an encrypted link; data frames follow the SPP A2DP-first queue and pacing rules. See [ObexPush](examples/ObexPush/ObexPush.ino), [PhonebookPull](examples/PhonebookPull/PhonebookPull.ino) and [OBEX validation](docs/validation/obex.md): native synthetic checks only, no over-the-air test yet.
+
+## MAP: Message Access client (MCE)
+
+Off by default. `ReceiverConfig.obex.map_enabled=true` enables `mapGetFolderListing(folder="telecom/msg",max_count=1024,offset=0)`, `mapGetMessageListing(folder="telecom/msg/inbox",max_count=1024,offset=0,subject_length=0)`, `mapGetMessage(handle)` and `mapAbort()` on the connected phone's Message Access Server: the GIGA looks up the MAS with its own SDP client (UUID 0x1132; channel, version, MASInstanceID, SupportedMessageTypes and MapSupportedFeatures land in `obexStats()`), opens an RFCOMM DLC, runs OBEX CONNECT (MAS Target), one SETPATH per folder segment, GET (`x-obex/folder-listing`, `x-bt/MAP-msg-listing` with MaxListCount/ListStartOffset/SubjectLength, or `x-bt/message` by handle with attachments off and UTF-8) and DISCONNECT, and streams the XML or bMessage bytes to `on_map_data`, then one `on_map_end(MapResult)` with the response code and the FolderListingSize/MessagesListingSize, NewMessage and MSETime parameters. It shares the PBAP client link: one PBAP or MAP operation at a time (`Busy` otherwise, and on radio contention). No Message Notification Server: MAP adds no SDP record or EIR UUID, and new messages are not pushed (list again). RFCOMM only (a GOEP L2CAP PSM is reported, not used); read-only browsing. Same `enable_a2dp`, encryption, pacing and `poll()` rules as PBAP. See [MessageListing](examples/MessageListing/MessageListing.ino) and [MAP validation](docs/validation/map.md): native synthetic checks only, no over-the-air test with a phone yet.
 
 ## Connectionless Peripheral Broadcast (CPB, formerly CSB)
 

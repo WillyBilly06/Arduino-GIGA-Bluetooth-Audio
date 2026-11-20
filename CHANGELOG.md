@@ -2,6 +2,16 @@
 
 ## Local unreleased connection, bonding, SSC and coexistence work - 2026-11-20
 
+- Add a MAP client (Message Access Profile, MCE role), off by default:
+  `ObexConfig::map_enabled`, `mapGetFolderListing`, `mapGetMessageListing`
+  (MaxListCount/ListStartOffset/SubjectLength; NewMessage, listing size and
+  MSETime reported), `mapGetMessage(handle)`, `mapAbort`, `MapResult`, MAS
+  fields in `ObexStats`, and the `MessageListing` example. It shares the PBAP
+  OBEX client link and SDP client (new `bth_sdp_client_set_attributes`). No
+  Message Notification Server: no SDP record or EIR UUID is added and no
+  notifications arrive. Native synthetic MSE checks only; no phone test yet.
+  See docs/validation/map.md.
+
 - Fix Linux/BlueZ A2DP connections: accepted links no longer race the
   initiator's authentication (Command Disallowed -> EBUSY). The local request
   waits up to 300 ms, is dropped when the peer authenticates or pairs, and runs

@@ -157,7 +157,7 @@ struct GigaBredr::Impl {
     };
     SerialSession* serial=nullptr;
     detail::HidDevice* hid=nullptr; // Allocated only for config.hid.enabled.
-    // Allocated only for config.obex OPP/PBAP. Shares the voice or SPP RFCOMM
+    // Allocated only for config.obex OPP/PBAP/MAP. Shares the voice or SPP RFCOMM
     // owner when one exists (one mux per peer); otherwise owns profiles.
     struct ObexSession {
         detail::ObexPort port;detail::VoiceControlConfig control;
@@ -951,7 +951,7 @@ struct GigaBredr::Impl {
         options.hid.output_report(type,id,data,length,options.hid.user);
     }
     Status setupObex(){
-        const auto& o=options.obex;if(!o.opp_enabled&&!o.pbap_enabled)return Status::Ok;
+        const auto& o=options.obex;if(!o.opp_enabled&&!o.pbap_enabled&&!o.map_enabled)return Status::Ok;
         void* storage=detail::allocate(sizeof(ObexSession));if(!storage)return Status::OutOfMemory;obex=new(storage)ObexSession();
         obex->ring=static_cast<uint8_t*>(detail::allocate(o.event_buffer_bytes,MemoryKind::Fast));if(!obex->ring)return Status::OutOfMemory;
         if(!obex->port.begin(o,obex->ring,o.event_buffer_bytes))return Status::InvalidArgument;
@@ -1070,7 +1070,7 @@ Status GigaBredr::begin(const ReceiverConfig& input) {
         if(!input.enable_a2dp||GIGA_BREDR_USE_BTSTACK)return Status::Unsupported;
         if(!detail::HidDevice::validate(input.hid))return Status::InvalidArgument;
     }
-    if(input.obex.opp_enabled||input.obex.pbap_enabled){
+    if(input.obex.opp_enabled||input.obex.pbap_enabled||input.obex.map_enabled){
         const auto& o=input.obex;const auto& v=input.voice;const auto& s=input.spp;
         if(!input.enable_a2dp||GIGA_BREDR_USE_BTSTACK)return Status::Unsupported;
         if(o.event_buffer_bytes<detail::ObexPort::MinimumRing||o.event_buffer_bytes>detail::ObexPort::MaximumRing||
@@ -1456,6 +1456,54 @@ Status GigaBredr::pbapAbort() {
     { TryLock lock(impl_->radio_mutex);
       if (!lock) return Status::Busy;
       result = impl_->obex->port.abort(); }
+#if defined(ARDUINO)
+    if (result == Status::Ok) impl_->host_events.set(1);
+#endif
+    return result;
+}
+Status GigaBredr::mapGetFolderListing(const char* folder,uint16_t max_count,uint16_t offset) {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->obex) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->obex->port.request(MapOperation::GetFolderListing,folder,max_count,offset,0); }
+#if defined(ARDUINO)
+    if (result == Status::Ok) impl_->host_events.set(1);
+#endif
+    return result;
+}
+Status GigaBredr::mapGetMessageListing(const char* folder,uint16_t max_count,uint16_t offset,uint8_t subject_length) {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->obex) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->obex->port.request(MapOperation::GetMessageListing,folder,max_count,offset,subject_length); }
+#if defined(ARDUINO)
+    if (result == Status::Ok) impl_->host_events.set(1);
+#endif
+    return result;
+}
+Status GigaBredr::mapGetMessage(const char* handle) {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->obex) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->obex->port.request(MapOperation::GetMessage,handle,0,0,0); }
+#if defined(ARDUINO)
+    if (result == Status::Ok) impl_->host_events.set(1);
+#endif
+    return result;
+}
+Status GigaBredr::mapAbort() {
+    if(providerReentry())return Status::Busy;
+    if (!impl_ || !impl_->obex) return Status::Unsupported;
+    Status result;
+    { TryLock lock(impl_->radio_mutex);
+      if (!lock) return Status::Busy;
+      result = impl_->obex->port.mapAbort(); }
 #if defined(ARDUINO)
     if (result == Status::Ok) impl_->host_events.set(1);
 #endif

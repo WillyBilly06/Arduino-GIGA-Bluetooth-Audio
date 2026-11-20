@@ -5,6 +5,9 @@ The board was not flashed and Bluetooth on the build VM was not used. Android
 "Share via Bluetooth", Windows `fsquirt`, BlueZ `obexctl`, and phone PBAP PSE
 interoperability is therefore **designed for but not demonstrated**.
 
+The Message Access client (MAP MCE) shares this OBEX client machinery; see
+[map.md](map.md).
+
 ## What was added
 
 | Area | Change |
@@ -124,7 +127,8 @@ CM7 builds: see the table appended at the end of this file.
 * GOEP 2.0 / OBEX over L2CAP, SRM, OBEX authentication, PBAP 1.2 features
   (PbapSupportedFeatures, vCard 3.0 selection, PropertySelector, vCardSelector,
   database identifiers, `x-bt/vcard` single-entry pull), OPP business-card pull
-  (GET) and exchange, PBAP PSE (server) role, MAP/FTP.
+  (GET) and exchange, PBAP PSE (server) role, MAP server roles (MSE, MNS), FTP.
+  The MAP client (MCE) is described in [map.md](map.md).
 * Folded vCard continuation lines and QUOTED-PRINTABLE names are delivered as
   raw bytes; the example only prints `FN` lines.
 * BTstack builds: OBEX returns `Unsupported`.

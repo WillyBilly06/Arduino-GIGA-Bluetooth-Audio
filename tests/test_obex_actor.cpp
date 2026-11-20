@@ -1,7 +1,8 @@
 // Real OwnedHost actor + OBEX: SDP records/EIR, disabled-default identity, an
-// OPP push over a phone-opened PSM 3 channel, and a PBAP pull in which the
-// actor opens its own SDP-client (PSM 1) and RFCOMM (PSM 3) channels to a
-// scripted phone (real SDP server with a PSE record, real RFCOMM responder).
+// OPP push over a phone-opened PSM 3 channel, and PBAP pulls / MAP listings in
+// which the actor opens its own SDP-client (PSM 1) and RFCOMM (PSM 3) channels
+// to a scripted phone (real SDP server with a PSE or MAS record, real RFCOMM
+// responder).
 // Synthetic HCI fixture; no radio or phone.
 #include <vector>
 #include <string>
@@ -35,7 +36,12 @@ bool psm3Refused(Fixture& f){
   if(p.bytes[at]==3&&p.bytes.size()>=at+12)return bth_read_le16(p.bytes.data()+at+8)!=0&&bth_read_le16(p.bytes.data()+at+8)!=1;
  return false;
 }
-const uint8_t PseChannel=19;
+const uint8_t PseChannel=19,MasChannel=17;
+const uint8_t mas_record[]={
+ 0x09,0x00,0x00,0x0a,0x00,0x01,0x00,0x0a, 0x09,0x00,0x01,0x35,0x03,0x19,0x11,0x32,
+ 0x09,0x00,0x04,0x35,0x11,0x35,0x03,0x19,0x01,0x00,0x35,0x05,0x19,0x00,0x03,0x08,MasChannel,0x35,0x03,0x19,0x00,0x08,
+ 0x09,0x00,0x09,0x35,0x08,0x35,0x06,0x19,0x11,0x34,0x09,0x01,0x04, 0x09,0x01,0x00,0x25,0x03,'M','A','S',
+ 0x09,0x03,0x15,0x08,0x00, 0x09,0x03,0x16,0x08,0x0e, 0x09,0x03,0x17,0x0a,0x00,0x00,0x00,0x1f};
 const uint8_t pse_record[]={
  0x09,0x00,0x00,0x0a,0x00,0x01,0x00,0x09, 0x09,0x00,0x01,0x35,0x03,0x19,0x11,0x2f,
  0x09,0x00,0x04,0x35,0x11,0x35,0x03,0x19,0x01,0x00,0x35,0x05,0x19,0x00,0x03,0x08,PseChannel,0x35,0x03,0x19,0x00,0x08,
@@ -43,15 +49,19 @@ const uint8_t pse_record[]={
 Bytes build(uint8_t opcode,std::initializer_list<Bytes> parts){Bytes p={opcode,0,0};for(const auto& part:parts)p.insert(p.end(),part.begin(),part.end());p[1]=uint8_t(p.size()>>8);p[2]=uint8_t(p.size());return p;}
 Bytes hbytes(uint8_t id,const std::string& v){Bytes h={id,uint8_t((v.size()+3)>>8),uint8_t(v.size()+3)};h.insert(h.end(),v.begin(),v.end());return h;}
 Bytes text16(const char* s){Bytes out={0x01,0,0};for(;*s;++s){out.push_back(0);out.push_back(uint8_t(*s));}out.push_back(0);out.push_back(0);out[2]=uint8_t(out.size());return out;}
-struct Events {std::string name,data,phonebook;uint32_t length=0;unsigned begins=0,ends=0,pb_ends=0;bool ok=false;PbapResult result;};
+struct Events {std::string name,data,phonebook,map;uint32_t length=0;unsigned begins=0,ends=0,pb_ends=0,map_ends=0;bool ok=false;PbapResult result;MapResult map_result;};
 struct Phone {
  VoiceProfiles rfcomm;ObexPort port;uint8_t ring[4096]{};ObexConfig config;Events ev;Fixture f;
  std::map<uint16_t,uint16_t> actor_of;bth_rfcomm_t peer{};uint32_t pg=23;uint16_t rfcomm_phone=0,sdp_phone=0;
  bth_sdp_t pse{};bth_sdp_cursor_t cursor{};bth_sdp_record_t records[1]={{0x10009,{pse_record,sizeof pse_record}}};
  std::map<uint8_t,Bytes> inbox;std::set<uint8_t> closed;size_t read=0;uint8_t reply[700]{};uint8_t next_id=0x60;
- std::vector<uint16_t> phone_disconnects;unsigned sdp_requests=0,connects[4]={};
- Phone(bool opp,bool pbap,bool connect=true){
-  config.opp_enabled=opp;config.pbap_enabled=pbap;config.user=&ev;
+ std::vector<uint16_t> phone_disconnects;unsigned sdp_requests=0,connects[4]={};uint8_t server=PseChannel;
+ // map: the scripted phone holds a MAS record (channel 17) instead of the PSE.
+ Phone(bool opp,bool pbap,bool connect=true,bool map=false){
+  config.opp_enabled=opp;config.pbap_enabled=pbap;config.map_enabled=map;config.user=&ev;
+  if(map){records[0]={0x1000a,{mas_record,sizeof mas_record}};server=MasChannel;}
+  config.on_map_data=[](const uint8_t* p,size_t n,void* u){static_cast<Events*>(u)->map.append(reinterpret_cast<const char*>(p),n);};
+  config.on_map_end=[](const MapResult& r,void* u){auto& e=*static_cast<Events*>(u);e.map_result=r;++e.map_ends;};
   config.on_object_begin=[](const char* n,const char*,uint32_t l,void* u){auto& e=*static_cast<Events*>(u);e.name=n;e.length=l;e.data.clear();++e.begins;};
   config.on_object_data=[](const uint8_t* p,size_t n,void* u){static_cast<Events*>(u)->data.append(reinterpret_cast<const char*>(p),n);};
   config.on_object_end=[](bool ok,void* u){auto& e=*static_cast<Events*>(u);e.ok=ok;++e.ends;};
@@ -68,7 +78,7 @@ struct Phone {
    const uint8_t code=p[at],id=p[at+1];const size_t n=bth_read_le16(p.data()+at+2);const uint8_t* q=p.data()+at+4;
    if(code==2){
     const uint16_t psm=bth_read_le16(q),scid=bth_read_le16(q+2),phone=psm==1?0x95:0x96;CHECK(psm==1||psm==3);++connects[psm];actor_of[phone]=scid;
-    if(psm==3){CHECK(bth_rfcomm_init(&peer,++pg,false,PseChannel,512,7));rfcomm_phone=phone;}else{sdp_phone=phone;cursor={};}
+    if(psm==3){CHECK(bth_rfcomm_init(&peer,++pg,false,server,512,7));rfcomm_phone=phone;}else{sdp_phone=phone;cursor={};}
     signal({3,id,8,0,uint8_t(phone),uint8_t(phone>>8),uint8_t(scid),uint8_t(scid>>8),0,0,0,0});
     signal({4,next_id++,8,0,uint8_t(scid),uint8_t(scid>>8),0,0,1,2,0xa0,2});
    }else if(code==4){const uint16_t dcid=bth_read_le16(q),actor=actor_of[dcid];signal({5,id,6,0,uint8_t(actor),uint8_t(actor>>8),0,0,0,0});}
@@ -186,6 +196,70 @@ void pbap_without_acl(){
  p.ticks(3);CHECK(p.ev.pb_ends==1&&!p.ev.result.ok&&p.ev.result.response==0&&p.port.stats().pbap_state==PbapState::Idle);
  for(const auto& c:p.f.host.signaling_.channels)CHECK(c.state==BTH_CHANNEL_CLOSED);
 }
+void map_sdp_eir_identity(){
+ // MAP adds no SDP record or EIR UUID: with OPP+PBAP the actor's records,
+ // UUIDs, PSM services and SDP answers are byte-identical with MAP on or off.
+ std::vector<Bytes> answers;
+ for(bool map:{false,true}){
+  VoiceProfiles rfcomm;ObexPort obex;uint8_t ring[2048];ObexConfig c;c.opp_enabled=c.pbap_enabled=true;c.map_enabled=map;CHECK(obex.begin(c,ring,sizeof ring)&&obex.mapEnabled()==map);
+  Fixture f;f.host.end();f.config.voice_control=&rfcomm;f.config.voice_config=VoiceControlConfig();f.config.voice_config.obex=&obex;
+  CHECK(f.host.begin(f.config,f.hooks)==Status::Ok);f.boot();
+  CHECK(f.host.classic_.record_count_==4&&f.host.gap_.config.uuid_count==3&&f.host.uuids_[1]==0x1105&&f.host.uuids_[2]==0x112e);
+  f.classicConnect();CHECK(f.host.signaling_.service_count==4);const uint16_t sdp=f.channel(1,0x81);
+  const Bytes all=sdpExchange(f,sdp,0x81,everything);CHECK(all==reference({obex.records()[0],obex.records()[1]}));
+  for(uint16_t uuid:{uint16_t(0x1132),uint16_t(0x1133),uint16_t(0x1134)})CHECK(sdpExchange(f,sdp,0x81,search(uuid))==Bytes({3,0,1,0,5,0,0,0,0,0}));
+  answers.push_back(all);f.host.end();
+ }
+ CHECK(answers.size()==2&&answers[0]==answers[1]);
+ // MAP alone: the RFCOMM owner exists for the outgoing DLC, but no record/UUID.
+ Phone m(false,false,false,true);auto& f=m.f;
+ CHECK(m.port.recordCount()==0&&f.host.classic_.record_count_==2&&f.host.gap_.config.uuid_count==1&&f.host.uuids_[0]==0x110b);
+ f.classicConnect();const uint16_t sdp=f.channel(1,0x81);CHECK(sdpExchange(f,sdp,0x81,everything)==reference({}));
+ for(uint16_t uuid:{uint16_t(0x1132),uint16_t(0x1133),uint16_t(0x1134),uint16_t(0x112e)})CHECK(sdpExchange(f,sdp,0x81,search(uuid))==Bytes({3,0,1,0,5,0,0,0,0,0}));
+ // Idle MAP opens no outgoing channel.
+ for(unsigned i=0;i<50;++i){f.poll(100);while(!f.tx.empty())f.acknowledge(f.pop());}f.settle();
+ CHECK(f.host.obex_sdp_cid_==0&&f.host.obex_rfcomm_cid_==0);for(const auto& c:f.host.signaling_.channels)CHECK(c.state==BTH_CHANNEL_CLOSED||c.psm==1||c.psm==0x17);
+}
+void map_through_actor(){
+ Phone p(false,false,true,true);auto& f=p.f;const uint8_t d=MasChannel*2; // The actor initiates the mux.
+ CHECK(p.port.request(MapOperation::GetMessageListing,"telecom/msg/inbox",50,0,32)==Status::Ok);
+ Bytes connect=p.await(d,1500);
+ CHECK(p.connects[1]==1&&p.sdp_requests>1&&p.connects[3]==1&&std::count(p.phone_disconnects.begin(),p.phone_disconnects.end(),0x95)==1);
+ CHECK(f.host.obex_sdp_cid_==0&&f.host.obex_rfcomm_cid_==p.rfcomm.cid()&&p.rfcomm.mux().initiator);
+ // CONNECT: MAS Target and (MSE publishes features) MapSupportedFeatures.
+ CHECK(connect.size()==35&&connect[0]==0x80&&connect[7]==0x46&&connect[10]==0xbb&&connect[11]==0x58&&connect[26]==0x4c&&connect[29]==0x29&&connect[34]==4);
+ const auto st=p.port.stats();CHECK(st.mas_channel==MasChannel&&st.mas_version==0x0104&&st.mas_message_types==0x0e&&st.mas_features==0x1f&&st.map_state==MapState::Connecting);
+ p.send(d,build(0xa0,{{0x10,0,0x04,0x00},{0xcb,0,0,0,6}}));
+ for(const char* folder:{"telecom","msg","inbox"}){Bytes sp=p.await(d);CHECK(sp[0]==0x85&&sp[3]==0x02&&sp[5]==0xcb&&sp[9]==6);
+  const Bytes name=text16(folder);CHECK(Bytes(sp.begin()+10,sp.end())==name);p.send(d,build(0xa0,{}));}
+ Bytes get=p.await(d);CHECK(get[0]==0x83&&get[3]==0xcb&&get[7]==6);
+ const Bytes params={0x4c,0,14,0x01,2,0,50,0x02,2,0,0,0x13,1,32};CHECK(std::search(get.begin(),get.end(),params.begin(),params.end())!=get.end());
+ std::string xml="<MAP-msg-listing version=\"1.0\">";for(int i=0;i<20;++i)xml+="<msg handle=\"0400000000000"+std::to_string(100+i)+"\" subject=\"Hello "+std::to_string(i)+"\" type=\"SMS_GSM\" read=\"no\"/>";xml+="</MAP-msg-listing>";
+ const Bytes app={0x4c,0,10,0x12,2,0,20,0x0d,1,0};
+ Bytes first=build(0x90,{app,hbytes(0x48,xml.substr(0,900))});p.send(d,first);CHECK(p.await(d)==Bytes({0x83,0,3}));
+ p.send(d,build(0xa0,{hbytes(0x49,xml.substr(900))}));Bytes disc=p.await(d);CHECK(disc[0]==0x81&&disc[3]==0xcb);
+ p.send(d,build(0xa0,{}));p.ticks(40);
+ CHECK(p.ev.map_ends==1&&p.ev.map_result.ok&&p.ev.map_result.listing_size==20&&p.ev.map_result.new_message==0&&p.ev.map==xml&&p.closed.count(d)&&p.ev.pb_ends==0);
+ // The initiated mux retires once idle: the actor disconnects its PSM 3 channel.
+ CHECK(std::count(p.phone_disconnects.begin(),p.phone_disconnects.end(),0x96)==1&&p.rfcomm.cid()==0&&f.host.obex_rfcomm_cid_==0);
+ CHECK(p.port.stats().map_state==MapState::Idle&&p.port.stats().map_completed==1&&p.port.stats().mas_channel==MasChannel);
+ // Second operation: cached MAS, no second SDP channel; ACL loss fails it.
+ const unsigned before=p.connects[1];p.inbox.clear();p.closed.clear();
+ CHECK(p.port.request(MapOperation::GetMessage,"0400000000000100",0,0,0)==Status::Ok);
+ p.await(d,1500);CHECK(p.connects[1]==before&&p.connects[3]==2);p.send(d,build(0xa0,{{0x10,0,0x04,0x00},{0xcb,0,0,0,7}}));
+ get=p.await(d);CHECK(get[0]==0x83&&get[3]==0xcb&&get[7]==7);
+ p.send(d,build(0x90,{hbytes(0x48,"BEGIN:BMSG\r\n")}));CHECK(p.await(d)==Bytes({0x83,0,3}));
+ f.event(5,{0,0x25,0,0x13});f.settle();p.events();
+ CHECK(p.ev.map_ends==2&&!p.ev.map_result.ok&&p.ev.map_result.response==0&&p.ev.map_result.operation==MapOperation::GetMessage&&p.ev.map==xml+"BEGIN:BMSG\r\n");
+ CHECK(p.port.stats().map_state==MapState::Idle&&p.port.stats().map_failed==1&&p.port.stats().mas_channel==0&&p.rfcomm.cid()==0); // A new ACL owner looks the MAS up again.
+}
+void map_without_acl(){
+ Phone p(false,false,false,true);CHECK(p.port.request(MapOperation::GetFolderListing,"telecom/msg",10,0,0)==Status::Ok);
+ p.ticks(3);CHECK(p.ev.map_ends==1&&!p.ev.map_result.ok&&p.ev.map_result.response==0&&p.port.stats().map_state==MapState::Idle);
+ for(const auto& c:p.f.host.signaling_.channels)CHECK(c.state==BTH_CHANNEL_CLOSED);
+}
 }
 int main(){setvbuf(stdout,nullptr,_IONBF,0);default_disabled_identical();enabled_sdp_and_eir();opp_through_actor();pbap_through_actor();pbap_without_acl();
+ const unsigned before=checks;map_sdp_eir_identity();map_through_actor();map_without_acl();
+ printf("MAP_MCE_ACTOR_PASS checks=%u (MAP on/off SDP+EIR identity; actor-opened SDP/RFCOMM to a scripted MSE; ACL loss)\n",checks-before);
  printf("OBEX_ACTOR_SDP_EIR_OPP_PBAP_PASS checks=%u (synthetic HCI; scripted phone; no radio)\n",checks);}

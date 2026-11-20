@@ -8,7 +8,9 @@ extern "C" {
 }
 namespace giga_bredr { namespace detail {
 // OBEX endpoints on the shared RFCOMM owner: one Object Push server DLC and one
-// Phonebook Access client DLC, plus the PSE SDP lookup that precedes it. Fixed
+// OBEX client DLC, used by either the Phonebook Access client (PCE) or the
+// Message Access client (MCE), one operation at a time, plus the PSE/MAS SDP
+// lookup that precedes it. Fixed
 // caller-reserved storage only. Actor methods run under the radio owner's
 // serialization; begin/end/request/abort/pop/stats/deliver are foreground
 // methods (radio mutex held, except deliver) and never call the C core, so the
@@ -20,12 +22,15 @@ class ObexPort {
 public:
  static constexpr size_t PacketBytes=1024,TxBytes=512,NameBytes=96,TypeBytes=48,PathBytes=96,ChunkBytes=240,
   MinimumRing=2048,MaximumRing=16384,NameLimit=32,RecordBytes=128,SdpBytes=640,EndReserve=16,
-  BeginBytes=3+4+1+NameBytes+1+TypeBytes;
+  BeginBytes=3+4+1+NameBytes+1+TypeBytes,HandleDigits=16,TimeBytes=24,MapEndBytes=12+TimeBytes-1;
+ // One end record always fits the slack need() reserves beyond the data records.
+ static_assert(3+MapEndBytes<=BeginBytes+2*EndReserve,"MAP end record exceeds the event reserve");
  static constexpr uint32_t OppHandle=0x10007,PceHandle=0x10008;
+ static constexpr uint32_t MceFeatures=0x00000004; // MapSupportedFeatures sent by this MCE: browsing only.
  static constexpr uint8_t Window=7; // Initial/maximum RX credits per OBEX DLC (7*127 < PacketBytes).
  static constexpr uint32_t ConnectTimeoutMs=60000,ResponseTimeoutMs=30000,SetupTimeoutMs=20000;
- enum : uint8_t {Opp=0,Pbap=1,LinkCount=2};
- enum : uint8_t {ObjectBegin=1,ObjectData=2,ObjectEnd=3,PhonebookData=4,PhonebookEnd=5};
+ enum : uint8_t {Opp=0,Pbap=1,Client=1,LinkCount=2}; // Client: the one PBAP/MAP client link.
+ enum : uint8_t {ObjectBegin=1,ObjectData=2,ObjectEnd=3,PhonebookData=4,PhonebookEnd=5,MapData=6,MapEnd=7};
  ObexPort(){clearAll();}
  ObexPort(const ObexPort&)=delete;
  ObexPort& operator=(const ObexPort&)=delete;
@@ -63,17 +68,19 @@ public:
  // ---- Foreground (radio mutex held; no C core calls) ----
  bool begin(const ObexConfig& c,uint8_t* ring,size_t ring_size){
   end();
-  if((!c.opp_enabled&&!c.pbap_enabled)||!ring||ring_size<MinimumRing||ring_size>MaximumRing)return false;
+  if((!c.opp_enabled&&!c.pbap_enabled&&!c.map_enabled)||!ring||ring_size<MinimumRing||ring_size>MaximumRing)return false;
   size_t count=0;
   if(c.opp_enabled){const size_t n=buildOppRecord(record_bytes_[count],RecordBytes,c.opp_channel,c.opp_service_name);if(!n)return false;records_[count]={OppHandle,{record_bytes_[count],n}};++count;}
   if(c.pbap_enabled){const size_t n=buildPceRecord(record_bytes_[count],RecordBytes,c.pbap_service_name);if(!n){end();return false;}records_[count]={PceHandle,{record_bytes_[count],n}};++count;}
-  record_count_=count;opp_=c.opp_enabled;pbap_=c.pbap_enabled;channel_=opp_?c.opp_channel:0;interval_=c.streaming_frame_interval_ms;
+  // MAP adds no record: an MCE without a Notification Server advertises none.
+  record_count_=count;opp_=c.opp_enabled;pbap_=c.pbap_enabled;map_=c.map_enabled;channel_=opp_?c.opp_channel:0;interval_=c.streaming_frame_interval_ms;
   ring_=ring;ring_size_=ring_size;active_=true;return true;
  }
  void end(){clearAll();}
  bool enabled()const{return active_;}
  bool oppEnabled()const{return active_&&opp_;}
  bool pbapEnabled()const{return active_&&pbap_;}
+ bool mapEnabled()const{return active_&&map_;}
  uint8_t oppChannel()const{return channel_;}
  uint8_t streamingIntervalMs()const{return interval_;}
  const bth_sdp_record_t* records()const{return active_&&record_count_?records_:nullptr;}
@@ -82,24 +89,34 @@ public:
   size_t n=0;if(!active_||!out)return 0;
   if(opp_&&n<capacity)out[n++]=0x1105;if(pbap_&&n<capacity)out[n++]=0x112e;return n;
  }
- // Admits one PBAP operation. Busy while another is active (until on_phonebook_end
- // has been queued and its DLC has closed).
+ // Admits one PBAP operation. Busy while a PBAP or MAP operation is active
+ // (until its end record has been queued and its DLC has closed).
  Status request(PbapOperation op,const char* path,uint16_t max_count,uint16_t offset){
   if(!active_||!pbap_)return Status::Unsupported;
   if((op!=PbapOperation::PullPhonebook&&op!=PbapOperation::PullVcardListing)||!path)return Status::InvalidArgument;
   size_t n=0;while(n<PathBytes&&path[n])++n;
   if(n==PathBytes||(op==PbapOperation::PullPhonebook&&!n))return Status::InvalidArgument;
   if(phase_!=Phase::Idle)return Status::Busy;
-  memcpy(path_,path,n);path_[n]=0;op_=op;max_count_=max_count;offset_=offset;cursor_=0;
-  result_=PbapResult();result_.operation=op;result_done_=false;abort_=false;have_id_=false;connection_id_=0;expect_=Expect::None;
-  phase_=pse_channel_&&owner_&&pse_owner_==owner_?Phase::Transport:Phase::Sdp;deadline_=0;return Status::Ok;
+  result_=PbapResult();result_.operation=op;op_=op;admit(Kind::Pbap,path,n,max_count,offset,0);return Status::Ok;
  }
- Status abort(){
-  if(!active_||!pbap_)return Status::Unsupported;
-  if(phase_==Phase::Idle||phase_==Phase::Closing||result_done_)return Status::InvalidArgument;
-  if(phase_==Phase::Obex){abort_=true;return Status::Ok;} // ABORT/DISCONNECT at the next OBEX turn.
-  finish(false,0,true);if(links_[Pbap].dlci)links_[Pbap].close=true;return Status::Ok;
+ // Admits one MAP operation. arg is the folder (listings; "" = MAS root,
+ // segments separated by '/') or the message handle (GetMessage: 1..16 hex
+ // digits). subject_length 0 omits SubjectLength (message listing only).
+ Status request(MapOperation op,const char* arg,uint16_t max_count,uint16_t offset,uint8_t subject_length){
+  if(!active_||!map_)return Status::Unsupported;
+  if((op!=MapOperation::GetFolderListing&&op!=MapOperation::GetMessageListing&&op!=MapOperation::GetMessage)||!arg)return Status::InvalidArgument;
+  size_t n=0;while(n<PathBytes&&arg[n])++n;if(n==PathBytes)return Status::InvalidArgument;
+  if(op==MapOperation::GetMessage){
+   if(!n||n>HandleDigits)return Status::InvalidArgument;
+   for(size_t i=0;i<n;++i){const char c=arg[i];if(!((c>='0'&&c<='9')||(c>='a'&&c<='f')||(c>='A'&&c<='F')))return Status::InvalidArgument;}
+  }
+  if(phase_!=Phase::Idle)return Status::Busy;
+  map_result_=MapResult();map_result_.operation=op;map_op_=op;admit(Kind::Map,arg,n,max_count,offset,op==MapOperation::GetMessageListing?subject_length:0);return Status::Ok;
  }
+ // PBAP abort: Unsupported when PBAP is disabled, InvalidArgument unless a PBAP
+ // operation is active (a MAP operation is not aborted by this call).
+ Status abort(){if(!active_||!pbap_)return Status::Unsupported;return abortClient(Kind::Pbap);}
+ Status mapAbort(){if(!active_||!map_)return Status::Unsupported;return abortClient(Kind::Map);}
  // Copies one queued record (payload at most ChunkBytes). False when empty.
  bool pop(uint8_t& kind,uint8_t* out,size_t capacity,size_t& length){
   length=0;kind=0;if(!active_||ring_count_<3||!out)return false;
@@ -108,8 +125,11 @@ public:
   peek(out,n,3);ring_read_=(ring_read_+3+n)%ring_size_;ring_count_-=3+n;kind=head[0];length=n;return true;
  }
  ObexStats stats()const{
-  ObexStats s=stats_;s.opp_enabled=active_&&opp_;s.pbap_enabled=active_&&pbap_;s.opp_connected=links_[Opp].open;
-  s.pbap_state=publicState();s.pse_channel=pse_channel_;s.pse_version=pse_version_;s.event_bytes_pending=uint32_t(ring_count_);return s;
+  ObexStats s=stats_;s.opp_enabled=active_&&opp_;s.pbap_enabled=active_&&pbap_;s.map_enabled=active_&&map_;s.opp_connected=links_[Opp].open;
+  s.pbap_state=kind_==Kind::Pbap?publicState():PbapState::Idle;s.map_state=kind_==Kind::Map?MapState(publicState()):MapState::Idle;
+  s.pse_channel=pse_channel_;s.pse_version=pse_version_;
+  s.mas_channel=mas_.channel;s.mas_version=mas_.version;s.mas_instance_id=mas_.instance;s.mas_message_types=mas_.types;s.mas_features=mas_.features;s.mas_l2cap_psm=mas_.psm;
+  s.event_bytes_pending=uint32_t(ring_count_);return s;
  }
  // Decodes one popped record into the sketch callbacks (no lock held).
  static void deliver(const ObexConfig& c,uint8_t kind,const uint8_t* p,size_t n){
@@ -126,26 +146,31 @@ public:
   case PhonebookEnd:{
    if(n!=12)return;PbapResult r;r.operation=PbapOperation(p[0]);r.ok=p[1]!=0;r.aborted=p[2]!=0;r.response=p[3];
    r.phonebook_size=uint16_t(p[4]<<8|p[5]);r.bytes=be32(p+6);if(c.on_phonebook_end)c.on_phonebook_end(r,c.user);return;}
+  case MapData:if(n&&c.on_map_data)c.on_map_data(p,n,c.user);return;
+  case MapEnd:{
+   if(n<12||p[11]>=TimeBytes||n!=12u+p[11])return;MapResult r;r.operation=MapOperation(p[0]);r.ok=p[1]!=0;r.aborted=p[2]!=0;r.response=p[3];
+   r.listing_size=uint16_t(p[4]<<8|p[5]);r.new_message=p[6];r.bytes=be32(p+7);memcpy(r.mse_time,p+12,p[11]);r.mse_time[p[11]]=0;
+   if(c.on_map_end)c.on_map_end(r,c.user);return;}
   default:return;
   }
  }
  // ---- Actor: RFCOMM owner (VoiceProfiles) ----
- // A new ACL owner (or 0 on detach/end) retires every link and the PSE cache.
+ // A new ACL owner (or 0 on detach/end) retires every link and the PSE/MAS caches.
  void reset(uint32_t owner){
   if(!active_)return;
   muxClosed();if(phase_!=Phase::Idle)finish(false,0,false);
   sdp_channel_=sdp_ready_=false;phase_=Phase::Idle;expect_=Expect::None;
-  if(owner!=owner_){owner_=owner;if(pse_owner_!=owner){pse_owner_=0;pse_channel_=0;pse_version_=0;}}
+  if(owner!=owner_){owner_=owner;if(pse_owner_!=owner){pse_owner_=0;pse_channel_=0;pse_version_=0;}if(mas_.owner!=owner)mas_=Mas();}
  }
  bool claims(uint8_t dlci,bool initiator)const{
   if(!active_||!dlci)return false;
-  if(pbap_&&links_[Pbap].dlci==dlci&&!links_[Pbap].open)return true;
+  if((pbap_||map_)&&links_[Pbap].dlci==dlci&&!links_[Pbap].open)return true;
   return opp_&&!links_[Opp].dlci&&(dlci>>1)==channel_&&(dlci&1)==(initiator?1:0);
  }
  bool owns(uint8_t dlci)const{return active_&&linkOf(dlci)>=0;}
  void opened(uint8_t dlci,uint16_t mtu,bool credit,uint32_t generation){
   if(!active_||!dlci)return;
-  const unsigned i=pbap_&&links_[Pbap].dlci==dlci&&!links_[Pbap].open?Pbap:Opp;auto& l=links_[i];
+  const unsigned i=(pbap_||map_)&&links_[Pbap].dlci==dlci&&!links_[Pbap].open?Pbap:Opp;auto& l=links_[i];
   clearLink(l);l.dlci=dlci;l.open=true;l.mtu=mtu;l.credit=credit;l.generation=generation;
   if(!mtu){l.close=true;return;}
   if(i==Opp){object_active_=connected_=false;return;}
@@ -168,7 +193,7 @@ public:
   const int i=linkOf(dlci);if(i<0)return;auto& l=links_[i];if(l.close)return;
   size_t length=0;if(bth_obex_assemble(&l.assembler,p,n,&length)<0){++stats_.protocol_errors;protocolError(unsigned(i));}
  }
- // Processes complete packets that fit the event ring; expires PBAP stages.
+ // Processes complete packets that fit the event ring; expires client stages.
  void service(uint32_t now){
   if(!active_)return;now_=now;
   for(unsigned i=0;i<LinkCount;++i)processLink(i);
@@ -176,7 +201,7 @@ public:
   if(!deadline_)deadline_=now+SetupTimeoutMs;
   else if(int32_t(now-deadline_)>=0){deadline_=now+ResponseTimeoutMs;timeout();}
  }
- bool wantsDlc(uint8_t& scn)const{scn=0;if(!active_||phase_!=Phase::Transport||!pse_channel_||links_[Pbap].dlci)return false;scn=pse_channel_;return true;}
+ bool wantsDlc(uint8_t& scn)const{scn=0;const uint8_t channel=serverChannel();if(!active_||phase_!=Phase::Transport||!channel||links_[Pbap].dlci)return false;scn=channel;return true;}
  void dlcRequested(uint8_t dlci){clearLink(links_[Pbap]);links_[Pbap].dlci=dlci;phase_=Phase::DlcOpening;deadline_=now_+ResponseTimeoutMs;}
  // The owner could not open the transport (PSM 3 refused, DLC admission failed).
  void transportRefused(){if(active_&&(phase_==Phase::Transport||phase_==Phase::DlcOpening)&&!result_done_){finish(false,0,false);if(links_[Pbap].dlci)links_[Pbap].close=true;}}
@@ -198,7 +223,12 @@ public:
  void sdpConnecting(){sdp_channel_=true;sdp_ready_=false;if(phase_==Phase::Sdp)phase_=Phase::SdpOpen;deadline_=now_+SetupTimeoutMs;}
  void sdpOpened(uint16_t){
   if(!sdp_channel_)return;sdp_ready_=true;
-  if(!bth_sdp_client_init(&sdp_,0x112f,sdp_bytes_,SdpBytes,uint16_t(++sdp_serial_))&&phase_==Phase::SdpOpen)finish(false,0,false);
+  // MAS lookups also ask for MASInstanceID and SupportedMessageTypes; the PSE
+  // request keeps the GOEP default attribute list.
+  static const uint8_t mas_attributes[]={0x35,18,0x09,0x00,0x04,0x09,0x00,0x09,0x09,0x02,0x00,0x09,0x03,0x15,0x09,0x03,0x16,0x09,0x03,0x17};
+  const bool ok=bth_sdp_client_init(&sdp_,kind_==Kind::Map?0x1132:0x112f,sdp_bytes_,SdpBytes,uint16_t(++sdp_serial_))&&
+   (kind_!=Kind::Map||bth_sdp_client_set_attributes(&sdp_,mas_attributes,sizeof mas_attributes));
+  if(!ok&&phase_==Phase::SdpOpen)finish(false,0,false);
  }
  bool sdpRequest(uint8_t* out,size_t capacity,size_t& n){
   n=0;if(!active_||phase_!=Phase::SdpOpen||!sdp_ready_||!sdp_.initialized||sdp_.awaiting||sdp_.complete)return false;
@@ -208,13 +238,19 @@ public:
   if(!active_||phase_!=Phase::SdpOpen||!sdp_ready_)return;
   const auto st=bth_sdp_client_response(&sdp_,p,n);if(st==BTH_MORE)return;if(st!=BTH_OK){finish(false,0,false);return;}
   bth_sdp_service_t s{};if(bth_sdp_client_parse(sdp_bytes_,sdp_.used,&s)!=BTH_OK||!s.found){finish(false,0,false);return;}
-  pse_channel_=s.rfcomm_channel;pse_version_=s.profile_version;pse_owner_=owner_;phase_=Phase::Transport;deadline_=now_+SetupTimeoutMs;
+  if(kind_==Kind::Map){mas_.channel=s.rfcomm_channel;mas_.version=s.profile_version;mas_.owner=owner_;mas_.instance=s.mas_instance_id;mas_.types=s.supported_message_types;
+   mas_.features=s.supported_features;mas_.has_features=s.has_supported_features;mas_.psm=s.goep_l2cap_psm;}
+  else{pse_channel_=s.rfcomm_channel;pse_version_=s.profile_version;pse_owner_=owner_;}
+  phase_=Phase::Transport;deadline_=now_+SetupTimeoutMs;
  }
  bool sdpFinished()const{return sdp_channel_&&phase_!=Phase::SdpOpen;}
  void sdpClosed(){if(!sdp_channel_)return;sdp_channel_=sdp_ready_=false;if(phase_==Phase::SdpOpen&&!result_done_)finish(false,0,false);settle();}
 private:
  enum class Phase:uint8_t {Idle,Sdp,SdpOpen,Transport,DlcOpening,Obex,Closing};
  enum class Expect:uint8_t {None,Connect,SetPath,Get,Abort,Disconnect};
+ enum class Kind:uint8_t {None,Pbap,Map};
+ // Cached MAS of the current ACL owner (first SDP record with an RFCOMM channel).
+ struct Mas {uint32_t owner=0,features=0;uint16_t version=0,psm=0;uint8_t channel=0,instance=0,types=0;bool has_features=false;};
  struct Link {
   uint8_t rx[PacketBytes];uint8_t tx[TxBytes];bth_obex_assembler_t assembler;
   uint32_t generation;uint16_t mtu,tx_length,tx_cursor,peer_max;uint8_t dlci;bool open,credit,close,close_sent;
@@ -228,10 +264,10 @@ private:
   for(auto& l:links_)clearLink(l);
   memset(record_bytes_,0,sizeof record_bytes_);memset(records_,0,sizeof records_);record_count_=0;
   ring_=nullptr;ring_size_=ring_read_=ring_count_=0;stats_=ObexStats();
-  opp_=pbap_=active_=object_active_=connected_=false;channel_=interval_=0;
-  phase_=Phase::Idle;expect_=Expect::None;op_=PbapOperation::None;memset(path_,0,sizeof path_);max_count_=offset_=0;cursor_=0;
-  result_=PbapResult();result_done_=abort_=have_id_=false;connection_id_=0;deadline_=now_=0;
-  memset(&sdp_,0,sizeof sdp_);sdp_channel_=sdp_ready_=false;sdp_serial_=0;owner_=pse_owner_=0;pse_channel_=0;pse_version_=0;
+  opp_=pbap_=map_=active_=object_active_=connected_=false;channel_=interval_=0;
+  phase_=Phase::Idle;expect_=Expect::None;kind_=Kind::None;op_=PbapOperation::None;map_op_=MapOperation::None;memset(path_,0,sizeof path_);max_count_=offset_=0;subject_length_=0;cursor_=0;
+  result_=PbapResult();map_result_=MapResult();result_done_=abort_=have_id_=false;connection_id_=0;deadline_=now_=0;
+  memset(&sdp_,0,sizeof sdp_);sdp_channel_=sdp_ready_=false;sdp_serial_=0;owner_=pse_owner_=0;pse_channel_=0;pse_version_=0;mas_=Mas();
  }
  int linkOf(uint8_t dlci)const{if(!dlci)return -1;for(unsigned i=0;i<LinkCount;++i)if(links_[i].open&&links_[i].dlci==dlci)return int(i);return -1;}
  PbapState publicState()const{
@@ -243,6 +279,18 @@ private:
   }
  }
  void settle(){if(phase_==Phase::Closing&&!links_[Pbap].dlci&&!sdp_channel_)phase_=Phase::Idle;}
+ uint8_t serverChannel()const{return kind_==Kind::Map?mas_.channel:kind_==Kind::Pbap?pse_channel_:0;}
+ void admit(Kind kind,const char* path,size_t n,uint16_t max_count,uint16_t offset,uint8_t subject_length){
+  memcpy(path_,path,n);path_[n]=0;kind_=kind;max_count_=max_count;offset_=offset;subject_length_=subject_length;cursor_=0;
+  result_done_=false;abort_=false;have_id_=false;connection_id_=0;expect_=Expect::None;
+  const bool cached=kind==Kind::Map?mas_.channel&&owner_&&mas_.owner==owner_:pse_channel_&&owner_&&pse_owner_==owner_;
+  phase_=cached?Phase::Transport:Phase::Sdp;deadline_=0;
+ }
+ Status abortClient(Kind kind){
+  if(kind_!=kind||phase_==Phase::Idle||phase_==Phase::Closing||result_done_)return Status::InvalidArgument;
+  if(phase_==Phase::Obex){abort_=true;return Status::Ok;} // ABORT/DISCONNECT at the next OBEX turn.
+  finish(false,0,true);if(links_[Pbap].dlci)links_[Pbap].close=true;return Status::Ok;
+ }
  // ---- Event ring ----
  size_t ringFree()const{return ring_size_-ring_count_;}
  static size_t need(size_t packet){return packet+3*(packet/ChunkBytes+2)+BeginBytes+2*EndReserve;}
@@ -255,7 +303,7 @@ private:
  void processLink(unsigned i){
   auto& l=links_[i];if(!l.open||l.close||l.tx_length||!bth_obex_assembler_complete(&l.assembler))return;
   const size_t n=l.assembler.used;if(ringFree()<need(n))return; // Response (and peer) wait for loop().
-  if(i==Opp)handleOpp(l.rx,n);else handlePbap(l.rx,n);
+  if(i==Opp)handleOpp(l.rx,n);else handleClient(l.rx,n);
   l.assembler.used=0;
  }
  void protocolError(unsigned i){
@@ -312,28 +360,58 @@ private:
   while(bth_obex_header_next(&rest,&h)==BTH_OK)if(h.id==BTH_OBEX_H_BODY||h.id==BTH_OBEX_H_END_OF_BODY){pushData(ObjectData,h.data.data,h.data.len);stats_.object_bytes+=uint32_t(h.data.len);}
   if(r.final){endObject(true);respond(BTH_OBEX_SUCCESS);}else respond(BTH_OBEX_CONTINUE);
  }
- // ---- PBAP client ----
+ // ---- PBAP / MAP client ----
  void finish(bool ok,uint8_t code,bool aborted){
-  if(result_done_)return;result_done_=true;result_.ok=ok;result_.response=code;result_.aborted=aborted;
-  const uint8_t p[12]={uint8_t(result_.operation),uint8_t(ok),uint8_t(aborted),code,uint8_t(result_.phonebook_size>>8),uint8_t(result_.phonebook_size),
-   uint8_t(result_.bytes>>24),uint8_t(result_.bytes>>16),uint8_t(result_.bytes>>8),uint8_t(result_.bytes),0,0};
-  push(PhonebookEnd,p,sizeof p);if(ok)++stats_.pbap_completed;else ++stats_.pbap_failed;if(code)stats_.last_response=code;
+  if(result_done_)return;result_done_=true;
+  if(kind_==Kind::Map){
+   auto& r=map_result_;r.ok=ok;r.response=code;r.aborted=aborted;
+   uint8_t p[MapEndBytes];const size_t t=strlen(r.mse_time);
+   const uint8_t head[12]={uint8_t(r.operation),uint8_t(ok),uint8_t(aborted),code,uint8_t(r.listing_size>>8),uint8_t(r.listing_size),r.new_message,
+    uint8_t(r.bytes>>24),uint8_t(r.bytes>>16),uint8_t(r.bytes>>8),uint8_t(r.bytes),uint8_t(t)};
+   memcpy(p,head,12);memcpy(p+12,r.mse_time,t);push(MapEnd,p,12+t);if(ok)++stats_.map_completed;else ++stats_.map_failed;
+  }else{
+   result_.ok=ok;result_.response=code;result_.aborted=aborted;
+   const uint8_t p[12]={uint8_t(result_.operation),uint8_t(ok),uint8_t(aborted),code,uint8_t(result_.phonebook_size>>8),uint8_t(result_.phonebook_size),
+    uint8_t(result_.bytes>>24),uint8_t(result_.bytes>>16),uint8_t(result_.bytes>>8),uint8_t(result_.bytes),0,0};
+   push(PhonebookEnd,p,sizeof p);if(ok)++stats_.pbap_completed;else ++stats_.pbap_failed;
+  }
+  if(code)stats_.last_response=code;
   phase_=Phase::Closing;settle();
  }
  void sendConnect(){
-  static const uint8_t target[16]={0x79,0x61,0x35,0xf0,0xf0,0xc5,0x11,0xd8,0x09,0x66,0x08,0x00,0x20,0x0c,0x9a,0x66};
+  static const uint8_t pse[16]={0x79,0x61,0x35,0xf0,0xf0,0xc5,0x11,0xd8,0x09,0x66,0x08,0x00,0x20,0x0c,0x9a,0x66};
+  static const uint8_t mas[16]={0xbb,0x58,0x2b,0x40,0x42,0x0c,0x11,0xdb,0xb0,0xde,0x08,0x00,0x20,0x0c,0x9a,0x66};
   bth_obex_writer_t w;bth_obex_writer_init(&w,links_[Pbap].tx,TxBytes,BTH_OBEX_CONNECT);
   bth_obex_put_u8(&w,BTH_OBEX_VERSION);bth_obex_put_u8(&w,0);bth_obex_put_u16(&w,uint16_t(PacketBytes));
-  bth_obex_add_bytes(&w,BTH_OBEX_H_TARGET,target,sizeof target);
+  bth_obex_add_bytes(&w,BTH_OBEX_H_TARGET,kind_==Kind::Map?mas:pse,16);
+  // MAP 1.2+: an MSE that publishes MapSupportedFeatures receives ours.
+  if(kind_==Kind::Map&&mas_.has_features){const uint8_t f[6]={0x29,4,uint8_t(MceFeatures>>24),uint8_t(MceFeatures>>16),uint8_t(MceFeatures>>8),uint8_t(MceFeatures)};bth_obex_add_bytes(&w,BTH_OBEX_H_APP_PARAMS,f,sizeof f);}
   if(send(w,Expect::Connect))deadline_=now_+ConnectTimeoutMs; // The phone may prompt its user first.
  }
  void header(bth_obex_writer_t& w){if(have_id_)bth_obex_add_u32(&w,BTH_OBEX_H_CONNECTION_ID,connection_id_);}
  bool send(bth_obex_writer_t& w,Expect expect){
   if(!queue(Pbap,w)){finish(false,0,false);return false;}expect_=expect;deadline_=now_+ResponseTimeoutMs;return true;
  }
+ static void addType(bth_obex_writer_t& w,const char* type){bth_obex_add_bytes(&w,BTH_OBEX_H_TYPE,reinterpret_cast<const uint8_t*>(type),strlen(type)+1);}
+ void mapGet(bth_obex_writer_t& w){
+  uint8_t params[11];size_t k=0;header(w);
+  switch(map_op_){
+  case MapOperation::GetFolderListing:addType(w,"x-obex/folder-listing");break; // Current folder: no Name header.
+  case MapOperation::GetMessageListing:bth_obex_add_text(&w,BTH_OBEX_H_NAME,"",0);addType(w,"x-bt/MAP-msg-listing");break;
+  default:bth_obex_add_text(&w,BTH_OBEX_H_NAME,path_,strlen(path_));addType(w,"x-bt/message");
+   params[k++]=0x0a;params[k++]=1;params[k++]=0x00;   // Attachment: off
+   params[k++]=0x14;params[k++]=1;params[k++]=0x01;   // Charset: UTF-8
+   bth_obex_add_bytes(&w,BTH_OBEX_H_APP_PARAMS,params,k);return;
+  }
+  params[k++]=0x01;params[k++]=2;params[k++]=uint8_t(max_count_>>8);params[k++]=uint8_t(max_count_);   // MaxListCount
+  params[k++]=0x02;params[k++]=2;params[k++]=uint8_t(offset_>>8);params[k++]=uint8_t(offset_);         // ListStartOffset
+  if(subject_length_){params[k++]=0x13;params[k++]=1;params[k++]=subject_length_;}                    // SubjectLength
+  bth_obex_add_bytes(&w,BTH_OBEX_H_APP_PARAMS,params,k);
+ }
  void sendGet(bool first){
   bth_obex_writer_t w;bth_obex_writer_init(&w,links_[Pbap].tx,TxBytes,BTH_OBEX_GET|BTH_OBEX_FINAL);
-  if(first){
+  if(first&&kind_==Kind::Map)mapGet(w);
+  else if(first){
    const bool listing=op_==PbapOperation::PullVcardListing;header(w);
    if(listing)bth_obex_add_text(&w,BTH_OBEX_H_NAME,"",0);else bth_obex_add_text(&w,BTH_OBEX_H_NAME,path_,strlen(path_));
    static const char phonebook[]="x-bt/phonebook",vcards[]="x-bt/vcard-listing";
@@ -354,13 +432,25 @@ private:
  void sendSimple(uint8_t opcode,Expect expect){bth_obex_writer_t w;bth_obex_writer_init(&w,links_[Pbap].tx,TxBytes,opcode);header(w);send(w,expect);}
  void sendDisconnect(){sendSimple(BTH_OBEX_DISCONNECT,Expect::Disconnect);}
  void nextStep(){
-  if(op_==PbapOperation::PullVcardListing){
+  // PBAP vCard listing and both MAP listings walk the folder from the root.
+  if(kind_==Kind::Map?map_op_!=MapOperation::GetMessage:op_==PbapOperation::PullVcardListing){
    while(cursor_<PathBytes&&path_[cursor_]=='/')++cursor_;
    if(cursor_<PathBytes&&path_[cursor_]){size_t end=cursor_;while(end<PathBytes&&path_[end]&&path_[end]!='/')++end;const size_t at=cursor_;cursor_=end;sendSetPath(path_+at,end-at);return;}
   }
   sendGet(true);
  }
- void handlePbap(const uint8_t* p,size_t n){
+ // Response application parameters of the current operation.
+ void responseParams(bth_span_t tlv){
+  uint8_t tag;bth_span_t v;
+  while(bth_obex_tlv_next(&tlv,&tag,&v)==BTH_OK){
+   if(kind_==Kind::Pbap){if(tag==0x08&&v.len==2)result_.phonebook_size=uint16_t(v.data[0]<<8|v.data[1]);continue;}
+   auto& r=map_result_;
+   if((tag==0x11||tag==0x12)&&v.len==2)r.listing_size=uint16_t(v.data[0]<<8|v.data[1]); // FolderListingSize / MessagesListingSize
+   else if(tag==0x0d&&v.len==1)r.new_message=v.data[0];                              // NewMessage
+   else if(tag==0x19){size_t k=0;while(k<v.len&&k+1<TimeBytes&&v.data[k]){const uint8_t c=v.data[k];r.mse_time[k++]=char(c>=0x20&&c<0x7f?c:'?');}r.mse_time[k]=0;} // MSETime
+  }
+ }
+ void handleClient(const uint8_t* p,size_t n){
   auto& l=links_[Pbap];
   if(expect_==Expect::None||(phase_!=Phase::Obex&&phase_!=Phase::Closing)){++stats_.protocol_errors;l.close=true;return;} // Unsolicited.
   bth_obex_response_t r;
@@ -379,10 +469,13 @@ private:
    nextStep();return;
   case Expect::Get:{
    bth_span_t rest=r.headers;bth_obex_header_t h;
+   const bool map=kind_==Kind::Map;
    while(bth_obex_header_next(&rest,&h)==BTH_OK){
-    if(h.id==BTH_OBEX_H_BODY||h.id==BTH_OBEX_H_END_OF_BODY){pushData(PhonebookData,h.data.data,h.data.len);result_.bytes+=uint32_t(h.data.len);stats_.pbap_bytes+=uint32_t(h.data.len);}
-    else if(h.id==BTH_OBEX_H_APP_PARAMS){bth_span_t tlv=h.data;uint8_t tag;bth_span_t value;
-     while(bth_obex_tlv_next(&tlv,&tag,&value)==BTH_OK)if(tag==0x08&&value.len==2)result_.phonebook_size=uint16_t(value.data[0]<<8|value.data[1]);}
+    if(h.id==BTH_OBEX_H_BODY||h.id==BTH_OBEX_H_END_OF_BODY){
+     pushData(map?MapData:PhonebookData,h.data.data,h.data.len);
+     if(map){map_result_.bytes+=uint32_t(h.data.len);stats_.map_bytes+=uint32_t(h.data.len);}else{result_.bytes+=uint32_t(h.data.len);stats_.pbap_bytes+=uint32_t(h.data.len);}
+    }
+    else if(h.id==BTH_OBEX_H_APP_PARAMS)responseParams(h.data);
    }
    if(r.code==BTH_OBEX_CONTINUE){if(abort_)sendSimple(BTH_OBEX_ABORT,Expect::Abort);else sendGet(false);return;}
    finish(r.code==BTH_OBEX_SUCCESS,r.code,false);sendDisconnect();return;}
@@ -404,10 +497,10 @@ private:
  uint8_t record_bytes_[2][RecordBytes];bth_sdp_record_t records_[2];size_t record_count_;
  uint8_t* ring_;size_t ring_size_,ring_read_,ring_count_;
  ObexStats stats_;
- bool opp_,pbap_,active_,object_active_,connected_;uint8_t channel_,interval_;
- Phase phase_;Expect expect_;PbapOperation op_;char path_[PathBytes];uint16_t max_count_,offset_;size_t cursor_;
- PbapResult result_;bool result_done_,abort_,have_id_;uint32_t connection_id_,deadline_,now_;
+ bool opp_,pbap_,map_,active_,object_active_,connected_;uint8_t channel_,interval_;
+ Phase phase_;Expect expect_;Kind kind_;PbapOperation op_;MapOperation map_op_;char path_[PathBytes];uint16_t max_count_,offset_;uint8_t subject_length_;size_t cursor_;
+ PbapResult result_;MapResult map_result_;bool result_done_,abort_,have_id_;uint32_t connection_id_,deadline_,now_;
  bth_sdp_client_t sdp_;uint8_t sdp_bytes_[SdpBytes];bool sdp_channel_,sdp_ready_;uint32_t sdp_serial_;
- uint32_t owner_,pse_owner_;uint8_t pse_channel_;uint16_t pse_version_;
+ uint32_t owner_,pse_owner_;uint8_t pse_channel_;uint16_t pse_version_;Mas mas_;
 };
 }}

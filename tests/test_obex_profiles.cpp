@@ -1,7 +1,8 @@
-// OBEX Object Push server and PBAP client over the real shared RFCOMM owner
-// (VoiceProfiles), the real RFCOMM kernel on both ends, the real Classic
-// control FIFO and the real SDP server answering the PCE's lookup. The peer is
-// a scripted OPP client / PBAP PSE. Synthetic only: no controller, radio or phone.
+// OBEX Object Push server, PBAP client and MAP client over the real shared
+// RFCOMM owner (VoiceProfiles), the real RFCOMM kernel on both ends, the real
+// Classic control FIFO and the real SDP server answering the PCE/MCE lookup.
+// The peer is a scripted OPP client / PBAP PSE / MAP MSE (exact bytes).
+// Synthetic only: no controller, radio or phone.
 #include "../src/owned/VoiceProfiles.h"
 #include <cstdio>
 #include <cstdlib>
@@ -16,8 +17,9 @@ namespace {
 unsigned checks;
 #define REQUIRE(x) do{++checks;if(!(x)){std::fprintf(stderr,"OBEX PROFILES CHECK line%d: %s\n",__LINE__,#x);std::abort();}}while(0)
 using Bytes=std::vector<uint8_t>;
-constexpr uint8_t PseChannel=19,OppChannel=4;
+constexpr uint8_t PseChannel=19,OppChannel=4,MasChannel=17;
 const uint8_t PbapTarget[16]={0x79,0x61,0x35,0xf0,0xf0,0xc5,0x11,0xd8,0x09,0x66,0x08,0x00,0x20,0x0c,0x9a,0x66};
+const uint8_t MasTarget[16]={0xbb,0x58,0x2b,0x40,0x42,0x0c,0x11,0xdb,0xb0,0xde,0x08,0x00,0x20,0x0c,0x9a,0x66};
 std::string pattern(size_t n,unsigned seed){std::string s(n,'\0');for(size_t i=0;i<n;++i)s[i]=char((i*131u+seed*7u+(i>>8))&0xff);return s;}
 Bytes text16(const char* s){Bytes out;for(;*s;++s){out.push_back(0);out.push_back(uint8_t(*s));}out.push_back(0);out.push_back(0);return out;}
 struct Packet {uint8_t code=0;Bytes bytes;bth_span_t headers{};};
@@ -31,13 +33,14 @@ const uint8_t pse_record[]={
  0x09,0x00,0x05,0x35,0x03,0x19,0x10,0x02, 0x09,0x00,0x09,0x35,0x08,0x35,0x06,0x19,0x11,0x30,0x09,0x01,0x02,
  0x09,0x01,0x00,0x25,0x03,'P','S','E'};
 struct Events {
- std::string name,type,data,phonebook;uint32_t length=0;unsigned begins=0,ends=0,pb_ends=0;bool ok=false;PbapResult result;
+ std::string name,type,data,phonebook,map;uint32_t length=0;unsigned begins=0,ends=0,pb_ends=0,map_ends=0;bool ok=false;PbapResult result;MapResult map_result;
 };
 struct Harness {
  VoiceProfiles voice;ObexPort obex;std::vector<uint8_t> ring;bth_control_tx_t queue{};bth_hci_flow_t flow{};bth_rfcomm_t peer{};
  ObexConfig config;Events ev;uint32_t now=100;uint8_t wire[1100]{},reply[600]{};
- std::deque<Bytes> to_voice;std::map<uint8_t,Bytes> inbox;std::set<uint8_t> peer_closed,peer_opened;bool deliver=true,we_initiate=false;
- Harness(bool opp,bool pbap,size_t ring_size=4096,bool initiate=false):ring(ring_size),we_initiate(initiate){
+ std::deque<Bytes> to_voice;std::map<uint8_t,Bytes> inbox;std::set<uint8_t> peer_closed,peer_opened;bool deliver=true,we_initiate=false;uint8_t server=PseChannel;
+ // server: the phone's PSE/MAS RFCOMM channel (the scripted peer listens there).
+ Harness(bool opp,bool pbap,size_t ring_size=4096,bool initiate=false,bool map=false,uint8_t server_channel=PseChannel):ring(ring_size),we_initiate(initiate),server(server_channel){
   bth_control_tx_init(&queue);REQUIRE(bth_control_tx_attach(&queue,0,0x25,7));
   bth_hci_flow_init(&flow);REQUIRE(bth_hci_flow_set_buffers(&flow,1021,8,251,4));REQUIRE(bth_hci_flow_attach(&flow,0x25,BTH_LINK_CLASSIC));
   config.opp_enabled=opp;config.pbap_enabled=pbap;config.opp_channel=OppChannel;config.user=&ev;
@@ -46,11 +49,14 @@ struct Harness {
   config.on_object_end=[](bool ok,void* u){auto& e=*static_cast<Events*>(u);e.ok=ok;++e.ends;};
   config.on_phonebook_data=[](const uint8_t* p,size_t n,void* u){static_cast<Events*>(u)->phonebook.append(reinterpret_cast<const char*>(p),n);};
   config.on_phonebook_end=[](const PbapResult& r,void* u){auto& e=*static_cast<Events*>(u);e.result=r;++e.pb_ends;};
+  config.map_enabled=map;
+  config.on_map_data=[](const uint8_t* p,size_t n,void* u){static_cast<Events*>(u)->map.append(reinterpret_cast<const char*>(p),n);};
+  config.on_map_end=[](const MapResult& r,void* u){auto& e=*static_cast<Events*>(u);e.map_result=r;++e.map_ends;};
   REQUIRE(obex.begin(config,ring.data(),ring.size()));
   VoiceControlConfig c;c.obex=&obex;REQUIRE(voice.begin(c,queue)==Status::Ok);voice.reset(7);
   REQUIRE(voice.channelOpened(7,0x40,0x80,672,initiate));
   // The peer is the phone: initiator of a mux it opened, otherwise responder.
-  REQUIRE(bth_rfcomm_init(&peer,19,!initiate,PseChannel,512,7));
+  REQUIRE(bth_rfcomm_init(&peer,19,!initiate,server,512,7));
  }
  void complete(){const uint8_t p[]={4,0x13,5,1,0x25,0,1,0};bth_h4_frame_t f{};REQUIRE(bth_h4_decode(p,sizeof p,&f)==BTH_OK);REQUIRE(bth_hci_flow_on_event(&flow,&f)==BTH_OK);}
  const bth_rfcomm_dlc_t* peerDlc(uint8_t dlci)const{for(const auto& d:peer.dlc)if(d.state&&d.dlci==dlci)return &d;return nullptr;}
@@ -99,7 +105,7 @@ struct Harness {
   REQUIRE(rounds>1&&obex.sdpFinished()&&obex.stats().pse_channel==PseChannel&&obex.stats().pse_version==0x0102);obex.sdpClosed();
   REQUIRE(obex.stats().pbap_state==PbapState::Transport);
  }
- uint8_t pbapDlci()const{return uint8_t(PseChannel*2+(we_initiate?0:1));}
+ uint8_t pbapDlci()const{return uint8_t(server*2+(we_initiate?0:1));}
  // Accepts the PCE CONNECT as a PSE and returns the GET it sends next.
  Packet acceptConnect(uint32_t id=0x2a){
   const uint8_t d=pbapDlci();Packet c=await(d);bth_obex_request_t r;bth_obex_header_t h;
@@ -276,9 +282,225 @@ void opp_and_pbap_share_mux(){
  ObexConfig none;REQUIRE(!x.begin(none,ring,sizeof ring)&&!x.enabled());c.opp_channel=31;REQUIRE(!x.begin(c,ring,sizeof ring));c.opp_channel=4;REQUIRE(!x.begin(c,ring,1024));
  c.opp_service_name="123456789012345678901234567890123";REQUIRE(!x.begin(c,ring,sizeof ring));
 }
+// ---- MAP client (MCE) against a scripted MSE ----
+// MAS record shaped like a MAP 1.4 phone stack (sorted attribute IDs).
+const uint8_t mas_record[]={
+ 0x09,0x00,0x00,0x0a,0x00,0x01,0x00,0x0a, 0x09,0x00,0x01,0x35,0x03,0x19,0x11,0x32,
+ 0x09,0x00,0x04,0x35,0x11,0x35,0x03,0x19,0x01,0x00,0x35,0x05,0x19,0x00,0x03,0x08,MasChannel,0x35,0x03,0x19,0x00,0x08,
+ 0x09,0x00,0x05,0x35,0x03,0x19,0x10,0x02, 0x09,0x00,0x09,0x35,0x08,0x35,0x06,0x19,0x11,0x34,0x09,0x01,0x04,
+ 0x09,0x01,0x00,0x25,0x07,'S','M','S','/','M','M','S', 0x09,0x02,0x00,0x09,0x10,0x29,
+ 0x09,0x03,0x15,0x08,0x01, 0x09,0x03,0x16,0x08,0x0e, 0x09,0x03,0x17,0x0a,0x00,0x07,0x7f,0xff};
+// MAP 1.0 MSE: no GOEP PSM and no MapSupportedFeatures.
+const uint8_t mas10_record[]={
+ 0x09,0x00,0x00,0x0a,0x00,0x01,0x00,0x0a, 0x09,0x00,0x01,0x35,0x03,0x19,0x11,0x32,
+ 0x09,0x00,0x04,0x35,0x11,0x35,0x03,0x19,0x01,0x00,0x35,0x05,0x19,0x00,0x03,0x08,MasChannel,0x35,0x03,0x19,0x00,0x08,
+ 0x09,0x00,0x09,0x35,0x08,0x35,0x06,0x19,0x11,0x34,0x09,0x01,0x00,
+ 0x09,0x03,0x15,0x08,0x00, 0x09,0x03,0x16,0x08,0x02};
+Bytes span(const bth_obex_header_t& h){return Bytes(h.data.data,h.data.data+h.data.len);}
+Bytes zstr(const char* s){return Bytes(s,s+strlen(s)+1);}
+// MCE SDP lookup of the MAS through the real SDP server; exact first request.
+void masLookup(Harness& t,const uint8_t* record,size_t size){
+ REQUIRE(t.obex.sdpWanted());t.obex.sdpConnecting();
+ REQUIRE(!t.obex.sdpWanted()&&t.obex.stats().map_state==MapState::ServiceDiscovery&&t.obex.stats().pbap_state==PbapState::Idle);t.obex.sdpOpened(672);
+ bth_sdp_record_t records[]={{0x1000a,{record,size}}};bth_sdp_t server{};REQUIRE(bth_sdp_init(&server,records,1,3));bth_sdp_cursor_t cursor{};
+ uint8_t req[128],rsp[64];size_t n=0,m=0;unsigned rounds=0;
+ while(t.obex.sdpRequest(req,sizeof req,n)){
+  if(!rounds)REQUIRE(n==33&&req[0]==0x06&&Bytes(req+3,req+n)==Bytes({0x00,0x1c,0x35,0x03,0x19,0x11,0x32,0x02,0x40,0x35,18,0x09,0x00,0x04,0x09,0x00,0x09,
+   0x09,0x02,0x00,0x09,0x03,0x15,0x09,0x03,0x16,0x09,0x03,0x17,0x00}));
+  REQUIRE(bth_sdp_process_compact(&server,&cursor,req,n,rsp,30,&m)==BTH_OK);t.obex.sdpReceive(rsp,m);++rounds;REQUIRE(rounds<20);
+ }
+ REQUIRE(rounds>1&&t.obex.sdpFinished());t.obex.sdpClosed();REQUIRE(t.obex.stats().map_state==MapState::Transport);
+}
+// Accepts the MCE CONNECT (exact bytes) as an MSE; returns the next request.
+Packet acceptMap(Harness& t,uint32_t id,bool features=true){
+ const uint8_t d=t.pbapDlci();Packet c=t.await(d);
+ Bytes expect={0x80,0,0,0x10,0,0x04,0x00,0x46,0,19};expect.insert(expect.end(),MasTarget,MasTarget+16);
+ if(features)expect.insert(expect.end(),{0x4c,0,9,0x29,4,0,0,0,4});expect[2]=uint8_t(expect.size());
+ REQUIRE(c.bytes==expect&&t.obex.stats().map_state==MapState::Connecting);
+ t.peerSend(d,build(0xa0,{{0x10,0,0x04,0x00},hu32(BTH_OBEX_H_CONNECTION_ID,id),hbytes(BTH_OBEX_H_WHO,Bytes(MasTarget,MasTarget+16))}));
+ return t.await(d);
+}
+// Answers one SETPATH (flags 0x02, Connection ID, Name) per folder segment.
+Packet setPaths(Harness& t,Packet p,std::initializer_list<const char*> folders,uint32_t id){
+ for(const char* folder:folders){
+  bth_obex_request_t r;bth_obex_header_t h;
+  REQUIRE(bth_obex_parse_request(p.bytes.data(),p.bytes.size(),&r)==BTH_OK&&r.opcode==BTH_OBEX_SETPATH&&r.flags==0x02&&r.constants==0);checkConnectionId(r,id);
+  REQUIRE(bth_obex_header_find(r.headers,BTH_OBEX_H_NAME,&h)==BTH_OK&&span(h)==text16(folder));
+  t.peerSend(t.pbapDlci(),build(0xa0,{}));p=t.await(t.pbapDlci());
+ }
+ return p;
+}
+// Answers the final DISCONNECT and waits for the DLC to close.
+void closeMap(Harness& t,uint32_t id){
+ const uint8_t d=t.pbapDlci();Packet disc=t.await(d);bth_obex_request_t r;
+ REQUIRE(bth_obex_parse_request(disc.bytes.data(),disc.bytes.size(),&r)==BTH_OK&&r.opcode==BTH_OBEX_DISCONNECT);checkConnectionId(r,id);
+ REQUIRE(t.obex.stats().map_state==MapState::Closing);
+ t.peerSend(d,build(0xa0,{}));t.run(10);REQUIRE(t.peer_closed.count(d)&&t.obex.stats().map_state==MapState::Idle);
+}
+void map_off_identity(){
+ // MAP adds no SDP record, EIR UUID or listener: records/UUIDs equal MAP off.
+ uint8_t ring_a[2048],ring_b[2048];ObexConfig off,on;off.opp_enabled=off.pbap_enabled=true;on=off;on.map_enabled=true;
+ ObexPort a,b;REQUIRE(a.begin(off,ring_a,sizeof ring_a)&&b.begin(on,ring_b,sizeof ring_b));
+ REQUIRE(a.recordCount()==2&&b.recordCount()==2);
+ for(size_t i=0;i<2;++i)REQUIRE(a.records()[i].handle==b.records()[i].handle&&a.records()[i].attributes.len==b.records()[i].attributes.len&&
+  !memcmp(a.records()[i].attributes.data,b.records()[i].attributes.data,a.records()[i].attributes.len));
+ uint16_t ua[4],ub[4];REQUIRE(a.uuids(ua,4)==2&&b.uuids(ub,4)==2&&ua[0]==ub[0]&&ua[1]==ub[1]&&a.oppChannel()==b.oppChannel());
+ REQUIRE(!a.mapEnabled()&&b.mapEnabled()&&!a.stats().map_enabled&&b.stats().map_enabled);
+ REQUIRE(a.request(MapOperation::GetMessageListing,"telecom/msg/inbox",1,0,0)==Status::Unsupported&&a.mapAbort()==Status::Unsupported);
+ // MAP alone: enabled, but no record, no UUID, no OPP channel.
+ ObexConfig only;only.map_enabled=true;ObexPort c;REQUIRE(c.begin(only,ring_a,sizeof ring_a)&&c.enabled()&&c.mapEnabled()&&!c.pbapEnabled()&&!c.oppEnabled());
+ REQUIRE(c.recordCount()==0&&c.records()==nullptr&&c.uuids(ua,4)==0&&c.oppChannel()==0);
+ REQUIRE(c.request(PbapOperation::PullPhonebook,"telecom/pb.vcf",1,0)==Status::Unsupported&&c.abort()==Status::Unsupported);
+ const ObexConfig defaults;REQUIRE(!defaults.map_enabled&&!defaults.on_map_data&&!defaults.on_map_end);
+ const MapResult none;REQUIRE(none.operation==MapOperation::None&&none.listing_size==0xffff&&none.new_message==0xff&&!none.mse_time[0]&&!none.bytes);
+ // Malformed end records are never delivered.
+ Events e;ObexConfig cb;cb.user=&e;cb.on_map_end=[](const MapResult& r,void* u){auto& v=*static_cast<Events*>(u);v.map_result=r;++v.map_ends;};
+ const uint8_t good[15]={2,1,0,0xa0,0,3,1,0,0,0,9,3,'a','b','c'};
+ ObexPort::deliver(cb,ObexPort::MapEnd,good,14);ObexPort::deliver(cb,ObexPort::MapEnd,good,11);REQUIRE(e.map_ends==0);
+ ObexPort::deliver(cb,ObexPort::MapEnd,good,15);REQUIRE(e.map_ends==1&&e.map_result.ok&&e.map_result.listing_size==3&&e.map_result.new_message==1&&e.map_result.bytes==9&&!strcmp(e.map_result.mse_time,"abc"));
+}
+void map_operations(bool initiate){
+ Harness t(false,false,4096,initiate,true,MasChannel);if(!initiate)t.startMux();const uint8_t d=t.pbapDlci();
+ REQUIRE(t.obex.request(MapOperation::GetMessageListing,"telecom/msg/inbox",10,0,40)==Status::Ok);
+ REQUIRE(t.obex.request(MapOperation::GetFolderListing,"telecom/msg",10,0,0)==Status::Busy);
+ t.obex.service(t.now);masLookup(t,mas_record,sizeof mas_record);
+ auto s=t.obex.stats();
+ REQUIRE(s.mas_channel==MasChannel&&s.mas_version==0x0104&&s.mas_instance_id==1&&s.mas_message_types==0x0e&&s.mas_features==0x00077fff&&s.mas_l2cap_psm==0x1029&&s.pse_channel==0);
+ Packet g=setPaths(t,acceptMap(t,0x2b),{"telecom","msg","inbox"},0x2b);bth_obex_request_t r;bth_obex_header_t h;
+ REQUIRE(bth_obex_parse_request(g.bytes.data(),g.bytes.size(),&r)==BTH_OK&&r.opcode==BTH_OBEX_GET&&r.final);checkConnectionId(r,0x2b);
+ REQUIRE(bth_obex_header_find(r.headers,BTH_OBEX_H_NAME,&h)==BTH_OK&&h.data.len==0);
+ REQUIRE(bth_obex_header_find(r.headers,BTH_OBEX_H_TYPE,&h)==BTH_OK&&span(h)==zstr("x-bt/MAP-msg-listing"));
+ REQUIRE(bth_obex_header_find(r.headers,BTH_OBEX_H_APP_PARAMS,&h)==BTH_OK&&span(h)==Bytes({0x01,2,0,10,0x02,2,0,0,0x13,1,40}));
+ REQUIRE(t.obex.stats().map_state==MapState::Transferring);
+ // Listing in several responses up to the MCE maximum (1024); the first
+ // carries MessagesListingSize, NewMessage and MSETime.
+ std::string xml="<MAP-msg-listing version=\"1.0\">";
+ for(int i=0;i<12;++i)xml+="<msg handle=\"2000010000"+std::to_string(i)+"\" subject=\"Message number "+std::to_string(i)+" with a long subject\" datetime=\"20261120T0930"+std::to_string(10+i)+"\" sender_name=\"Sender "+std::to_string(i)+"\" type=\"SMS_GSM\" size=\"120\" reception_status=\"complete\" attachment_size=\"0\" priority=\"no\" read=\"no\" sent=\"no\" protected=\"no\"/>";
+ xml+="</MAP-msg-listing>";
+ const std::string time="20261120T093000+0100";
+ size_t at=0;unsigned rounds=0;
+ while(true){
+  Bytes app;if(!rounds){app={0x12,2,0,12,0x0d,1,1,0x19,uint8_t(time.size())};app.insert(app.end(),time.begin(),time.end());}
+  const size_t room=1024-3-(app.empty()?0:app.size()+3)-3,k=xml.size()-at<room?xml.size()-at:room;const bool last=at+k==xml.size();
+  if(app.empty())t.peerSend(d,build(last?0xa0:0x90,{hbytes(last?0x49:0x48,xml.substr(at,k))}));
+  else t.peerSend(d,build(last?0xa0:0x90,{hbytes(0x4c,app),hbytes(last?0x49:0x48,xml.substr(at,k))}));
+  at+=k;++rounds;if(last)break;REQUIRE(t.await(d).bytes==Bytes({0x83,0,3})); // Continuation GET.
+ }
+ REQUIRE(rounds>2);closeMap(t,0x2b);
+ REQUIRE(t.ev.map_ends==1&&t.ev.map_result.ok&&t.ev.map_result.operation==MapOperation::GetMessageListing&&t.ev.map_result.response==0xa0&&!t.ev.map_result.aborted);
+ REQUIRE(t.ev.map_result.listing_size==12&&t.ev.map_result.new_message==1&&time==t.ev.map_result.mse_time&&t.ev.map_result.bytes==xml.size()&&t.ev.map==xml);
+ s=t.obex.stats();REQUIRE(s.map_completed==1&&s.map_failed==0&&s.map_bytes==xml.size()&&s.pbap_completed==0&&s.pbap_bytes==0&&s.last_response==0xa0&&t.ev.pb_ends==0);
+ if(initiate){REQUIRE(t.voice.closeRequested());return;} // The idle initiated mux retires its L2CAP channel.
+ REQUIRE(!t.voice.closeRequested());
+ // Cached MAS: folder listing (no Name header, no SubjectLength) skips SDP.
+ t.peer_closed.clear();t.ev.map.clear();REQUIRE(t.obex.request(MapOperation::GetFolderListing,"telecom/msg",1024,0,99)==Status::Ok);t.obex.service(t.now);REQUIRE(!t.obex.sdpWanted());
+ g=setPaths(t,acceptMap(t,0x31),{"telecom","msg"},0x31);
+ REQUIRE(bth_obex_parse_request(g.bytes.data(),g.bytes.size(),&r)==BTH_OK&&r.opcode==BTH_OBEX_GET);checkConnectionId(r,0x31);
+ REQUIRE(bth_obex_header_find(r.headers,BTH_OBEX_H_NAME,&h)!=BTH_OK);
+ REQUIRE(bth_obex_header_find(r.headers,BTH_OBEX_H_TYPE,&h)==BTH_OK&&span(h)==zstr("x-obex/folder-listing"));
+ REQUIRE(bth_obex_header_find(r.headers,BTH_OBEX_H_APP_PARAMS,&h)==BTH_OK&&span(h)==Bytes({0x01,2,0x04,0x00,0x02,2,0,0}));
+ const std::string folders="<?xml version=\"1.0\"?><folder-listing version=\"1.0\"><folder name=\"inbox\"/><folder name=\"outbox\"/><folder name=\"sent\"/><folder name=\"deleted\"/><folder name=\"draft\"/></folder-listing>";
+ t.peerSend(d,build(0xa0,{hbytes(0x4c,Bytes({0x11,2,0,5})),hbytes(0x49,folders)}));closeMap(t,0x31);
+ REQUIRE(t.ev.map_ends==2&&t.ev.map_result.ok&&t.ev.map_result.operation==MapOperation::GetFolderListing&&t.ev.map_result.listing_size==5&&t.ev.map_result.new_message==0xff&&!t.ev.map_result.mse_time[0]&&t.ev.map==folders);
+ // Message by handle: no SETPATH; Name=handle, Attachment off, Charset UTF-8.
+ t.peer_closed.clear();t.ev.map.clear();REQUIRE(t.obex.request(MapOperation::GetMessage,"20000100001",0,0,0)==Status::Ok);t.obex.service(t.now);
+ g=acceptMap(t,0x32);REQUIRE(bth_obex_parse_request(g.bytes.data(),g.bytes.size(),&r)==BTH_OK&&r.opcode==BTH_OBEX_GET);checkConnectionId(r,0x32);
+ REQUIRE(bth_obex_header_find(r.headers,BTH_OBEX_H_NAME,&h)==BTH_OK&&span(h)==text16("20000100001"));
+ REQUIRE(bth_obex_header_find(r.headers,BTH_OBEX_H_TYPE,&h)==BTH_OK&&span(h)==zstr("x-bt/message"));
+ REQUIRE(bth_obex_header_find(r.headers,BTH_OBEX_H_APP_PARAMS,&h)==BTH_OK&&span(h)==Bytes({0x0a,1,0,0x14,1,1}));
+ const std::string message="BEGIN:BMSG\r\nVERSION:1.0\r\nSTATUS:UNREAD\r\nTYPE:SMS_GSM\r\nFOLDER:telecom/msg/inbox\r\nBEGIN:VCARD\r\nVERSION:2.1\r\nN:Doe;Jane\r\nTEL:+15550100\r\nEND:VCARD\r\n"
+  "BEGIN:BENV\r\nBEGIN:BBODY\r\nCHARSET:UTF-8\r\nLENGTH:46\r\nBEGIN:MSG\r\nSee you at 10 \xe2\x98\x95\r\nEND:MSG\r\nEND:BBODY\r\nEND:BENV\r\nEND:BMSG\r\n";
+ t.peerSend(d,build(0x90,{hbytes(0x48,message.substr(0,100))}));REQUIRE(t.await(d).bytes==Bytes({0x83,0,3}));
+ t.peerSend(d,build(0xa0,{hbytes(0x49,message.substr(100))}));closeMap(t,0x32);
+ REQUIRE(t.ev.map_ends==3&&t.ev.map_result.ok&&t.ev.map_result.operation==MapOperation::GetMessage&&t.ev.map_result.bytes==message.size()&&t.ev.map==message&&t.ev.map_result.listing_size==0xffff);
+ REQUIRE(t.obex.stats().map_completed==3&&t.obex.stats().mas_channel==MasChannel&&!t.voice.closeRequested());
+}
+void map_failures(){
+ Harness t(false,false,4096,false,true,MasChannel);t.startMux();const uint8_t d=t.pbapDlci();
+ // CONNECT refused: failure with the MSE code; no OBEX DISCONNECT, DLC closed.
+ REQUIRE(t.obex.request(MapOperation::GetMessageListing,"telecom/msg/inbox",10,0,0)==Status::Ok);t.obex.service(t.now);masLookup(t,mas_record,sizeof mas_record);
+ t.await(d);t.peerSend(d,build(0xc3,{}));t.run(15);
+ REQUIRE(t.ev.map_ends==1&&!t.ev.map_result.ok&&t.ev.map_result.response==0xc3&&t.peer_closed.count(d)&&t.inbox[d].empty()&&t.obex.stats().map_state==MapState::Idle);
+ // A refused SETPATH segment: DISCONNECT, failure with that code.
+ t.peer_closed.clear();REQUIRE(t.obex.request(MapOperation::GetMessageListing,"telecom/msg/nope",10,0,0)==Status::Ok);t.obex.service(t.now);
+ Packet p=setPaths(t,acceptMap(t,3),{"telecom","msg"},3);t.peerSend(d,build(0xc4,{}));closeMap(t,3);
+ REQUIRE(t.ev.map_ends==2&&!t.ev.map_result.ok&&t.ev.map_result.response==0xc4);
+ // GET error (unknown handle): DISCONNECT, failure with the code.
+ t.peer_closed.clear();REQUIRE(t.obex.request(MapOperation::GetMessage,"FFFF",0,0,0)==Status::Ok);t.obex.service(t.now);
+ acceptMap(t,4);t.peerSend(d,build(0xc6,{}));closeMap(t,4);
+ REQUIRE(t.ev.map_ends==3&&!t.ev.map_result.ok&&t.ev.map_result.response==0xc6&&t.obex.stats().last_response==0xc6);
+ // Abort after the first body packet: ABORT (Connection ID), then DISCONNECT.
+ t.peer_closed.clear();t.ev.map.clear();REQUIRE(t.obex.request(MapOperation::GetMessage,"0123456789abcdef",0,0,0)==Status::Ok);t.obex.service(t.now);
+ acceptMap(t,7);REQUIRE(t.obex.abort()==Status::Unsupported&&t.obex.mapAbort()==Status::Ok);t.peerSend(d,build(0x90,{hbytes(0x48,std::string("BEGIN:BMSG\r\n"))}));
+ Packet a=t.await(d);bth_obex_request_t r;REQUIRE(bth_obex_parse_request(a.bytes.data(),a.bytes.size(),&r)==BTH_OK&&r.opcode==BTH_OBEX_ABORT);checkConnectionId(r,7);
+ t.peerSend(d,build(0xa0,{}));closeMap(t,7);
+ REQUIRE(t.ev.map_ends==4&&!t.ev.map_result.ok&&t.ev.map_result.aborted&&t.ev.map=="BEGIN:BMSG\r\n"&&t.obex.mapAbort()==Status::InvalidArgument);
+ // Silent MSE: the response deadline fails the operation and closes the DLC.
+ t.peer_closed.clear();REQUIRE(t.obex.request(MapOperation::GetFolderListing,"",10,0,0)==Status::Ok);t.obex.service(t.now);
+ p=acceptMap(t,8);REQUIRE(p.bytes[0]==0x83); // Root folder: no SETPATH.
+ t.tick(ObexPort::ResponseTimeoutMs+1);t.run(10);
+ REQUIRE(t.ev.map_ends==5&&!t.ev.map_result.ok&&t.ev.map_result.response==0&&t.peer_closed.count(d)&&t.obex.stats().map_state==MapState::Idle);
+ // Malformed response (header overrun): protocol error, DLC closed.
+ t.peer_closed.clear();REQUIRE(t.obex.request(MapOperation::GetMessage,"1",0,0,0)==Status::Ok);t.obex.service(t.now);
+ acceptMap(t,9);t.peerSend(d,Bytes({0x90,0,6,0x48,0,9}));t.run(15);
+ REQUIRE(t.ev.map_ends==6&&!t.ev.map_result.ok&&t.peer_closed.count(d)&&t.obex.stats().protocol_errors==1&&!t.voice.closeRequested());
+ // Link loss mid-transfer: the MSE drops the DLC; the partial body was delivered.
+ t.peer_closed.clear();t.ev.map.clear();REQUIRE(t.obex.request(MapOperation::GetMessage,"2",0,0,0)==Status::Ok);t.obex.service(t.now);
+ acceptMap(t,10);t.peerSend(d,build(0x90,{hbytes(0x48,std::string("BEGIN:BMSG"))}));REQUIRE(t.await(d).bytes==Bytes({0x83,0,3}));
+ size_t n=0;REQUIRE(bth_rfcomm_disconnect(&t.peer,19,d,t.now,t.reply,sizeof t.reply,&n)==BTH_OK);t.to_voice.emplace_back(t.reply,t.reply+n);t.run(10);
+ REQUIRE(t.ev.map_ends==7&&!t.ev.map_result.ok&&!t.ev.map_result.aborted&&t.ev.map_result.response==0&&t.ev.map=="BEGIN:BMSG"&&t.obex.stats().map_state==MapState::Idle);
+ REQUIRE(t.obex.stats().map_failed==7&&t.obex.stats().map_completed==0);
+ // Abort before OBEX (SDP stage) completes at once; input validation.
+ Harness u(false,false,4096,false,true,MasChannel);REQUIRE(u.obex.request(MapOperation::GetMessageListing,"telecom/msg/inbox",1,0,0)==Status::Ok);REQUIRE(u.obex.mapAbort()==Status::Ok);u.events();
+ REQUIRE(u.ev.map_ends==1&&u.ev.map_result.aborted&&u.ev.map_result.operation==MapOperation::GetMessageListing&&u.obex.stats().map_state==MapState::Idle);
+ REQUIRE(u.obex.request(MapOperation::None,"x",1,0,0)==Status::InvalidArgument&&u.obex.request(MapOperation::GetFolderListing,nullptr,1,0,0)==Status::InvalidArgument);
+ for(const char* bad:{"","12345678901234567","12g4","20 1","0x12"})REQUIRE(u.obex.request(MapOperation::GetMessage,bad,0,0,0)==Status::InvalidArgument);
+ std::string longest(ObexPort::PathBytes-1,'a'),too_long(ObexPort::PathBytes,'a');
+ REQUIRE(u.obex.request(MapOperation::GetMessageListing,too_long.c_str(),1,0,0)==Status::InvalidArgument);
+ REQUIRE(u.obex.request(MapOperation::GetMessageListing,longest.c_str(),1,0,0)==Status::Ok&&u.obex.mapAbort()==Status::Ok);u.events();REQUIRE(u.ev.map_ends==2);
+ // A MAS that is not in the phone's SDP database fails the lookup.
+ REQUIRE(u.obex.request(MapOperation::GetMessage,"ABCDEF0123456789",0,0,0)==Status::Ok);u.obex.service(u.now);u.obex.sdpConnecting();u.obex.sdpOpened(672);
+ uint8_t req[64];REQUIRE(u.obex.sdpRequest(req,sizeof req,n)&&n==33&&req[9]==0x32);const uint8_t empty[]={0x07,req[1],req[2],0x00,0x05,0x00,0x02,0x35,0x00,0x00};u.obex.sdpReceive(empty,sizeof empty);
+ REQUIRE(u.obex.sdpFinished());u.obex.sdpClosed();u.events();REQUIRE(u.ev.map_ends==3&&!u.ev.map_result.ok&&u.obex.stats().map_state==MapState::Idle&&u.obex.stats().mas_channel==0);
+}
+void map_version_10(){
+ // A MAP 1.0 MSE (no MapSupportedFeatures): CONNECT carries no app parameters;
+ // a listing response without size/time parameters reports them absent.
+ Harness t(false,false,4096,false,true,MasChannel);t.startMux();const uint8_t d=t.pbapDlci();
+ REQUIRE(t.obex.request(MapOperation::GetMessageListing,"/telecom/msg/inbox/",0,0,0)==Status::Ok);t.obex.service(t.now);masLookup(t,mas10_record,sizeof mas10_record);
+ const auto s=t.obex.stats();REQUIRE(s.mas_version==0x0100&&s.mas_instance_id==0&&s.mas_message_types==0x02&&s.mas_features==0&&s.mas_l2cap_psm==0);
+ Packet g=setPaths(t,acceptMap(t,0x40,false),{"telecom","msg","inbox"},0x40);bth_obex_request_t r;bth_obex_header_t h;
+ REQUIRE(bth_obex_parse_request(g.bytes.data(),g.bytes.size(),&r)==BTH_OK&&r.opcode==BTH_OBEX_GET&&bth_obex_header_find(r.headers,BTH_OBEX_H_APP_PARAMS,&h)==BTH_OK&&span(h)==Bytes({0x01,2,0,0,0x02,2,0,0}));
+ // MaxListCount 0: size only, no body. Oversized MSETime is truncated to 23.
+ const std::string time(30,'7');Bytes app={0x12,2,0x01,0x2c,0x19,uint8_t(time.size())};app.insert(app.end(),time.begin(),time.end());
+ t.peerSend(d,build(0xa0,{hbytes(0x4c,app)}));closeMap(t,0x40);
+ REQUIRE(t.ev.map_ends==1&&t.ev.map_result.ok&&t.ev.map_result.listing_size==300&&t.ev.map_result.bytes==0&&strlen(t.ev.map_result.mse_time)==23&&t.ev.map.empty());
+}
+void map_and_pbap_share_client(){
+ // One OBEX client link: a MAP operation makes PBAP Busy and vice versa; each
+ // abort only touches its own profile. Caches are per profile.
+ Harness t(false,true,4096,false,true,MasChannel);t.startMux();
+ REQUIRE(t.obex.request(MapOperation::GetMessageListing,"telecom/msg/inbox",5,0,0)==Status::Ok);
+ REQUIRE(t.obex.request(PbapOperation::PullPhonebook,"telecom/pb.vcf",5,0)==Status::Busy&&t.obex.abort()==Status::InvalidArgument);
+ t.obex.service(t.now);masLookup(t,mas_record,sizeof mas_record);
+ const uint8_t d=t.pbapDlci();setPaths(t,acceptMap(t,0x50),{"telecom","msg","inbox"},0x50);
+ REQUIRE(t.obex.stats().pbap_state==PbapState::Idle&&t.obex.stats().map_state==MapState::Transferring);
+ t.peerSend(d,build(0xa0,{hbytes(0x49,std::string("<MAP-msg-listing version=\"1.0\"/>"))}));closeMap(t,0x50);REQUIRE(t.ev.map_ends==1&&t.ev.map_result.ok&&t.ev.pb_ends==0);
+ // PBAP next: the PSE is not cached by the MAS lookup.
+ REQUIRE(t.obex.request(PbapOperation::PullPhonebook,"telecom/pb.vcf",5,0)==Status::Ok);t.obex.service(t.now);REQUIRE(t.obex.sdpWanted());
+ REQUIRE(t.obex.request(MapOperation::GetMessage,"1",0,0,0)==Status::Busy&&t.obex.mapAbort()==Status::InvalidArgument);
+ REQUIRE(t.obex.stats().pbap_state==PbapState::ServiceDiscovery&&t.obex.stats().map_state==MapState::Idle);
+ REQUIRE(t.obex.abort()==Status::Ok);t.events();REQUIRE(t.ev.pb_ends==1&&t.ev.result.aborted&&t.ev.map_ends==1);
+ // The cached MAS still skips SDP afterwards.
+ REQUIRE(t.obex.request(MapOperation::GetMessage,"1",0,0,0)==Status::Ok);t.obex.service(t.now);REQUIRE(!t.obex.sdpWanted()&&t.obex.stats().map_state==MapState::Transport);
+ REQUIRE(t.obex.mapAbort()==Status::Ok);t.events();REQUIRE(t.ev.map_ends==2&&t.ev.map_result.aborted);
+}
 }
 int main(){
  setvbuf(stdout,nullptr,_IONBF,0);
  opp_push_streaming();opp_backpressure();opp_errors();pbap_pull(false);pbap_pull(true);pbap_failures();pbap_listing();opp_and_pbap_share_mux();
- std::printf("OBEX_OPP_PBAP_PROFILES_PASS checks=%u (real RFCOMM both ends, scripted OPP client/PSE; no radio)\n",checks);return 0;
+ const unsigned before=checks;
+ map_off_identity();map_operations(false);map_operations(true);map_failures();map_version_10();map_and_pbap_share_client();
+ std::printf("MAP_MCE_PROFILES_PASS checks=%u (scripted MSE: SDP, CONNECT target, SETPATH, GET listing/message, continuation, errors, abort, timeout, link loss)\n",checks-before);
+ std::printf("OBEX_OPP_PBAP_PROFILES_PASS checks=%u (real RFCOMM both ends, scripted OPP client/PSE/MSE; no radio)\n",checks);return 0;
 }

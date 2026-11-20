@@ -129,7 +129,7 @@ Status OwnedHost::begin(const OwnedHostConfig& config,const OwnedHostHooks& hook
   if(config_.hid->classOfDevice())gap_.config.class_of_device=config_.hid->classOfDevice();
   config_.hid->bind(control_);config_.hid->reset(0);
  }
- // Optional OBEX (OPP server / PBAP client) shares the same RFCOMM owner; its
+ // Optional OBEX (OPP server / PBAP / MAP client) shares the same RFCOMM owner; its
  // records and EIR UUIDs are likewise added only when enabled.
  obex_sdp_cid_=obex_rfcomm_cid_=0;
  if(config_.voice_control&&config_.voice_config.obex){

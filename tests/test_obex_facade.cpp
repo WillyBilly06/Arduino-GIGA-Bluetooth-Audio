@@ -45,7 +45,7 @@ Status radioAvrcpCommand(AvrcpCommand,uint32_t,uint32_t&){return Status::Unsuppo
 Status radioAvrcpCancel(uint32_t,uint32_t){return Status::Unsupported;}
 }}
 namespace {
-struct Seen {std::string name,data;uint32_t length=0;unsigned begins=0,ends=0,pb_ends=0;bool ok=false;PbapResult result;std::thread::id thread;};
+struct Seen {std::string name,data;uint32_t length=0;unsigned begins=0,ends=0,pb_ends=0,map_ends=0;bool ok=false;PbapResult result;MapResult map;std::thread::id thread,map_thread;};
 GigaBredr* current=nullptr;Seen seen;bth_rfcomm_t peer{};uint16_t cid=0;uint8_t reply[600];size_t read=0;Bytes inbox;
 void send(const uint8_t* p,size_t n){if(n)actor->acl(0x25,cid,Bytes(p,p+n));}
 void tick(GigaBredr& r){
@@ -77,6 +77,8 @@ int main(){
  const ObexConfig defaults;
  CHECK(!defaults.opp_enabled&&!defaults.pbap_enabled&&defaults.opp_channel==4&&defaults.event_buffer_bytes==4096&&!strcmp(defaults.opp_service_name,"GIGA Object Push"));
  CHECK(r.pbapPullPhonebook()==Status::Unsupported&&r.pbapAbort()==Status::Unsupported&&r.obexStats(stats)==Status::Unsupported);
+ CHECK(!defaults.map_enabled&&!defaults.on_map_data&&!defaults.on_map_end);
+ CHECK(r.mapGetFolderListing()==Status::Unsupported&&r.mapGetMessageListing()==Status::Unsupported&&r.mapGetMessage("1")==Status::Unsupported&&r.mapAbort()==Status::Unsupported);
  // Default disabled: no OBEX storage, records, EIR UUIDs or RFCOMM owner.
  CHECK(r.begin(config)==Status::Ok);CHECK(!r.impl_->obex&&!actor->config.voice_control&&r.pbapPullVcardListing()==Status::Unsupported&&r.obexStats(stats)==Status::Unsupported);
  actor->boot();CHECK(actor->host.classic_.record_count_==2&&actor->host.gap_.config.uuid_count==1);r.end();
@@ -97,6 +99,7 @@ int main(){
  enabled.obex.on_phonebook_end=[](const PbapResult& res,void* u){auto& s=*static_cast<Seen*>(u);s.result=res;++s.pb_ends;};
  CHECK(r.begin(enabled)==Status::Ok&&r.impl_->obex&&r.impl_->obex->profiles&&actor->config.voice_control==r.impl_->obex->profiles&&actor->config.voice_config.obex==&r.impl_->obex->port);
  CHECK(r.obexStats(stats)==Status::Ok&&stats.opp_enabled&&stats.pbap_enabled&&!stats.opp_connected&&stats.pbap_state==PbapState::Idle);
+ CHECK(!stats.map_enabled&&r.mapGetMessageListing()==Status::Unsupported&&r.mapAbort()==Status::Unsupported); // MAP not enabled.
  // Nonblocking contention, and a pull with no phone connected fails promptly.
  CHECK(contended(r,[&]{return r.pbapPullPhonebook();})==Status::Busy&&contended(r,[&]{return r.pbapAbort();})==Status::Busy);
  CHECK(r.pbapAbort()==Status::InvalidArgument&&r.pbapPullPhonebook(nullptr)==Status::InvalidArgument);
@@ -115,5 +118,34 @@ int main(){
  CHECK(actor->config.voice_control==r.impl_->serial->profiles&&actor->config.voice_config.obex==&r.impl_->obex->port&&actor->config.voice_config.serial==&r.impl_->serial->port);
  actor->boot();CHECK(actor->host.classic_.record_count_==5&&actor->host.gap_.config.uuid_count==4);
  r.end();CHECK(!actor&&detail::memoryStats().current_blocks==0);
+ // ---- MAP client facade ----
+ const unsigned before=checks;
+ {ReceiverConfig c=config;c.obex.map_enabled=true;c.obex.event_buffer_bytes=1024;CHECK(r.begin(c)==Status::InvalidArgument&&!actor&&detail::memoryStats().current_blocks==0);}
+ {ReceiverConfig c=config;c.obex.map_enabled=true;c.enable_a2dp=false;c.ble.enabled=true;CHECK(r.begin(c)==Status::Unsupported&&!actor&&detail::memoryStats().current_blocks==0);}
+ ReceiverConfig maponly=config;maponly.obex.map_enabled=true;maponly.obex.user=&seen;
+ maponly.obex.on_map_end=[](const MapResult& res,void* u){auto& s=*static_cast<Seen*>(u);s.map=res;++s.map_ends;s.map_thread=std::this_thread::get_id();};
+ CHECK(r.begin(maponly)==Status::Ok&&r.impl_->obex&&r.impl_->obex->profiles&&actor->config.voice_config.obex==&r.impl_->obex->port);
+ CHECK(r.obexStats(stats)==Status::Ok&&stats.map_enabled&&!stats.pbap_enabled&&!stats.opp_enabled&&stats.map_state==MapState::Idle);
+ CHECK(r.pbapPullPhonebook()==Status::Unsupported&&r.pbapAbort()==Status::Unsupported);
+ // MAP alone adds no SDP record or EIR UUID.
+ actor->boot();CHECK(actor->host.classic_.record_count_==2&&actor->host.gap_.config.uuid_count==1);
+ CHECK(contended(r,[&]{return r.mapGetMessageListing();})==Status::Busy&&contended(r,[&]{return r.mapGetMessage("1");})==Status::Busy&&
+       contended(r,[&]{return r.mapGetFolderListing();})==Status::Busy&&contended(r,[&]{return r.mapAbort();})==Status::Busy);
+ CHECK(r.mapAbort()==Status::InvalidArgument&&r.mapGetMessage(nullptr)==Status::InvalidArgument&&r.mapGetMessage("")==Status::InvalidArgument&&
+       r.mapGetMessage("not-hex")==Status::InvalidArgument&&r.mapGetMessage("12345678901234567")==Status::InvalidArgument&&r.mapGetFolderListing(nullptr)==Status::InvalidArgument);
+ // No phone connected: admitted, then exactly one failed result from poll().
+ CHECK(r.mapGetMessageListing("telecom/msg/inbox",10,0,20)==Status::Ok&&r.mapGetFolderListing()==Status::Busy&&r.mapGetMessage("0A")==Status::Busy);
+ CHECK(r.obexStats(stats)==Status::Ok&&stats.map_state!=MapState::Idle);
+ for(unsigned i=0;i<5;++i)tick(r);
+ CHECK(seen.map_ends==1&&!seen.map.ok&&seen.map.response==0&&seen.map.operation==MapOperation::GetMessageListing&&seen.map_thread==std::this_thread::get_id());
+ CHECK(r.obexStats(stats)==Status::Ok&&stats.map_failed==1&&stats.map_state==MapState::Idle);
+ // Abort before OBEX: Ok, then one aborted result.
+ CHECK(r.mapGetMessage("0123456789ABCDEF")==Status::Ok&&r.mapAbort()==Status::Ok);tick(r);CHECK(seen.map_ends==2&&seen.map.aborted&&seen.map.operation==MapOperation::GetMessage);
+ r.end();CHECK(!actor&&detail::memoryStats().current_blocks==0);
+ // MAP with PBAP and OPP: still the PBAP/OPP records and UUIDs only.
+ ReceiverConfig all=enabled;all.obex.map_enabled=true;CHECK(r.begin(all)==Status::Ok);actor->boot();CHECK(actor->host.classic_.record_count_==4&&actor->host.gap_.config.uuid_count==3);
+ CHECK(r.mapGetFolderListing()==Status::Ok&&r.pbapPullPhonebook()==Status::Busy&&r.pbapAbort()==Status::InvalidArgument&&r.mapAbort()==Status::Ok);
+ r.end();CHECK(!actor&&detail::memoryStats().current_blocks==0);
+ printf("MAP_MCE_FACADE_PASS checks=%u (validation, Unsupported/Busy/InvalidArgument, poll() delivery, no record/UUID)\n",checks-before);
  printf("OBEX_FACADE_PASS checks=%u (real facade+actor; synthetic HCI; no radio)\n",checks);
 }

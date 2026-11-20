@@ -32,15 +32,20 @@ bool bth_sdp_client_init(bth_sdp_client_t* c,uint16_t uuid,uint8_t* b,size_t cap
  if(!c)return false;memset(c,0,sizeof *c);if(!b||capacity<16||!uuid)return false;
  c->buffer=b;c->capacity=capacity;c->uuid=uuid;c->transaction=tid;c->initialized=true;return true;
 }
+bool bth_sdp_client_set_attributes(bth_sdp_client_t* c,const uint8_t* list,size_t n){
+ if(!c||!c->initialized||c->rounds||!list||n<2||n>BTH_SDP_CLIENT_MAX_ATTRIBUTE_LIST||list[0]!=0x35||list[1]!=n-2)return false;
+ c->attributes=list;c->attributes_len=n;return true;
+}
 bth_status_t bth_sdp_client_request(bth_sdp_client_t* c,uint8_t* out,size_t capacity,size_t* written){
- static const uint8_t attributes[]={0x35,15,0x09,0x00,0x04,0x09,0x00,0x09,0x09,0x02,0x00,0x09,0x03,0x14,0x09,0x03,0x17};
- size_t n,at;
+ static const uint8_t defaults[]={0x35,15,0x09,0x00,0x04,0x09,0x00,0x09,0x09,0x02,0x00,0x09,0x03,0x14,0x09,0x03,0x17};
+ const uint8_t* attributes;size_t length,n,at;
  if(written)*written=0;if(!c||!out||!written)return BTH_ERR_PARAM;if(!c->initialized||c->awaiting||c->complete)return BTH_ERR_STATE;
  if(c->rounds>=32)return BTH_ERR_CAPACITY;
- n=5+5+2+sizeof attributes+1+c->continuation[0];if(capacity<n)return BTH_ERR_CAPACITY;
+ attributes=c->attributes?c->attributes:defaults;length=c->attributes?c->attributes_len:sizeof defaults;
+ n=5+5+2+length+1+c->continuation[0];if(capacity<n)return BTH_ERR_CAPACITY;
  ++c->transaction;out[0]=0x06;put16(out+1,c->transaction);put16(out+3,(uint16_t)(n-5));
  out[5]=0x35;out[6]=3;out[7]=0x19;put16(out+8,c->uuid);put16(out+10,BTH_SDP_CLIENT_MAX_ATTRIBUTE_BYTES);
- memcpy(out+12,attributes,sizeof attributes);at=12+sizeof attributes;
+ memcpy(out+12,attributes,length);at=12+length;
  memcpy(out+at,c->continuation,1u+c->continuation[0]);
  c->awaiting=true;++c->rounds;*written=n;return BTH_OK;
 }
@@ -95,7 +100,9 @@ bth_status_t bth_sdp_client_parse(const uint8_t* p,size_t n,bth_sdp_service_t* s
    else if(attribute==0x0009&&value.type==6)profile(value.value,&candidate);
    else if(attribute==0x0200&&uint_value(&value,&v)&&value.value.len==2)candidate.goep_l2cap_psm=(uint16_t)v;
    else if(attribute==0x0314&&uint_value(&value,&v)&&value.value.len==1)candidate.supported_repositories=(uint8_t)v;
-   else if(attribute==0x0317&&uint_value(&value,&v)&&value.value.len==4)candidate.supported_features=v;
+   else if(attribute==0x0315&&uint_value(&value,&v)&&value.value.len==1){candidate.mas_instance_id=(uint8_t)v;candidate.has_mas_instance=true;}
+   else if(attribute==0x0316&&uint_value(&value,&v)&&value.value.len==1)candidate.supported_message_types=(uint8_t)v;
+   else if(attribute==0x0317&&uint_value(&value,&v)&&value.value.len==4){candidate.supported_features=v;candidate.has_supported_features=true;}
   }
   if(candidate.rfcomm_channel&&!s->found){*s=candidate;s->found=true;}
  }
