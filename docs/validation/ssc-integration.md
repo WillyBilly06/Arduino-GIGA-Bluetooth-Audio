@@ -100,3 +100,21 @@ with only a notice and build guard added (`src/vendor/codecs/ssc/manifest.json`)
 * Not exercised: legacy UHQ `0x80` from a real sender, 886k frames larger than the
   2048-byte automatic SDU, packet loss concealment (a bad frame is dropped, not
   concealed), and clock-compensation behaviour with 864-sample blocks.
+
+## Over-the-air results (2026-11-20)
+
+Sender: Ubuntu VM PipeWire with an SSC encoder plugin built from
+github.com/WillyBilly06/samsung-ssc-encoder (frames byte-identical to the
+reference `ssc_enc_tool` at 44.1 kHz/192k). Audio from Firefox. Receiver: the
+GIGA `Receiver` example on the M7, SSC endpoint SEID 10, caps `0x3E`.
+
+| Mode (negotiated flags) | Window | RTP packets | Decode errors | RTP gaps | Missing PCM | Worst M7 decode per packet |
+|---|---|---|---|---|---|---|
+| UHQ v2 96 kHz/24 (`0x0A`, 584 kb/s) | 58 s | 6,444 | 0 | 0 | 0 | 3,185 us |
+| HiFi 48 kHz/24 (`0x0C`) | 44 s | 2,444 | 0 | 0 | 0 | 3,134 us |
+| 44.1 kHz/16 | 44 s | 2,246 | 0 | 0 | 0 | 3,158 us |
+
+This supersedes the "no M7 real-time measurement" and "no over-the-air"
+limits below for these three modes. Still not established: Galaxy phone
+interoperability (the sender here is not Samsung's stack), ABR switching under a
+congested link, legacy UHQ 0x80, 886k frames, and listening quality.
