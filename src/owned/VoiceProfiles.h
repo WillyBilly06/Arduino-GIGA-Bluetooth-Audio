@@ -3,6 +3,7 @@
 #include "HfpControl.h"
 #include "HspControl.h"
 #include "SppPort.h"
+#include "ObexPort.h"
 extern "C" {
 #include "core/bth_rfcomm.h"
 #include "core/bth_control_tx.h"
@@ -16,6 +17,9 @@ struct VoiceControlConfig {
  // Optional caller-owned Serial Port DLC on the same RFCOMM mux. The caller
  // begins it before this owner and retains it through OwnedHost::end().
  SppPort* serial=nullptr;
+ // Optional caller-owned OBEX endpoints (OPP server listener, PBAP client DLC)
+ // on the same mux; begun before this owner and retained like serial.
+ ObexPort* obex=nullptr;
 };
 struct VoiceControlStats {
  uint32_t received_frames=0,consumed_frames=0,transmitted_frames=0,backpressure=0;
@@ -25,14 +29,15 @@ public:
  static constexpr unsigned InformationBytes=127,FrameBytes=136,ReceiveWindow=2,TransmitSlots=2;
  // A bulk SPP frame enters the shared Classic control FIFO only when this many
  // peer slots are free: signaling/AVDTP/AVRCP replies are never queued behind it.
- static constexpr unsigned SerialIndex=2,BulkReserve=3;
+ static constexpr unsigned SerialIndex=2,BulkReserve=3,Slots=5; // HF, HS, SPP, OPP, PBAP.
  Status begin(const VoiceControlConfig&,bth_control_tx_t&,uint8_t peer_index=0);
  void reset(uint32_t peer_owner);
  void end();
  // Boot only, before any mux: retire HF/HS but keep an admitted SPP DLC owner.
  void dropVoice();
  bool enabled()const{return active_;}
- bool channelOpened(uint32_t peer_owner,uint16_t local,uint16_t remote,uint16_t remote_mtu);
+ // initiator: this side opened the PSM 3 channel (PBAP client) and starts the mux.
+ bool channelOpened(uint32_t peer_owner,uint16_t local,uint16_t remote,uint16_t remote_mtu,bool initiator=false);
  bool channelMtuUpdated(uint32_t peer_owner,uint16_t local,uint16_t remote,uint16_t remote_mtu);
  void channelClosed(uint16_t local);
  bool receive(uint16_t local,const uint8_t*,size_t,bool secure,uint32_t now_ms);
@@ -65,9 +70,10 @@ private:
  bool enqueue(size_t,bool bulk=false);uint8_t* output();
  bool consume(Dlc&,uint32_t);void generate(Dlc&,uint32_t);
  void serviceSerial();void generateSerial(uint32_t);
+ bool obexControl(uint32_t);void generateObex(unsigned,uint32_t);bool dlcActive()const;
  VoiceControlConfig config_{};VoiceControlStats stats_{};bth_control_tx_t* replies_=nullptr;
  bth_rfcomm_t mux_{};owned::HfpControl hf_{};owned::HspControl hs_{};Dlc dlcs_[3];Tx transmit_[TransmitSlots];
- SppPort* serial_=nullptr;uint32_t bulk_at_=0;uint8_t bulk_interval_=0;bool bulk_sent_=false;
+ SppPort* serial_=nullptr;ObexPort* obex_=nullptr;bool started_=false;uint32_t bulk_at_=0;uint8_t bulk_interval_=0;bool bulk_sent_=false;
  uint32_t owner_=0,channel_generation_=0,profile_serial_=0;uint16_t local_=0,remote_=0,mtu_=0;
  uint32_t retired_owner_=0;uint16_t retired_local_=0,retired_remote_=0;bool retirement_authorized_=false;
  uint8_t peer_=0,transmit_read_=0,transmit_count_=0,next_dlc_=0;bool active_=false,close_=false,wideband_=false;

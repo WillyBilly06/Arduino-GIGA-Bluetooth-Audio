@@ -79,10 +79,12 @@ static void install_capacity(){
  Fixture f;f.host.end();f.config.voice_control=&rfcomm;f.config.voice_config.hands_free=true;f.config.voice_config.serial=&port;
  CHECK(f.host.begin(f.config,f.hooks)==Status::InvalidArgument&&!rfcomm.enabled());
  f.config.voice_config.hands_free_channel=4;CHECK(f.host.begin(f.config,f.hooks)==Status::Ok&&rfcomm.enabled()&&f.host.classic_.record_count_==3);f.host.end();CHECK(!rfcomm.enabled());
- // Sink + target + controller + HF + HS + SPP is the full six-record table.
+ // Sink + target + controller + HF + HS + SPP + OPP + PBAP PCE is the full eight-record table.
  ClassicProfiles c;bth_control_tx_t q{};bth_control_tx_init(&q);RadioCallbacks cb;cb.configure=[](const CodecConfig&,void*){return Status::Ok;};cb.volume=[](uint8_t,void*){};
  CHECK(c.begin(codecBit(Codec::Sbc),cb,q)==Status::Ok&&c.record_count_==3);VoiceSdp voice;VoiceControlConfig vc;vc.hands_free=vc.headset=true;CHECK(voice.begin(vc,true));
  CHECK(c.installVoiceRecords(port.record(),1)==Status::Ok&&c.installVoiceRecords(voice.records(),voice.count())==Status::Ok&&c.record_count_==6);
+ ObexPort obex;uint8_t ring[2048];ObexConfig oc;oc.opp_enabled=oc.pbap_enabled=true;CHECK(obex.begin(oc,ring,sizeof ring));
+ CHECK(c.installVoiceRecords(obex.records(),obex.recordCount())==Status::Ok&&c.record_count_==8);
  CHECK(c.installVoiceRecords(port.record(),1)==Status::InvalidArgument);
 }
 static void actor_data_path(){

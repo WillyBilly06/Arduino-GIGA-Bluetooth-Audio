@@ -7,6 +7,7 @@
 #include "I2sConfig.h"
 #include "GigaVoice.h"
 #include "GigaSpp.h"
+#include "GigaObex.h"
 #include "BondStorage.h"
 
 namespace giga_bredr {
@@ -55,6 +56,7 @@ struct ReceiverConfig {
     VoiceConfig voice; // Experimental, default disabled; requires Classic+I2S.
     ClassicBondStorage classic_bonds; // Optional application-owned store; default RAM-only.
     SppConfig spp; // Default disabled Serial Port Profile server; requires enable_a2dp.
+    ObexConfig obex; // Default disabled OBEX Object Push server / PBAP client; requires enable_a2dp.
 };
 struct ReceiverStats {
     AudioClockStats clock;
@@ -155,6 +157,20 @@ public:
     bool sppConnected() const;
     // Copied counters; Unsupported unless SPP is enabled for this begin().
     Status sppStats(SppStats& value) const;
+    // Phonebook Access client (config.obex.pbap_enabled). Nonblocking admission
+    // of ONE operation on the connected phone: SDP lookup of its PSE, RFCOMM
+    // DLC, OBEX CONNECT/GET/DISCONNECT. Ok is admission only; vCard bytes and
+    // exactly one PbapResult arrive through the ObexConfig callbacks from poll().
+    // Busy: radio owner busy or an operation still active. max_count 0xFFFF =
+    // no limit (0 returns only phonebook_size). Phones may prompt their user.
+    Status pbapPullPhonebook(const char* path="telecom/pb.vcf",uint16_t max_count=0xffff,uint16_t offset=0);
+    // vCard-listing XML of a folder (SETPATH per segment, then GET).
+    Status pbapPullVcardListing(const char* folder="telecom/pb",uint16_t max_count=0xffff,uint16_t offset=0);
+    // Ok: an OBEX ABORT (or teardown before OBEX) follows; on_phonebook_end
+    // still arrives with aborted=true. InvalidArgument when nothing is active.
+    Status pbapAbort();
+    // Copied counters; Unsupported unless OPP or PBAP is enabled for this begin().
+    Status obexStats(ObexStats& value) const;
     static uint32_t availableCodecs();
     using Allocate = void* (*)(size_t bytes, void* user);
     using Free = void (*)(void* pointer, void* user);

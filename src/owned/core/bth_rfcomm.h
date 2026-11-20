@@ -5,7 +5,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum { BTH_RFCOMM_PSM=3, BTH_RFCOMM_DLC_LIMIT=3, BTH_RFCOMM_MTU_LIMIT=512,
+enum { BTH_RFCOMM_PSM=3, BTH_RFCOMM_DLC_LIMIT=5, BTH_RFCOMM_MTU_LIMIT=512,
  BTH_RFCOMM_SABM=0x2f, BTH_RFCOMM_UA=0x63, BTH_RFCOMM_DM=0x0f,
  BTH_RFCOMM_DISC=0x43, BTH_RFCOMM_UIH=0xef };
 typedef enum { BTH_RFCOMM_CLOSED=0,BTH_RFCOMM_CONNECTING,BTH_RFCOMM_OPEN,BTH_RFCOMM_DISCONNECTING } bth_rfcomm_state_t;
@@ -42,6 +42,9 @@ void bth_rfcomm_close(bth_rfcomm_t*);
 bth_status_t bth_rfcomm_start(bth_rfcomm_t*,uint32_t,uint32_t now_ms,uint8_t*,size_t,size_t*);
 // Production RFCOMM1.2 initiators must try_credit=true; false supports legacy-peer fixtures.
 bth_status_t bth_rfcomm_open(bth_rfcomm_t*,uint32_t,uint8_t remote_scn,bool try_credit,uint32_t,uint8_t*,size_t,size_t*);
+// As open, with this outgoing DLC's own initial/maximum RX credit window (1..7)
+// instead of the mux window. The owner must reserve window*mtu RX bytes.
+bth_status_t bth_rfcomm_open_window(bth_rfcomm_t*,uint32_t,uint8_t remote_scn,bool try_credit,uint8_t window,uint32_t,uint8_t*,size_t,size_t*);
 // Durable TX capacity and application RX storage must be reserved before receive.
 // On errors/short output, state is unchanged and written=0. Stale generation ignored.
 bth_status_t bth_rfcomm_receive(bth_rfcomm_t*,uint32_t,uint32_t,const uint8_t*,size_t,uint8_t*,size_t,size_t*,bth_rfcomm_event_t*);
