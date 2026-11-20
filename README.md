@@ -29,6 +29,12 @@ Codecs: SBC/SBC-XQ, AAC-LC (+ experimental HE-AAC), aptX, aptX HD, LDAC,
 LHDC V5, Opus, Samsung SSC. Each is compiled in by `GBR_ENABLE_*` and its
 memory is allocated only while that codec's stream is configured.
 
+**Keep `loop()` yielding.** Arduino Mbed's RTOS does not time-slice threads
+of equal priority. A `loop()` that calls `receiver.poll()` without ever
+blocking starves the core's USB thread that performs the 1200-baud upload
+reset, so uploads then need a double-press of RESET. The examples call
+`delay(1)` each pass; do the same in your sketches.
+
 ## Earlier dev.17 notes
 
 
