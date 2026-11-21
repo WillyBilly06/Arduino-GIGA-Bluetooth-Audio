@@ -268,9 +268,8 @@ as intended.
 
 DIN was read against the LRCK frame phase (`din_only.py`). Every route,
 at every rate, decoded the exact 64-bit frame in at least 3 of 4 captures;
-120 of the 132 captures were exact in this way. Every miss was 60-63/64
-and came from the routes with the slowest sampling (3.9-5.5 MHz,
-three-port routes at 96 kHz). The folded BCLK peaked at 64 per frame in
+128 of the 132 captures were exact in this way. The 4 misses were 60-63/64,
+all from routes sampled at 3.9-5.5 MHz (three ports). The folded BCLK peaked at 64 per frame in
 every capture except four from SPI3 at 96 kHz sampled at 3.9 MHz. MCLK
 peaked at 256 fs on D68, D76 and D15 at all three rates whenever the fold
 was sharp; that is 11.29, 12.29 and 24.57 MHz. No route showed a
