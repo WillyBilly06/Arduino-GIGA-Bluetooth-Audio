@@ -1,4 +1,4 @@
-# GigaBredr 0.2.0 (experimental)
+# GigaBredr 0.2.3 (experimental)
 
 Bluetooth Classic A2DP receiver with board-pin I2S output, BLE GATT server and
 additional Classic profiles for the Arduino GIGA R1 WiFi (Cortex-M7), using a
@@ -268,6 +268,17 @@ Zero buffer fields inherit selected-codec defaults. Only the selected configurat
 Nonzero `config.codec_buffers[static_cast<size_t>(Codec::LhdcV5)]` fields override globals for that codec, for example `startup_buffer_ms=60`, `pcm_buffer_ms=70`. Nonzero `startup_packets` selects the explicit legacy compressed-packet startup/learned-target path; leave `startup_buffer_ms` zero in that same layer. Setting both startup modes together is rejected. A manual P=2H may prime audio but makes optional fixed-target tracking ineligible. See [buffering formulas and memory](docs/audio-buffering.md). Buffer capacity is not measured latency.
 
 Immutable tables remain in flash; selected decoder/buffers release on reconfiguration/end. `setExternalAllocator()` supplies allocation/free hooks, but the application must provide and initialize that memory. Audio clock control requires exclusive PLL2 ownership; stock SDRAM initialization also uses PLL2R. The library does not automatically initialize SDRAM or establish compatible external-memory clocks, placement, fragmentation or stack headroom.
+
+### Continuity options (0.2.x)
+
+These default on and can be turned off in `ReceiverConfig`:
+- `conceal_lost_packets`: fills RTP gaps up to 64 packets / 400 ms.
+- `catch_up`: +/-1% resampling while the reserve is more than 30 ms off target.
+- `queue_reserve`: up to 100 ms extra reserve held as compressed packets, at 88.2 kHz and above.
+
+`pcm_ring_d2_sram` (opt-in; the Receiver example enables it) moves the PCM ring into unused D2 SRAM as packed 24-bit samples, so the BLE coexistence reserve fits at every rate.
+
+Over-the-air status with a PipeWire sender is in [the codec matrix](docs/validation/codec-matrix-2026-11-20.md) and [the BLE coexistence A/B](docs/validation/ble-coexistence-2026-11-20.md).
 
 ## Codecs and unfinished features
 

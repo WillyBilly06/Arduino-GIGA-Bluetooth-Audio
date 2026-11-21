@@ -191,7 +191,7 @@ struct GigaBredr::Impl {
     bool conceal_enabled = false;
     int32_t* catchup_pcm = nullptr; size_t catchup_capacity = 0; // Resampled output staging.
     detail::CatchUpResampler catchup;
-    uint32_t catchup_target = 0, last_packet_frames = 0, catchup_warm = 0; // Packets decoded since configure.
+    uint32_t catchup_target = 0, catchup_queue_reserve = 0, last_packet_frames = 0, catchup_warm = 0; // Packets decoded since configure.
     size_t pcm_frames = 0;
     bool configured = false, configuration_event = false, output_owned = false, radio_owned = false;
     bool startup_buffered = false;
@@ -636,7 +636,7 @@ struct GigaBredr::Impl {
         decoder.close(); media.close();
         detail::release(packet); detail::release(pcm); detail::release(conceal_pcm); detail::release(catchup_pcm);
         packet = nullptr; pcm = nullptr; conceal_pcm = nullptr; catchup_pcm = nullptr; catchup_capacity = 0; pcm_frames = 0;
-        catchup.reset(); catchup_target = 0; last_packet_frames = 0;
+        catchup.reset(); catchup_target = 0; catchup_queue_reserve = 0; last_packet_frames = 0;
         conceal.attach(nullptr, 0, 48000); conceal_enabled = false;
         counters.decoder_memory_bytes = 0; configured = false;
         counters.buffers = {};
@@ -707,13 +707,14 @@ struct GigaBredr::Impl {
             conceal_pcm = static_cast<int32_t*>(detail::allocate(size_t(keep) * 2 * sizeof(int32_t), MemoryKind::Fast));
             conceal.attach(conceal_pcm, conceal_pcm ? keep : 0, c.sample_rate);
         }
-        catchup.reset(); catchup_target = 0; last_packet_frames = 0; catchup_warm = 0;
+        catchup.reset(); catchup_target = 0; catchup_queue_reserve = 0; last_packet_frames = 0; catchup_warm = 0;
         if (options.catch_up && options.enable_i2s && selected_buffers.startup_buffer_ms) {
             // Optional: without staging memory output stays bit-exact and unresampled.
             catchup_capacity = detail::CatchUpResampler::capacityFor(capacity);
             catchup_pcm = static_cast<int32_t*>(detail::allocate(catchup_capacity * 2 * sizeof(int32_t), MemoryKind::Fast));
             if (!catchup_pcm) catchup_capacity = 0;
             catchup_target = uint32_t(uint64_t(c.sample_rate) * selected_buffers.startup_buffer_ms / 1000u);
+            catchup_queue_reserve = options.queue_reserve && c.sample_rate >= 88200u ? c.sample_rate / 10u : 0u;
         }
         if (!++stream_epoch) ++stream_epoch;
         { Lock queue_lock(queue_mutex);
@@ -773,6 +774,13 @@ struct GigaBredr::Impl {
         wake.release();
 #endif
     }
+    // Level target: the PCM startup reserve plus, at high rates, up to 100 ms
+    // held as compressed packets (never more than a third of the queue slots,
+    // leaving room for the burst that follows a sender stall).
+    uint32_t catchUpTarget(uint32_t slots) const {
+        const uint64_t room = uint64_t(slots / 3u) * last_packet_frames;
+        return catchup_target + uint32_t(room < catchup_queue_reserve ? room : catchup_queue_reserve);
+    }
     // Pass n frames through the level catch-up stage. Returns the frames to
     // write and where they are; keeps clock inventory exact (credit/discard).
     size_t catchUp(const int32_t* in, size_t n, const int32_t*& out) {
@@ -782,8 +790,9 @@ struct GigaBredr::Impl {
         const OutputStats o = detail::i2sStats();
         // Settle first: the reserve was just built and no packet size is known yet.
         if (catchup_warm >= 32 && last_packet_frames && o.running && !detail::i2sSourceSnapshot().recovering) {
-            uint32_t queued_packets; { Lock queue_lock(queue_mutex); queued_packets = uint32_t(queue.count()); }
-            error = int64_t(o.queued_frames) + int64_t(queued_packets) * last_packet_frames - int64_t(catchup_target);
+            uint32_t queued_packets, slots; { Lock queue_lock(queue_mutex); queued_packets = uint32_t(queue.count()); slots = active_buffers.queue_packets; }
+            const uint32_t target = catchUpTarget(slots); counters.catch_up_target_frames = target;
+            error = int64_t(o.queued_frames) + int64_t(queued_packets) * last_packet_frames - int64_t(target);
         }
         const uint32_t ms = format.sample_rate / 1000u;
         catchup.control(error, 30u * ms, 8u * ms, 60u * ms);

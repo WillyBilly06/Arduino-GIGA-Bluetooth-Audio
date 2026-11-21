@@ -108,3 +108,46 @@ Limits:
 - No phone-source run.
 - A sender outage longer than the 224 ms ring still produces a short
   silence; no receiver can play audio that never arrived.
+
+## Update: 0.2.2 and 0.2.3, 12 min interleaved BLE A/B
+
+Same setup as above except the audio source: a generated 60 s broadband signal
+looped with `pw-play` (Firefox/YouTube had stopped resuming over MPRIS). The
+raw LE ATT echo client now waits for the VM adapter's slow LE connect (26-37
+s) and reconnects after a reset; neither run had an LE link drop.
+
+| Receiver | Phase | Time | BLE writes | Packet loss | Silence |
+|---|---|---|---|---|---|
+| 0.2.2 | BLE load | 342 s | 181 | 24.9% | 95.8 ms (2 windows) |
+| 0.2.2 | BLE idle | 372 s | 0 | 23.1% | 211.5 ms (3 windows) |
+| 0.2.3 | BLE load | 338 s | 182 | 10.5% | 17.4 ms (1 window) |
+| 0.2.3 | BLE idle | 378 s | 0 | 15.8% | 0 ms |
+
+Echo: 214/214 (0.2.2) and 209/209 (0.2.3) 512-byte writes echoed, 0 corrupt.
+
+0.2.2 diagnosis: silence was not BLE-related; there was more of it with BLE
+idle. In every silent window the audio timeline was complete: received plus
+concealed packets covered the full 2 s, with no unfilled gaps. The PCM level
+had fallen to ~70 ms after earlier sender stalls (arrival gaps up to 160 ms),
+and the next stall emptied it. At 192 kHz/24 the PCM ring is capped at 224 ms
+by D2 SRAM, and the target was 184 ms.
+
+0.2.3 fix (`ReceiverConfig::queue_reserve`, on by default, >= 88.2 kHz with
+`catch_up`): the level target also counts up to 100 ms held as compressed
+packets in the existing packet queue (LHDC 192k: 28 slots, 1.6 KB / 11.5 ms
+each, at most a third of the slots used). No extra memory is allocated. The
+target was 54,528 frames (284 ms), and the queue peaked at 15/28 slots with
+no overflow. The one 17 ms event came 2 minutes after the stream started,
+while catch-up was still building the reserve. Latency at 192 kHz rises by
+up to 100 ms.
+
+High-rate OTA recheck on 0.2.3, with a non-silent signal:
+- LDAC 96k/24: 812 kbps, 19.6% loss, 0 errors, 0 ms silence.
+- SSC 96k/24: 597 kbps, 0 errors, 0 ms silence.
+- LHDC 192k/24: 736 kbps, 26.9% loss, 0 errors, 0 ms silence.
+
+Limits:
+- Sender loss differed between the two runs (10-16% vs 23-25%), so the
+  comparison is indicative, not controlled.
+- One VM sender; no phone source.
+- A sender outage longer than ~284 ms still produces silence.

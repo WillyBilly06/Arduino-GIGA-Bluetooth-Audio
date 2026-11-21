@@ -67,6 +67,12 @@ struct ReceiverConfig {
     // decoded PCM is resampled by up to +/-1% until it is back within 8 ms.
     // Otherwise output is bit-exact. Requires I2S output.
     bool catch_up = true;
+    // With catch_up at 88.2 kHz and above, hold up to 100 ms of extra reserve
+    // as compressed packets in the already-allocated packet queue (at most a
+    // third of its slots). A 192 kHz/24 PCM ring is capped by memory (224 ms
+    // in D2 SRAM); compressed audio is ~7x denser, so sender stalls longer
+    // than the PCM ring no longer reach the output. Adds that much latency.
+    bool queue_reserve = true;
     uint16_t startup_buffer_ms = 0; // Zero selects the negotiated-codec real-PCM reserve.
     // false selects real BLE-only operation: no Classic admission/audio worker.
     // At least enable_a2dp or ble.enabled must be true. Audio options are unused
@@ -107,6 +113,7 @@ struct ReceiverStats {
     uint32_t concealed_unfilled_gaps = 0, concealed_max_gap_packets = 0;
     // Catch-up resampling: net PCM frames added (stretch) and removed (compress).
     uint64_t catch_up_added_frames = 0, catch_up_removed_frames = 0;
+    uint32_t catch_up_target_frames = 0; // Level target incl. any compressed-queue reserve.
 };
 class GigaBredr {
 public:

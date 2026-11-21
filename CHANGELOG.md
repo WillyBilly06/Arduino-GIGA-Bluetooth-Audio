@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.3 - 2026-11-20
+
+- `ReceiverConfig::queue_reserve` (default on, 88.2 kHz and above with
+  `catch_up`): the playback reserve extends by up to 100 ms into the
+  compressed packet queue that is already allocated. At most a third of its
+  slots are used, and no extra memory is allocated. A 192 kHz/24 PCM ring is
+  capped at 224 ms by D2 SRAM. With the extension, LHDC 192k/24/1000k
+  silence over a 12 min interleaved BLE load A/B fell from 307 ms (0.2.2) to
+  17 ms. Adds up to 100 ms latency at those rates.
+- `ReceiverStats::catch_up_target_frames`; the Receiver logs it in
+  `GBR_LOSS_CONCEAL`.
+
 ## 0.2.2 - 2026-11-20
 
 - aptX HD: decoding failed on every packet after the first discontinuity
