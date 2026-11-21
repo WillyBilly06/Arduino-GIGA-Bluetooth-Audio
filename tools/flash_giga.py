@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Flash a GIGA R1 M7 image over DFU without pressing RESET, then verify by readback.
 
-usage: python tools/flash_giga.py <image.bin> [--port COM8] [--monitor http://127.0.0.1:8765]
+usage: python tools/flash_giga.py <image.bin> [--port COM8] [--monitor http://127.0.0.1:8780]
 
 Bootloader entry, first that works:
   1. the Receiver example's 'B' console command (sent through the browser serial
@@ -77,10 +77,10 @@ def main():
     ap.add_argument("image")
     ap.add_argument("--port", default="COM8")
     ap.add_argument("--monitor", action="append", default=None,
-                    help="serial monitor base URL(s) to route through (default 8765 and 8799 on localhost)")
+                    help="serial monitor base URL(s) to route through (default 8780 on localhost)")
     ap.add_argument("--serial", default="", help="board USB serial number when several boards are attached")
     args = ap.parse_args()
-    args.monitor = args.monitor or ["http://127.0.0.1:8765", "http://127.0.0.1:8799"]
+    args.monitor = args.monitor or ["http://127.0.0.1:8780"]
     dfu = find_dfu()
     sel = ["--device", "," + VIDPID, "--alt", "0"] + (["--serial", args.serial] if args.serial else [])
 

@@ -6,8 +6,8 @@ or elsewhere on the network, sees the same live data.
 
 ```
 python -m pip install pyserial
-python tools/serial_monitor/serial_monitor.py            # http://<this-pc>:8765
-python tools/serial_monitor/serial_monitor.py --host 127.0.0.1 --port 8765 --open
+python tools/serial_monitor/serial_monitor.py            # http://<this-pc>:8780
+python tools/serial_monitor/serial_monitor.py --host 127.0.0.1 --port 8780 --open
 ```
 
 Anyone who can reach the port can read and write your serial ports. On an

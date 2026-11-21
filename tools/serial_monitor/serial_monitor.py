@@ -7,7 +7,7 @@ the same live data. Ports that disappear (a board resetting, unplugged, or
 dropping into its bootloader) are reopened automatically when they come back.
 
 usage:
-    python serial_monitor.py [--host 0.0.0.0] [--port 8765] [--open]
+    python serial_monitor.py [--host 0.0.0.0] [--port 8780] [--open]
 
 Anyone who can reach the host and port can read and write the serial ports, so
 use --host 127.0.0.1 on an untrusted network.
@@ -448,7 +448,7 @@ def lan_address():
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--host", default="0.0.0.0", help="address to listen on (default: all interfaces)")
-    ap.add_argument("--port", type=int, default=8765, help="HTTP port (default: 8765)")
+    ap.add_argument("--port", type=int, default=8780, help="HTTP port (default: 8780)")
     ap.add_argument("--open", action="store_true", help="open the UI in the default browser")
     args = ap.parse_args()
 
