@@ -157,8 +157,10 @@ void loop() {
       (unsigned long)millis(), (unsigned long long)s.lhdc_right_concealed_blocks,
       (unsigned long long)s.lhdc_right_concealed_frames, (unsigned long long)s.lhdc_frame_muted_blocks,
       (unsigned long long)s.lhdc_frame_muted_frames);
-    console.print("GBR_LOSS_CONCEAL ms=%lu gaps=%llu frames=%llu\n",(unsigned long)millis(),
-      (unsigned long long)s.concealed_gaps,(unsigned long long)s.concealed_frames);
+    console.print("GBR_LOSS_CONCEAL ms=%lu gaps=%llu frames=%llu unfilled=%lu max_gap=%lu catchup_added=%llu catchup_removed=%llu\n",(unsigned long)millis(),
+      (unsigned long long)s.concealed_gaps,(unsigned long long)s.concealed_frames,
+      (unsigned long)s.concealed_unfilled_gaps,(unsigned long)s.concealed_max_gap_packets,
+      (unsigned long long)s.catch_up_added_frames,(unsigned long long)s.catch_up_removed_frames);
     auto b=receiver.bleStats(); auto t=receiver.audioDiagnostics();
     console.print("GBR_BLE_QOS ms=%lu generation=%lu data_fragments=%lu data_bytes=%lu paced_deferrals=%lu urgent_bypasses=%lu policy_rejections=%lu\n",
       (unsigned long)millis(),(unsigned long)b.generation,(unsigned long)b.qos_data_fragments,(unsigned long)b.qos_data_bytes,
@@ -182,6 +184,12 @@ void loop() {
       (unsigned long)t.output.epoch,(unsigned long long)t.output.refills,(unsigned long long)t.output.real_frames,
       (unsigned long long)t.output.silent_frames,(unsigned long)t.output.minimum_queued,(unsigned long)t.output.record_count,
       b.advertising,b.connected,b.att_mtu,(unsigned long)b.writes,(unsigned long)b.notifications_queued,(unsigned long)b.write_command_drops);
+    // Histogram tails (cumulative; diff between lines): 20-50 ms and >50 ms.
+    console.print("GBR_LATENCY ms=%lu arrival20=%llu arrival50=%llu residence20=%llu residence50=%llu work20=%llu work50=%llu wait20=%llu wait50=%llu\n",
+      (unsigned long)millis(),(unsigned long long)t.rtp.arrival_gaps.buckets[5],(unsigned long long)t.rtp.arrival_gaps.buckets[6],
+      (unsigned long long)t.queue.residence.buckets[5],(unsigned long long)t.queue.residence.buckets[6],
+      (unsigned long long)t.work.elapsed.buckets[5],(unsigned long long)t.work.elapsed.buckets[6],
+      (unsigned long long)t.work.write_wait.buckets[5],(unsigned long long)t.work.write_wait.buckets[6]);
     console.print("GBR_RTP epoch=%lu source_packets=%llu first_ts=%lu last_ts=%lu first_us=%lu last_us=%lu clock_disc=%llu source_changes=%llu queue_residence_total_us=%llu work_total_us=%llu decode_total_us=%llu wait_total_us=%llu discontinuities=%llu timestamp_steps=%llu inner_steps=%llu payload_unknown=%llu payload_malformed=%llu disc_records=%lu disc_not_retained=%llu\n",
       (unsigned long)t.rtp.epoch,(unsigned long long)t.rtp.source_packets,
       (unsigned long)t.rtp.source_first_timestamp,(unsigned long)t.rtp.source_last_timestamp,

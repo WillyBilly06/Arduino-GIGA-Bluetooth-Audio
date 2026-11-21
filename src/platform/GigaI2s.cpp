@@ -24,6 +24,7 @@ PcmRecovery recovery;
 uint32_t timingEpoch=0;
 I2sRing* ring=nullptr;
 void* arena=nullptr;
+uint32_t recoveryResumeMs=0;
 bool arenaD2=false,useD2Arena=false; // arenaD2: arena is the fixed D2 SRAM window, not heap.
 int32_t* dmaWords=nullptr;
 uint32_t halfFrames=0;
@@ -287,6 +288,7 @@ Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs,const I2sPins& pins,uint1
   if(!++timingEpoch) ++timingEpoch;
   timing.beginEpoch(timingEpoch);
   recovery.begin(timingEpoch,ringFrames,halfFrames,primeFrames);
+  recovery.setResumeFrames(recoveryResumeMs?uint32_t(uint64_t(sampleRate)*recoveryResumeMs/1000u):0u);
   for(uint8_t i=0;i<pinPlan.count;++i) {
     const auto& pin=pinPlan.pins[i];gpioClock(pin.port);
     oldPins[i]=i2sCapturePins(gpioRegisters(gpioPort(pin.port)),I2sPortPins(1u<<pin.pin));
@@ -373,6 +375,7 @@ void i2sEnd() {
   stats.dma_half_frames=stats.buffer_capacity_frames=stats.startup_frames=stats.initial_queued_frames=0;
 }
 void i2sSetD2Arena(bool enabled) { if(!owned) useD2Arena=enabled; }
+void i2sSetRecoveryResumeMs(uint16_t ms) { if(!owned) recoveryResumeMs=ms; }
 bool i2sArenaInD2() { return owned && arenaD2; }
 OutputStats i2sStats() { Critical guard; OutputStats copy=stats; copy.queued_frames=ring?ring->queued():0; return copy; }
 OutputTimingSnapshot i2sTiming() { Critical guard; return timing.snapshot(); }

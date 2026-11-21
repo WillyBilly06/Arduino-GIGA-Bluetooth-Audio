@@ -10,6 +10,7 @@
 #include "detail/AudioClockMailbox.h"
 #include "detail/ResolveBuffers.h"
 #include "detail/LossConcealment.h"
+#include "detail/CatchUpResampler.h"
 #include "codecs/Codecs.h"
 #include "platform/GigaRadio.h"
 #include "platform/GigaAvrcp.h"
@@ -188,6 +189,9 @@ struct GigaBredr::Impl {
     int32_t* conceal_pcm = nullptr; // Last real block for loss concealment.
     detail::LossConcealment conceal;
     bool conceal_enabled = false;
+    int32_t* catchup_pcm = nullptr; size_t catchup_capacity = 0; // Resampled output staging.
+    detail::CatchUpResampler catchup;
+    uint32_t catchup_target = 0, last_packet_frames = 0, catchup_warm = 0; // Packets decoded since configure.
     size_t pcm_frames = 0;
     bool configured = false, configuration_event = false, output_owned = false, radio_owned = false;
     bool startup_buffered = false;
@@ -630,8 +634,9 @@ struct GigaBredr::Impl {
         work_timing.endEpoch(stream_epoch);
         if (output_owned) { detail::i2sEnd(); output_owned = false; }
         decoder.close(); media.close();
-        detail::release(packet); detail::release(pcm); detail::release(conceal_pcm);
-        packet = nullptr; pcm = nullptr; conceal_pcm = nullptr; pcm_frames = 0;
+        detail::release(packet); detail::release(pcm); detail::release(conceal_pcm); detail::release(catchup_pcm);
+        packet = nullptr; pcm = nullptr; conceal_pcm = nullptr; catchup_pcm = nullptr; catchup_capacity = 0; pcm_frames = 0;
+        catchup.reset(); catchup_target = 0; last_packet_frames = 0;
         conceal.attach(nullptr, 0, 48000); conceal_enabled = false;
         counters.decoder_memory_bytes = 0; configured = false;
         counters.buffers = {};
@@ -670,6 +675,7 @@ struct GigaBredr::Impl {
         if (status == Status::Ok && options.enable_i2s) {
 #if defined(ARDUINO_GIGA) && defined(CORE_CM7)
             detail::i2sSetD2Arena(options.pcm_ring_d2_sram);
+            detail::i2sSetRecoveryResumeMs(options.catch_up ? 20 : 0); // Catch-up rebuilds the rest while playing.
 #endif
             status = detail::i2sBegin(c.sample_rate, selected_buffers.pcm_buffer_ms, options.i2s,selected_buffers.startup_buffer_ms); output_owned = status == Status::Ok;
         }
@@ -700,6 +706,14 @@ struct GigaBredr::Impl {
             const uint32_t keep = capacity < 2048 ? uint32_t(capacity) : 2048u;
             conceal_pcm = static_cast<int32_t*>(detail::allocate(size_t(keep) * 2 * sizeof(int32_t), MemoryKind::Fast));
             conceal.attach(conceal_pcm, conceal_pcm ? keep : 0, c.sample_rate);
+        }
+        catchup.reset(); catchup_target = 0; last_packet_frames = 0; catchup_warm = 0;
+        if (options.catch_up && options.enable_i2s && selected_buffers.startup_buffer_ms) {
+            // Optional: without staging memory output stays bit-exact and unresampled.
+            catchup_capacity = detail::CatchUpResampler::capacityFor(capacity);
+            catchup_pcm = static_cast<int32_t*>(detail::allocate(catchup_capacity * 2 * sizeof(int32_t), MemoryKind::Fast));
+            if (!catchup_pcm) catchup_capacity = 0;
+            catchup_target = uint32_t(uint64_t(c.sample_rate) * selected_buffers.startup_buffer_ms / 1000u);
         }
         if (!++stream_epoch) ++stream_epoch;
         { Lock queue_lock(queue_mutex);
@@ -759,6 +773,25 @@ struct GigaBredr::Impl {
         wake.release();
 #endif
     }
+    // Pass n frames through the level catch-up stage. Returns the frames to
+    // write and where they are; keeps clock inventory exact (credit/discard).
+    size_t catchUp(const int32_t* in, size_t n, const int32_t*& out) {
+        out = in;
+        if (!catchup_pcm || !n) return n;
+        int64_t error = 0;
+        const OutputStats o = detail::i2sStats();
+        // Settle first: the reserve was just built and no packet size is known yet.
+        if (catchup_warm >= 32 && last_packet_frames && o.running && !detail::i2sSourceSnapshot().recovering) {
+            uint32_t queued_packets; { Lock queue_lock(queue_mutex); queued_packets = uint32_t(queue.count()); }
+            error = int64_t(o.queued_frames) + int64_t(queued_packets) * last_packet_frames - int64_t(catchup_target);
+        }
+        const uint32_t ms = format.sample_rate / 1000u;
+        catchup.control(error, 30u * ms, 8u * ms, 60u * ms);
+        const size_t m = catchup.process(in, n, catchup_pcm, catchup_capacity);
+        if (m > n) { if (clockEnabled()) counters.clock.decoded_frames += m - n; counters.catch_up_added_frames += m - n; }
+        else if (m < n) { clockDiscard(n - m); counters.catch_up_removed_frames += n - m; }
+        out = catchup_pcm; return m;
+    }
     // Caller owns codec_mutex; pcm is free between packets. Returns false when a
     // wait observed stop/reconfiguration (no packet/PCM pointer may be reused).
     bool writeConcealment(uint32_t frames, uint32_t packet_epoch) {
@@ -770,17 +803,18 @@ struct GigaBredr::Impl {
             const uint32_t chunk = frames - done < pcm_frames ? frames - done : uint32_t(pcm_frames);
             conceal.synthesize(pcm, done, chunk, frames);
             if (clockEnabled()) counters.clock.decoded_frames += chunk; // Source-timeline frames; credit before PCM is prepared.
+            const int32_t* fill_pcm; const size_t fill_frames = catchUp(pcm, chunk, fill_pcm);
             size_t sent = 0;
-            while (sent < chunk) {
-                sent += detail::i2sWrite(pcm + sent * 2, chunk - sent);
-                if (sent == chunk) break;
+            while (sent < fill_frames) {
+                sent += detail::i2sWrite(fill_pcm + sent * 2, fill_frames - sent);
+                if (sent == fill_frames) break;
                 const OutputStats output = detail::i2sStats();
                 if (!output.initialized || (!output.running && !output.priming) || !running.load() || clockUs() - began > limit_us) {
-                    clockDiscard(chunk - sent); counters.concealed_frames += done + sent; return true;
+                    clockDiscard(fill_frames - sent); counters.concealed_frames += done + chunk; return true;
                 }
                 { UnlockDuringWait unlock(codec_mutex); waitOne(); }
                 if (packet_epoch != stream_epoch || !configured || !playing.load()) {
-                    clockDiscard(chunk - sent); counters.concealed_frames += done + sent; return false;
+                    clockDiscard(fill_frames - sent); counters.concealed_frames += done + chunk; return false;
                 }
             }
             done += chunk;
@@ -819,7 +853,8 @@ struct GigaBredr::Impl {
         auto record_work = [&]() { work.elapsed_us = clockUs() - packet_began; work_timing.record(packet_epoch, work); };
         if (conceal_enabled && n >= 12 && (packet[0] >> 6) == 2) {
             const uint32_t fill = conceal.onPacket(uint16_t((uint16_t(packet[2]) << 8) | packet[3]));
-            if (conceal.unfilledGap()) clock_input_fault = true;
+            if (conceal.unfilledGap()) { clock_input_fault = true; ++counters.concealed_unfilled_gaps; }
+            if (conceal.lastLost() > counters.concealed_max_gap_packets) counters.concealed_max_gap_packets = conceal.lastLost();
             if (fill) {
                 if (!writeConcealment(fill, packet_epoch)) { record_work(); return true; }
                 conceal.beginFadeIn();
@@ -868,25 +903,27 @@ struct GigaBredr::Impl {
             clockDecoded(offset + result.consumed, view.bytes, result.frames);
             clockFeedback();
             if (options.apply_remote_volume) detail::scaleStereoVolume(pcm, result.frames, volume.load());
-            if (conceal_enabled) { conceal.applyFadeIn(pcm, uint32_t(result.frames)); conceal.remember(pcm, uint32_t(result.frames)); packet_frames += uint32_t(result.frames); }
+            if (conceal_enabled) { conceal.applyFadeIn(pcm, uint32_t(result.frames)); conceal.remember(pcm, uint32_t(result.frames)); }
+            packet_frames += uint32_t(result.frames);
             if (options.enable_i2s) {
+                const int32_t* write_pcm; const size_t write_frames = catchUp(pcm, result.frames, write_pcm);
                 const uint64_t write_budget = 100000u +
-                    (uint64_t(result.frames) * 1000000u + format.sample_rate - 1u) / format.sample_rate;
+                    (uint64_t(write_frames) * 1000000u + format.sample_rate - 1u) / format.sample_rate;
                 const uint32_t write_limit_us = write_budget < 0x80000000u ? uint32_t(write_budget) : 0x7fffffffu;
                 size_t sent = 0; uint32_t began = clockUs();
-                while (sent < result.frames) {
+                while (sent < write_frames) {
                     if(voice&&voice->worker.preempting())break;
                     supply::markPhase(supply::DecoderPhase::OutputWrite,packet_epoch);
-                    sent += detail::i2sWrite(pcm + sent * 2, result.frames - sent);
+                    sent += detail::i2sWrite(write_pcm + sent * 2, write_frames - sent);
                     OutputStats output = detail::i2sStats();
                     if (!output.initialized || (!output.running && !output.priming)) {
-                        counters.output_dropped_frames += uint32_t(result.frames - sent); clockDiscard(result.frames - sent);
+                        counters.output_dropped_frames += uint32_t(write_frames - sent); clockDiscard(write_frames - sent);
                         counters.last_error = Status::HardwareError;
                         note("I2S stopped; output and decoder released");
                         record_work(); releaseCodec(); return true;
                     }
-                    if (sent == result.frames) break;
-                    if (!running.load() || clockUs() - began > write_limit_us) { counters.output_dropped_frames += uint32_t(result.frames - sent); clockDiscard(result.frames - sent); break; }
+                    if (sent == write_frames) break;
+                    if (!running.load() || clockUs() - began > write_limit_us) { counters.output_dropped_frames += uint32_t(write_frames - sent); clockDiscard(write_frames - sent); break; }
                     uint32_t waiting = clockUs();
                     clockFeedback();
                     supply::markPhase(supply::DecoderPhase::BackpressureWait,packet_epoch);
@@ -898,7 +935,7 @@ struct GigaBredr::Impl {
                     supply::markPhase(supply::DecoderPhase::PacketOwned,packet_epoch);
                     clockFeedback();
                     if (!running.load()) {
-                        counters.output_dropped_frames += uint32_t(result.frames - sent); clockDiscard(result.frames - sent);
+                        counters.output_dropped_frames += uint32_t(write_frames - sent); clockDiscard(write_frames - sent);
                         record_work(); return true;
                     }
                 }
@@ -912,7 +949,7 @@ struct GigaBredr::Impl {
             }
         }
         if (!need_more) media.consumed();
-        if (offset == view.bytes) { ++counters.decoded_packets; if (conceal_enabled) conceal.packetFrames(packet_frames); }
+        if (offset == view.bytes) { ++counters.decoded_packets; if (conceal_enabled) conceal.packetFrames(packet_frames); if (packet_frames) last_packet_frames = packet_frames; if (catchup_warm < 32) ++catchup_warm; }
         clockFinishPacket(valid_packet, need_more); clockFeedback();
         record_work();
         supply::markPhase(supply::DecoderPhase::Idle,packet_epoch);

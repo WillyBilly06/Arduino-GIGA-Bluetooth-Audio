@@ -32,11 +32,11 @@ public:
     // Sequence bookkeeping per received RTP packet. Returns the PCM frames to
     // fill before this packet (0: none). Duplicates/backward steps fill nothing.
     uint32_t onPacket(uint16_t sequence) {
-        uint32_t fill = 0; unfilled_ = false;
+        uint32_t fill = 0; unfilled_ = false; last_lost_ = 0;
         if (seq_valid_) {
             const uint16_t step = uint16_t(sequence - last_seq_);
             if (step == 0 || step >= 0x8000u) return 0; // duplicate / reordered: keep last
-            const uint32_t lost = step - 1u;
+            const uint32_t lost = step - 1u; last_lost_ = lost;
             if (lost && lost <= MaximumPackets && packet_frames_) {
                 const uint64_t frames = uint64_t(lost) * packet_frames_;
                 if (frames <= uint64_t(rate_) * MaximumMs / 1000u) fill = uint32_t(frames);
@@ -82,6 +82,7 @@ public:
     }
     // True when the last onPacket() saw lost packets it did not fill.
     bool unfilledGap() const { return unfilled_; }
+    uint32_t lastLost() const { return last_lost_; }
     uint32_t fadeFrames() const { return fade_; }
     uint32_t rememberedFrames() const { return len_; }
 
@@ -92,7 +93,7 @@ private:
     }
     int32_t* src_ = nullptr;
     uint32_t cap_ = 0, len_ = 0, rate_ = 48000, fade_ = 120, fade_left_ = 0, packet_frames_ = 0;
-    uint16_t last_seq_ = 0;
+    uint16_t last_seq_ = 0; uint32_t last_lost_ = 0;
     bool seq_valid_ = false, unfilled_ = false;
 };
 }}

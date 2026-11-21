@@ -1,5 +1,6 @@
 // Native checks for the packed 24-bit I2sRing mode used by D2 SRAM rings.
 #include "platform/I2sBuffer.h"
+#include "platform/PcmRecovery.h"
 #include <stdio.h>
 #include <stdint.h>
 using namespace giga_bredr::detail;
@@ -43,6 +44,23 @@ int main() {
     int32_t plain[8] = {}; I2sRing u(plain, 4);
     CHECK(!u.packed() && u.push(in, 4) == 4 && u.fill(dma, 4) == 4);
     for (unsigned i = 0; i < 8; ++i) CHECK(dma[i] == in[i]);
+    // Recovery resume threshold: with setResumeFrames, playback restarts once
+    // that much PCM is queued instead of rebuilding the whole startup reserve.
+    for (int early = 0; early < 2; ++early) {
+        int32_t mem[2 * 64] = {}; I2sRing rr(mem, 64);
+        PcmRecovery rec; CHECK(rec.begin(1, 64, 4, 40));
+        if (early) rec.setResumeFrames(12);
+        int32_t pcmIn[2 * 64]; for (int i = 0; i < 128; ++i) pcmIn[i] = 1000 + i;
+        int32_t dmaHalf[2 * 4];
+        CHECK(rr.push(pcmIn, 40) == 40);
+        for (int i = 0; i < 10; ++i) rec.refill(rr, dmaHalf, 0);   // drain the 40 frames
+        rec.refill(rr, dmaHalf, 0); CHECK(rec.recovering());       // starved
+        CHECK(rr.push(pcmIn, 12) == 12);
+        rec.refill(rr, dmaHalf, 0);
+        CHECK(rec.recovering() == !early);                          // 12 queued: resume only when early
+        CHECK(rr.push(pcmIn, 28) == 28);
+        rec.refill(rr, dmaHalf, 0); CHECK(!rec.recovering());       // full reserve always resumes
+    }
     printf("PASS packed 24-bit I2S ring: sign/precision, wrap, bounds, geometry (%u checks)\n", checks);
     return 0;
 }

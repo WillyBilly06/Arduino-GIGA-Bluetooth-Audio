@@ -25,6 +25,8 @@ I2sClockTrimSnapshot i2sClockTrimStats();
 #if defined(ARDUINO_GIGA) && defined(CORE_CM7)
 // Takes effect at the next i2sBegin; ignored while output is owned.
 void i2sSetD2Arena(bool enabled);
+// Resume after a starvation once this much real PCM is queued (0: full reserve).
+void i2sSetRecoveryResumeMs(uint16_t ms);
 bool i2sArenaInD2();
 #endif
 }}

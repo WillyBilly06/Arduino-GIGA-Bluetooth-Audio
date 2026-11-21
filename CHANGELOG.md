@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.2.1 - 2026-11-20
+
+Linux/PC sources (PipeWire on an OS clock, VMs) at LHDC 192 kHz/24/1000k:
+- `ReceiverConfig::catch_up` (default on): when the PCM level is more than
+  30 ms off target, decoded audio is resampled by up to +/-1% until it is back
+  within 8 ms. Otherwise output is bit-exact, zero-delay pass-through. This
+  restores the reserve in seconds after a source runs slow or fast; measured
+  swings were 1.4% at stream start and several hundred ppm afterwards.
+- After a starvation, playback resumes once 20 ms is queued (with catch-up);
+  catch-up rebuilds the rest while playing. Previously the whole reserve was
+  rebuilt in silence.
+- Concealment fills sequence gaps up to 64 packets / 400 ms. Concealed gaps
+  no longer restart audio-clock learning.
+- Receiver diagnostics: unfilled/max gaps, catch-up frames and latency
+  histogram tails (`GBR_LATENCY`).
+
+On the GIGA with a Linux VM source at 11-16% packet loss and live BLE GATT
+echo: 74-130 ms of silence in 6 min, only while the source sent nothing.
+Before: ~3 s per minute. No phone-source run yet.
+
 ## 0.2.0 - 2026-11-20
 
 First Library Manager release; includes the work listed under the 2026-11-20

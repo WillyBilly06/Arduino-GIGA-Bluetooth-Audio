@@ -82,7 +82,7 @@ def main():
   exe=out/(n+'.exe');run([cxx,'-std=c++17',*flags,*extra,'-Itests','tests/'+n+'.cpp',*sources,*objects,'-o',exe],n);run([exe,*arguments],n)
  n='test_avrcp_status_reconcile';exe=out/(n+'.exe')
  run([cxx,'-std=c++17',*flags,'-Itests','tests/'+n+'.cpp','src/owned/ClassicProfiles.cpp','src/platform/RadioProtocol.cpp',*objects,'-o',exe],n);run([exe],n)
- for n in ('test_classic_bond_public_header','test_classic_bond_store_noalloc','test_receiver_profile_log','test_loss_concealment','test_i2s_packed'):
+ for n in ('test_classic_bond_public_header','test_classic_bond_store_noalloc','test_receiver_profile_log','test_loss_concealment','test_i2s_packed','test_catchup_resampler'):
   exe=out/(n+'.exe');extra=['-Itests/support/profile_log'] if n=='test_receiver_profile_log' else []
   run([cxx,'-std=c++17',*flags,*extra,'tests/'+n+'.cpp','-o',exe],n);run([exe],n)
  # The three actor batches inline the real OwnedHost exactly once and retain

@@ -62,6 +62,11 @@ struct ReceiverConfig {
     // packets does not drain the PCM reserve into long underrun holds. Not
     // applied to AAC (an access unit can span packets).
     bool conceal_lost_packets = true;
+    // Rebuild the PCM reserve quickly when it drifts far from target (sources
+    // on an OS clock: Linux/PipeWire, PCs, VMs): beyond 30 ms of error the
+    // decoded PCM is resampled by up to +/-1% until it is back within 8 ms.
+    // Otherwise output is bit-exact. Requires I2S output.
+    bool catch_up = true;
     uint16_t startup_buffer_ms = 0; // Zero selects the negotiated-codec real-PCM reserve.
     // false selects real BLE-only operation: no Classic admission/audio worker.
     // At least enable_a2dp or ble.enabled must be true. Audio options are unused
@@ -98,6 +103,10 @@ struct ReceiverStats {
     uint64_t lhdc_frame_muted_blocks = 0, lhdc_frame_muted_frames = 0;
     // RTP sequence gaps filled by conceal_lost_packets and the PCM frames written.
     uint64_t concealed_gaps = 0, concealed_frames = 0;
+    // Gaps concealment refused (too long or backward) and the largest gap seen, in packets.
+    uint32_t concealed_unfilled_gaps = 0, concealed_max_gap_packets = 0;
+    // Catch-up resampling: net PCM frames added (stretch) and removed (compress).
+    uint64_t catch_up_added_frames = 0, catch_up_removed_frames = 0;
 };
 class GigaBredr {
 public:

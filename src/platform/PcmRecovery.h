@@ -57,7 +57,9 @@ public:
         const uint32_t queued=uint32_t(ring.queued());
         const uint32_t frames=stats_.half_frames;
         if(stats_.recovering) {
-            if(queued<stats_.threshold) {
+            uint32_t need=stats_.threshold;
+            if(resume_ && resume_<need) need=resume_<frames*2u?frames*2u:resume_;
+            if(queued<need) {
                 memset(dma,0,size_t(frames)*8);
                 shape(dma,frames,true);
                 ++stats_.hold_refills; stats_.hold_frames+=frames;
@@ -81,6 +83,10 @@ public:
         }
         return real;
     }
+    // Optional earlier resume after a starvation (0: rebuild the full startup
+    // reserve). Used when a level catch-up stage restores the rest while
+    // playing, so a brief starvation costs milliseconds, not the whole reserve.
+    void setResumeFrames(uint32_t frames) { resume_=frames; }
     constexpr PcmRecoverySnapshot snapshot() const { return stats_; }
     constexpr bool recovering() const { return stats_.recovering; }
 private:
@@ -121,7 +127,7 @@ private:
     }
     PcmRecoverySnapshot stats_;
     int32_t last_[2]={},anchor_[2]={};
-    uint32_t progress_=0;
+    uint32_t progress_=0, resume_=0;
     uint8_t shift_=1;
     bool seeded_=false,missing_=false;
 };
