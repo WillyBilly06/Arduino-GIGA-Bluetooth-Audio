@@ -13,9 +13,19 @@ int main(int argc, char** argv) {
     if (argc != 6) { fprintf(stderr, "usage: codec rate bits in.pkt out.pcm\n"); return 1; }
     std::string name = argv[1]; CodecConfig c;
     c.codec = name == "sbc" ? Codec::Sbc : name == "aac" ? Codec::Aac : name == "aptx" ? Codec::Aptx :
-              name == "aptxhd" ? Codec::AptxHd : name == "ldac" ? Codec::Ldac : name == "opus" ? Codec::Opus : Codec::Count;
+              name == "aptxhd" ? Codec::AptxHd : name == "ldac" ? Codec::Ldac : name == "opus" ? Codec::Opus :
+              name == "lhdc" ? Codec::LhdcV5 : name == "ssc" ? Codec::Ssc : Codec::Count;
     c.sample_rate = uint32_t(atoi(argv[2])); c.bits_per_sample = uint8_t(atoi(argv[3])); c.channels = 2;
     if (c.codec == Codec::Opus) c.frame_duration_us = 20000;
+    if (c.codec == Codec::LhdcV5) { // raw self-delimiting frame stream (tests/lhdc_aosp/*/encoded.bin)
+        c.frame_duration_us = 5000; Decoder d; if (d.open(c) != Status::Ok) return 3;
+        FILE* f = fopen(argv[4], "rb"); FILE* o = fopen(argv[5], "wb"); if (!f || !o) return 2;
+        std::vector<uint8_t> b; for (int ch; (ch = fgetc(f)) != EOF;) b.push_back(uint8_t(ch)); fclose(f);
+        std::vector<int32_t> p(960 * 2); size_t pos = 0, frames = 0, errs = 0;
+        while (pos < b.size()) { DecodeResult r = d.decode(b.data() + pos, b.size() - pos, p.data(), 960);
+            if (r.status != Status::Ok || !r.consumed) { ++errs; break; } fwrite(p.data(), 4, r.frames * 2, o); frames += r.frames; pos += r.consumed; }
+        fclose(o); d.close(); printf("bytes=%zu frames=%zu errors=%zu\n", pos, frames, errs); return errs ? 5 : 0;
+    }
     Decoder dec; MediaAssembler media;
     if (dec.open(c) != Status::Ok) { fprintf(stderr, "open failed\n"); return 3; }
     if (media.configure(c, 8192) != Status::Ok) { fprintf(stderr, "media configure failed\n"); return 3; }

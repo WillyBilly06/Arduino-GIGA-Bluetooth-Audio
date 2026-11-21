@@ -88,12 +88,64 @@ LDAC 256, Opus 312.
   `tests/test_ssc_codec.cpp` trips that warning, which is treated as an
   error. The script targets clang.
 
+## On the board: Cortex-M7 build vs the native build
+
+`tools/fidelity/board/` contains:
+- `gen_cases.py`: makes the case files, the native outputs and a generated
+  `parity_data.h`.
+- `DecoderParity/DecoderParity.ino`
+- `read_board.py`
+
+The sketch embeds 17 encoded streams, 645 KB in all:
+- the first 64 KB of each of the 7 system-encoder streams above (noise signal);
+- all 8 LHDC AOSP fixtures;
+- 2 Samsung SSC fixtures.
+
+For the SSC cases, the native output is identical to the pinned upstream
+decoder.
+
+The sketch was built with arduino-cli for `arduino:mbed_giga:giga` (core
+4.6.0): 1,020,640 B flash, 64,216 B RAM. It was flashed to the physical GIGA
+(UID 003C00393533510934353531). It decodes each stream through the same
+production `MediaAssembler`/`Decoder` loop on the M7 and streams the int32 PCM
+back over USB CDC. Every case reported 0 errors, and every frame count matched
+the native build exactly.
+
+| Case | Board vs native x86-64 |
+|---|---|
+| SBC, SBC-XQ, AAC-LC, aptX, aptX HD | **bit-exact** (byte-identical PCM) |
+| LDAC 96k/24 990k | 139.9 / 138.6 dB; max diff 0.9 LSB24 |
+| LHDC V5 x/24 (44.1, 48, 96, 192 kHz) | 117.8-137.7 dB; max diff 3.1 LSB24 |
+| LHDC V5 x/16 (44.1, 48, 96, 192 kHz) | 99.2-106.3 dB; max diff 1 LSB16, in under 0.11% of samples |
+| Samsung SSC UHQ 96k/24 584k, 44.1k bitrate switch | 137.0-141.2 dB; max diff 0.4 LSB24 |
+| Opus 48k 256k | 85.0 / 87.0 dB; max diff 1 LSB16, in 2.9% of samples |
+
+The fixed-point decoders produce identical output on the M7. The
+floating-point paths (LDAC, LHDC, SSC, Opus) differ only by final rounding.
+That comes from the M7 compiler's FPU code generation (e.g. fused
+multiply-add), and is far below each codec's own error. Combined with the
+reference-decoder results above, the board's decoded PCM is the correct audio
+for every codec.
+
+Decode time on the M7 for these streams (integer `micros()`, includes nothing
+but `Decoder::decode`):
+
+| Case | Audio decoded | M7 decode time | Load |
+|---|---|---|---|
+| SBC 48k | 1.43 s | 42 ms | 2.9% |
+| AAC-LC 48k | 1.98 s | 68 ms | 3.4% |
+| aptX HD 48k | 0.88 s | 140 ms | 15.9% |
+| LDAC 96k 990k | 0.52 s | 52 ms | 10.0% |
+| Opus 48k | 1.96 s | 120 ms | 6.1% |
+| LHDC V5 192k/24 | 0.16 s | 53 ms | 33% |
+| SSC UHQ 96k | 0.22 s | 32 ms | 14.8% |
+
 ## Not covered
 
 - No system encoder for LHDC V5 or SSC was used; their own fixtures are above.
 - HE-AAC was not run.
-- This is a host-native build (x86-64, gcc). The Cortex-M7 build compiles the
-  same sources, but its numeric parity with this build was not compared.
-- Decoded PCM on the board and the electrical I2S output were not captured.
-  That needs capture hardware on the I2S pins.
+- The electrical I2S output was not captured. The PCM above is what the
+  decoder hands to the I2S path. The packing and DMA after that point are
+  covered only by native tests (`tests/test_i2s_packed.cpp`), not measured on
+  the pins.
 - No listening tests.

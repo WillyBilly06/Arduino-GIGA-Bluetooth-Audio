@@ -14,7 +14,7 @@ Linux. "M7 build" = official Arduino Mbed GIGA 4.6.0 Cortex-M7 compile.
 | HE-AAC v1 (experimental) | yes | yes | no | - | sender interop; HE-AAC v2/PS not implemented |
 | aptX / aptX HD | yes (+ resync after loss) | yes | yes, 2026-11-20 (0 errors; aptX HD fixed in 0.2.2) | PipeWire; phone (earlier) | aptX loss is undetectable (no RTP) |
 | LDAC 96 kHz | yes | yes | yes (earlier 8.9 h field run; 2026-11-20 0 errors, 0 ms silence at 30% source loss) | phone, PipeWire | continuity |
-| LHDC V5 up to 192 kHz/24 | yes (AOSP-derived fixtures) | yes | yes, 2026-11-20 | PipeWire 1000k | ARM numeric parity; continuity under VM source jitter |
+| LHDC V5 up to 192 kHz/24 | yes (AOSP-derived fixtures) | yes | yes, 2026-11-20 | PipeWire 1000k | continuity under VM source jitter (ARM parity: decoder-fidelity-2026-11-21.md) |
 | Opus | yes | yes | yes, 2026-11-20 (262 kbps, 0 errors) | PipeWire | phone interop (phone cannot select) |
 | Samsung SSC 44.1/48 HiFi/96 UHQ | yes, bit-exact + malformed input | yes (+33 KB flash, 22,920 B state) | yes, all three modes, 0 errors | PipeWire SSC plugin | Galaxy phone interop, ABR under congestion, 886k frames |
 

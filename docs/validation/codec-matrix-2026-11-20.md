@@ -58,7 +58,8 @@ PCM frames the I2S output had to substitute because the ring was empty.
 - One sender (PipeWire in a VM); no phone source in this matrix.
 - Decoded PCM was checked natively against independent reference decoders
   and the source in [decoder-fidelity-2026-11-21.md](decoder-fidelity-2026-11-21.md)
-  (aptX/aptX HD bit-exact; SBC/AAC/Opus within 16-bit rounding). On the board,
-  decoded PCM was not compared against the source signal, and
+  (aptX/aptX HD bit-exact; SBC/AAC/Opus within 16-bit rounding). On the board
+  the M7 decode is bit-exact with that native build for the fixed-point codecs
+  and within final rounding (>= 85 dB) for the floating-point ones, but
   the I2S pins were not measured; "0 errors" means each decoder accepted
   every frame.
