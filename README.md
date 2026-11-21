@@ -7,7 +7,7 @@ project-owned host stack on the board's Murata 1DX (CYW4343W) radio.
 ## Quick start
 
 1. Install **Arduino Mbed OS GIGA Boards 4.6.0** and select **Arduino GIGA R1 / Cortex-M7**.
-2. Install **GigaBredr**: Library Manager (search "GigaBredr"), or **Sketch > Include Library > Add .ZIP Library** with a [release ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/releases).
+2. Install **GigaBredr**: Library Manager (search "GigaBredr"), or **Sketch > Include Library > Add .ZIP Library** with a [release ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/releases). Pinned and development downloads: [release channels](docs/RELEASE_CHANNELS.md).
 3. Wire an I2S DAC such as a PCM5102A: **D70 → BCK, D74 → LCK, D72 → DIN**, 3.3 V and GND.
 4. Upload this sketch, then pair your phone or PC with "GIGA Speaker":
 
