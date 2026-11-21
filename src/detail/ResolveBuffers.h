@@ -10,6 +10,17 @@ constexpr bool validBufferSettings(const AudioBufferConfig& b) {
     if(b.startup_buffer_ms>MaximumPcmBufferMs) return false;
     return !(b.startup_packets && b.startup_buffer_ms);
 }
+// Largest pcm_buffer_ms whose I2S arena (2 x 1 ms DMA halves, ring object,
+// 32-byte alignment, 8-byte frames) fits the 256 KB D2 SRAM window.
+constexpr uint32_t D2RingWindowBytes=0x40000u;
+constexpr uint32_t d2RingPcmMs(uint32_t rate) {
+    if(rate<8000 || rate>192000) return 0;
+    const uint32_t half=((rate+999u)/1000u+3u)&~3u;
+    const uint32_t overhead=half*16u+96u;
+    const uint32_t frames=(D2RingWindowBytes-overhead)/8u;
+    const uint32_t ms=uint32_t((uint64_t(frames-8u)*1000u)/rate);
+    return ms>MaximumPcmBufferMs?MaximumPcmBufferMs:ms;
+}
 constexpr AudioBufferConfig globalBufferSettings(const ReceiverConfig& r) {
     return {r.maximum_packet_bytes,r.maximum_access_unit_bytes,r.queue_packets,
             r.startup_packets,r.pcm_buffer_ms,r.startup_buffer_ms};
@@ -43,7 +54,14 @@ constexpr bool resolveAudioBuffers(const ReceiverConfig& r,const CodecConfig& c,
         // with a high-rate stream (see BleConfig::audio_coexistence_reserve_ms).
         uint32_t startup=automatic.startup_ms;
         const uint32_t margin=r.ble.audio_coexistence_reserve_ms>200?200u:r.ble.audio_coexistence_reserve_ms;
-        if(coexistence && r.ble.enabled && c.sample_rate>=88200 && startup+margin+10u<=MaximumPcmBufferMs) startup+=margin;
+        uint32_t extra=margin;
+        if(r.pcm_ring_d2_sram) {
+            // Keep the widened ring inside the fixed D2 window so it is
+            // actually placed there instead of falling back to the heap.
+            const uint32_t cap=d2RingPcmMs(c.sample_rate);
+            extra=startup+10u>=cap?0u:(startup+extra+10u>cap?cap-startup-10u:extra);
+        }
+        if(coexistence && r.ble.enabled && c.sample_rate>=88200 && startup+extra+10u<=MaximumPcmBufferMs) startup+=extra;
         out.startup_buffer_ms=uint16_t(startup);
     }
     if(!r.enable_i2s) { out.startup_packets=1;out.startup_buffer_ms=0; }

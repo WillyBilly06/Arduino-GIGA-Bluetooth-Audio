@@ -50,6 +50,16 @@ struct ReceiverConfig {
     void (*metadata_changed)(uint8_t attribute_id, const char* text, size_t bytes, void* user) = nullptr;
     void* user = nullptr;
     I2sPins i2s; // Hardware-compatible output route; optional MCLK=-1.
+    // Opt-in: place the I2S DMA/PCM ring in D2 SRAM 0x30000000..0x3003FFFF
+    // (256 KB the GIGA M7 linker map leaves unused) instead of the heap. Only
+    // set this when no M4 image, sketch or other library uses that SRAM. The
+    // automatic BLE coexistence reserve is then capped to fit the window.
+    bool pcm_ring_d2_sram = false;
+    // Fill RTP sequence gaps of up to 16 packets / 120 ms with a faded replay
+    // of the last real PCM, exactly the lost duration, so a source that drops
+    // packets does not drain the PCM reserve into long underrun holds. Not
+    // applied to AAC (an access unit can span packets).
+    bool conceal_lost_packets = true;
     uint16_t startup_buffer_ms = 0; // Zero selects the negotiated-codec real-PCM reserve.
     // false selects real BLE-only operation: no Classic admission/audio worker.
     // At least enable_a2dp or ble.enabled must be true. Audio options are unused
@@ -84,6 +94,8 @@ struct ReceiverStats {
     // Both categories can apply to one block and must not be added as a total.
     uint64_t lhdc_right_concealed_blocks = 0, lhdc_right_concealed_frames = 0;
     uint64_t lhdc_frame_muted_blocks = 0, lhdc_frame_muted_frames = 0;
+    // RTP sequence gaps filled by conceal_lost_packets and the PCM frames written.
+    uint64_t concealed_gaps = 0, concealed_frames = 0;
 };
 class GigaBredr {
 public:

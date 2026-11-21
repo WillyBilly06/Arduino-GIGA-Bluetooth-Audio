@@ -9,6 +9,7 @@
 #include "detail/OperationModePolicy.h"
 #include "detail/AudioClockMailbox.h"
 #include "detail/ResolveBuffers.h"
+#include "detail/LossConcealment.h"
 #include "codecs/Codecs.h"
 #include "platform/GigaRadio.h"
 #include "platform/GigaAvrcp.h"
@@ -184,6 +185,9 @@ struct GigaBredr::Impl {
     std::atomic<uint8_t> volume{127};
     uint8_t* packet = nullptr;
     int32_t* pcm = nullptr;
+    int32_t* conceal_pcm = nullptr; // Last real block for loss concealment.
+    detail::LossConcealment conceal;
+    bool conceal_enabled = false;
     size_t pcm_frames = 0;
     bool configured = false, configuration_event = false, output_owned = false, radio_owned = false;
     bool startup_buffered = false;
@@ -623,8 +627,9 @@ struct GigaBredr::Impl {
         work_timing.endEpoch(stream_epoch);
         if (output_owned) { detail::i2sEnd(); output_owned = false; }
         decoder.close(); media.close();
-        detail::release(packet); detail::release(pcm);
-        packet = nullptr; pcm = nullptr; pcm_frames = 0;
+        detail::release(packet); detail::release(pcm); detail::release(conceal_pcm);
+        packet = nullptr; pcm = nullptr; conceal_pcm = nullptr; pcm_frames = 0;
+        conceal.attach(nullptr, 0, 48000); conceal_enabled = false;
         counters.decoder_memory_bytes = 0; configured = false;
         counters.buffers = {};
         startup_buffered = false;
@@ -660,6 +665,9 @@ struct GigaBredr::Impl {
             if (!packet || !pcm) status = Status::OutOfMemory;
         }
         if (status == Status::Ok && options.enable_i2s) {
+#if defined(ARDUINO_GIGA) && defined(CORE_CM7)
+            detail::i2sSetD2Arena(options.pcm_ring_d2_sram);
+#endif
             status = detail::i2sBegin(c.sample_rate, selected_buffers.pcm_buffer_ms, options.i2s,selected_buffers.startup_buffer_ms); output_owned = status == Status::Ok;
         }
         if (status == Status::OutOfMemory && options.enable_i2s) {
@@ -683,6 +691,13 @@ struct GigaBredr::Impl {
         }
         if (status != Status::Ok) { releaseCodec(); counters.last_error = status; return status; }
         format = c; pcm_frames = capacity; configured = true; counters.last_error = Status::Ok;
+        // Optional: without history storage the fill is a silent gap of the same length.
+        conceal_enabled = options.conceal_lost_packets && options.enable_i2s && c.codec != Codec::Aac && c.codec != Codec::AacHe && c.codec != Codec::Aptx;
+        if (conceal_enabled) {
+            const uint32_t keep = capacity < 2048 ? uint32_t(capacity) : 2048u;
+            conceal_pcm = static_cast<int32_t*>(detail::allocate(size_t(keep) * 2 * sizeof(int32_t), MemoryKind::Fast));
+            conceal.attach(conceal_pcm, conceal_pcm ? keep : 0, c.sample_rate);
+        }
         if (!++stream_epoch) ++stream_epoch;
         { Lock queue_lock(queue_mutex);
           active_buffers = selected_buffers;
@@ -741,6 +756,35 @@ struct GigaBredr::Impl {
         wake.release();
 #endif
     }
+    // Caller owns codec_mutex; pcm is free between packets. Returns false when a
+    // wait observed stop/reconfiguration (no packet/PCM pointer may be reused).
+    bool writeConcealment(uint32_t frames, uint32_t packet_epoch) {
+        const uint64_t budget = 100000u + (uint64_t(frames) * 1000000u + format.sample_rate - 1u) / format.sample_rate;
+        const uint32_t limit_us = budget < 0x80000000u ? uint32_t(budget) : 0x7fffffffu;
+        const uint32_t began = clockUs();
+        uint32_t done = 0;
+        while (done < frames) {
+            const uint32_t chunk = frames - done < pcm_frames ? frames - done : uint32_t(pcm_frames);
+            conceal.synthesize(pcm, done, chunk, frames);
+            if (clockEnabled()) counters.clock.decoded_frames += chunk; // Source-timeline frames; credit before PCM is prepared.
+            size_t sent = 0;
+            while (sent < chunk) {
+                sent += detail::i2sWrite(pcm + sent * 2, chunk - sent);
+                if (sent == chunk) break;
+                const OutputStats output = detail::i2sStats();
+                if (!output.initialized || (!output.running && !output.priming) || !running.load() || clockUs() - began > limit_us) {
+                    clockDiscard(chunk - sent); counters.concealed_frames += done + sent; return true;
+                }
+                { UnlockDuringWait unlock(codec_mutex); waitOne(); }
+                if (packet_epoch != stream_epoch || !configured || !playing.load()) {
+                    clockDiscard(chunk - sent); counters.concealed_frames += done + sent; return false;
+                }
+            }
+            done += chunk;
+        }
+        ++counters.concealed_gaps; counters.concealed_frames += frames;
+        return true;
+    }
     bool processOne() {
         if(voice&&voice->worker.preempting())return false;
         supply::markPhase(supply::DecoderPhase::WaitCodec);
@@ -770,6 +814,14 @@ struct GigaBredr::Impl {
         detail::PacketWorkSample work;
         const uint32_t packet_began = clockUs();
         auto record_work = [&]() { work.elapsed_us = clockUs() - packet_began; work_timing.record(packet_epoch, work); };
+        if (conceal_enabled && n >= 12 && (packet[0] >> 6) == 2) {
+            const uint32_t fill = conceal.onPacket(uint16_t((uint16_t(packet[2]) << 8) | packet[3]));
+            if (fill) {
+                if (!writeConcealment(fill, packet_epoch)) { record_work(); return true; }
+                conceal.beginFadeIn();
+            }
+        }
+        uint32_t packet_frames = 0;
         detail::MediaView view;
         const auto retained_before = media.retainedState();
         Status status = media.feed(packet, n, view);
@@ -812,6 +864,7 @@ struct GigaBredr::Impl {
             clockDecoded(offset + result.consumed, view.bytes, result.frames);
             clockFeedback();
             if (options.apply_remote_volume) detail::scaleStereoVolume(pcm, result.frames, volume.load());
+            if (conceal_enabled) { conceal.applyFadeIn(pcm, uint32_t(result.frames)); conceal.remember(pcm, uint32_t(result.frames)); packet_frames += uint32_t(result.frames); }
             if (options.enable_i2s) {
                 const uint64_t write_budget = 100000u +
                     (uint64_t(result.frames) * 1000000u + format.sample_rate - 1u) / format.sample_rate;
@@ -855,7 +908,7 @@ struct GigaBredr::Impl {
             }
         }
         if (!need_more) media.consumed();
-        if (offset == view.bytes) ++counters.decoded_packets;
+        if (offset == view.bytes) { ++counters.decoded_packets; if (conceal_enabled) conceal.packetFrames(packet_frames); }
         clockFinishPacket(valid_packet, need_more); clockFeedback();
         record_work();
         supply::markPhase(supply::DecoderPhase::Idle,packet_epoch);

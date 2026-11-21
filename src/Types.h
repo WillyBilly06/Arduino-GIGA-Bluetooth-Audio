@@ -49,6 +49,10 @@ struct RadioStats {
     uint32_t received_packets = 0, received_bytes = 0, dropped_packets = 0;
     uint32_t hci_packets = 0, hci_bytes = 0;
     uint32_t transport_errors = 0, baud_rate = 0;
+    // Owned UART7 receive pressure: software pauses (8 KB ring full), ring
+    // high-water bytes, and hardware overruns observed before a read.
+    uint32_t uart_rx_pauses = 0, uart_rx_high_water = 0, uart_rx_overruns = 0;
+    bool uart_fifo = false;
     bool controller_ready = false, bredr_supported = false, connected = false, streaming = false;
     uint8_t address[6] = {};
     uint16_t manufacturer = 0, lmp_subversion = 0;

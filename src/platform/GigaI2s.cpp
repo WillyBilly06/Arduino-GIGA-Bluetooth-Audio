@@ -24,6 +24,7 @@ PcmRecovery recovery;
 uint32_t timingEpoch=0;
 I2sRing* ring=nullptr;
 void* arena=nullptr;
+bool arenaD2=false,useD2Arena=false; // arenaD2: arena is the fixed D2 SRAM window, not heap.
 int32_t* dmaWords=nullptr;
 uint32_t halfFrames=0;
 uint32_t ringCapacity=0;
@@ -214,6 +215,7 @@ void restoreClock() {
   }
   pllOwned=false;
 }
+void releaseArena() { if(!arenaD2) release(arena); arena=nullptr; arenaD2=false; }
 Status clockBegin(uint32_t rate) {
   I2sClock clock; if(!i2sClock(rate,clock)) return Status::Unsupported;
   // The PLL source is shared with PLL1: never change it. This build is tested
@@ -265,14 +267,19 @@ Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs,const I2sPins& pins,uint1
   primeFrames=threshold;
   const uint32_t ringFrames=geometry.ring_frames;
   const size_t dmaBytes=geometry.dma_bytes, ringOffset=geometry.ring_offset, bytes=geometry.total_bytes;
-  arena=allocate(bytes,MemoryKind::Dma,32);
+  if(useD2Arena && bytes<=D2ArenaBytes) {
+    // Opt-in: D2 SRAM1+SRAM2 are outside the GIGA M7 linker/heap map. The
+    // owner guarantees no M4 image or other library uses this window.
+    __HAL_RCC_D2SRAM1_CLK_ENABLE(); __HAL_RCC_D2SRAM2_CLK_ENABLE(); __DSB();
+    arena=reinterpret_cast<void*>(D2ArenaBase); arenaD2=true;
+  } else { arena=allocate(bytes,MemoryKind::Dma,32); arenaD2=false; }
   if(!arena) return Status::OutOfMemory;
-  if(!i2sDmaAddress(reinterpret_cast<uintptr_t>(arena),bytes)) { release(arena); arena=nullptr; return Status::HardwareError; }
+  if(!i2sDmaAddress(reinterpret_cast<uintptr_t>(arena),bytes)) { releaseArena(); return Status::HardwareError; }
   dmaWords=static_cast<int32_t*>(arena); memset(arena,0,bytes);
   ring=new(static_cast<uint8_t*>(arena)+dmaBytes) I2sRing(reinterpret_cast<int32_t*>(static_cast<uint8_t*>(arena)+ringOffset),ringFrames);
   clockTrim=I2sClockTrimState{};clockTrimLast={};trimRequested=trimCaptured=trimRelinquished=false;
   Status result=clockBegin(sampleRate);
-  if(result!=Status::Ok) { ring->~I2sRing(); ring=nullptr; release(arena); arena=nullptr; return result; }
+  if(result!=Status::Ok) { ring->~I2sRing(); ring=nullptr; releaseArena(); return result; }
   pinPlan=selected;oldVector=NVIC_GetVector(DMA1_Stream7_IRQn);oldPriority=NVIC_GetPriority(DMA1_Stream7_IRQn);
   owned=true; stats=OutputStats(); stats.sample_rate=sampleRate;
   stats.dma_half_frames=halfFrames;stats.buffer_capacity_frames=ringFrames;stats.startup_frames=primeFrames;
@@ -362,9 +369,11 @@ void i2sEnd() {
   restoreClock();
   clockTrim.invalidate();
   if(ring) { ring->~I2sRing(); ring=nullptr; }
-  release(arena); arena=nullptr; dmaWords=nullptr; stats.queued_frames=0;halfFrames=ringCapacity=primeFrames=0;owned=false;
+  releaseArena(); dmaWords=nullptr; stats.queued_frames=0;halfFrames=ringCapacity=primeFrames=0;owned=false;
   stats.dma_half_frames=stats.buffer_capacity_frames=stats.startup_frames=stats.initial_queued_frames=0;
 }
+void i2sSetD2Arena(bool enabled) { if(!owned) useD2Arena=enabled; }
+bool i2sArenaInD2() { return owned && arenaD2; }
 OutputStats i2sStats() { Critical guard; OutputStats copy=stats; copy.queued_frames=ring?ring->queued():0; return copy; }
 OutputTimingSnapshot i2sTiming() { Critical guard; return timing.snapshot(); }
 PcmRecoverySnapshot i2sRecovery() { Critical guard; return recovery.snapshot(); }

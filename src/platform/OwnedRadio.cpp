@@ -20,6 +20,12 @@ extern const uint32_t brcm_patch_ram_length;
 extern const char brcm_patch_version[];
 extern const uint8_t brcm_patchram_format;
 }
+// 1 enables the H7 16-byte UART7 RX/TX FIFOs. With RTS/CTS and FIFO off,
+// RTS deasserts after every unread byte, so any IRQ latency above one byte
+// time (5 us at 2 Mbaud) throttles the controller during 1 Mbps audio.
+#ifndef GIGA_BREDR_UART_FIFO
+#define GIGA_BREDR_UART_FIFO 1
+#endif
 #ifndef GIGA_BREDR_UART_BAUD
 #define GIGA_BREDR_UART_BAUD 2000000
 #endif
@@ -39,6 +45,7 @@ struct Context {
     TxMailbox tx;
     volatile unsigned rx_write=0,rx_read=0;
     volatile bool rx_paused=false;
+    volatile uint32_t rx_pauses=0,rx_high=0,rx_overruns=0;
     unsigned tx_size=0,tx_pos=0;
     uint32_t tx_failed=0;
     uint32_t started=0,last_byte=0,tx_started=0;
@@ -70,11 +77,12 @@ void notifyOwner(Context& c) {
 void uartIrq() {
     Context* c=context;
     if(!c || !c->uart) return;
+    if(UART7->ISR&USART_ISR_ORE) ++c->rx_overruns;
     unsigned budget=64;
     while(budget-- && c->uart->readable()) {
         unsigned next=(c->rx_write+1)&(RxSize-1);
         if(next==c->rx_read) {
-            c->rx_paused=true;
+            c->rx_paused=true;++c->rx_pauses;
             c->uart->attach(mbed::Callback<void()>(),mbed::SerialBase::RxIrq);
             break;
         }
@@ -82,6 +90,20 @@ void uartIrq() {
         if(c->uart->read(&byte,1)!=1) break;
         c->rx[c->rx_write]=byte; __DMB(); c->rx_write=next;
     }
+    const unsigned level=(c->rx_write-c->rx_read)&(RxSize-1);
+    if(level>c->rx_high) c->rx_high=level;
+}
+// mbed's baud()/format() re-run HAL_UART_Init, which rewrites FIFOEN from its
+// disabled default; reapply while the link is quiescent (boot or baud switch).
+void configureFifo() {
+#if GIGA_BREDR_UART_FIFO
+    Critical guard;
+    const uint32_t cr1=UART7->CR1;
+    if(cr1&USART_CR1_FIFOEN) return;
+    UART7->CR1=cr1&~USART_CR1_UE;          // FIFOEN is writable only with UE=0.
+    UART7->CR1=(cr1&~USART_CR1_UE)|USART_CR1_FIFOEN;
+    UART7->CR1=cr1|USART_CR1_FIFOEN;
+#endif
 }
 // Sole UART TX writer. TXE wakes this callback as each byte becomes writable;
 // the host's1ms poll cadence never limits byte or credit-return throughput.
@@ -154,7 +176,7 @@ bool setBaud(uint32_t baud,void* user) {
     }
     // Empty is published only after TX IRQ detachment. The serialized actor is
     // the sole producer, so HAL register/ack waits need no global IRQ mask.
-    c.uart->baud(int(baud));return true;
+    c.uart->baud(int(baud));configureFifo();return true;
 }
 void closeHardware(Context& c) {
     if(c.uart) {
@@ -228,6 +250,7 @@ Status radioBegin(const char* name,uint32_t mask,const RadioCallbacks& callbacks
     context->uart=new(context->uart_storage)mbed::UnbufferedSerial(PF_7,PA_8,115200);
     context->uart->format(8,mbed::SerialBase::None,1);
     context->uart->set_flow_control(mbed::SerialBase::RTSCTS,PF_8,PF_9);
+    configureFifo();
     context->uart->attach(mbed::callback(uartIrq),mbed::SerialBase::RxIrq);
     gpio_write(&context->power,1);delay(150);
     context->started=context->last_byte=millis();
@@ -274,10 +297,16 @@ void radioPoll() {
 void radioEnd() {
     if(!context) return;
     Context* c=context;closeHardware(*c);c->host.end();
-    stopped_stats=c->host.radioStats();stopped_ble=c->host.bleStats();
+    stopped_stats=radioStats();stopped_ble=c->host.bleStats();
     c->~Context();context=nullptr;release(c);
 }
-RadioStats radioStats() { return context?context->host.radioStats():stopped_stats; }
+RadioStats radioStats() {
+    if(!context) return stopped_stats;
+    RadioStats s=context->host.radioStats();
+    s.uart_rx_pauses=context->rx_pauses;s.uart_rx_high_water=context->rx_high;s.uart_rx_overruns=context->rx_overruns;
+    s.uart_fifo=(UART7->CR1&USART_CR1_FIFOEN)!=0;
+    return s;
+}
 BleStats radioBleStats() { return context?context->host.bleStats():stopped_ble; }
 Status radioBleNotify(const uint8_t* data,size_t length) { return context?context->host.bleNotify(data,length):Status::Unsupported; }
 bool radioBleReadWrite(BleWrite& value) { return context && context->host.bleReadWrite(value); }

@@ -7,7 +7,7 @@
 namespace owned_radio_test {
 inline uint32_t now_ms=0,us_remainder=0;
 inline unsigned critical_depth=0;
-struct Registers {uint32_t ISR=1u<<6;};
+struct Registers {uint32_t ISR=1u<<6;uint32_t CR1=0x2du;};
 inline Registers registers;
 }
 inline uint32_t millis(){return owned_radio_test::now_ms;}
@@ -18,6 +18,9 @@ inline void core_util_critical_section_enter(){++owned_radio_test::critical_dept
 inline void core_util_critical_section_exit(){assert(owned_radio_test::critical_depth);--owned_radio_test::critical_depth;}
 inline owned_radio_test::Registers* UART7=&owned_radio_test::registers;
 constexpr uint32_t USART_ISR_TC=1u<<6;
+constexpr uint32_t USART_ISR_ORE=1u<<3;
+constexpr uint32_t USART_CR1_UE=1u<<0;
+constexpr uint32_t USART_CR1_FIFOEN=1u<<29;
 enum {PF_7,PA_8,PF_8,PF_9,PA_10,PH_7,PG_3};
 struct gpio_t {int value=0;};
 inline void gpio_init_out(gpio_t* p,int){p->value=0;}

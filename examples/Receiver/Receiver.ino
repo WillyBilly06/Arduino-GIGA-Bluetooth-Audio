@@ -6,6 +6,9 @@
 #include <platform/SchedulerWitness.h>
 #include <GigaQspiBondStorage.h>
 using namespace giga_bredr;
+#if defined(ARDUINO_GIGA) && defined(CORE_CM7)
+void _ontouch1200bps_(); // GIGA variant: mark RTC BKP0R for DFU and reset.
+#endif
 GigaBredr receiver;
 GigaQspiBondStorage bonds; // Paired phones reconnect after reset/upload without re-pairing.
 ReceiverConsole console;
@@ -39,6 +42,10 @@ void setup() {
   config.diagnostic=diagnostic; config.configuration_changed=configured;
   config.volume_changed=volume; config.metadata_changed=metadata;
   // Hardware-compatible pins are selected before begin(); -1 disables MCLK.
+  // The GIGA M7 linker map leaves D2 SRAM below 0x30040000 unused and this
+  // sketch starts no M4 image, so the PCM ring can live there. That frees
+  // the heap and lets 192 kHz streams keep the BLE coexistence reserve.
+  config.pcm_ring_d2_sram=true;
   config.i2s.bclk=70; config.i2s.data=72; config.i2s.lrck=GIGA_BREDR_I2S_WS_PIN; config.i2s.mclk=-1;
   requestedConnectionPreference=config.ble.audio_connection_preference;
   Status status=receiver.begin(config);
@@ -64,6 +71,15 @@ void loop() {
       const auto result=receiver.bleResumeAdvertising();
       console.print("GBR_BLE_CONTROL ms=%lu action=resume_advertising status=%s\n",
         (unsigned long)millis(),statusName(result));
+#if defined(ARDUINO_GIGA) && defined(CORE_CM7)
+    } else if(command=='B') {
+      // Same entry as the core's 1200-baud touch (RTC BKP0R=0xDF59, reset)
+      // without waiting for the host to drop DTR, so flashing needs no
+      // RESET double-press. The bootloader then enumerates as DFU 2341:0366.
+      console.print("GBR_BOOTLOADER ms=%lu entering=dfu\n",(unsigned long)millis());
+      delay(100);
+      _ontouch1200bps_();
+#endif
     }
   }
   // Example data service: one copied RX write is echoed through TX notify.
@@ -121,10 +137,11 @@ void loop() {
       (unsigned long)worst.stream_epoch,(unsigned long)worst.output_epoch,(unsigned long)worst.serial,(unsigned long)worst.ordinal,
       unsigned(worst.restore_seen),unsigned(worst.restore_flags),(unsigned long)worst.restore_split[0],(unsigned long)worst.restore_split[1],
       (unsigned long)worst.restore_icsr,unsigned(worst.restore_pending),(unsigned long)worst.restore_basepri);
-    console.print("GBR_STATUS ms=%lu ready=%u bredr=%u address=%02X:%02X:%02X:%02X:%02X:%02X connected=%u streaming=%u codec=%s rate=%lu rx_packets=%lu rx_bytes=%lu hci_packets=%lu hci_bytes=%lu decoded_packets=%lu frames=%llu errors=%lu dropped=%lu decode_max_us=%lu underruns=%lu dma_errors=%lu output_frames=%llu queued=%u output_running=%u priming=%u output_dropped=%lu transport_errors=%lu volume=%u memory=%u peak=%u codec_bytes=%u diagnostic_drops=%lu console_drops=%u last=%s\n",
+    console.print("GBR_STATUS ms=%lu ready=%u bredr=%u address=%02X:%02X:%02X:%02X:%02X:%02X connected=%u streaming=%u codec=%s rate=%lu channels=%u bits=%u bitrate=%lu rx_packets=%lu rx_bytes=%lu hci_packets=%lu hci_bytes=%lu decoded_packets=%lu frames=%llu errors=%lu dropped=%lu decode_max_us=%lu underruns=%lu dma_errors=%lu output_frames=%llu queued=%u output_running=%u priming=%u output_dropped=%lu transport_errors=%lu volume=%u memory=%u peak=%u codec_bytes=%u diagnostic_drops=%lu console_drops=%u last=%s\n",
       (unsigned long)millis(), s.radio.controller_ready, s.radio.bredr_supported,
       s.radio.address[0], s.radio.address[1], s.radio.address[2], s.radio.address[3], s.radio.address[4], s.radio.address[5],
       s.radio.connected, s.playing, codecName(s.configuration.codec), (unsigned long)s.configuration.sample_rate,
+      unsigned(s.configuration.channels), unsigned(s.configuration.bits_per_sample), (unsigned long)s.configuration.bitrate,
       (unsigned long)s.radio.received_packets, (unsigned long)s.radio.received_bytes, (unsigned long)s.radio.hci_packets, (unsigned long)s.radio.hci_bytes,
       (unsigned long)s.decoded_packets, (unsigned long long)s.decoded_frames,
       (unsigned long)s.decode_errors, (unsigned long)s.dropped_packets, (unsigned long)s.maximum_decode_us,
@@ -136,6 +153,8 @@ void loop() {
       (unsigned long)millis(), (unsigned long long)s.lhdc_right_concealed_blocks,
       (unsigned long long)s.lhdc_right_concealed_frames, (unsigned long long)s.lhdc_frame_muted_blocks,
       (unsigned long long)s.lhdc_frame_muted_frames);
+    console.print("GBR_LOSS_CONCEAL ms=%lu gaps=%llu frames=%llu\n",(unsigned long)millis(),
+      (unsigned long long)s.concealed_gaps,(unsigned long long)s.concealed_frames);
     auto b=receiver.bleStats(); auto t=receiver.audioDiagnostics();
     console.print("GBR_BLE_QOS ms=%lu generation=%lu data_fragments=%lu data_bytes=%lu paced_deferrals=%lu urgent_bypasses=%lu policy_rejections=%lu\n",
       (unsigned long)millis(),(unsigned long)b.generation,(unsigned long)b.qos_data_fragments,(unsigned long)b.qos_data_bytes,
@@ -202,9 +221,11 @@ void loop() {
       (unsigned long)NVIC_GetPriority(PendSV_IRQn),(unsigned long)NVIC_GetPriority(SysTick_IRQn));
     const bool uartEnabled=(RCC->APB1LENR&RCC_APB1LENR_UART7EN)!=0;
     const uint32_t uartCr1=uartEnabled?UART7->CR1:0;
-    console.print("GBR_UART_HW enabled=%u fifo=%u cr1=%08lx cr3=%08lx isr=%08lx\n",uartEnabled,
+    console.print("GBR_UART_HW enabled=%u fifo=%u cr1=%08lx cr3=%08lx isr=%08lx baud=%lu rx_pauses=%lu rx_high=%lu rx_overruns=%lu\n",uartEnabled,
       unsigned((uartCr1&USART_CR1_FIFOEN)!=0),(unsigned long)uartCr1,
-      (unsigned long)(uartEnabled?UART7->CR3:0),(unsigned long)(uartEnabled?UART7->ISR:0));
+      (unsigned long)(uartEnabled?UART7->CR3:0),(unsigned long)(uartEnabled?UART7->ISR:0),
+      (unsigned long)s.radio.baud_rate,(unsigned long)s.radio.uart_rx_pauses,
+      (unsigned long)s.radio.uart_rx_high_water,(unsigned long)s.radio.uart_rx_overruns);
 #endif
     static uint32_t recoveryEpoch=0,recoveryIndex=0;
     if(recoveryEpoch!=recovery.epoch) { recoveryEpoch=recovery.epoch;recoveryIndex=0; }

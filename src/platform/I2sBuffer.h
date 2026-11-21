@@ -64,6 +64,10 @@ class I2sRing {
  private:
   int32_t* data_; uint32_t capacity_; uint32_t read_=0,write_=0,readPos_=0,writePos_=0;
 };
+// D2 SRAM1+SRAM2 (contiguous 256 KB). The GIGA M7 linker map places nothing
+// below 0x30040000 (lwIP/ETH descriptors start there).
+constexpr uintptr_t D2ArenaBase=0x30000000u;
+constexpr size_t D2ArenaBytes=0x40000u;
 inline bool i2sDmaAddress(uintptr_t a,size_t size) {
   return size && !(a%32) && ((a>=0x24000000u && a<0x24080000u && size<=0x24080000u-a) ||
          (a>=0x30000000u && a<0x30048000u && size<=0x30048000u-a));

@@ -22,4 +22,9 @@ struct OutputSourceSnapshot {
 OutputSourceSnapshot i2sSourceSnapshot();
 ClockTrimResult i2sClockTrim(uint32_t expected_output_epoch,int32_t requested_q16,int32_t lower_q16,int32_t upper_q16);
 I2sClockTrimSnapshot i2sClockTrimStats();
+#if defined(ARDUINO_GIGA) && defined(CORE_CM7)
+// Takes effect at the next i2sBegin; ignored while output is owned.
+void i2sSetD2Arena(bool enabled);
+bool i2sArenaInD2();
+#endif
 }}
