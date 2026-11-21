@@ -36,6 +36,17 @@ int main() {
   b.mode=mode<<(12*2); assert(i2sPinsBusy(b.view(),row.portB)==(mode==1||mode==2));
   for(unsigned pin : {1u,3u}) { i.mode=mode<<(pin*2); assert(i2sPinsBusy(i.view(),row.portI)==(mode==1||mode==2)); }
  }
+ // PB3/PB4 reset into JTAG AF0: free only when the caller names them as such.
+ for(unsigned pin : {3u,4u}) {
+  Registers j; j.mode=2u<<(pin*2); const I2sPortPins mask(1u<<pin);
+  assert(i2sPinsBusy(j.view(),mask));                        // default: any AF is busy
+  assert(!i2sPinsBusy(j.view(),mask,I2sJtagResetPinsB));     // reset JTAG AF0
+  j.low=7u<<(pin*4); assert(i2sPinsBusy(j.view(),mask,I2sJtagResetPinsB)); // another AF user
+  j.low=0; j.mode=1u<<(pin*2); assert(i2sPinsBusy(j.view(),mask,I2sJtagResetPinsB)); // GPIO output
+ }
+ { Registers j; j.mode=2u<<(5*2); assert(i2sPinsBusy(j.view(),I2sPortPins(1u<<5),I2sJtagResetPinsB)); } // PB5 AF0 not exempt
+ { Registers j; j.mode=0xFFFFFEBFu; // STM32H7 GPIOB reset value: PB3/PB4 AF0, others analog
+   assert(!i2sPinsBusy(j.view(),I2sPortPins((1u<<2)|(1u<<3)|(1u<<4)),I2sJtagResetPinsB)); }
  for(auto pins : {row.portB,row.portI,legacy.portB,legacy.portI}) checkRestore(pins);
  const auto selected=i2sPinPlan(GIGA_BREDR_I2S_WS_PIN);
  assert(selected.wsArduino==GIGA_BREDR_I2S_WS_PIN);
@@ -47,3 +58,4 @@ int main() {
  puts("I2S selected WS profile, independent GPIO masks, conflicts and masked restore PASS");
 }
 
+

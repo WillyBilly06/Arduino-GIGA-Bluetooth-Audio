@@ -57,10 +57,18 @@ struct I2sGpioRegisters {
  volatile uint32_t &mode,&type,&speed,&pull,&afLow,&afHigh;
 };
 struct I2sGpioSnapshot { uint32_t mode=0,type=0,speed=0,pull=0,afLow=0,afHigh=0; };
-inline bool i2sPinsBusy(I2sGpioRegisters r,const I2sPortPins& pins) {
+// PB3 (JTDO/TRACESWO) and PB4 (NJTRST) come out of reset in alternate
+// function 0 for JTAG. The GIGA debugs over SWD, so AF0 there is the reset
+// state, not another owner; any other AF or output mode still counts as busy.
+constexpr uint32_t I2sJtagResetPinsB=(1u<<3)|(1u<<4);
+inline bool i2sPinsBusy(I2sGpioRegisters r,const I2sPortPins& pins,uint32_t resetAf0Free=0) {
  for(unsigned pin=0;pin<16;++pin) if(pins.pins&(1u<<pin)) {
   const uint32_t mode=(r.mode>>(pin*2))&3u;
-  if(mode==1 || mode==2) return true;
+  if(mode==1) return true;
+  if(mode==2) {
+   const uint32_t af=pin<8?(r.afLow>>(pin*4))&15u:(r.afHigh>>((pin-8)*4))&15u;
+   if(!((resetAf0Free&(1u<<pin)) && af==0)) return true;
+  }
  }
  return false;
 }

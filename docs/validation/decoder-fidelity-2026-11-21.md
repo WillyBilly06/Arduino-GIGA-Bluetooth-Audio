@@ -222,13 +222,44 @@ This shows the constant-frame waveform, i.e. clocking, framing and bit
 order at 192 kHz. A changing sample stream at 192 kHz was only decoded
 directly at 44.1-96 kHz, but it uses the same packing and DMA code.
 
+### Alternate pin routes (48 kHz, equivalent-time)
+
+`tools/fidelity/board/I2sRoutes` + `read_routes.py`: the same constant-frame
+fold, run for each route through `ReceiverConfig.i2s`-style `I2sPins`. The
+GPIO input registers of all of a route's ports are sampled (4.2-7.7 MHz with
+three or four ports), in windows capped below one DMA half. Six captures per
+route:
+
+| Route (BCLK / DIN / LRCK / MCLK) | I2S block | `begin()` | Result at the pins |
+|---|---|---|---|
+| D75/PD3, D73/PC1, D74/PB12 | SPI2 | Ok | BCLK 64 fs, exact 64-bit frame 6/6 |
+| D75, D73, D71/PI2 | - | InvalidArgument | correctly refused: PI2 is I2S2 data input only |
+| D70/PI1, D72/PI3, D69/PI0, D68/PC6 | SPI2 | Ok | exact frame 6/6; MCLK strongest harmonic 256 per frame (12.287 MHz) in 5/6 |
+| D85/PA5, D5/PA7, D84/PA4 | SPI1 | Ok | exact frame 6/6 |
+| D91/PB3, D47/PB2, D84/PA4 | SPI3 | Ok after fix (was Busy) | exact frame 6/6 |
+| D75, D73, D7/PB4 | SPI2 | Ok after fix (was Busy) | exact frame 6/6 |
+
+The probe found a bug. On a stock board, `GPIOB->MODER` reads 0xFFFFFEBF,
+the STM32H7 reset value, which leaves PB3 and PB4 in JTAG alternate
+function 0. `i2sBegin` refused any pin in alternate-function mode as owned
+by another user, so every documented route through D91 or D7 failed with
+`Busy`. Fixed in `src/platform/I2sPins.h` (`I2sJtagResetPinsB`): AF0 on
+PB3/PB4 now counts as free, and any other AF or output mode is still
+refused. The fix has native tests in `tests/test_i2s_pins.cpp`, and both
+routes above were re-verified on the board.
+
+The one MCLK capture that missed (peak at harmonic 63) is a fold limit. MCLK
+runs at 12.3 MHz against 5.1 MHz sampling, so it needs the finest phase fit.
+
 ## Not covered
 
 - No system encoder for LHDC V5 or SSC was used; their own fixtures are above.
 - HE-AAC was not run.
 - I2S at 192 kHz was verified by equivalent-time sampling of a constant frame,
   not by a real-time capture of changing samples.
-- The alternate pin routes were not probed (e.g. D75/D73 with D74/D69, MCLK).
+- Of the alternate routes, six were probed (above) at 48 kHz. Others in
+  `I2sRoutes`, other rates on alternate routes, and MCLK at rates other than
+  48 kHz were not probed.
 - Analog electrical quality at the header was not measured: edge rates,
   levels under a DAC load, jitter. The probe sees logic levels at the pad
   input buffer only.

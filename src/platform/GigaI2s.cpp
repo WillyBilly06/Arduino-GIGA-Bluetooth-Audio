@@ -262,7 +262,7 @@ Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs,const I2sPins& pins,uint1
   if(RCC->APB1LENR&(RCC_APB1LENR_SPI2EN|RCC_APB1LENR_SPI3EN)) return Status::Busy;
   if(RCC->APB2ENR&RCC_APB2ENR_SPI1EN) return Status::Busy;
   if(DMA1_Stream7->CR || DMAMUX1_Channel7->CCR || NVIC_GetEnableIRQ(DMA1_Stream7_IRQn) || NVIC_GetPendingIRQ(DMA1_Stream7_IRQn)) return Status::Busy;
-  for(uint8_t i=0;i<selected.count;++i)if(i2sPinsBusy(gpioRegisters(gpioPort(selected.pins[i].port)),I2sPortPins(1u<<selected.pins[i].pin)))return Status::Busy;
+  for(uint8_t i=0;i<selected.count;++i)if(i2sPinsBusy(gpioRegisters(gpioPort(selected.pins[i].port)),I2sPortPins(1u<<selected.pins[i].pin),selected.pins[i].port==1?I2sJtagResetPinsB:0u))return Status::Busy;
   __HAL_RCC_DMA1_CLK_ENABLE();
   halfFrames=geometry.half_frames; // ~1 ms, each DMA half is cache-line isolated.
   primeFrames=threshold;

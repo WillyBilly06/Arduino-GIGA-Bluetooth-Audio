@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- I2S: routes through D91/PB3 (SPI1 alternate BCLK, SPI3 BCLK) and D7/PB4
+  (SPI2 LRCK) were always refused with `Busy`. PB3/PB4 come out of reset in
+  JTAG alternate function 0, and the pin-ownership check treated any
+  alternate function as another owner. AF0 on PB3/PB4 now counts as free
+  (the GIGA debugs over SWD); any other AF or output mode is still `Busy`.
+  Verified on the board: D91/D47/D84 (SPI3) and D75/D73/D7 drive correct
+  I2S at the pins.
+- `tools/fidelity/`: decoder fidelity against reference decoders and the
+  source, on-board M7 decoder parity, and on-chip I2S pin probes
+  (`docs/validation/decoder-fidelity-2026-11-21.md`).
+
 ## 0.2.4 - 2026-11-20
 
 - aptX / aptX HD: the decoder now reports the exact source frames it
