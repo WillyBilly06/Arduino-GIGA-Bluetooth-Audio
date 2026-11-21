@@ -864,7 +864,9 @@ struct GigaBredr::Impl {
         const uint32_t packet_began = clockUs();
         auto record_work = [&]() { work.elapsed_us = clockUs() - packet_began; work_timing.record(packet_epoch, work); };
         if (conceal_enabled && uses_rtp && n >= 12 && (packet[0] >> 6) == 2) {
-            const uint32_t fill = conceal.onPacket(uint16_t((uint16_t(packet[2]) << 8) | packet[3]));
+            const uint32_t rtp_ts = (uint32_t(packet[4]) << 24) | (uint32_t(packet[5]) << 16) | (uint32_t(packet[6]) << 8) | packet[7];
+            const uint32_t fill = conceal.onPacket(uint16_t((uint16_t(packet[2]) << 8) | packet[3]), rtp_ts);
+            if (fill && conceal.lastFillFromTimestamp()) { ++counters.concealed_timestamp_gaps; counters.concealed_timestamp_frames += fill; }
             if (conceal.unfilledGap()) { clock_input_fault = true; ++counters.concealed_unfilled_gaps; }
             if (conceal.lastLost() > counters.concealed_max_gap_packets) counters.concealed_max_gap_packets = conceal.lastLost();
             if (fill) {

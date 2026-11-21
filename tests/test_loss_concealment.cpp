@@ -73,6 +73,53 @@ int main() {
     int32_t edge[4] = {INT32_MIN, INT32_MAX, INT32_MIN, INT32_MAX};
     c.remember(edge, 2); c.synthesize(out, 0, 4, 4);
     CHECK(out[0] <= 0 && out[1] >= 0);
-    printf("PASS RTP loss concealment: exact gap fill, wrap/duplicate/limits, continuous faded replay, fade-in (%u checks)\n", checks);
+    // Timestamp jumps with a continuous sequence (sender-side queue drops).
+    {
+        LossConcealment t; t.attach(store, 64, 192000);
+        uint16_t sq = 500; uint32_t ts = 0xFFFFF000u; // timestamp wraps during the run
+        CHECK(t.onPacket(sq, ts) == 0); t.packetFrames(960);
+        // Not learned yet: a jump fills nothing.
+        CHECK(t.onPacket(++sq, ts += 960) == 0); CHECK(t.onPacket(++sq, ts += 960 + 26880) == 0);
+        for (int i = 0; i < 8; ++i) CHECK(t.onPacket(++sq, ts += 960) == 0);
+        CHECK(t.timestampRatioQ16() == (1u << 16));
+        CHECK(t.onPacket(++sq, ts += 961) == 0);                       // jitter: nothing
+        CHECK(t.onPacket(++sq, ts += 960 + 26880) == 26880 && t.lastFillFromTimestamp());
+        CHECK(!t.unfilledGap());
+        CHECK(t.onPacket(++sq, ts += 960) == 0 && !t.lastFillFromTimestamp());
+        // Sequence gap with the matching timestamp: sequence fill only, no double count.
+        sq += 2; CHECK(t.onPacket(sq, ts += 2 * 960) == 960 && !t.lastFillFromTimestamp());
+        // Duplicate does not move the timestamp reference.
+        CHECK(t.onPacket(sq, ts + 50000) == 0);
+        CHECK(t.onPacket(++sq, ts += 960) == 0);
+        // Jump beyond 400 ms (pause/seek): no fill, not an unfilled gap.
+        CHECK(t.onPacket(++sq, ts += 960 + 80000) == 0 && !t.unfilledGap());
+        CHECK(t.onPacket(++sq, ts += 960) == 0);
+        // Backward timestamp: nothing.
+        CHECK(t.onPacket(++sq, ts -= 5000) == 0);
+        // Exactly 400 ms is filled.
+        CHECK(t.onPacket(++sq, ts += 960 + 76800) == 76800);
+    }
+    {   // Timestamp units != frames (2 ticks per frame), and variable packet sizes.
+        LossConcealment t; t.attach(store, 64, 48000);
+        uint16_t sq = 7; uint32_t ts = 1000;
+        t.onPacket(sq, ts); t.packetFrames(128);
+        for (int i = 0; i < 9; ++i) CHECK(t.onPacket(++sq, ts += 256) == 0);
+        CHECK(t.timestampRatioQ16() == (2u << 16));
+        t.packetFrames(512);                                             // larger packet next
+        CHECK(t.onPacket(++sq, ts += 1024) == 0);
+        CHECK(t.onPacket(++sq, ts += 1024 + 2 * 3000) == 3000);          // 3000 frames dropped
+    }
+    {   // No packet size yet: never fills from timestamps.
+        LossConcealment t; t.attach(store, 64, 48000);
+        CHECK(t.onPacket(1, 0) == 0); for (uint16_t i = 2; i < 20; ++i) CHECK(t.onPacket(i, i * 100000u) == 0);
+        CHECK(t.timestampRatioQ16() == 0);
+    }
+    {   // An irregular timeline never locks a ratio.
+        LossConcealment t; t.attach(store, 64, 48000); t.packetFrames(128);
+        uint32_t ts = 0; t.onPacket(0, ts);
+        for (uint16_t i = 1; i < 40; ++i) CHECK(t.onPacket(i, ts += (i % 3) ? 128 : 300) == 0);
+        CHECK(t.timestampRatioQ16() == 0);
+    }
+    printf("PASS RTP loss concealment: exact gap fill, wrap/duplicate/limits, timestamp-jump fill, continuous faded replay, fade-in (%u checks)\n", checks);
     return 0;
 }

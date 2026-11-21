@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Concealment of sender-side drops: an Android A2DP source on a congested link
+  drops whole encoded packets from its transmit queue before sequence numbers
+  are assigned, so the RTP sequence stays continuous while the timestamp jumps
+  (RedMagic 11 Pro, LHDC V5 192k/24 on YouTube: 17-19 jumps of ~140 ms per
+  minute, ~4% of the audio). The receiver previously played the next packet
+  immediately and underran: 1.85 s of silence per minute. `LossConcealment`
+  now learns each stream's RTP ticks per decoded frame and fills exactly the
+  missing duration (up to 400 ms; longer jumps such as a pause fill nothing).
+  Same phone and settings after the fix: 11 ms of silence per 57 s, 0
+  underruns. `ReceiverStats::concealed_timestamp_gaps/_frames`, logged as
+  `ts_gaps`/`ts_frames` in `GBR_LOSS_CONCEAL`.
 - I2S: routes through D91/PB3 (SPI1 alternate BCLK, SPI3 BCLK) and D7/PB4
   (SPI2 LRCK) were always refused with `Busy`. PB3/PB4 come out of reset in
   JTAG alternate function 0, and the pin-ownership check treated any

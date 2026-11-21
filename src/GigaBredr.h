@@ -112,6 +112,9 @@ struct ReceiverStats {
     // Gaps concealment refused (too long or backward) and the largest gap seen, in packets.
     uint32_t concealed_unfilled_gaps = 0, concealed_max_gap_packets = 0;
     uint32_t concealed_resyncs = 0; // aptX/aptX HD decoder resyncs whose discarded audio was filled.
+    // Sender-side drops seen as an RTP timestamp jump with a continuous sequence
+    // (e.g. an Android source flushing its transmit queue); included in concealed_gaps/frames.
+    uint32_t concealed_timestamp_gaps = 0; uint64_t concealed_timestamp_frames = 0;
     // Catch-up resampling: net PCM frames added (stretch) and removed (compress).
     uint64_t catch_up_added_frames = 0, catch_up_removed_frames = 0;
     uint32_t catch_up_target_frames = 0; // Level target incl. any compressed-queue reserve.

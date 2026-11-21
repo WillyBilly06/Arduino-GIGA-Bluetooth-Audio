@@ -27,15 +27,19 @@ public:
         fade_ = sample_rate / 400u; if (fade_ < 16u) fade_ = 16u; // 2.5 ms
         reset();
     }
-    void reset() { len_ = 0; fade_left_ = 0; seq_valid_ = false; unfilled_ = false; packet_frames_ = 0; }
+    void reset() {
+        len_ = 0; fade_left_ = 0; seq_valid_ = false; unfilled_ = false; packet_frames_ = 0;
+        ts_valid_ = false; ts_fill_ = false; ratio_q16_ = 0; candidate_q16_ = 0; stable_ = 0;
+    }
 
     // Sequence bookkeeping per received RTP packet. Returns the PCM frames to
     // fill before this packet (0: none). Duplicates/backward steps fill nothing.
     uint32_t onPacket(uint16_t sequence) {
-        uint32_t fill = 0; unfilled_ = false; last_lost_ = 0;
+        uint32_t fill = 0; unfilled_ = false; last_lost_ = 0; ts_fill_ = false; last_step_ = 0;
         if (seq_valid_) {
             const uint16_t step = uint16_t(sequence - last_seq_);
             if (step == 0 || step >= 0x8000u) return 0; // duplicate / reordered: keep last
+            last_step_ = step;
             const uint32_t lost = step - 1u; last_lost_ = lost;
             if (lost && lost <= MaximumPackets && packet_frames_) {
                 const uint64_t frames = uint64_t(lost) * packet_frames_;
@@ -46,6 +50,43 @@ public:
         last_seq_ = sequence; seq_valid_ = true;
         return fill;
     }
+    // Sequence and RTP timestamp. A sender whose transmit queue overflows (an
+    // Android A2DP source on a congested link) drops whole encoded packets
+    // before sequence numbers are assigned: the sequence stays continuous while
+    // the media timestamp jumps by the dropped audio. The timestamp step per
+    // decoded frame is learned per stream (it must repeat for StableSteps
+    // packets); a jump past the previous packet's duration is then filled with
+    // exactly the missing frames, up to MaximumMs. Longer jumps (pause, seek)
+    // fill nothing and are not counted as unfilled.
+    static constexpr uint32_t StableSteps = 8;
+    uint32_t onPacket(uint16_t sequence, uint32_t timestamp) {
+        const bool had_ts = ts_valid_ && seq_valid_;
+        const uint32_t previous_ts = last_ts_;
+        uint32_t fill = onPacket(sequence);
+        if (seq_valid_ && (last_step_ || !had_ts)) { last_ts_ = timestamp; ts_valid_ = true; }
+        if (!had_ts || last_step_ != 1u || !packet_frames_) return fill;
+        const uint32_t delta = timestamp - previous_ts;
+        if (ratio_q16_) {
+            const uint64_t expected = (uint64_t(packet_frames_) * ratio_q16_ + 0x8000u) >> 16;
+            if (delta > expected + expected / 2u && delta < 0x80000000u) {
+                const uint64_t frames = ((uint64_t(delta) - expected) << 16) / ratio_q16_;
+                if (frames && frames <= uint64_t(rate_) * MaximumMs / 1000u) { ts_fill_ = true; return uint32_t(frames); }
+                return fill;
+            }
+        }
+        // Learn ticks per decoded frame from in-order packets (Q16).
+        const uint64_t q = (uint64_t(delta) << 16) / packet_frames_;
+        if (!q || q > (uint64_t(64) << 16)) { stable_ = 0; return fill; }
+        const uint64_t tolerance = candidate_q16_ / 64u + 1u;
+        if (stable_ && q + tolerance >= candidate_q16_ && q <= candidate_q16_ + tolerance) {
+            if (++stable_ >= StableSteps && !ratio_q16_) ratio_q16_ = candidate_q16_;
+        } else if (!ratio_q16_) { candidate_q16_ = q; stable_ = 1; }
+        return fill;
+    }
+    // True when the last onPacket() fill came from a timestamp jump (no sequence gap).
+    bool lastFillFromTimestamp() const { return ts_fill_; }
+    // Learned RTP ticks per decoded frame, Q16 (0: not learned yet).
+    uint32_t timestampRatioQ16() const { return uint32_t(ratio_q16_); }
     // Real PCM frames decoded from the previous complete packet.
     void packetFrames(uint32_t frames) { if (frames) packet_frames_ = frames; }
 
@@ -93,7 +134,8 @@ private:
     }
     int32_t* src_ = nullptr;
     uint32_t cap_ = 0, len_ = 0, rate_ = 48000, fade_ = 120, fade_left_ = 0, packet_frames_ = 0;
-    uint16_t last_seq_ = 0; uint32_t last_lost_ = 0;
-    bool seq_valid_ = false, unfilled_ = false;
+    uint16_t last_seq_ = 0, last_step_ = 0; uint32_t last_lost_ = 0, last_ts_ = 0, stable_ = 0;
+    uint64_t ratio_q16_ = 0, candidate_q16_ = 0;
+    bool seq_valid_ = false, unfilled_ = false, ts_valid_ = false, ts_fill_ = false;
 };
 }}
