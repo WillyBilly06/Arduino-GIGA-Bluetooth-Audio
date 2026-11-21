@@ -64,3 +64,47 @@ Observations:
 - Statistical confidence is low (single events per window).
 - Heavy BLE throughput during 192 kHz LHDC remains unsupported; keep BLE
   traffic light (control/status) while streaming at 1000 kbps.
+
+## Update: 0.2.1 with true 1000 kbps and interleaved BLE A/B
+
+Earlier "1000k" runs above were really ~406 kbps: a WirePlumber rule matched
+an old device address, so LHDC stayed at its 400k default. All results in this
+section use a verified `LHDC_QUALITY_HIGH1` stream (~1892-byte packets, ~949
+kbps received).
+
+Root causes found and fixed in the receiver (0.2.0 / 0.2.1):
+
+| Cause | Symptom | Fix |
+|---|---|---|
+| Lost RTP packets played without fill | each loss drained the reserve; ~190 ms silent holds every few seconds | `conceal_lost_packets` fills gaps up to 64 packets / 400 ms |
+| BLE reserve never applied at 192 kHz (ring did not fit the heap) | reserve silently 80 ms | packed 24-bit ring in D2 SRAM: 184 ms reserve, 224 ms ring |
+| Concealed gaps reset clock learning | controller never left Learning, held stale corrections | concealed gaps are not clock errors |
+| Source timeline 1.4% slow at start, hundreds of ppm drift (PipeWire on an OS clock) | reserve rebuilt over minutes | `catch_up` resampling (+/-1% beyond 30 ms error) and a 20 ms early resume |
+| UART7 FIFO off | controller paused per unread byte | FIFO on; RX pauses 0, overruns 0 |
+
+All lost packets were dropped by the sender: PipeWire skips a packet when its
+L2CAP socket is full. Hop counts showed everything handed to the VM adapter
+arrived at the GIGA intact.
+
+Interleaved A/B, 0.2.1 Receiver, 12 min continuous LHDC 192k/24/1000k, BLE
+link held throughout, 512-byte echo load toggled every 180 s (raw LE ATT
+client, 215/216 echoed):
+
+| Phase | Time | BLE writes | Packet loss | Arrivals >50 ms | Silence |
+|---|---|---|---|---|---|
+| BLE load | 336 s | 183 | 17.6% | 63 | 129.8 ms |
+| BLE idle | 378 s | 0 | 20.0% | 125 | 13.7 ms |
+
+- BLE load did not worsen delivery: loss and late arrivals were lower under
+  load.
+- 123 ms of the load-phase silence is one source outage. In that 2 s window
+  only 98 packets arrived and 39 were lost, emptying a full 224 ms ring. BLE
+  sent one write in that window.
+- The other three silences were 5-8 ms each, split across both phases.
+
+Limits:
+- One sender only: a VMware Ubuntu guest whose clock drifts and whose
+  adapter sits on emulated USB 1.1.
+- No phone-source run.
+- A sender outage longer than the 224 ms ring still produces a short
+  silence; no receiver can play audio that never arrived.
