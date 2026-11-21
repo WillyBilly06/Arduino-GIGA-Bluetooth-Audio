@@ -1,5 +1,6 @@
 #pragma once
 #include "Types.h"
+#include "GigaBredrCodecs.h"
 #include "GigaBle.h"
 #include "GigaAvrcp.h"
 #include "AudioDiagnostics.h"
@@ -51,11 +52,12 @@ struct ReceiverConfig {
     void* user = nullptr;
     I2sPins i2s; // Hardware-compatible output route; optional MCLK=-1.
     // Opt-in: place the I2S DMA/PCM ring in D2 SRAM 0x30000000..0x3003FFFF
-    // (256 KB the GIGA M7 linker map leaves unused) instead of the heap. Only
+    // (256 KB the GIGA M7 linker map leaves unused) instead of the heap, stored
+    // as packed 24-bit samples (6 bytes per frame; ~224 ms at 192 kHz). Only
     // set this when no M4 image, sketch or other library uses that SRAM. The
     // automatic BLE coexistence reserve is then capped to fit the window.
     bool pcm_ring_d2_sram = false;
-    // Fill RTP sequence gaps of up to 16 packets / 120 ms with a faded replay
+    // Fill RTP sequence gaps of up to 64 packets / 400 ms with a faded replay
     // of the last real PCM, exactly the lost duration, so a source that drops
     // packets does not drain the PCM reserve into long underrun holds. Not
     // applied to AAC (an access unit can span packets).

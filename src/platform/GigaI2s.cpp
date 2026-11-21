@@ -253,7 +253,7 @@ Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs,const I2sPins& pins,uint1
   I2sRoutePlan selected;if(!i2sRoutePlan(pins,selected))return Status::InvalidArgument;
   I2sClock clock; if(!i2sClock(sampleRate,clock)) return Status::Unsupported;
   uint32_t div=0,odd=0;if(!i2sPrescaler(sampleRate,pins.mclk!=-1,div,odd))return Status::Unsupported;
-  I2sBufferGeometry geometry; if(!i2sBufferGeometry(sampleRate,bufferMs,geometry)) return Status::InvalidArgument;
+  I2sBufferGeometry geometry; if(!i2sBufferGeometry(sampleRate,bufferMs,geometry,useD2Arena)) return Status::InvalidArgument; // D2 rings store packed 24-bit PCM.
   const uint32_t requested=startupMs?uint32_t(((uint64_t(sampleRate)*startupMs+999u)/1000u+3u)&~uint64_t(3u)):0;
   const uint32_t threshold=i2sPrimeFrames(geometry.ring_frames,geometry.half_frames,requested);
   if(!threshold) return Status::InvalidArgument;
@@ -276,7 +276,7 @@ Status i2sBegin(uint32_t sampleRate, uint16_t bufferMs,const I2sPins& pins,uint1
   if(!arena) return Status::OutOfMemory;
   if(!i2sDmaAddress(reinterpret_cast<uintptr_t>(arena),bytes)) { releaseArena(); return Status::HardwareError; }
   dmaWords=static_cast<int32_t*>(arena); memset(arena,0,bytes);
-  ring=new(static_cast<uint8_t*>(arena)+dmaBytes) I2sRing(reinterpret_cast<int32_t*>(static_cast<uint8_t*>(arena)+ringOffset),ringFrames);
+  ring=new(static_cast<uint8_t*>(arena)+dmaBytes) I2sRing(reinterpret_cast<int32_t*>(static_cast<uint8_t*>(arena)+ringOffset),ringFrames,useD2Arena);
   clockTrim=I2sClockTrimState{};clockTrimLast={};trimRequested=trimCaptured=trimRelinquished=false;
   Status result=clockBegin(sampleRate);
   if(result!=Status::Ok) { ring->~I2sRing(); ring=nullptr; releaseArena(); return result; }

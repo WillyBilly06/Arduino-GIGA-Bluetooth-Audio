@@ -525,7 +525,10 @@ struct GigaBredr::Impl {
           const auto rtp = rtp_timing.snapshot();
           const uint64_t errors[] = {rtp.forward_gaps,rtp.duplicates,rtp.backward,rtp.source_changes,rtp.clock_discontinuities,
                                     rtp.timestamp_discontinuities,rtp.inner_sequence_discontinuities,rtp.malformed_payloads,rtp.rejected_epoch};
-          for (unsigned i = 0; i < 9; ++i) { if (errors[i] != clock_rtp_errors[i]) rtp_changed = true; clock_rtp_errors[i] = errors[i]; }
+          // Concealed forward gaps keep the source timeline exact (credited as
+          // decoded frames), so they are not clock errors; unfilled gaps raise
+          // clock_input_fault in processOne instead.
+          for (unsigned i = conceal_enabled ? 1u : 0u; i < 9; ++i) { if (errors[i] != clock_rtp_errors[i]) rtp_changed = true; clock_rtp_errors[i] = errors[i]; }
         }
         const uint32_t dropped_now = dropped.load();
         const bool new_error = counters.decode_errors != clock_previous_decode_errors || dropped_now != clock_previous_dropped ||
@@ -816,6 +819,7 @@ struct GigaBredr::Impl {
         auto record_work = [&]() { work.elapsed_us = clockUs() - packet_began; work_timing.record(packet_epoch, work); };
         if (conceal_enabled && n >= 12 && (packet[0] >> 6) == 2) {
             const uint32_t fill = conceal.onPacket(uint16_t((uint16_t(packet[2]) << 8) | packet[3]));
+            if (conceal.unfilledGap()) clock_input_fault = true;
             if (fill) {
                 if (!writeConcealment(fill, packet_epoch)) { record_work(); return true; }
                 conceal.beginFadeIn();

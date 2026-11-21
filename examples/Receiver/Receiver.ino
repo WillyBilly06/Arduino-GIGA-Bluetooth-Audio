@@ -46,6 +46,10 @@ void setup() {
   // sketch starts no M4 image, so the PCM ring can live there. That frees
   // the heap and lets 192 kHz streams keep the BLE coexistence reserve.
   config.pcm_ring_d2_sram=true;
+  // Widest BLE coexistence margin the D2 window allows (capped per rate,
+  // 40 ms ring headroom kept above it): 192 kHz LHDC gets 184 ms of real PCM;
+  // lower rates get the full +200 ms.
+  config.ble.audio_coexistence_reserve_ms=200;
   config.i2s.bclk=70; config.i2s.data=72; config.i2s.lrck=GIGA_BREDR_I2S_WS_PIN; config.i2s.mclk=-1;
   requestedConnectionPreference=config.ble.audio_connection_preference;
   Status status=receiver.begin(config);

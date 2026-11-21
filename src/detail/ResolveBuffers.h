@@ -11,13 +11,14 @@ constexpr bool validBufferSettings(const AudioBufferConfig& b) {
     return !(b.startup_packets && b.startup_buffer_ms);
 }
 // Largest pcm_buffer_ms whose I2S arena (2 x 1 ms DMA halves, ring object,
-// 32-byte alignment, 8-byte frames) fits the 256 KB D2 SRAM window.
+// 32-byte alignment, packed 6-byte frames) fits the 256 KB D2 SRAM window.
 constexpr uint32_t D2RingWindowBytes=0x40000u;
+constexpr uint32_t D2RingHeadroomMs=40u; // Capacity kept free above a widened D2 reserve.
 constexpr uint32_t d2RingPcmMs(uint32_t rate) {
     if(rate<8000 || rate>192000) return 0;
     const uint32_t half=((rate+999u)/1000u+3u)&~3u;
     const uint32_t overhead=half*16u+96u;
-    const uint32_t frames=(D2RingWindowBytes-overhead)/8u;
+    const uint32_t frames=(D2RingWindowBytes-overhead)/6u;
     const uint32_t ms=uint32_t((uint64_t(frames-8u)*1000u)/rate);
     return ms>MaximumPcmBufferMs?MaximumPcmBufferMs:ms;
 }
@@ -36,6 +37,7 @@ constexpr bool resolveAudioBuffers(const ReceiverConfig& r,const CodecConfig& c,
     const auto& p=r.codec_buffers[static_cast<unsigned>(c.codec)];
     const auto g=globalBufferSettings(r);
     if(!validBufferSettings(g) || !validBufferSettings(p)) return false;
+    uint32_t widened_headroom=10u; // PCM capacity above the startup reserve.
     out.maximum_packet_bytes=p.maximum_packet_bytes?p.maximum_packet_bytes:
         g.maximum_packet_bytes?g.maximum_packet_bytes:AutomaticPacketBytes;
     out.maximum_access_unit_bytes=p.maximum_access_unit_bytes?p.maximum_access_unit_bytes:
@@ -57,16 +59,21 @@ constexpr bool resolveAudioBuffers(const ReceiverConfig& r,const CodecConfig& c,
         uint32_t extra=margin;
         if(r.pcm_ring_d2_sram) {
             // Keep the widened ring inside the fixed D2 window so it is
-            // actually placed there instead of falling back to the heap.
+            // actually placed there instead of falling back to the heap, and
+            // leave D2RingHeadroomMs above the reserve: a ring pinned full by
+            // arrival bursts/gap fills reads as excess to the clock controller.
             const uint32_t cap=d2RingPcmMs(c.sample_rate);
-            extra=startup+10u>=cap?0u:(startup+extra+10u>cap?cap-startup-10u:extra);
+            extra=startup+D2RingHeadroomMs>=cap?0u:(startup+extra+D2RingHeadroomMs>cap?cap-startup-D2RingHeadroomMs:extra);
         }
-        if(coexistence && r.ble.enabled && c.sample_rate>=88200 && startup+extra+10u<=MaximumPcmBufferMs) startup+=extra;
+        if(coexistence && r.ble.enabled && c.sample_rate>=88200 && startup+extra+(r.pcm_ring_d2_sram?D2RingHeadroomMs:10u)<=MaximumPcmBufferMs) {
+            startup+=extra;
+            if(r.pcm_ring_d2_sram && extra) widened_headroom=D2RingHeadroomMs;
+        }
         out.startup_buffer_ms=uint16_t(startup);
     }
     if(!r.enable_i2s) { out.startup_packets=1;out.startup_buffer_ms=0; }
     if(out.startup_packets>out.queue_packets) out.startup_packets=out.queue_packets;
-    const uint32_t requested_pcm=out.startup_buffer_ms?uint32_t(out.startup_buffer_ms)+10u:20u;
+    const uint32_t requested_pcm=out.startup_buffer_ms?uint32_t(out.startup_buffer_ms)+widened_headroom:20u;
     const uint32_t pcm=p.pcm_buffer_ms?p.pcm_buffer_ms:g.pcm_buffer_ms?g.pcm_buffer_ms:requested_pcm;
     if(pcm<2 || pcm>MaximumPcmBufferMs || (out.startup_buffer_ms && pcm<out.startup_buffer_ms)) return false;
     out.pcm_buffer_ms=uint16_t(pcm);

@@ -1,4 +1,5 @@
 #include "Codecs.h"
+#include "../GigaBredrCodecs.h"
 #include "../CodecBuildConfig.h"
 #include "../detail/Memory.h"
 #include "../detail/SbcConfig.h"
@@ -279,34 +280,73 @@ static DecodeResult sscDecode(void* p,const uint8_t* in,size_t n,int32_t* pcm,si
 }
 static const DecoderOps sscOps={sscOpen,sscDecode,sscClose};
 #endif
-const DecoderOps* codecOperations(Codec c) {
-    switch(c) {
+}}
+// Public codec entries: GIGA_BREDR_CODECS(...) in a sketch references only the
+// listed ones, so --gc-sections drops every other decoder.
+namespace giga_bredr { namespace codecs {
 #if GBR_ENABLE_SBC
-    case Codec::Sbc:return &sbcOps;
+const CodecEntry Sbc={Codec::Sbc,&detail::sbcOps};
 #endif
 #if GBR_ENABLE_AAC
-    case Codec::Aac:return &aacOps;
+const CodecEntry Aac={Codec::Aac,&detail::aacOps};
 #if GBR_ENABLE_AAC_HE
-    case Codec::AacHe:return &aacOps;
+const CodecEntry AacHe={Codec::AacHe,&detail::aacOps};
 #endif
 #endif
 #if GBR_ENABLE_APTX
-    case Codec::Aptx:case Codec::AptxHd:return &aptxOps;
+const CodecEntry Aptx={Codec::Aptx,&detail::aptxOps};
+const CodecEntry AptxHd={Codec::AptxHd,&detail::aptxOps};
 #endif
 #if GBR_ENABLE_LDAC
-    case Codec::Ldac:return &ldacOps;
+const CodecEntry Ldac={Codec::Ldac,&detail::ldacOps};
 #endif
 #if GBR_ENABLE_LHDC
-    case Codec::LhdcV5:return &lhdcOps;
+const CodecEntry LhdcV5={Codec::LhdcV5,&detail::lhdcOps};
 #endif
 #if GBR_ENABLE_OPUS
-    case Codec::Opus:return &opusOps;
+const CodecEntry Opus={Codec::Opus,&detail::opusOps};
 #endif
 #if GBR_ENABLE_SSC
-    case Codec::Ssc:return &sscOps;
+const CodecEntry Ssc={Codec::Ssc,&detail::sscOps};
 #endif
-    default:return nullptr;
-    }
+}}
+namespace {
+const giga_bredr::CodecEntry* const allCodecEntries[]={
+#if GBR_ENABLE_SBC
+    &giga_bredr::codecs::Sbc,
+#endif
+#if GBR_ENABLE_AAC
+    &giga_bredr::codecs::Aac,
+#if GBR_ENABLE_AAC_HE
+    &giga_bredr::codecs::AacHe,
+#endif
+#endif
+#if GBR_ENABLE_APTX
+    &giga_bredr::codecs::Aptx,&giga_bredr::codecs::AptxHd,
+#endif
+#if GBR_ENABLE_LDAC
+    &giga_bredr::codecs::Ldac,
+#endif
+#if GBR_ENABLE_LHDC
+    &giga_bredr::codecs::LhdcV5,
+#endif
+#if GBR_ENABLE_OPUS
+    &giga_bredr::codecs::Opus,
+#endif
+#if GBR_ENABLE_SSC
+    &giga_bredr::codecs::Ssc,
+#endif
+    nullptr};
+}
+// Weak default: every enabled decoder. A sketch's GIGA_BREDR_CODECS(...)
+// replaces it, leaving this table (and its decoders) unreferenced.
+extern const giga_bredr::CodecTable gbr_codec_table __attribute__((weak))={allCodecEntries,
+    uint32_t(sizeof(allCodecEntries)/sizeof(allCodecEntries[0])-1)};
+namespace giga_bredr { namespace detail {
+const DecoderOps* codecOperations(Codec c) {
+    const CodecTable& t=gbr_codec_table;
+    for(uint32_t i=0;i<t.count;++i) if(t.entries[i] && t.entries[i]->codec==c) return t.entries[i]->ops;
+    return nullptr;
 }
 uint32_t compiledCodecs() { uint32_t mask=0;for(unsigned i=0;i<(unsigned)Codec::Count;++i)if(codecOperations((Codec)i))mask|=codecBit((Codec)i);return mask; }
 }}

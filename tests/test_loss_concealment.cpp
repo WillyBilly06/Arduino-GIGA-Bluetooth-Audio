@@ -25,13 +25,16 @@ int main() {
     c.reset(); c.packetFrames(2880);
     CHECK(c.onPacket(65535) == 0);
     CHECK(c.onPacket(1) == 2880);
-    // Gap limits: 120 ms at 192 kHz is 23040 frames = 8 LHDC packets.
+    // Gap limits: 400 ms at 192 kHz is 76800 frames = 26 whole LHDC packets.
     c.reset(); c.packetFrames(2880); c.onPacket(0);
-    CHECK(c.onPacket(9) == 8u * 2880u);   // 8 lost, 120 ms
-    CHECK(c.onPacket(19) == 0);           // 9 lost, 135 ms: interruption
+    CHECK(c.onPacket(27) == 26u * 2880u);  // 26 lost, 390 ms
+    CHECK(c.onPacket(55) == 0);            // 27 lost, 405 ms: interruption
+    CHECK(c.unfilledGap());
+    CHECK(c.onPacket(56) == 0 && !c.unfilledGap());
+    CHECK(c.onPacket(58) == 2880 && !c.unfilledGap());
     c.reset(); c.packetFrames(128); c.onPacket(0);
-    CHECK(c.onPacket(17) == 16u * 128u);  // 16-packet cap
-    CHECK(c.onPacket(35) == 0);           // 17 lost
+    CHECK(c.onPacket(65) == 64u * 128u);   // 64-packet cap
+    CHECK(c.onPacket(131) == 0);           // 65 lost
     // Unknown packet size: nothing to fill.
     c.reset(); c.onPacket(0); CHECK(c.onPacket(5) == 0);
 

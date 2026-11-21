@@ -18,19 +18,21 @@ namespace giga_bredr { namespace detail {
 class LossConcealment {
 public:
     // Largest gap filled; longer gaps are treated as stream interruptions.
-    static constexpr uint32_t MaximumPackets = 16, MaximumMs = 120;
+    // A source that discards a run of queued packets (PipeWire on a full socket) still keeps
+    // its timeline, so even long runs are filled rather than drained.
+    static constexpr uint32_t MaximumPackets = 64, MaximumMs = 400;
 
     void attach(int32_t* storage, uint32_t capacity_frames, uint32_t sample_rate) {
         src_ = storage; cap_ = storage ? capacity_frames : 0; rate_ = sample_rate;
         fade_ = sample_rate / 400u; if (fade_ < 16u) fade_ = 16u; // 2.5 ms
         reset();
     }
-    void reset() { len_ = 0; fade_left_ = 0; seq_valid_ = false; packet_frames_ = 0; }
+    void reset() { len_ = 0; fade_left_ = 0; seq_valid_ = false; unfilled_ = false; packet_frames_ = 0; }
 
     // Sequence bookkeeping per received RTP packet. Returns the PCM frames to
     // fill before this packet (0: none). Duplicates/backward steps fill nothing.
     uint32_t onPacket(uint16_t sequence) {
-        uint32_t fill = 0;
+        uint32_t fill = 0; unfilled_ = false;
         if (seq_valid_) {
             const uint16_t step = uint16_t(sequence - last_seq_);
             if (step == 0 || step >= 0x8000u) return 0; // duplicate / reordered: keep last
@@ -39,6 +41,7 @@ public:
                 const uint64_t frames = uint64_t(lost) * packet_frames_;
                 if (frames <= uint64_t(rate_) * MaximumMs / 1000u) fill = uint32_t(frames);
             }
+            unfilled_ = lost && !fill; // A gap the timeline could not be kept across.
         }
         last_seq_ = sequence; seq_valid_ = true;
         return fill;
@@ -77,6 +80,8 @@ public:
             pcm[2 * i + 1] = scale(pcm[2 * i + 1], gain);
         }
     }
+    // True when the last onPacket() saw lost packets it did not fill.
+    bool unfilledGap() const { return unfilled_; }
     uint32_t fadeFrames() const { return fade_; }
     uint32_t rememberedFrames() const { return len_; }
 
@@ -88,6 +93,6 @@ private:
     int32_t* src_ = nullptr;
     uint32_t cap_ = 0, len_ = 0, rate_ = 48000, fade_ = 120, fade_left_ = 0, packet_frames_ = 0;
     uint16_t last_seq_ = 0;
-    bool seq_valid_ = false;
+    bool seq_valid_ = false, unfilled_ = false;
 };
 }}

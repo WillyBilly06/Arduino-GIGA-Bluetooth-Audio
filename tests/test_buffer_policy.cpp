@@ -38,20 +38,23 @@ constexpr bool ble_coexistence_reserve() {
 }
 static_assert(ble_coexistence_reserve(),"BLE adds automatic reserve only for >=88.2 kHz automatic profiles");
 static_assert(ReceiverConfig{}.pcm_ring_d2_sram==false,"D2 placement is opt-in");
-static_assert(d2RingPcmMs(192000)==168 && d2RingPcmMs(176400)==183 && d2RingPcmMs(96000)==320,"D2 window ring caps");
+static_assert(d2RingPcmMs(192000)==224 && d2RingPcmMs(176400)==244 && d2RingPcmMs(96000)==320,"D2 window ring caps (packed 6-byte frames)");
 constexpr bool d2_capped_reserve() {
-    ReceiverConfig r;r.pcm_ring_d2_sram=true;CodecConfig c;c.codec=Codec::LhdcV5;c.sample_rate=192000;AudioBufferConfig b;
-    // 80 base + 100 BLE would need a ~292 KB ring; keep it inside 256 KB.
-    if(!resolveAudioBuffers(r,c,960,b) || b.startup_buffer_ms!=158 || b.pcm_buffer_ms!=168)return false;
-    I2sBufferGeometry g;
-    if(!i2sBufferGeometry(192000,b.pcm_buffer_ms,g) || g.total_bytes>D2ArenaBytes)return false;
+    ReceiverConfig r;r.pcm_ring_d2_sram=true;CodecConfig c;c.codec=Codec::LhdcV5;c.sample_rate=192000;AudioBufferConfig b;I2sBufferGeometry g;
+    // Default 100 ms BLE margin fits: 80 + 100 reserve, +40 ms headroom (packed ring ~256 KB).
+    if(!resolveAudioBuffers(r,c,960,b) || b.startup_buffer_ms!=180 || b.pcm_buffer_ms!=220)return false;
+    if(!i2sBufferGeometry(192000,b.pcm_buffer_ms,g,true) || g.total_bytes>D2ArenaBytes)return false;
+    // A larger request is capped to the window, keeping 40 ms headroom: 80 + 104 / 224.
+    r.ble.audio_coexistence_reserve_ms=200;
+    if(!resolveAudioBuffers(r,c,960,b) || b.startup_buffer_ms!=184 || b.pcm_buffer_ms!=224)return false;
+    if(!i2sBufferGeometry(192000,224,g,true) || g.total_bytes>D2ArenaBytes || !i2sBufferGeometry(192000,225,g,true) || g.total_bytes<=D2ArenaBytes-3000u)return false;
     c.sample_rate=176400;
-    if(!resolveAudioBuffers(r,c,882,b) || b.pcm_buffer_ms!=183 || !i2sBufferGeometry(176400,183,g) || g.total_bytes>D2ArenaBytes)return false;
-    c.codec=Codec::Ldac;c.sample_rate=96000; // Fits uncapped.
-    if(!resolveAudioBuffers(r,c,256,b) || b.startup_buffer_ms!=150 || b.pcm_buffer_ms!=160)return false;
+    if(!resolveAudioBuffers(r,c,882,b) || b.startup_buffer_ms!=204 || b.pcm_buffer_ms!=244 || !i2sBufferGeometry(176400,244,g,true) || g.total_bytes>D2ArenaBytes)return false;
+    c.codec=Codec::Ldac;c.sample_rate=96000; // Fits uncapped: 50 + 200, +40 headroom.
+    if(!resolveAudioBuffers(r,c,256,b) || b.startup_buffer_ms!=250 || b.pcm_buffer_ms!=290)return false;
     return resolveAudioBuffers(r,c,256,b,false) && b.startup_buffer_ms==50;
 }
-static_assert(d2_capped_reserve(),"D2 placement caps the BLE coexistence margin to the 256 KB window");
+static_assert(d2_capped_reserve(),"D2 placement caps the BLE coexistence margin to the 256 KB packed window");
 constexpr bool lhdc_explicit_reserve_compatibility() {
     ReceiverConfig r;CodecConfig c;c.codec=Codec::LhdcV5;c.sample_rate=192000;
     AudioBufferConfig b;
