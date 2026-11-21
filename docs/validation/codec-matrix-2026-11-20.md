@@ -60,6 +60,7 @@ PCM frames the I2S output had to substitute because the ring was empty.
   and the source in [decoder-fidelity-2026-11-21.md](decoder-fidelity-2026-11-21.md)
   (aptX/aptX HD bit-exact; SBC/AAC/Opus within 16-bit rounding). On the board
   the M7 decode is bit-exact with that native build for the fixed-point codecs
-  and within final rounding (>= 85 dB) for the floating-point ones, but
-  the I2S pins were not measured; "0 errors" means each decoder accepted
-  every frame.
+  and within final rounding (>= 85 dB) for the floating-point ones. The default
+  I2S pins were probed on-chip: exact samples and framing at 44.1/48/96 kHz;
+  at 192 kHz only LRCK could be resolved. In this table "0 errors" means each
+  decoder accepted every frame.

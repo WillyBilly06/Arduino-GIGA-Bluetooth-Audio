@@ -57,7 +57,9 @@ static void runCase(const ParityCase& k) {
 }
 void setup() { Serial.begin(115200); }
 void loop() {
-  if (Serial.available() && Serial.read() == 'g') {
+  const int command = Serial.available() ? Serial.read() : -1;
+  if (command == 'B') { delay(100); _ontouch1200bps_(); }  // DFU entry for tools/flash_giga.py
+  if (command == 'g') {
     for (const auto& k : parityCases) runCase(k);
     block('Z', nullptr, 0);
   }

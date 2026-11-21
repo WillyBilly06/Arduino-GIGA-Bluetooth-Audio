@@ -140,12 +140,62 @@ but `Decoder::decode`):
 | LHDC V5 192k/24 | 0.16 s | 53 ms | 33% |
 | SSC UHQ 96k | 0.22 s | 32 ms | 14.8% |
 
+## On the board: I2S at the pins
+
+No external logic analyzer was used.
+
+`tools/fidelity/board/I2sProbe` runs the library's own I2S output
+(`i2sBegin`/`i2sWrite`) on the default pins:
+- D70/PI1 BCLK
+- D72/PI3 DIN
+- D74/PB12 LRCK
+
+It writes a frame-numbered 24-bit pattern: left = n ^ 0xA53C96,
+right = n * 0x1F3 + 0x3C5A, each shifted into the top 24 bits.
+
+The pins are then sampled through the GPIO input data registers. In
+alternate-function mode these registers follow the actual pad level, so this
+reads the pins, not the I2S peripheral. Each capture is a ~0.9 ms window with
+interrupts masked, shorter than one DMA half, so every captured frame is
+fresh. The probe refills for 60 ms before each capture. The probe's own
+`underruns` counter rises only because its USB transfers between captures
+outlast the 20 ms ring, not during a capture.
+
+`read_i2s.py` decodes the captures on the host:
+- BCLK rising edges, then DIN bits;
+- frame alignment from LRCK, or from the pattern in GPIOI-only mode;
+- each decoded frame checked against the pattern;
+- the low byte checked to be zero.
+
+Eight captures per rate and mode, physical GIGA, 2026-11-21:
+
+| Rate | Sampling | BCLK measured | LRCK measured | Slot | Frames matching the written samples |
+|---|---|---|---|---|---|
+| 44.1 kHz | GPIOI+GPIOB 13.3 MHz | 2.8222 MHz = 64.00 fs | 44.10 kHz | 32 bit | 312/312, consecutive, low byte 0 |
+| 44.1 kHz | GPIOI only 21.6 MHz | 64.00 fs, 0 missed edges | - | - | 313/313 |
+| 48 kHz | GPIOI+GPIOB 13.3 MHz | 3.0720 MHz = 64.00 fs | 48.00 kHz | 32 bit | 337/337, consecutive, low byte 0 |
+| 48 kHz | GPIOI only 21.6 MHz | 64.00 fs, 0 missed edges | - | - | 340/340 |
+| 96 kHz | GPIOI only 21.6 MHz | 6.1435 MHz = 64.00 fs, 0 missed edges | 96.00 kHz (13.3 MHz pass) | - | 684/684 |
+| 192 kHz | any | not resolvable | 192.0 kHz | - | not decodable |
+
+At 44.1, 48 and 96 kHz, the pins carry Philips I2S with 32-bit slots and the
+exact 24-bit samples written, MSB first, in order. Neither data nor framing
+has errors.
+
+At 192 kHz, BCLK is 12.288 MHz. Reading the GPIO register tops out at about
+21.7 MHz, both from a CPU loop and from an MDMA block copy (also tried; at
+96 kHz it gives the same results, less cleanly). That is below the 24.6 MHz
+needed to resolve BCLK, so only LRCK (192.0 kHz) was measured there. The
+192 kHz path uses the same packing, DMA and peripheral settings with a
+different clock divider. `i2sBegin` reads back I2SDIV/ODD and checks them.
+
 ## Not covered
 
 - No system encoder for LHDC V5 or SSC was used; their own fixtures are above.
 - HE-AAC was not run.
-- The electrical I2S output was not captured. The PCM above is what the
-  decoder hands to the I2S path. The packing and DMA after that point are
-  covered only by native tests (`tests/test_i2s_packed.cpp`), not measured on
-  the pins.
+- I2S at 192 kHz: BCLK and DIN were not resolved, only LRCK (see above).
+- The alternate pin routes were not probed (e.g. D75/D73 with D74/D69, MCLK).
+- Analog electrical quality at the header was not measured: edge rates,
+  levels under a DAC load, jitter. The probe sees logic levels at the pad
+  input buffer only.
 - No listening tests.
