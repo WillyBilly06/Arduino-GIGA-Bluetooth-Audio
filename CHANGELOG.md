@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Diagnostics: `-DGIGA_BREDR_LINK_PROBE=1` logs `GBR_LINK` (AFH map, RSSI,
+  failed contacts, LMP features) every 2 s while Classic is connected;
+  `GIGA_BREDR_CONNECTED_SCAN` overrides the connected scan value (default 1);
+  Receiver gains `RECEIVER_BLE`, `RECEIVER_LE_LATENCY` and the `L`/`l` status-log
+  pause. Phone test: RedMagic LHDC V5 900 kbps stutter is a phone-side airtime
+  limit in a congested 2.4 GHz band (400 kbps clean on the same firmware); see
+  `docs/validation/phone-lhdc-airtime-2026-11-21.md`.
 - Concealment of sender-side drops: an Android A2DP source on a congested link
   drops whole encoded packets from its transmit queue before sequence numbers
   are assigned, so the RTP sequence stays continuous while the timestamp jumps

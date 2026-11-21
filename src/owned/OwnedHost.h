@@ -1,4 +1,8 @@
 #pragma once
+// Diagnostic: -DGIGA_BREDR_LINK_PROBE=1 logs GBR_LINK (AFH map, RSSI, failed contacts, LMP features) every 2 s while Classic is connected.
+#ifndef GIGA_BREDR_LINK_PROBE
+#define GIGA_BREDR_LINK_PROBE 0
+#endif
 #include "ClassicProfiles.h"
 #include "LeProfiles.h"
 #include "ControllerAudioPriority.h"
@@ -161,6 +165,9 @@ private:
  unsigned next_peer_=0,bond_cursor_=0,le_trace_=0;Boot boot_=Boot::Failed;
  uint8_t le_reply_observe_trace_=0; // Shared peer-reply CC/update quota, separate from GAP.
  uint32_t qos_last_data_ms_=0,qos_classic_owner_=0,qos_le_owner_=0;
+#if GIGA_BREDR_LINK_PROBE
+ uint32_t link_probe_ms_=0;int8_t link_rssi_=0;uint8_t link_afh_mode_=0xff,link_assess_=0xff,link_map_[10]={};uint16_t link_fcc_=0; // GIGA_BREDR_LINK_PROBE diagnostic only.
+#endif
 #if GIGA_BREDR_CONNECT_TRACE
  bool capability_query_sent_=false; // GIGA_BREDR_CONNECT_TRACE diagnostic only.
  uint32_t capability_printed_ms_=0;char capability_lines_[5][200]={};bool cpb_probe_sent_=false;

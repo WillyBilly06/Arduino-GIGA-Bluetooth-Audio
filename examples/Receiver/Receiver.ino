@@ -5,6 +5,9 @@
 #include "ProfileLog.h"
 #include <platform/SchedulerWitness.h>
 #include <GigaQspiBondStorage.h>
+#ifndef RECEIVER_BLE
+#define RECEIVER_BLE 1 // 0 builds a Classic-only Receiver (no BLE advertising)
+#endif
 using namespace giga_bredr;
 #if defined(ARDUINO_GIGA) && defined(CORE_CM7)
 void _ontouch1200bps_(); // GIGA variant: mark RTC BKP0R for DFU and reset.
@@ -35,7 +38,7 @@ void setup() {
   // Zero buffer settings select the negotiated codec's real-PCM reserve.
   // Only the selected configuration allocates; DMA waits for its watermark.
   // Nonzero config.codec_buffers[Codec] fields provide explicit overrides.
-  config.ble.enabled=true; config.ble.maximum_mtu=517;
+  config.ble.enabled=RECEIVER_BLE; config.ble.maximum_mtu=517;
   config.ble.audio_connection_preference.interval_min=96;
   config.ble.audio_connection_preference.interval_max=96; // 120ms; peer acceptance is reported.
   config.classic_bonds=bonds.storage();
@@ -51,11 +54,15 @@ void setup() {
   // lower rates get the full +200 ms.
   config.ble.audio_coexistence_reserve_ms=200;
   config.i2s.bclk=70; config.i2s.data=72; config.i2s.lrck=GIGA_BREDR_I2S_WS_PIN; config.i2s.mclk=-1;
+#ifdef RECEIVER_LE_LATENCY
+  config.ble.audio_connection_preference.latency=RECEIVER_LE_LATENCY; // build-time A/B of LE peripheral latency
+#endif
   requestedConnectionPreference=config.ble.audio_connection_preference;
   Status status=receiver.begin(config);
   console.print("GBR_BEGIN status=%s compiled_mask=%08lx\n", statusName(status), (unsigned long)receiver.availableCodecs());
   console.print("GBR_PINS BCLK=%d DIN=%d LRCK=%d MCLK=%d\n",int(config.i2s.bclk),int(config.i2s.data),int(config.i2s.lrck),int(config.i2s.mclk));
 }
+static bool statusLogPaused=false;
 void loop() {
   receiver.poll();
   // Foreground snapshots: received AVRCP status and A2DP transport stay distinct.
@@ -71,6 +78,10 @@ void loop() {
       const auto result=receiver.bleDisconnect(current.generation,false);
       console.print("GBR_BLE_CONTROL ms=%lu action=disconnect expected=%lu advertise_after=0 status=%s\n",
         (unsigned long)millis(),(unsigned long)current.generation,statusName(result));
+    } else if(command=='L'||command=='l') {
+      // L pauses the periodic 2 s status dump (no formatting at all); l resumes it.
+      statusLogPaused=(command=='L');
+      console.print("GBR_STATUS_LOG ms=%lu paused=%u\n",(unsigned long)millis(),unsigned(statusLogPaused));
     } else if(command=='q'||command=='Q') {
       // Toggle the compressed-queue reserve: 'q' off, 'Q' on (A/B testing).
       const auto result=receiver.setQueueReserve(command=='Q');
@@ -104,7 +115,7 @@ void loop() {
     }
   }
   static uint32_t last=0;
-  if (millis()-last>=2000) {
+  if (!statusLogPaused && millis()-last>=2000) {
     last=millis(); auto s=receiver.stats();
     const auto& buffers=s.buffers;const auto& output=s.output;
     console.print("GBR_BUFFERS codec=%s rate=%lu packet_bytes=%u au_bytes=%u queue_slots=%u startup_packets=%u startup_ms=%u pcm_ms=%u ring_frames=%lu dma_half_frames=%lu startup_frames=%lu initial_queued_frames=%lu queued_frames=%lu\n",
