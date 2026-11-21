@@ -1,8 +1,72 @@
-# GigaBredr dev.18 develop (experimental)
+# GigaBredr 0.2.0 (experimental)
 
 Bluetooth Classic A2DP receiver with board-pin I2S output, BLE GATT server and
 additional Classic profiles for the Arduino GIGA R1 WiFi (Cortex-M7), using a
 project-owned host stack on the board's Murata 1DX (CYW4343W) radio.
+
+## Quick start
+
+1. Install **Arduino Mbed OS GIGA Boards 4.6.0** and select **Arduino GIGA R1 / Cortex-M7**.
+2. Install **GigaBredr**: Library Manager (search "GigaBredr"), or **Sketch > Include Library > Add .ZIP Library** with a [release ZIP](https://github.com/WillyBilly06/Arduino-GIGA-Bluetooth-Audio/releases).
+3. Wire an I2S DAC such as a PCM5102A: **D70 → BCK, D74 → LCK, D72 → DIN**, 3.3 V and GND.
+4. Upload this sketch, then pair your phone or PC with "GIGA Speaker":
+
+```cpp
+#include <GigaBredr.h>
+using namespace giga_bredr;
+
+GigaBredr receiver;
+
+void setup() {
+  ReceiverConfig config;
+  config.name = "GIGA Speaker";
+  receiver.begin(config);   // A2DP sink, AVRCP and BLE server; all compiled codecs
+}
+
+void loop() {}
+```
+
+Every codec negotiates automatically; buffers are allocated only for the one
+in use. **File > Examples > GigaBredr** has ready sketches: `SbcReceiver`
+(smallest), `CodecSelect`, `Receiver` (full diagnostics), `A2dpBleCoexist`,
+`SppEcho`, `HfpReceiver`, `HidKeyboard`, `ObexPush`, `PhonebookPull`,
+`MessageListing`, `AvrcpRemote` and `CpbBroadcast`.
+
+### Choose which codecs are compiled in
+
+Add one line at global scope in your sketch:
+
+```cpp
+GIGA_BREDR_CODECS(Sbc, Aac, LhdcV5);
+```
+
+Names: `Sbc` (SBC and SBC-XQ; always keep it), `Aac`, `AacHe`, `Aptx`, `AptxHd`,
+`Ldac`, `LhdcV5`, `Opus`, `Ssc`. Unlisted decoders are left out of flash and are
+not offered to phones. Without the line, every codec is included. The
+`CodecSelect` example measured:
+
+| Selection | Flash used |
+|---|---|
+| all codecs (no line) | 595,576 B |
+| `Sbc, Aac, LhdcV5` | 458,544 B |
+| `Sbc` | 342,344 B |
+
+### Profiles
+
+Each profile has a `ReceiverConfig` switch, set before `begin()`; off by default unless noted.
+
+| Profile | Enable with | Status |
+|---|---|---|
+| A2DP sink (audio) | on by default | on-board with phone and Linux senders; see codec table |
+| AVRCP (volume, metadata, play/pause/next) | on by default | volume/metadata on-board; controller interop limited |
+| BLE GATT server | on by default (`config.ble.enabled`) | on-board echo during LHDC 192 kHz streaming |
+| SPP serial port | `config.spp.enabled` | on-board echo, ~50 kbit/s |
+| HFP / HSP hands-free (experimental) | `config.voice.hands_free` / `.headset` | limited runs; full call flow not established |
+| HID keyboard/mouse/gamepad | `config.hid.enabled` | native tests; not yet tested over the air |
+| OBEX Object Push, PBAP, MAP | `config.obex.opp_enabled` / `.pbap_enabled` / `.map_enabled` | native tests; not yet tested over the air |
+| Connectionless Peripheral Broadcast | `config.cpb.role` | transmitter sequence on-board; reception untested |
+
+What each claim rests on, codec by codec: [validation matrix](docs/validation/dev18-validation-matrix.md).
 
 ## What is new in dev.18 (2026-11-20)
 

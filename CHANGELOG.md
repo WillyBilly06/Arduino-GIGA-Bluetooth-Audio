@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.2.0 - 2026-11-20
+
+First Library Manager release; includes the work listed under the 2026-11-20
+heading below.
+
+- Choose codecs from the sketch: `GIGA_BREDR_CODECS(Sbc, Aac, LhdcV5);` links
+  only the listed decoders and offers only those to phones (CodecSelect
+  example; SBC-only 342 KB vs 596 KB with every codec).
+- RTP packet-loss concealment (`ReceiverConfig::conceal_lost_packets`, on by
+  default): sequence gaps up to 64 packets / 400 ms are filled with exactly
+  the lost duration instead of draining the PCM reserve into ~190 ms silent
+  holds.
+- Opt-in `ReceiverConfig::pcm_ring_d2_sram`: the I2S ring lives in unused D2
+  SRAM as packed 24-bit samples. At 192 kHz the BLE coexistence reserve
+  actually applies (184 ms, was silently 80 ms).
+- Audio clock: concealed gaps no longer restart clock learning.
+- UART7 RX/TX FIFOs enabled for the controller link.
+- Receiver logs channels/bits/bitrate, UART pressure and concealment, and
+  enters DFU on the 'B' console command.
+- Tools: `tools/flash_giga.py` (flash without pressing RESET) and a browser
+  serial monitor (`tools/serial_monitor`).
+
 ## Local unreleased connection, bonding, SSC and coexistence work - 2026-11-20
 
 - Add a MAP client (Message Access Profile, MCE role), off by default:
