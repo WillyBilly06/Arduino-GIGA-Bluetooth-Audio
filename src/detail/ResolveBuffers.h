@@ -65,7 +65,9 @@ constexpr bool resolveAudioBuffers(const ReceiverConfig& r,const CodecConfig& c,
             const uint32_t cap=d2RingPcmMs(c.sample_rate);
             extra=startup+D2RingHeadroomMs>=cap?0u:(startup+extra+D2RingHeadroomMs>cap?cap-startup-D2RingHeadroomMs:extra);
         }
-        if(coexistence && r.ble.enabled && c.sample_rate>=88200 && startup+extra+(r.pcm_ring_d2_sram?D2RingHeadroomMs:10u)<=MaximumPcmBufferMs) {
+        // On the heap only high-rate streams get the margin; with the D2 ring
+        // every rate does (bursty senders deliver 100 ms gaps at 48 kHz too).
+        if(coexistence && r.ble.enabled && (c.sample_rate>=88200 || r.pcm_ring_d2_sram) && startup+extra+(r.pcm_ring_d2_sram?D2RingHeadroomMs:10u)<=MaximumPcmBufferMs) {
             startup+=extra;
             if(r.pcm_ring_d2_sram && extra) widened_headroom=D2RingHeadroomMs;
         }

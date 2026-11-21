@@ -158,11 +158,14 @@ static DecodeResult aptxDecode(void* p,const uint8_t* in,size_t n,int32_t* pcm,s
     auto s=(AptxState*)p;size_t block=s->hd?6:4;
     if(n<block)return result(Status::NeedMoreData);if(n%block)return result(Status::CorruptFrame);
     // One block at a time bounds scratch and preserves the core's 90-sample priming.
+    // The sync decoder re-acquires the codeword parity sequence byte by byte
+    // after a lost packet; plain aptx_decode() fails every later block.
     size_t used=0,frames=0;uint8_t packed[24];
     while(used<n) {
         if(cap-frames<4)return result(frames?Status::Ok:Status::OutputFull,used,frames);
-        size_t wrote=0,got=aptx_decode(s->decoder,in+used,block,packed,sizeof(packed),&wrote);
-        if(got!=block)return result(Status::CorruptFrame,used,frames);
+        size_t wrote=0,dropped=0;int synced=0;
+        const size_t got=aptx_decode_sync(s->decoder,in+used,block,packed,sizeof(packed),&wrote,&synced,&dropped);
+        if(!got||got>block)return result(Status::CorruptFrame,used,frames);
         used+=got;
         for(size_t i=0;i<wrote/3;i++) {
             uint32_t v=uint32_t(packed[3*i])|(uint32_t(packed[3*i+1])<<8)|(uint32_t(packed[3*i+2])<<16);

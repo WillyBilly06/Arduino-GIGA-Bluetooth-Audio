@@ -9,14 +9,16 @@ Linux. "M7 build" = official Arduino Mbed GIGA 4.6.0 Cortex-M7 compile.
 
 | Codec | Native decode tests | M7 build | On-board OTA decode | Sender used | Not established |
 |---|---|---|---|---|---|
-| SBC / SBC-XQ | yes (memory, frontend) | yes | earlier field runs | phone (earlier) | distinct SBC-XQ phone mode |
-| AAC-LC | yes | yes | earlier field runs | phone (earlier) | |
+| SBC / SBC-XQ | yes (memory, frontend) | yes | yes, 2026-11-20 (0 errors, 0 ms silence) | PipeWire; phone (earlier) | distinct SBC-XQ phone mode |
+| AAC-LC | yes | yes | yes, 2026-11-20 (290 kbps, 0 errors) | PipeWire; phone (earlier) | |
 | HE-AAC v1 (experimental) | yes | yes | no | - | sender interop; HE-AAC v2/PS not implemented |
-| aptX / aptX HD | yes | yes | earlier field runs | phone (earlier) | |
-| LDAC 96 kHz | yes | yes | yes (earlier 8.9 h field run, rare PCM shortages) | phone | continuity |
+| aptX / aptX HD | yes (+ resync after loss) | yes | yes, 2026-11-20 (0 errors; aptX HD fixed in 0.2.2) | PipeWire; phone (earlier) | aptX loss is undetectable (no RTP) |
+| LDAC 96 kHz | yes | yes | yes (earlier 8.9 h field run; 2026-11-20 0 errors, 0 ms silence at 30% source loss) | phone, PipeWire | continuity |
 | LHDC V5 up to 192 kHz/24 | yes (AOSP-derived fixtures) | yes | yes, 2026-11-20 | PipeWire 1000k | ARM numeric parity; continuity under VM source jitter |
-| Opus | yes | yes | earlier target vectors | - | phone interop (phone cannot select) |
+| Opus | yes | yes | yes, 2026-11-20 (262 kbps, 0 errors) | PipeWire | phone interop (phone cannot select) |
 | Samsung SSC 44.1/48 HiFi/96 UHQ | yes, bit-exact + malformed input | yes (+33 KB flash, 22,920 B state) | yes, all three modes, 0 errors | PipeWire SSC plugin | Galaxy phone interop, ABR under congestion, 886k frames |
+
+Per-codec OTA run: [codec-matrix-2026-11-20.md](codec-matrix-2026-11-20.md).
 
 M7 decode cost observed on-board: LHDC 192 kHz up to 10.6 ms per 20 ms packet;
 SSC up to 3.2 ms per 9-18 ms packet.

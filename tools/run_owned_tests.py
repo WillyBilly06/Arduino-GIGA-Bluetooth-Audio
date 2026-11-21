@@ -85,6 +85,7 @@ def main():
  for n in ('test_classic_bond_public_header','test_classic_bond_store_noalloc','test_receiver_profile_log','test_loss_concealment','test_i2s_packed','test_catchup_resampler'):
   exe=out/(n+'.exe');extra=['-Itests/support/profile_log'] if n=='test_receiver_profile_log' else []
   run([cxx,'-std=c++17',*flags,*extra,'tests/'+n+'.cpp','-o',exe],n);run([exe],n)
+ n='test_aptx_resync';exe=out/(n+'.exe');run([cc,'-std=c11',*[f for f in flags if f!='-Werror'],'tests/'+n+'.c','src/vendor/codecs/aptx/freeaptx.c',*(['-lm']if os.name!='nt'else[]),'-o',exe],n);run([exe],n)
  # The three actor batches inline the real OwnedHost exactly once and retain
  # the complete target, matched-controller and wrap/ownership selectors.
  for name,args in [('test_classic_progress_batch',['all']),('test_classic_ct_batch',[]),('test_classic_review_batch',[])]:

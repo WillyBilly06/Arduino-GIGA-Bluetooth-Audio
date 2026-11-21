@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.2 - 2026-11-20
+
+- aptX HD: decoding failed on every packet after the first discontinuity
+  (the adapter never re-acquired the codeword parity sequence). It now
+  resynchronizes; aptX benefits the same way.
+- With `pcm_ring_d2_sram`, the BLE coexistence margin applies at every sample
+  rate, not only 88.2 kHz and above. Bursty senders produce 100 ms delivery
+  gaps at 48 kHz too (SBC reserve 50 -> 150 ms).
+- On-board OTA matrix with a non-silent signal: SBC, SBC-XQ, AAC-LC, aptX,
+  aptX HD, LDAC 96k, Opus, SSC 96k and LHDC V5 192k all decoded with 0 errors
+  (docs/validation/codec-matrix-2026-11-20.md). Limits: PipeWire VM sender
+  only; aptX loss cannot be detected (no RTP header).
+
 ## 0.2.1 - 2026-11-20
 
 Linux/PC sources (PipeWire on an OS clock, VMs) at LHDC 192 kHz/24/1000k:

@@ -54,6 +54,16 @@ constexpr bool d2_capped_reserve() {
     if(!resolveAudioBuffers(r,c,256,b) || b.startup_buffer_ms!=250 || b.pcm_buffer_ms!=290)return false;
     return resolveAudioBuffers(r,c,256,b,false) && b.startup_buffer_ms==50;
 }
+constexpr bool d2_all_rates() {
+    ReceiverConfig r;r.pcm_ring_d2_sram=true;CodecConfig c;c.codec=Codec::Sbc;c.sample_rate=48000;AudioBufferConfig b;I2sBufferGeometry g;
+    if(!resolveAudioBuffers(r,c,128,b) || b.startup_buffer_ms!=150 || b.pcm_buffer_ms!=190)return false; // 50 + 100, +40 headroom
+    if(!i2sBufferGeometry(48000,b.pcm_buffer_ms,g,true) || g.total_bytes>D2ArenaBytes)return false;
+    r.ble.audio_coexistence_reserve_ms=200;c.codec=Codec::Aptx;
+    if(!resolveAudioBuffers(r,c,512,b) || b.startup_buffer_ms!=260 || b.pcm_buffer_ms!=300)return false;   // 60 + 200
+    r.pcm_ring_d2_sram=false;c.codec=Codec::Sbc;                                                          // heap: unchanged
+    return resolveAudioBuffers(r,c,128,b) && b.startup_buffer_ms==50 && b.pcm_buffer_ms==60;
+}
+static_assert(d2_all_rates(),"D2 ring gives every rate the BLE coexistence margin");
 static_assert(d2_capped_reserve(),"D2 placement caps the BLE coexistence margin to the 256 KB packed window");
 constexpr bool lhdc_explicit_reserve_compatibility() {
     ReceiverConfig r;CodecConfig c;c.codec=Codec::LhdcV5;c.sample_rate=192000;
