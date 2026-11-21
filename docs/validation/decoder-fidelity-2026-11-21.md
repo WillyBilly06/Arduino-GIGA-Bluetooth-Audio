@@ -71,11 +71,26 @@ match their own source channel, so channel order is correct.
 Lag values (frames of codec delay): SBC 73, AAC 2048, aptX/aptX HD 0,
 LDAC 256, Opus 312.
 
+## LHDC V5 and Samsung SSC (existing fixture tests, re-run the same day, gcc 15)
+
+- `tools/test_lhdc_aosp.py`: 8 real encoder configurations (44.1-192 kHz,
+  16/24-bit, 1000 kbps), decoded through `Codecs.cpp`. All PASS, with gain
+  error |x| <= 0.011 dB.
+  - Signal/error at 44.1-96 kHz: 41-74 dB.
+  - Signal/error at 192 kHz: 25.9-27.9 dB, which is the codec's own error
+    at that rate and bitrate.
+- `tools/test_ssc.py`: 7 streams made by Samsung's own encoder (44.1k,
+  96k UHQ, bitrate switches, one or two frames per packet). Each is decoded
+  through `Media.cpp` and `Codecs.cpp`, and the PCM is bit-exact against the
+  pinned upstream-decoder digests. Malformed and truncated frames are
+  rejected, with no allocation during decoding. PASS.
+- On gcc this needs `-Wno-misleading-indentation`, because
+  `tests/test_ssc_codec.cpp` trips that warning, which is treated as an
+  error. The script targets clang.
+
 ## Not covered
 
-- LHDC V5 and Samsung SSC are covered by their own fixture tests
-  (`tools/test_lhdc_aosp.py` round trips, `tools/test_ssc.py` bit-exact). No
-  system encoder for them was used here.
+- No system encoder for LHDC V5 or SSC was used; their own fixtures are above.
 - HE-AAC was not run.
 - This is a host-native build (x86-64, gcc). The Cortex-M7 build compiles the
   same sources, but its numeric parity with this build was not compared.
