@@ -14,9 +14,15 @@ static const Route routes[] = {
   {75, 73, 74, -1},  // SPI2: D75/PD3 BCLK, D73/PC1 DIN, D74/PB12 LRCK
   {75, 73, 71, -1},  // D71/PI2 is I2S2_SDI only: must be rejected
   {70, 72, 69, 68},  // SPI2 legacy D69/PI0 LRCK + D68/PC6 MCLK (256 fs)
-  {85, 5, 84, -1},   // SPI1: D85/PA5, D5/PA7, D84/PA4
-  {91, 47, 84, -1},  // SPI3: D91/PB3 (JTAG reset AF0), D47/PB2, D84/PA4
+  {85, 5, 84, 76},   // SPI1: D85/PA5, D5/PA7, D84/PA4, MCLK D76/PC4
+  {91, 47, 84, 15},  // SPI3: D91/PB3 (JTAG reset AF0), D47/PB2, D84/PA4, MCLK D15/PC7
   {75, 73, 7, -1},   // SPI2 with D7/PB4 (JTAG reset AF0) as LRCK (AF7)
+  {91, 93, 44, -1},  // SPI1: D91/PB3, D93/PB5, D44/PG10
+  {62, 90, 84, -1},  // SPI1: D62/PG11, D90/PD7, D84/PA4
+  {1, 80, 9, -1},    // SPI2: D1/PA9, D80/PC3, D9/PB9
+  {94, 72, 74, -1},  // SPI2: D94/PB13, D72/PI3, D74/PB12
+  {91, 19, 84, -1},  // SPI3: D91/PB3, D19/PD6, D84/PA4
+  {91, 93, 84, -1},  // SPI3: D91/PB3, D93/PB5 (AF7), D84/PA4
 };
 static uint8_t cap[12000];
 static GPIO_TypeDef* port(uint8_t p) { switch (p) { case 0: return GPIOA; case 1: return GPIOB; case 2: return GPIOC; case 3: return GPIOD; case 6: return GPIOG; case 8: return GPIOI; default: return nullptr; } }
@@ -38,11 +44,11 @@ __attribute__((noinline)) static uint32_t sample(const Tap* taps, uint8_t ntaps,
   }
   return DWT->CYCCNT - t0;
 }
-static void runRoute(uint32_t r) {
+static void runRoute(uint32_t r, uint32_t rate) {
   const Route& q = routes[r]; I2sPins pins; pins.bclk = q.bclk; pins.data = q.data; pins.lrck = q.lrck; pins.mclk = q.mclk;
   char line[160]; I2sRoutePlan plan; const bool planned = i2sRoutePlan(pins, plan);
-  Status st = i2sBegin(48000, 20, pins);
-  snprintf(line, sizeof line, "route=%lu pins=%d/%d/%d/%d spi=%d begin=%d", (unsigned long)r, q.bclk, q.data, q.lrck, q.mclk, planned ? plan.peripheral : 0, int(st));
+  Status st = i2sBegin(rate, 20, pins);
+  snprintf(line, sizeof line, "route=%lu rate=%lu pins=%d/%d/%d/%d spi=%d begin=%d", (unsigned long)r, (unsigned long)rate, q.bclk, q.data, q.lrck, q.mclk, planned ? plan.peripheral : 0, int(st));
   block('S', line, strlen(line));
   if (st != Status::Ok) return;
   Tap taps[4] = {}; uint8_t ntaps = 0;
@@ -54,10 +60,10 @@ static void runRoute(uint32_t r) {
   }
   __disable_irq(); const uint32_t cal = sample(taps, ntaps, 500); __enable_irq();
   uint32_t n = uint32_t(uint64_t(500) * (SystemCoreClock / 1111) / (cal ? cal : 1)); if (n > sizeof cap) n = sizeof cap;
-  for (int k = 0; k < 6; ++k) {
+  for (int k = 0; k < 4; ++k) {
     uint32_t w = millis(); while (millis() - w < 60) { fill(); delay(1); } fill();
     __disable_irq(); const uint32_t cycles = sample(taps, ntaps, n); __enable_irq();
-    const uint32_t hdr[4] = {r, 48000u, n, cycles};
+    const uint32_t hdr[4] = {r, rate, n, cycles};
     Serial.write(uint8_t('K')); uint32_t len = sizeof hdr + n; Serial.write(reinterpret_cast<const uint8_t*>(&len), 4);
     Serial.write(reinterpret_cast<const uint8_t*>(hdr), sizeof hdr); Serial.write(cap, n);
   }
@@ -71,6 +77,6 @@ void loop() {
   const int command = Serial.available() ? Serial.read() : -1;
   if (command == 'B') { delay(100); _ontouch1200bps_(); }
   if (command == 'g') {
-    { char l[160]; snprintf(l, sizeof l, "reset_state GPIOB MODER=%08lx AFRL=%08lx GPIOA MODER=%08lx AFRH=%08lx", (unsigned long)GPIOB->MODER, (unsigned long)GPIOB->AFR[0], (unsigned long)GPIOA->MODER, (unsigned long)GPIOA->AFR[1]); block('S', l, strlen(l)); } for (uint32_t r = 0; r < sizeof routes / sizeof routes[0]; ++r) runRoute(r); block('Z', nullptr, 0); }
+    { char l[160]; snprintf(l, sizeof l, "reset_state GPIOB MODER=%08lx AFRL=%08lx GPIOA MODER=%08lx AFRH=%08lx", (unsigned long)GPIOB->MODER, (unsigned long)GPIOB->AFR[0], (unsigned long)GPIOA->MODER, (unsigned long)GPIOA->AFR[1]); block('S', l, strlen(l)); } for (uint32_t rate : {44100u, 48000u, 96000u}) for (uint32_t r = 0; r < sizeof routes / sizeof routes[0]; ++r) runRoute(r, rate); block('Z', nullptr, 0); }
   delay(1);
 }

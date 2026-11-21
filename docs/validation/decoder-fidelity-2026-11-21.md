@@ -251,15 +251,39 @@ routes above were re-verified on the board.
 The one MCLK capture that missed (peak at harmonic 63) is a fold limit. MCLK
 runs at 12.3 MHz against 5.1 MHz sampling, so it needs the finest phase fit.
 
+### Route-table sweep at 44.1, 48 and 96 kHz
+
+A second run (after the PB3/PB4 fix) used 12 routes. Together they exercise
+every pad in `I2sRoutes` in each of its roles, with one exception:
+- SPI1 BCLK D85/D91/D62; DIN D5/D93/D90; LRCK D84/D44; MCLK D76.
+- SPI2 BCLK D1/D94/D75/D70; DIN D73/D80/D72; LRCK D7/D9/D74/D69;
+  MCLK D68.
+- SPI3 BCLK D91; DIN D47/D19; LRCK D84; MCLK D15.
+- Not covered: SPI3 DIN on D93. The route planner picks SPI1 first for
+  D91/D93/D84, so that role was not reached.
+
+There were 4 captures per route and rate, 144 in total. `begin()` returned
+Ok for every route except D75/D73/D71, which it refused at all three rates
+as intended.
+
+DIN was read against the LRCK frame phase (`din_only.py`). Every route,
+at every rate, decoded the exact 64-bit frame in at least 3 of 4 captures;
+120 of the 132 captures were exact in this way. Every miss was 60-63/64
+and came from the routes with the slowest sampling (3.9-5.5 MHz,
+three-port routes at 96 kHz). The folded BCLK peaked at 64 per frame in
+every capture except four from SPI3 at 96 kHz sampled at 3.9 MHz. MCLK
+peaked at 256 fs on D68, D76 and D15 at all three rates whenever the fold
+was sharp; that is 11.29, 12.29 and 24.57 MHz. No route showed a
+systematic error.
+
 ## Not covered
 
 - No system encoder for LHDC V5 or SSC was used; their own fixtures are above.
 - HE-AAC was not run.
 - I2S at 192 kHz was verified by equivalent-time sampling of a constant frame,
   not by a real-time capture of changing samples.
-- Of the alternate routes, six were probed (above) at 48 kHz. Others in
-  `I2sRoutes`, other rates on alternate routes, and MCLK at rates other than
-  48 kHz were not probed.
+- Alternate routes were probed at 44.1/48/96 kHz, not at 192 kHz (only the
+  default route was folded at 192 kHz). SPI3 DIN on D93 was not reached.
 - Analog electrical quality at the header was not measured: edge rates,
   levels under a DAC load, jitter. The probe sees logic levels at the pad
   input buffer only.

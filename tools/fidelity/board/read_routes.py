@@ -28,7 +28,7 @@ def fit(xs, ys):
 for (route, rate, n, cycles), raw in caps:
     fs = n / (cycles / 480e6)
     lr = [(b >> 2) & 1 for b in raw]; falls = [i for i in range(1, n) if lr[i - 1] and not lr[i]]
-    if len(falls) < 12: print('route=%d only %d LRCK edges' % (route, len(falls))); continue
+    if len(falls) < 12: print('route=%2d rate=%6d only %d LRCK edges' % (route, rate, len(falls))); continue
     Pg, ag = fit(list(range(len(falls))), falls)
     BINS = 4096 if n >= 16000 else 1024
     acc = [[0, 0, 0, 0] for _ in range(BINS)]
@@ -56,6 +56,6 @@ for (route, rate, n, cycles), raw in caps:
     contrast = sum(abs(d - 0.5) * 2 for d in din) / BINS
     mtxt = ''
     if any(q[3] for q in acc):
-        mp, _ = spectrum(mck); mpeak = max(mp, key=lambda h: mp[h][0]); mtxt = ' mclk_peak_harmonic=%d (%.3f MHz)' % (mpeak, mpeak * fs / Pg / 1e6)
-    print('route=%d sample=%.1fMHz lrck=%.1fHz bclk_peak_harmonic=%d din_contrast=%.2f bits_matching=%d/64 offset=%d%s'
-          % (route, fs / 1e6, fs / Pg, peak, contrast, match, best, mtxt))
+        mp, _ = spectrum(mck); mpeak = max(mp, key=lambda h: mp[h][0]); mtxt = ' mclk_peak_harmonic=%d (%.3f MHz)' % (mpeak, mpeak * fs / Pg / 1e6) + ' (%d fs)' % mpeak
+    print('route=%2d rate=%6d sample=%.1fMHz lrck=%.1fHz bclk_peak_harmonic=%d din_contrast=%.2f bits_matching=%d/64 offset=%d%s'
+          % (route, rate, fs / 1e6, fs / Pg, peak, contrast, match, best, mtxt))
