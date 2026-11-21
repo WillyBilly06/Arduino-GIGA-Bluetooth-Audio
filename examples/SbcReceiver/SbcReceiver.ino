@@ -1,12 +1,13 @@
 #include <GigaBredr.h>
 using namespace giga_bredr;
+// Link only the SBC decoder (includes SBC-XQ bitstreams): the smallest build.
+GIGA_BREDR_CODECS(Sbc);
 GigaBredr receiver;
 
 void setup() {
   Serial.begin(921600);
   ReceiverConfig config;
   config.name = "GIGA SBC Receiver";
-  config.codecs = codecBit(Codec::Sbc); // Includes SBC-XQ bitstreams.
   Serial.println(statusName(receiver.begin(config)));
 }
 void loop() {
