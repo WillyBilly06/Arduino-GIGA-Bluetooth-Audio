@@ -185,15 +185,49 @@ has errors.
 At 192 kHz, BCLK is 12.288 MHz. Reading the GPIO register tops out at about
 21.7 MHz, both from a CPU loop and from an MDMA block copy (also tried; at
 96 kHz it gives the same results, less cleanly). That is below the 24.6 MHz
-needed to resolve BCLK, so only LRCK (192.0 kHz) was measured there. The
-192 kHz path uses the same packing, DMA and peripheral settings with a
-different clock divider. `i2sBegin` reads back I2SDIV/ODD and checks them.
+needed to resolve BCLK in real time.
+
+### Equivalent-time capture (all rates including 192 kHz)
+
+`tools/fidelity/board/I2sFold` writes one constant frame repeatedly
+(left 0xA53C96, right 0x5A3C69, top 24 bits), so the pad waveform repeats
+every frame. It then takes 0.9 ms GPIOI+GPIOB captures at 13.3 MHz with
+interrupts masked.
+
+The CPU clock (PLL1) and the I2S clock (PLL2) are unrelated, so the samples
+fall at effectively random phases within the frame. `fold_local.py` fits
+the frame phase locally from LRCK falling edges (least squares over ±20
+edges, since the polling loop is not perfectly uniform). It folds every
+sample into a 2048-bin frame and then:
+- finds the BCLK harmonic and phase;
+- reads DIN just after each BCLK rising edge.
+
+| Rate | Captures | Frames folded per capture | Strongest BCLK harmonic | DIN contrast | 64-bit frame exact |
+|---|---|---|---|---|---|
+| 48 kHz | 8 | 42-43 | 64 per frame (3.072 MHz) | 0.94-1.00 | 8/8 |
+| 96 kHz | 8 | 86 | 64 per frame (6.144 MHz) | 0.95-0.97 | 8/8 |
+| 192 kHz | 8 | 173 | 64 per frame (12.288 MHz) | 0.96-0.97 | 8/8 |
+
+The method was validated where the direct decode above is ground truth
+(48 and 96 kHz). At 192 kHz, the pins carry BCLK at 64 fs and LRCK at
+192.0 kHz (measured 191,990-191,993 Hz from the crystal-referenced CPU
+clock). DIN carries the exact 64-bit Philips frame, at the same bit offset
+relative to LRCK as at 48 and 96 kHz.
+
+The fit window matters at 192 kHz. With ±4 edges the fold smears (0/8
+exact); with ±8 edges, 7/8 are exact. With ±12 or ±20 edges all 8 are
+exact, so the earlier misses were a limit of the method, not of the signal.
+
+This shows the constant-frame waveform, i.e. clocking, framing and bit
+order at 192 kHz. A changing sample stream at 192 kHz was only decoded
+directly at 44.1-96 kHz, but it uses the same packing and DMA code.
 
 ## Not covered
 
 - No system encoder for LHDC V5 or SSC was used; their own fixtures are above.
 - HE-AAC was not run.
-- I2S at 192 kHz: BCLK and DIN were not resolved, only LRCK (see above).
+- I2S at 192 kHz was verified by equivalent-time sampling of a constant frame,
+  not by a real-time capture of changing samples.
 - The alternate pin routes were not probed (e.g. D75/D73 with D74/D69, MCLK).
 - Analog electrical quality at the header was not measured: edge rates,
   levels under a DAC load, jitter. The probe sees logic levels at the pad
