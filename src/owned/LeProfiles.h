@@ -21,6 +21,7 @@ public:
     bool attach(uint32_t generation,uint16_t handle,uint8_t role=1,const uint8_t* localFeatures=nullptr,uint32_t now=0);
     void detach(uint32_t generation);
     void malformedEvent() { ++stats_.malformed_pdus; }
+    void noteDisconnect(uint8_t reason) { ++stats_.disconnects; stats_.last_disconnect_reason = reason; }
     void event(const bth_h4_frame_t&,uint32_t commandOwner=0);
     bool closeRequested() const { return close_requested_; }
     void commandSubmitted(uint32_t owner,uint16_t opcode,const uint8_t* parameters,size_t length);

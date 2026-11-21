@@ -74,6 +74,10 @@ struct BleStats {
     // Cumulative actor submissions during audio priority, not RF deliveries.
     uint32_t qos_data_fragments = 0, qos_data_bytes = 0;
     uint32_t qos_paced_deferrals = 0, qos_urgent_bypasses = 0;
+    // LE disconnections this host lifetime and the HCI reason of the last one
+    // (0x08 supervision timeout, 0x13 remote user, 0x16 local host, 0x22 LL
+    // response timeout, 0x3e failed to establish).
+    uint32_t disconnects = 0; uint8_t last_disconnect_reason = 0;
     BleConnectionStats connection;
 };
 }

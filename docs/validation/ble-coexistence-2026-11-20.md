@@ -151,3 +151,42 @@ Limits:
   comparison is indicative, not controlled.
 - One VM sender; no phone source.
 - A sender outage longer than ~284 ms still produces silence.
+
+## Update: 0.2.4 controlled 2x2 (queue reserve x BLE load), two replicates
+
+To compare under the same sender conditions, `queue_reserve` was toggled at
+run time (`setQueueReserve`, Receiver console `q`/`Q`) every 360 s. The BLE
+512-byte echo load was toggled every 180 s, so each 24 min run covers all four
+combinations twice. Windows within 20 s of a reserve toggle are excluded.
+LHDC 192k/24/1000k (`LHDC_QUALITY_HIGH1`), generated signal, VM sender.
+
+| Run | Condition | Time | BLE writes | Sender loss | Silence |
+|---|---|---|---|---|---|
+| 1 | BLE idle, reserve off | 360 s | 0 | 16.9% | 152.8 ms (2 events) |
+| 1 | BLE idle, reserve on | 460 s | 0 | 22.2% | 0 ms |
+| 1 | BLE load, reserve off | 318 s | 172 | 18.6% | 52.0 ms (1 event) |
+| 1 | BLE load, reserve on | 236 s | 127 | 24.9% | 0 ms |
+| 2 | BLE idle, reserve off | 368 s | 0 | 17.3% | 82.8 ms (2 events) |
+| 2 | BLE idle, reserve on | 374 s | 0 | 9.6% | 0 ms |
+| 2 | BLE load, reserve off | 308 s | 166 | 16.4% | 24.6 ms (2 events) |
+| 2 | BLE load, reserve on | 322 s | 176 | 7.9% | 0 ms |
+
+Totals:
+- Reserve on: 0 ms silence over 1,392 s, at 7.9-24.9% sender loss.
+- Reserve off: 312 ms over 1,354 s, at 16.4-18.6% loss.
+
+In run 1, the reserve-on phases had higher loss than the reserve-off phases
+and still no silence. BLE load added no silence in either state. No gap
+went unfilled.
+
+LE link: run 1 had one LE drop 120 s into the run, with a reconnect after
+73 s. The reason was not yet logged; 0.2.4 adds
+`BleStats::last_disconnect_reason`. Run 2 had no unexpected drop: its two
+disconnects were the deliberate reset (0x16) and the client closing at the
+end (0x13).
+
+Limits:
+- Sender loss is not controlled; it varies with the shared 2.4 GHz air
+  (another session's ESP32 soak runs nearby).
+- One VM sender and one GIGA.
+- No phone-source run (the owner declined) and no listening test.

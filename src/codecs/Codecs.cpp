@@ -160,12 +160,16 @@ static DecodeResult aptxDecode(void* p,const uint8_t* in,size_t n,int32_t* pcm,s
     // One block at a time bounds scratch and preserves the core's 90-sample priming.
     // The sync decoder re-acquires the codeword parity sequence byte by byte
     // after a lost packet; plain aptx_decode() fails every later block.
-    size_t used=0,frames=0;uint8_t packed[24];
+    size_t used=0,frames=0,gap=0;uint8_t packed[24];uint8_t flags=0;
+    auto done=[&](Status st){DecodeResult r=result(st,used,frames);r.concealment_flags=flags;r.gap_frames=uint32_t(gap);return r;};
     while(used<n) {
-        if(cap-frames<4)return result(frames?Status::Ok:Status::OutputFull,used,frames);
+        if(cap-frames<4)return done(frames?Status::Ok:Status::OutputFull);
         size_t wrote=0,dropped=0;int synced=0;
         const size_t got=aptx_decode_sync(s->decoder,in+used,block,packed,sizeof(packed),&wrote,&synced,&dropped);
-        if(!got||got>block)return result(Status::CorruptFrame,used,frames);
+        if(!got||got>block)return done(Status::CorruptFrame);
+        // Sync re-acquired: dropped counts every byte discarded while hunting
+        // and re-priming (4 frames per codeword), i.e. the audio to fill.
+        if(dropped){flags|=ConcealDiscontinuity;gap+=dropped*4/block;}
         used+=got;
         for(size_t i=0;i<wrote/3;i++) {
             uint32_t v=uint32_t(packed[3*i])|(uint32_t(packed[3*i+1])<<8)|(uint32_t(packed[3*i+2])<<16);
@@ -173,7 +177,7 @@ static DecodeResult aptxDecode(void* p,const uint8_t* in,size_t n,int32_t* pcm,s
         }
         frames+=wrote/6;
     }
-    return result(Status::Ok,used,frames);
+    return done(Status::Ok);
 }
 static const DecoderOps aptxOps={aptxOpen,aptxDecode,aptxClose};
 #endif

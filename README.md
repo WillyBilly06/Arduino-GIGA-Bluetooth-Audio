@@ -1,4 +1,4 @@
-# GigaBredr 0.2.3 (experimental)
+# GigaBredr 0.2.4 (experimental)
 
 Bluetooth Classic A2DP receiver with board-pin I2S output, BLE GATT server and
 additional Classic profiles for the Arduino GIGA R1 WiFi (Cortex-M7), using a

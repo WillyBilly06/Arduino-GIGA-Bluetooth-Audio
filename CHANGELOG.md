@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.4 - 2026-11-20
+
+- aptX / aptX HD: the decoder now reports the exact source frames it
+  discards while re-acquiring parity sync (`DecodeResult::gap_frames`,
+  `ConcealDiscontinuity`), and the receiver fills them. The PipeWire VM aptX
+  stream resyncs about twice per second with every byte intact; each resync
+  used to drop ~5.7 ms, about 1.1% of the audio, which drained the reserve.
+  5 min aptX: 0 ms silence (was 234 ms). `ReceiverStats::concealed_resyncs`
+  counts fills.
+- `GigaBredr::setQueueReserve(bool)`: runtime switch for `queue_reserve`
+  (Receiver console: `q` off, `Q` on).
+- `BleStats::disconnects` / `last_disconnect_reason`: HCI reason of the last
+  LE disconnection, logged in `GBR_LE_TRAFFIC`.
+
 ## 0.2.3 - 2026-11-20
 
 - `ReceiverConfig::queue_reserve` (default on, 88.2 kHz and above with

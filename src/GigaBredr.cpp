@@ -593,7 +593,9 @@ struct GigaBredr::Impl {
         clockPublishControlSnapshot();
     }
 
+    std::atomic<bool> queue_reserve_on{true};
     explicit Impl(const ReceiverConfig& config): options(config) {
+        queue_reserve_on.store(config.queue_reserve, std::memory_order_relaxed);
         counters.clock.enabled = clockEnabled();
         counters.clock.state = clockEnabled() ? AudioClockState::Inactive : AudioClockState::Disabled;
         counters.clock.observation_us = clockUs(); clock_published = counters.clock;
@@ -701,7 +703,7 @@ struct GigaBredr::Impl {
         if (status != Status::Ok) { releaseCodec(); counters.last_error = status; return status; }
         format = c; pcm_frames = capacity; configured = true; counters.last_error = Status::Ok;
         // Optional: without history storage the fill is a silent gap of the same length.
-        conceal_enabled = options.conceal_lost_packets && options.enable_i2s && c.codec != Codec::Aac && c.codec != Codec::AacHe && c.codec != Codec::Aptx;
+        conceal_enabled = options.conceal_lost_packets && options.enable_i2s && c.codec != Codec::Aac && c.codec != Codec::AacHe;
         if (conceal_enabled) {
             const uint32_t keep = capacity < 2048 ? uint32_t(capacity) : 2048u;
             conceal_pcm = static_cast<int32_t*>(detail::allocate(size_t(keep) * 2 * sizeof(int32_t), MemoryKind::Fast));
@@ -714,7 +716,7 @@ struct GigaBredr::Impl {
             catchup_pcm = static_cast<int32_t*>(detail::allocate(catchup_capacity * 2 * sizeof(int32_t), MemoryKind::Fast));
             if (!catchup_pcm) catchup_capacity = 0;
             catchup_target = uint32_t(uint64_t(c.sample_rate) * selected_buffers.startup_buffer_ms / 1000u);
-            catchup_queue_reserve = options.queue_reserve && c.sample_rate >= 88200u ? c.sample_rate / 10u : 0u;
+            catchup_queue_reserve = c.sample_rate >= 88200u ? c.sample_rate / 10u : 0u;
         }
         if (!++stream_epoch) ++stream_epoch;
         { Lock queue_lock(queue_mutex);
@@ -778,6 +780,7 @@ struct GigaBredr::Impl {
     // held as compressed packets (never more than a third of the queue slots,
     // leaving room for the burst that follows a sender stall).
     uint32_t catchUpTarget(uint32_t slots) const {
+        if (!queue_reserve_on.load(std::memory_order_relaxed)) return catchup_target;
         const uint64_t room = uint64_t(slots / 3u) * last_packet_frames;
         return catchup_target + uint32_t(room < catchup_queue_reserve ? room : catchup_queue_reserve);
     }
@@ -860,7 +863,7 @@ struct GigaBredr::Impl {
         detail::PacketWorkSample work;
         const uint32_t packet_began = clockUs();
         auto record_work = [&]() { work.elapsed_us = clockUs() - packet_began; work_timing.record(packet_epoch, work); };
-        if (conceal_enabled && n >= 12 && (packet[0] >> 6) == 2) {
+        if (conceal_enabled && uses_rtp && n >= 12 && (packet[0] >> 6) == 2) {
             const uint32_t fill = conceal.onPacket(uint16_t((uint16_t(packet[2]) << 8) | packet[3]));
             if (conceal.unfilledGap()) { clock_input_fault = true; ++counters.concealed_unfilled_gaps; }
             if (conceal.lastLost() > counters.concealed_max_gap_packets) counters.concealed_max_gap_packets = conceal.lastLost();
@@ -876,7 +879,7 @@ struct GigaBredr::Impl {
         clockStartPacket(retained_before, media.retainedState());
         if (status == Status::NeedMoreData) { clockFinishPacket(true, true); clockFeedback(); record_work(); supply::markPhase(supply::DecoderPhase::Idle,packet_epoch); return true; }
         if (status != Status::Ok) { ++counters.decode_errors; counters.last_error = status; clockFinishPacket(false, false); clockFeedback(); record_work(); supply::markPhase(supply::DecoderPhase::Idle,packet_epoch); return true; }
-        size_t offset = 0; bool need_more = false, valid_packet = true;
+        size_t offset = 0; bool need_more = false, valid_packet = true; uint32_t resync_gap = 0;
         while (offset < view.bytes) {
             size_t input = view.bytes - offset;
             if (format.codec == Codec::Aptx || format.codec == Codec::AptxHd) {
@@ -895,6 +898,7 @@ struct GigaBredr::Impl {
             if (result.status != Status::Ok || !result.consumed || result.consumed > input || result.frames > pcm_frames) {
                 ++counters.decode_errors; counters.last_error = result.status == Status::Ok ? Status::CorruptFrame : result.status; valid_packet = false; break;
             }
+            if (result.concealment_flags & ConcealDiscontinuity) resync_gap += result.gap_frames;
             if (format.codec == Codec::LhdcV5) {
                 if (result.concealment_flags & ConcealRightChannel) {
                     ++counters.lhdc_right_concealed_blocks;
@@ -960,6 +964,15 @@ struct GigaBredr::Impl {
         if (!need_more) media.consumed();
         if (offset == view.bytes) { ++counters.decoded_packets; if (conceal_enabled) conceal.packetFrames(packet_frames); if (packet_frames) last_packet_frames = packet_frames; if (catchup_warm < 32) ++catchup_warm; }
         clockFinishPacket(valid_packet, need_more); clockFeedback();
+        // aptX/aptX HD resync: the decoder discarded resync_gap source frames
+        // while re-acquiring parity sync. Fill exactly that (bounded like an
+        // RTP gap fill); a whole lost aptX packet is left to catch-up.
+        if (resync_gap && conceal_enabled && (format.codec == Codec::Aptx || format.codec == Codec::AptxHd) &&
+            resync_gap <= format.sample_rate * detail::LossConcealment::MaximumMs / 1000u) {
+            ++counters.concealed_resyncs;
+            if (!writeConcealment(resync_gap, packet_epoch)) { record_work(); return true; }
+            conceal.beginFadeIn();
+        }
         record_work();
         supply::markPhase(supply::DecoderPhase::Idle,packet_epoch);
         return true;
@@ -1617,6 +1630,11 @@ Status GigaBredr::obexStats(ObexStats& value) const {
     if (!impl_ || !impl_->obex) return Status::Unsupported;
     Lock lock(impl_->radio_mutex);
     value = impl_->obex->port.stats();
+    return Status::Ok;
+}
+Status GigaBredr::setQueueReserve(bool enabled) {
+    if (!impl_) return Status::Unsupported;
+    impl_->queue_reserve_on.store(enabled, std::memory_order_relaxed);
     return Status::Ok;
 }
 Status GigaBredr::bleResumeAdvertising() {

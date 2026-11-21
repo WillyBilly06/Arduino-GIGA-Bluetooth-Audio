@@ -40,10 +40,21 @@ PCM frames the I2S output had to substitute because the ring was empty.
 
 ## Limits
 
-- aptX over A2DP carries no RTP header, so lost packets cannot be detected
-  or concealed. The 132 ms above came from a ~14 s stretch in which the VM
-  sender delivered about 2% below 48 kHz (the window's average byte rate was
-  exactly nominal); catch-up is capped at +/-1%.
+- aptX: the 132 ms above was first attributed to the sender. That was wrong.
+  A 5 min run showed the bytes arriving at exactly the nominal 48,000 B/s,
+  but only 0.987 decoded frames per byte. With the PipeWire VM stream the
+  decoder loses parity sync about twice per second, and while re-acquiring
+  it discards ~275 frames each time (hunting plus 90-sample re-priming).
+  Offline, the same signal encoded with the VM's libfreeaptx 0.2.2 decodes
+  with no resyncs, so the discontinuities are in the sender's stream.
+  Fixed in 0.2.4: the adapter reports the exact frames it discarded
+  (`DecodeResult::gap_frames`), and the receiver fills them. 5 min: 0 ms
+  silence (was 234 ms), 577 fills / 3.3 s, no queue drops. A first attempt
+  that filled one whole packet per resync over-filled. The ring stayed full,
+  the packet queue overflowed (418 drops), and each drop caused another
+  resync.
+- aptX over A2DP carries no RTP header, so a whole lost aptX packet is still
+  undetectable. Catch-up absorbs it.
 - One sender (PipeWire in a VM); no phone source in this matrix.
 - Decoded PCM was not compared against the source signal on the board, and
   the I2S pins were not measured; "0 errors" means each decoder accepted

@@ -71,6 +71,10 @@ void loop() {
       const auto result=receiver.bleDisconnect(current.generation,false);
       console.print("GBR_BLE_CONTROL ms=%lu action=disconnect expected=%lu advertise_after=0 status=%s\n",
         (unsigned long)millis(),(unsigned long)current.generation,statusName(result));
+    } else if(command=='q'||command=='Q') {
+      // Toggle the compressed-queue reserve: 'q' off, 'Q' on (A/B testing).
+      const auto result=receiver.setQueueReserve(command=='Q');
+      console.print("GBR_QUEUE_RESERVE ms=%lu enabled=%u status=%s\n",(unsigned long)millis(),unsigned(command=='Q'),statusName(result));
     } else if(command=='a') {
       const auto result=receiver.bleResumeAdvertising();
       console.print("GBR_BLE_CONTROL ms=%lu action=resume_advertising status=%s\n",
@@ -157,10 +161,10 @@ void loop() {
       (unsigned long)millis(), (unsigned long long)s.lhdc_right_concealed_blocks,
       (unsigned long long)s.lhdc_right_concealed_frames, (unsigned long long)s.lhdc_frame_muted_blocks,
       (unsigned long long)s.lhdc_frame_muted_frames);
-    console.print("GBR_LOSS_CONCEAL ms=%lu gaps=%llu frames=%llu unfilled=%lu max_gap=%lu catchup_added=%llu catchup_removed=%llu catchup_target=%lu\n",(unsigned long)millis(),
+    console.print("GBR_LOSS_CONCEAL ms=%lu gaps=%llu frames=%llu unfilled=%lu max_gap=%lu catchup_added=%llu catchup_removed=%llu catchup_target=%lu resyncs=%lu\n",(unsigned long)millis(),
       (unsigned long long)s.concealed_gaps,(unsigned long long)s.concealed_frames,
       (unsigned long)s.concealed_unfilled_gaps,(unsigned long)s.concealed_max_gap_packets,
-      (unsigned long long)s.catch_up_added_frames,(unsigned long long)s.catch_up_removed_frames,(unsigned long)s.catch_up_target_frames);
+      (unsigned long long)s.catch_up_added_frames,(unsigned long long)s.catch_up_removed_frames,(unsigned long)s.catch_up_target_frames,(unsigned long)s.concealed_resyncs);
     auto b=receiver.bleStats(); auto t=receiver.audioDiagnostics();
     console.print("GBR_BLE_QOS ms=%lu generation=%lu data_fragments=%lu data_bytes=%lu paced_deferrals=%lu urgent_bypasses=%lu policy_rejections=%lu\n",
       (unsigned long)millis(),(unsigned long)b.generation,(unsigned long)b.qos_data_fragments,(unsigned long)b.qos_data_bytes,

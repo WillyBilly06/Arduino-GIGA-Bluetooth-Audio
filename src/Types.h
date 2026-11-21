@@ -25,12 +25,17 @@ struct CodecConfig {
 };
 enum DecodeConcealment : uint8_t {
     ConcealRightChannel = 1u << 0,
-    ConcealFullFrame = 1u << 1
+    ConcealFullFrame = 1u << 1,
+    // The decoder lost and re-acquired stream sync in this call and discarded
+    // gap_frames of source audio while re-acquiring (aptX parity hunting and
+    // re-priming). The receiver fills exactly that duration.
+    ConcealDiscontinuity = 1u << 2
 };
 struct DecodeResult {
     Status status; size_t consumed; size_t frames;
     // Per successful encoded block; currently supplied by LHDC only.
     uint8_t concealment_flags = 0;
+    uint32_t gap_frames = 0; // With ConcealDiscontinuity: source frames discarded.
 };
 struct MemoryStats {
     size_t current_bytes = 0, peak_bytes = 0, current_blocks = 0;

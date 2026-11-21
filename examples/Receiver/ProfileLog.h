@@ -119,9 +119,9 @@ public:
               }
             }else if(kind==6 && (ble_changed||uint32_t(now-ble_at_)>=2000)){
               needed=true;
-              admitted=c.print("GBR_LE_TRAFFIC ms=%lu generation=%lu connected=%u subscribed=%u mtu=%u received_writes=%lu notifications_queued=%lu capacity_retries=%lu command_drops=%lu counters=host_receipts_not_peer_delivery console_drops=%u\n",
+              admitted=c.print("GBR_LE_TRAFFIC ms=%lu generation=%lu connected=%u subscribed=%u mtu=%u received_writes=%lu notifications_queued=%lu capacity_retries=%lu command_drops=%lu disconnects=%lu last_reason=0x%02x counters=host_receipts_not_peer_delivery console_drops=%u\n",
                 (unsigned long)now,(unsigned long)b.generation,unsigned(b.connected),unsigned(b.notify_enabled),unsigned(b.att_mtu),
-                (unsigned long)b.writes,(unsigned long)b.notifications_queued,(unsigned long)b.capacity_retries,(unsigned long)b.write_command_drops,c.dropped);
+                (unsigned long)b.writes,(unsigned long)b.notifications_queued,(unsigned long)b.capacity_retries,(unsigned long)b.write_command_drops,(unsigned long)b.disconnects,unsigned(b.last_disconnect_reason),c.dropped);
               if(admitted){ble_seen_=true;ble_at_=now;ble_connected_=b.connected;ble_subscribed_=b.notify_enabled;ble_generation_=b.generation;}
             }
             if(needed){next_=uint8_t((kind+1)%7);return;}

@@ -111,6 +111,7 @@ struct ReceiverStats {
     uint64_t concealed_gaps = 0, concealed_frames = 0;
     // Gaps concealment refused (too long or backward) and the largest gap seen, in packets.
     uint32_t concealed_unfilled_gaps = 0, concealed_max_gap_packets = 0;
+    uint32_t concealed_resyncs = 0; // aptX/aptX HD decoder resyncs whose discarded audio was filled.
     // Catch-up resampling: net PCM frames added (stretch) and removed (compress).
     uint64_t catch_up_added_frames = 0, catch_up_removed_frames = 0;
     uint32_t catch_up_target_frames = 0; // Level target incl. any compressed-queue reserve.
@@ -178,6 +179,10 @@ public:
     // Idempotent release of an advertising hold. Busy while a held peer is
     // attached/disconnecting; actual advertising follows normal GAP/RX admission.
     Status bleResumeAdvertising();
+    // Runtime switch for ReceiverConfig::queue_reserve (taken from begin()).
+    // Off, the level target drops back to the PCM startup reserve; catch-up
+    // then drains the extra queued packets at up to 1% speed.
+    Status setQueueReserve(bool enabled);
     // Pops one copied write from the GATT RX characteristic, if available.
     // Returns false without changing value when empty or the radio owner is busy.
     bool bleReadWrite(BleWrite& value);

@@ -399,6 +399,7 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
 #endif
  // CPB observes command completions and its page-2 events; links still own the queue record.
  if(config_.cpb)config_.cpb->event(event,now_);
+ if(event.event.code==0x05&&p.len==4&&!p.data[0]&&links_.le.state==BTH_PEER_CONNECTED&&bth_read_le16(p.data+1)==links_.le.handle)le_.noteDisconnect(p.data[3]);
  bth_status_t result=sco_disconnect_reply?bth_cmdq_complete(&commands_,&event,&consumed_owner):bth_links_on_event(&links_,&event);
  #if GIGA_BREDR_CONNECT_TRACE
  {const uint8_t c=event.event.code;if(c==0x03||c==0x04||c==0x06||c==0x08||c==0x17||c==0x31||c==0x32||c==0x18||c==0x33||c==0x36||c==0x05||(c==0x0f&&p.len==4&&p.data[0])||(c==0x0e&&p.len>=4&&p.data[3]&&bth_read_le16(p.data+1)>=0x0400&&bth_read_le16(p.data+1)<0x0500)){
