@@ -1,5 +1,14 @@
 #pragma once
 // Diagnostic: -DGIGA_BREDR_LINK_PROBE=1 logs GBR_LINK (AFH map, RSSI, failed contacts, LMP features) every 2 s while Classic is connected.
+// A/B knobs, sent once per Classic link after connect (off by default):
+// GIGA_BREDR_LINK_POLICY >=0 writes Write_Link_Policy_Settings (0x0000 disables sniff/hold/role switch);
+// GIGA_BREDR_ACL_PACKET_TYPES nonzero sends Change_Connection_Packet_Type (0xEE1C excludes EDR 3M).
+#ifndef GIGA_BREDR_LINK_POLICY
+#define GIGA_BREDR_LINK_POLICY -1
+#endif
+#ifndef GIGA_BREDR_ACL_PACKET_TYPES
+#define GIGA_BREDR_ACL_PACKET_TYPES 0
+#endif
 #ifndef GIGA_BREDR_LINK_PROBE
 #define GIGA_BREDR_LINK_PROBE 0
 #endif
@@ -165,6 +174,9 @@ private:
  unsigned next_peer_=0,bond_cursor_=0,le_trace_=0;Boot boot_=Boot::Failed;
  uint8_t le_reply_observe_trace_=0; // Shared peer-reply CC/update quota, separate from GAP.
  uint32_t qos_last_data_ms_=0,qos_classic_owner_=0,qos_le_owner_=0;
+#if GIGA_BREDR_LINK_POLICY>=0||GIGA_BREDR_ACL_PACKET_TYPES
+ uint32_t link_tuned_owner_=0; // owner of the Classic link that received the A/B knobs
+#endif
 #if GIGA_BREDR_LINK_PROBE
  uint32_t link_probe_ms_=0;int8_t link_rssi_=0;uint8_t link_afh_mode_=0xff,link_assess_=0xff,link_map_[10]={};uint16_t link_fcc_=0; // GIGA_BREDR_LINK_PROBE diagnostic only.
 #endif

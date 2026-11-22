@@ -375,6 +375,11 @@ bool OwnedHost::dispatch(const bth_h4_frame_t& event){
  unsigned previous_sent=commands_.sent_count,completed_index=BTH_CMD_QUEUE_LIMIT;uint32_t command_owner=0;uint16_t completed_opcode=0,completed_handle=0xffff;
  if((event.event.code==0x0e&&p.len>=3)||(event.event.code==0x0f&&p.len==4)){const uint16_t op=bth_read_le16(p.data+(event.event.code==0x0e?1:2));completed_opcode=op;for(unsigned k=0;k<previous_sent;++k)if(commands_.sent[k].opcode==op){completed_index=k;command_owner=commands_.sent[k].owner;completed_handle=commands_.sent[k].handle;break;}}
  links_.security_now_ms=now_;
+#if GIGA_BREDR_LINK_POLICY>=0||GIGA_BREDR_ACL_PACKET_TYPES
+ if((event.event.code==0x0e&&p.len>=4&&completed_opcode==0x080d)||(event.event.code==0x0f&&p.len==4&&completed_opcode==0x040f)||(event.event.code==0x1d&&p.len>=5)){char t[80];
+  if(event.event.code==0x1d)snprintf(t,sizeof t,"GBR_LINK_TUNE_DONE event=packet_type status=%02x types=%02x%02x",p.data[0],p.data[4],p.data[3]);
+  else snprintf(t,sizeof t,"GBR_LINK_TUNE_DONE op=%04x status=%02x",completed_opcode,event.event.code==0x0e?p.data[3]:p.data[0]);diagnose(t);}
+#endif
 #if GIGA_BREDR_LINK_PROBE
  if(event.event.code==0x0b&&p.len>=11){char t[96];snprintf(t,sizeof t,"GBR_LINK_REMOTE status=%02x features=%02x%02x%02x%02x%02x%02x%02x%02x",p.data[0],p.data[3],p.data[4],p.data[5],p.data[6],p.data[7],p.data[8],p.data[9],p.data[10]);diagnose(t);}
  if(event.event.code==0x0e&&p.len>=4&&!p.data[3]){const uint8_t* d=p.data+3;
@@ -961,6 +966,17 @@ void OwnedHost::serviceControllerPriority(bool secure){
  }else if(result<0&&result!=BTH_ERR_CAPACITY)fail("Owned controller-priority queue failed");
 }
 void OwnedHost::runtimePoll(){
+#if GIGA_BREDR_LINK_POLICY>=0||GIGA_BREDR_ACL_PACKET_TYPES
+ if(links_.classic.state==BTH_PEER_CONNECTED&&links_.classic.owner&&links_.classic.owner!=link_tuned_owner_&&bth_cmdq_available(&commands_)>=BTH_CMD_QUEUE_LIMIT){
+  link_tuned_owner_=links_.classic.owner;const uint16_t h=links_.classic.handle;char t[80];
+#if GIGA_BREDR_LINK_POLICY>=0
+  {const uint8_t p[4]={uint8_t(h),uint8_t(h>>8),uint8_t(GIGA_BREDR_LINK_POLICY),uint8_t(unsigned(GIGA_BREDR_LINK_POLICY)>>8)};bth_cmdq_push(&commands_,0x080d,p,4,false);}
+#endif
+#if GIGA_BREDR_ACL_PACKET_TYPES
+  {const uint8_t p[4]={uint8_t(h),uint8_t(h>>8),uint8_t(GIGA_BREDR_ACL_PACKET_TYPES),uint8_t(unsigned(GIGA_BREDR_ACL_PACKET_TYPES)>>8)};bth_cmdq_push(&commands_,0x040f,p,4,false);}
+#endif
+  snprintf(t,sizeof t,"GBR_LINK_TUNE handle=%04x policy=%d packet_types=%04x",h,int(GIGA_BREDR_LINK_POLICY),unsigned(GIGA_BREDR_ACL_PACKET_TYPES));diagnose(t);}
+#endif
 #if GIGA_BREDR_LINK_PROBE
  // Link-quality probe: AFH map assigned by the central, RSSI, failed contacts, local assessment mode.
  if(links_.classic.state==BTH_PEER_CONNECTED&&bth_cmdq_available(&commands_)>=BTH_CMD_QUEUE_LIMIT&&uint32_t(now_-link_probe_ms_)>=2000){link_probe_ms_=now_;
